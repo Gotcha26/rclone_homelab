@@ -1,0 +1,55 @@
+Ce script est bien mais il ne gère pas le symbole pipe "|" dans ma liste des jobs.
+Peux-tu corriger le script pour intégrer cela ? Merci
+
+
+
+
+
+
+
+#!/usr/bin/env bash
+###############################################################################
+# Script : rclone_sync_job.sh
+# Version : 1.1
+# Auteur  : Julien & ChatGPT
+#
+# Description :
+#   Lit la liste des jobs dans rclone_jobs.txt et exécute rclone pour chacun.
+#   Format du fichier rclone_jobs.txt :
+#       source|destination
+#
+#   Les lignes commençant par # ou vides sont ignorées.
+###############################################################################
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"
+
+if [[ ! -f "$JOBS_FILE" ]]; then
+    echo "Fichier $JOBS_FILE introuvable." >&2
+    exit 1
+fi
+
+while IFS= read -r line; do
+    # Ignorer les commentaires et lignes vides
+    [[ -z "$line" || "$line" =~ ^# ]] && continue
+
+    # Séparation par le caractère "|"
+    IFS='|' read -r src dst <<< "$line"
+
+    # Suppression des espaces en trop autour
+    src="${src#"${src%%[![:space:]]*}"}"
+    src="${src%"${src##*[![:space:]]}"}"
+    dst="${dst#"${dst%%[![:space:]]*}"}"
+    dst="${dst%"${dst##*[![:space:]]}"}"
+
+    if [[ -z "$src" || -z "$dst" ]]; then
+        echo "Ligne invalide dans $JOBS_FILE : $line" >&2
+        continue
+    fi
+
+    echo "=== Synchronisation : $src → $dst ==="
+    rclone sync "$src" "$dst" --log-level INFO
+    echo
+done < "$JOBS_FILE"
