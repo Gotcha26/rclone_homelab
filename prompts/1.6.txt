@@ -1,0 +1,147 @@
+Avec le script suivant, je souhaite différencier un lancement manuel d'un lancement automatique.
+Je veux donc introduire l'option --auto
+
+La mention de cette option fera aussi partie du tableau récapitulatif en fin de script.
+
+Voici le script de référence. Ne modifie rien d'autre que ce que je te demande de faire. Penses à mettre à jour les commentaires si nécessaire.
+
+[1.5.txt]
+
+
+
+
+#!/usr/bin/env bash
+###############################################################################
+# Script : rclone_sync_job.sh
+# Version : 1.6 - 2025-08-09
+# Auteur  : Julien & ChatGPT
+#
+# Description :
+#   Lit la liste des jobs dans rclone_jobs.txt et exécute rclone pour chacun.
+#   Format du fichier rclone_jobs.txt :
+#       source|destination
+#
+#   Les lignes commençant par # ou vides sont ignorées.
+#   L'option --auto permet d'indiquer un lancement automatique.
+###############################################################################
+
+set -uo pipefail  # On retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
+
+###############################################################################
+# Variables
+###############################################################################
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"   # Modifier ici si besoin
+
+# Options rclone (1 par ligne)
+RCLONE_OPTS=(
+    --log-level INFO
+    # --dry-run
+    # --progress
+)
+
+START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
+END_TIME=""
+ERROR_CODE=0
+JOBS_COUNT=0
+LAUNCH_MODE="manuel"
+
+###############################################################################
+# Lecture des options du script
+###############################################################################
+for arg in "$@"; do
+    case "$arg" in
+        --auto)
+            LAUNCH_MODE="automatique"
+            shift
+            ;;
+        *)
+            ;;
+    esac
+done
+
+###############################################################################
+# Affichage récapitulatif à la sortie
+###############################################################################
+trap 'END_TIME="$(date "+%Y-%m-%d %H:%M:%S")";
+      echo;
+      printf "%-12s | %-20s\n" "Commencé" "$START_TIME";
+      printf "%-12s | %-20s\n" "Terminé" "$END_TIME";
+      printf "%-12s | %-20s\n" "Mode" "$LAUNCH_MODE";
+      printf "%-12s | %-20s\n" "Code erreur" "$ERROR_CODE";
+      printf "%-12s | %-20s\n" "Jobs traités" "$JOBS_COUNT"' EXIT
+
+###############################################################################
+# Vérifications initiales
+###############################################################################
+if [[ ! -f "$JOBS_FILE" ]]; then
+    echo "❌ Fichier jobs introuvable : $JOBS_FILE" >&2
+    ERROR_CODE=1
+    exit $ERROR_CODE
+fi
+if [[ ! -r "$JOBS_FILE" ]]; then
+    echo "❌ Fichier jobs non lisible : $JOBS_FILE" >&2
+    ERROR_CODE=2
+    exit $ERROR_CODE
+fi
+
+# Charger la liste des remotes configurés dans rclone
+mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
+
+###############################################################################
+# Pré-vérification de tous les jobs
+###############################################################################
+while IFS= read -r line; do
+    [[ -z "$line" || "$line" =~ ^# ]] && continue
+    IFS='|' read -r src dst <<< "$line"
+
+    src="${src#"${src%%[![:space:]]*}"}"
+    src="${src%"${src##*[![:space:]]}"}"
+    dst="${dst#"${dst%%[![:space:]]}"}"
+    dst="${dst%"${dst##*[![:space:]]}"}"
+
+    if [[ -z "$src" || -z "$dst" ]]; then
+        echo "❌ Ligne invalide dans $JOBS_FILE : $line" >&2
+        ERROR_CODE=3
+        exit $ERROR_CODE
+    fi
+
+    if [[ ! -d "$src" ]]; then
+        echo "❌ Dossier source introuvable ou inaccessible : $src" >&2
+        ERROR_CODE=4
+        exit $ERROR_CODE
+    fi
+
+    if [[ "$dst" == *":"* ]]; then
+        remote_name="${dst%%:*}"
+        if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote_name} " ]]; then
+            echo "❌ Remote inconnu dans rclone : $remote_name" >&2
+            ERROR_CODE=5
+            exit $ERROR_CODE
+        fi
+    fi
+done < "$JOBS_FILE"
+
+###############################################################################
+# Exécution des jobs
+###############################################################################
+while IFS= read -r line; do
+    [[ -z "$line" || "$line" =~ ^# ]] && continue
+
+    IFS='|' read -r src dst <<< "$line"
+    src="${src#"${src%%[![:space:]]*}"}"
+    src="${src%"${src##*[![:space:]]}"}"
+    dst="${dst#"${dst%%[![:space:]]}"}"
+    dst="${dst%"${dst##*[![:space:]]}"}"
+
+    echo "=== Synchronisation : $src → $dst ==="
+    echo "Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE)"
+
+    if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}"; then
+        ERROR_CODE=6
+    fi
+    ((JOBS_COUNT++))
+    echo
+done < "$JOBS_FILE"
+
+exit $ERROR_CODE
