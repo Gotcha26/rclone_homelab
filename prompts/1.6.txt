@@ -36,6 +36,8 @@ JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"   # Modifier ici si besoin
 # Options rclone (1 par ligne)
 RCLONE_OPTS=(
     --log-level INFO
+    --size-only
+    --temp-dir /mnt/tmp_rclone
     # --dry-run
     # --progress
 )
