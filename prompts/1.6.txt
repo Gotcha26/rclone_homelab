@@ -133,7 +133,7 @@ while IFS= read -r line; do
     IFS='|' read -r src dst <<< "$line"
     src="${src#"${src%%[![:space:]]*}"}"
     src="${src%"${src##*[![:space:]]}"}"
-    dst="${dst#"${dst%%[![:space:]]}"}"
+    dst="${dst#"${dst%%[![:space:]]*}"}"
     dst="${dst%"${dst##*[![:space:]]}"}"
 
     echo "=== Synchronisation : $src → $dst ==="
