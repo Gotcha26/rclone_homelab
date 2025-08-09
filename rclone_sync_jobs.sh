@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.9 - 2025-08-09
+# Version : 1.10 - 2025-08-09
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -23,11 +23,16 @@ set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le co
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"   # Modifier ici si besoin
 TMP_RCLONE="/mnt/tmp_rclone"
+END_REPORT_TEXT="--- Fin de rapport ---"
 
 # Couleurs : on utilise $'...' pour insérer le caractère ESC réel
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
 RED=$'\e[31m'                 # rouge pour deleted / error
 ORANGE=$'\e[38;5;208m'        # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
+BG_BLUE_DARK=$'\e[44m'        # fond bleu foncé
+BG_YELLOW_DARK=$'\e[43m'      # fond jaune classique (visible partout, jaune "standard")
+BLACK=$'\e[30m'               # texte noir
+BOLD=$'\e[1m'                 # texte gras
 RESET=$'\e[0m'
 
 # Options rclone (1 par ligne)
@@ -45,12 +50,40 @@ RCLONE_OPTS=(
     --log-level INFO
     --stats-log-level NOTICE
 )
-
+		   
 START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 END_TIME=""
 ERROR_CODE=0
 JOBS_COUNT=0
 LAUNCH_MODE="manuel"
+
+###############################################################################
+# Fonction pour centrer une ligne avec des '=' de chaque côté + coloration
+###############################################################################
+print_centered_line() {
+    local line="$1"
+    local term_width
+    term_width=$(tput cols 2>/dev/null || echo 80)  # Défaut 80 si échec
+
+    # Calcul longueur visible (sans séquences d’échappement)
+    # Ici la ligne n’a pas de couleur, donc simple :
+    local line_len=${#line}
+
+    local pad_total=$((term_width - line_len))
+    local pad_side=0
+    local pad_left=""
+    local pad_right=""
+
+    if (( pad_total > 0 )); then
+        pad_side=$((pad_total / 2))
+        # Si pad_total est impair, on met un '=' en plus à droite
+        pad_left=$(printf '=%.0s' $(seq 1 $pad_side))
+        pad_right=$(printf '=%.0s' $(seq 1 $((pad_side + (pad_total % 2)))))
+    fi
+
+    # Coloriser uniquement la partie texte, pas les '='
+    printf "%s%s%s%s%s\n" "$pad_left" "$BG_BLUE_DARK" "$line" "$RESET" "$pad_right"
+}
 
 ###############################################################################
 # Lecture des options du script
@@ -91,8 +124,8 @@ print_aligned() {
 print_summary_table() {
     END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
     echo
-        echo "INFOS"
-        printf '%*s\n' 80 '' | tr ' ' '='   # ligne = de 60 caractères
+    echo "INFOS"
+    printf '%*s\n' 80 '' | tr ' ' '='   # ligne = de 80 caractères
 
     print_aligned "Date / Heure début" "$START_TIME"
     print_aligned "Date / Heure fin" "$END_TIME"
@@ -100,10 +133,24 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
 
-        printf '%*s\n' 80 '' | tr ' ' '='   # ligne = de 60 caractères
+    printf '%*s\n' 80 '' | tr ' ' '='   # ligne = de 80 caractères
 
-        echo
-        echo "--- Fin de rapport ---"
+	 
+# Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
+    local text="$END_REPORT_TEXT"
+    local term_width=80
+    local text_len=${#text}
+    local pad_total=$((term_width - text_len))
+    local pad_side=0
+    local pad_left=""
+    local pad_right=""
+    if (( pad_total > 0 )); then
+        pad_side=$((pad_total / 2))
+        pad_left=$(printf ' %.0s' $(seq 1 $pad_side))
+        pad_right=$(printf ' %.0s' $(seq 1 $((pad_side + (pad_total % 2)))))
+    fi
+    printf "%b%s%s%s%s%b\n" "${BG_YELLOW_DARK}${BOLD}${BLACK}" "$pad_left" "$text" "$pad_right" "${RESET}" ""
+    echo
 }
 
 ###############################################################################
@@ -130,7 +177,6 @@ colorize() {
         else {
             print line
         }
-        fflush()   # <-- cette ligne force awk à afficher immédiatement chaque ligne
     }'
 }
 
@@ -138,9 +184,11 @@ colorize() {
 # Fonction : Affiche le logo ASCII GOTCHA (uniquement en mode manuel)
 ###############################################################################
 print_logo() {
-        echo
-        echo
-    cat <<'EOF'
+    echo
+    echo
+    # On colore la bannière avec sed : '#' restent normaux, le reste en rouge
+    # Pour simplifier, on colore caractère par caractère via sed
+    cat <<'EOF' | sed -E "s/([^#])/${RED}\1${RESET}/g"
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::::::'######:::::'#######:::'########:::'######:::'##::::'##:::::'###:::::::::
 :::::'##... ##:::'##.... ##::... ##..:::'##... ##:: ##:::: ##::::'## ##::::::::
@@ -152,8 +200,8 @@ print_logo() {
 ::::::......::::::.......:::::::..:::::::......::::..:::::..:::..:::::..:::::::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 EOF
-        echo
-        echo
+    echo
+    echo
 }
 
 # Affiche le logo uniquement si on n'est pas en mode "automatique"
@@ -236,9 +284,9 @@ while IFS= read -r line; do
     dst="${dst#"${dst%%[![:space:]]*}"}"
     dst="${dst%"${dst##*[![:space:]]}"}"
 
-    echo "=== Synchronisation : $src → $dst ==="
-    echo "=== Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE) ==="
-        echo
+    print_centered_line "=== Synchronisation : $src → $dst ==="
+    print_centered_line "=== Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE) ==="
+    echo
 
     # Exécution avec colorisation (awk) — set -o pipefail permet de récupérer correctement le code retour de rclone
     if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" 2>&1 | colorize; then
