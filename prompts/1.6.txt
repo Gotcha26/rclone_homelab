@@ -32,12 +32,13 @@ set -uo pipefail  # On retire -e pour éviter l'arrêt brutal, on gère les erre
 ###############################################################################
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"   # Modifier ici si besoin
+TMP_RCLONE="$/mnt/tmp_rclone"
 
 # Options rclone (1 par ligne)
 RCLONE_OPTS=(
     --log-level INFO
     --size-only
-    --temp-dir /mnt/tmp_rclone
+    --temp-dir "$TMP_RCLONE"
     # --dry-run
     # --progress
 )
@@ -84,6 +85,13 @@ fi
 if [[ ! -r "$JOBS_FILE" ]]; then
     echo "❌ Fichier jobs non lisible : $JOBS_FILE" >&2
     ERROR_CODE=2
+    exit $ERROR_CODE
+fi
+
+# **Vérification ajoutée pour TMP_RCLONE**
+if [[ ! -d "$TMP_RCLONE" ]]; then
+    echo "❌ Dossier temporaire rclone introuvable : $TMP_RCLONE" >&2
+    ERROR_CODE=7
     exit $ERROR_CODE
 fi
 
@@ -147,3 +155,4 @@ while IFS= read -r line; do
 done < "$JOBS_FILE"
 
 exit $ERROR_CODE
+
