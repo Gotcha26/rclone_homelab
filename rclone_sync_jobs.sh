@@ -1,229 +1,252 @@
 #!/usr/bin/env bash
-# rclone_sync_jobs.sh
-# Synchronisation locale -> cloud via rclone, multi jobs, logs, coloration, arrêt sur erreur critique.
-# Affichage dates début/fin alignées, ligne vide au départ.
-# Mode manuel / automatique détecté via argument (voir "Utilisation").
+###############################################################################
+# Script : rclone_sync_job.sh
+# Version : 1.9 - 2025-08-09
+# Auteur  : Julien & ChatGPT
+#
+# Description :
+#   Lit la liste des jobs dans rclone_jobs.txt et exécute rclone pour chacun.
+#   Format du fichier rclone_jobs.txt :
+#       source|destination
+#
+#   Les lignes commençant par # ou vides sont ignorées.
+#   L'option --auto permet d'indiquer un lancement automatique.
+#
+#   En fin d'exécution, un tableau récapitulatif avec bordures est affiché.
+###############################################################################
 
-set -uo pipefail
+set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
 
-## ======= Configuration =======
+###############################################################################
+# Variables
+###############################################################################
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"  # fichier jobs OBLIGATOIRE, dans même dossier que script
-LOG_DIR="/var/log/rclone"
-KEEP_DAYS=30
+JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"   # Modifier ici si besoin
+TMP_RCLONE="/mnt/tmp_rclone"
+
+# Couleurs : on utilise $'...' pour insérer le caractère ESC réel
+BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
+RED=$'\e[31m'                 # rouge pour deleted / error
+ORANGE=$'\e[38;5;208m'        # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
+RESET=$'\e[0m'
+
+# Options rclone (1 par ligne)
 RCLONE_OPTS=(
-  "--transfers" "4"
-  "--checkers" "8"
-  "--contimeout" "60s"
-  "--timeout" "300s"
-  "--retries" "3"
-  "--low-level-retries" "10"
-  "--stats" "1s"
+    --temp-dir "$TMP_RCLONE"
+    --exclude '*<*'
+    --exclude '*>*'
+    --exclude '*:*'
+    --exclude '*"*'
+    --exclude '*\\*'
+    --exclude '*\|*'
+    --exclude '*\?*'
+    --exclude '.*'
+    --exclude 'Thumbs.db'
+    --log-level INFO
+    --stats-log-level NOTICE
 )
-## =============================
 
-COLOR_GREEN="\033[0;32m"
-COLOR_RED="\033[0;31m"
-COLOR_RESET="\033[0m"
+START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
+END_TIME=""
+ERROR_CODE=0
+JOBS_COUNT=0
+LAUNCH_MODE="manuel"
 
-usage() {
-  cat <<EOF
-Usage: $0 [--dry-run] [--auto] [-h|--help]
-
-Ce script doit être lancé depuis son dossier contenant le fichier rclone_jobs.txt
-
-Options:
-  --dry-run     : simulateur (ne fait pas d'action)
-  --auto        : mode automatique (ex: tâche cron) -> activera futur envoi email
-  -h, --help    : affiche cette aide
-
-Exemples:
-  $0                       # exécution manuelle (par défaut)
-  $0 --dry-run             # exécution manuelle en simulation
-  $0 --auto                # exécution automatique (prévu pour envoi d'email)
-  $0 --auto --dry-run      # auto + simulation
-EOF
-}
-
-trim() {
-  local s="$1"
-  s="${s#"${s%%[![:space:]]*}"}"
-  s="${s%"${s##*[![:space:]]}"}"
-  printf '%s' "$s"
-}
-
-print_rclone_cmd() {
-  local src="$1" dst="$2" dry="$3"
-  echo "Commande rclone qui sera exécutée :"
-  echo "rclone sync \\"
-  echo "  '$src' \\"
-  echo "  '$dst' \\"
-  # Calcul largeur max de clé d’option pour alignement
-  local max_len=0
-  for ((i=0; i<${#RCLONE_OPTS[@]}; i+=2)); do
-    local key="${RCLONE_OPTS[i]}"
-    (( ${#key} > max_len )) && max_len=${#key}
-  done
-  for ((i=0; i<${#RCLONE_OPTS[@]}; i+=2)); do
-    local key="${RCLONE_OPTS[i]}"
-    local val="${RCLONE_OPTS[i+1]}"
-    local padded_key
-    padded_key=$(printf "%-${max_len}s" "$key")
-    echo "  ${padded_key} = ${val} \\"
-  done
-  if [[ -n "$dry" ]]; then
-    echo "  $dry \\"
-  fi
-  echo "  --log-level DEBUG"
-}
-
-## Parse args
-DRY_RUN_ARG=""
-AUTO_MODE=false
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --dry-run) DRY_RUN_ARG="--dry-run"; shift ;;
-    --auto)    AUTO_MODE=true; shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "Option inconnue : $1"; usage; exit 1 ;;
-  esac
+###############################################################################
+# Lecture des options du script
+###############################################################################
+for arg in "$@"; do
+    case "$arg" in
+        --auto)
+            LAUNCH_MODE="automatique"
+            shift
+            ;;
+        *)
+            ;;
+    esac
 done
 
-## Pré-vérifications
-if ! command -v rclone >/dev/null 2>&1; then
-  echo -e "${COLOR_RED}ERREUR:${COLOR_RESET} 'rclone' introuvable. Installez-le avant d'exécuter ce script."
-  exit 2
+###############################################################################
+# Fonction d'affichage du tableau récapitulatif avec bordures
+###############################################################################
+print_aligned() {
+    local label="$1"
+    local value="$2"
+    local label_width=20
+
+    # Calcul de la longueur du label
+    local label_len=${#label}
+    local spaces=$((label_width - label_len))
+
+    # Génère les espaces à ajouter après le label
+    local padding=""
+    if (( spaces > 0 )); then
+        padding=$(printf '%*s' "$spaces" '')
+    fi
+
+    # Affiche la ligne avec label + padding + " : " + value
+    printf "%s%s : %s\n" "$label" "$padding" "$value"
+}
+
+print_summary_table() {
+    END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
+    echo
+        echo "INFOS"
+        printf '%*s\n' 80 '' | tr ' ' '='   # ligne = de 60 caractères
+
+    print_aligned "Date / Heure début" "$START_TIME"
+    print_aligned "Date / Heure fin" "$END_TIME"
+    print_aligned "Mode de lancement" "$LAUNCH_MODE"
+    print_aligned "Nombre de jobs" "$JOBS_COUNT"
+    print_aligned "Code erreur" "$ERROR_CODE"
+
+        printf '%*s\n' 80 '' | tr ' ' '='   # ligne = de 60 caractères
+
+        echo
+        echo "--- Fin de rapport ---"
+}
+
+###############################################################################
+# Colorisation de la sortie rclone (fonction)
+# Utilise awk pour des correspondances robustes et insensibles à la casse.
+###############################################################################
+colorize() {
+    awk -v BLUE="$BLUE" -v RED="$RED" -v ORANGE="$ORANGE" -v RESET="$RESET" '
+    {
+        line = $0
+        l = tolower(line)
+        # Ajouts / transferts / nouveaux fichiers -> bleu
+        if (l ~ /(copied|added|transferred|new|created|renamed|uploaded)/) {
+            printf "%s%s%s\n", BLUE, line, RESET
+        }
+        # Suppressions / erreurs -> rouge
+        else if (l ~ /(deleted|delete|error|failed|failed to)/) {
+            printf "%s%s%s\n", RED, line, RESET
+        }
+        # Déjà synchronisé / inchangé / skipped -> orange
+        else if (l ~ /(unchanged|already exists|skipped|skipping|there was nothing to transfer|no change)/) {
+            printf "%s%s%s\n", ORANGE, line, RESET
+        }
+        else {
+            print line
+        }
+        fflush()   # <-- cette ligne force awk à afficher immédiatement chaque ligne
+    }'
+}
+
+###############################################################################
+# Fonction : Affiche le logo ASCII GOTCHA (uniquement en mode manuel)
+###############################################################################
+print_logo() {
+        echo
+        echo
+    cat <<'EOF'
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::::::'######:::::'#######:::'########:::'######:::'##::::'##:::::'###:::::::::
+:::::'##... ##:::'##.... ##::... ##..:::'##... ##:: ##:::: ##::::'## ##::::::::
+::::: ##:::..:::: ##:::: ##::::: ##::::: ##:::..::: ##:::: ##:::'##:. ##:::::::
+::::: ##::'####:: ##:::: ##::::: ##::::: ##:::::::: #########::'##:::. ##::::::
+::::: ##::: ##::: ##:::: ##::::: ##::::: ##:::::::: ##.... ##:: #########::::::
+::::: ##::: ##::: ##:::: ##::::: ##::::: ##::: ##:: ##:::: ##:: ##.... ##::::::
+:::::. ######::::. #######:::::: ##:::::. ######::: ##:::: ##:: ##:::: ##::::::
+::::::......::::::.......:::::::..:::::::......::::..:::::..:::..:::::..:::::::
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+EOF
+        echo
+        echo
+}
+
+# Affiche le logo uniquement si on n'est pas en mode "automatique"
+if [[ "$LAUNCH_MODE" != "automatique" ]]; then
+    print_logo
 fi
 
+###############################################################################
+# Affichage récapitulatif à la sortie
+###############################################################################
+trap 'print_summary_table' EXIT
+
+###############################################################################
+# Vérifications initiales
+###############################################################################
 if [[ ! -f "$JOBS_FILE" ]]; then
-  echo -e "${COLOR_RED}ERREUR:${COLOR_RESET} fichier obligatoire '$JOBS_FILE' absent."
-  echo "Annulation de la tâche."
-  exit 3
+    echo "❌ Fichier jobs introuvable : $JOBS_FILE" >&2
+    ERROR_CODE=1
+    exit $ERROR_CODE
+fi
+if [[ ! -r "$JOBS_FILE" ]]; then
+    echo "❌ Fichier jobs non lisible : $JOBS_FILE" >&2
+    ERROR_CODE=2
+    exit $ERROR_CODE
 fi
 
-if [[ ! -d "$LOG_DIR" ]]; then
-  echo "Création dossier logs : $LOG_DIR"
-  mkdir -p "$LOG_DIR" || { echo -e "${COLOR_RED}ERREUR:${COLOR_RESET} impossible de créer $LOG_DIR"; exit 4; }
-  chmod 750 "$LOG_DIR"
+# **Vérification ajoutée pour TMP_RCLONE**
+if [[ ! -d "$TMP_RCLONE" ]]; then
+    echo "❌ Dossier temporaire rclone introuvable : $TMP_RCLONE" >&2
+    ERROR_CODE=7
+    exit $ERROR_CODE
 fi
 
-# Ligne vide tout début affichage
-echo
+# Charger la liste des remotes configurés dans rclone
+mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 
-# Affichage date début
-START_TS=$(date '+%Y-%m-%d à %H:%M:%S')
-printf "%-20s : %s\n" "Tâche initiée le" "$START_TS"
-echo
+###############################################################################
+# Pré-vérification de tous les jobs
+###############################################################################
+while IFS= read -r line; do
+    [[ -z "$line" || "$line" =~ ^# ]] && continue
+    IFS='|' read -r src dst <<< "$line"
 
-job_count=0
-success_count=0
-fail_count=0
-INFO_LOG=""
-DEBUG_LOG=""
+    src="${src#"${src%%[![:space:]]*}"}"
+    src="${src%"${src##*[![:space:]]}"}"
+    dst="${dst#"${dst%%[![:space:]]*}"}"
+    dst="${dst%"${dst##*[![:space:]]}"}"
 
-while IFS='' read -r rawline || [[ -n "$rawline" ]]; do
-  line="${rawline%%#*}"
-  line="$(trim "$line")"
-  [[ -z "$line" ]] && continue
+    if [[ -z "$src" || -z "$dst" ]]; then
+        echo "❌ Ligne invalide dans $JOBS_FILE : $line" >&2
+        ERROR_CODE=3
+        exit $ERROR_CODE
+    fi
 
-  if [[ "$line" == *'|'* ]]; then
-    local_path="${line%%|*}"
-    remote_path="${line#*|}"
-  else
-    local_path="$(awk '{print $1; exit}' <<<"$line")"
-    remote_path="$(awk '{$1=""; sub(/^ /,""); print; exit}' <<<"$line")"
-  fi
-  local_path="$(trim "$local_path")"
-  remote_path="$(trim "$remote_path")"
+    if [[ ! -d "$src" ]]; then
+        echo "❌ Dossier source introuvable ou inaccessible : $src" >&2
+        ERROR_CODE=4
+        exit $ERROR_CODE
+    fi
 
-  ((job_count++))
-  echo "---------------------------------------------"
-  echo "Job #$job_count :"
-  echo "  local : '$local_path'"
-  echo "  remote: '$remote_path'"
-
-  if [[ ! -e "$local_path" ]]; then
-    echo -e "${COLOR_RED}ERREUR:${COLOR_RESET} chemin local inexistant : $local_path"
-    echo "Annulation de la procédure."
-    exit 5
-  fi
-  if [[ ! -r "$local_path" ]]; then
-    echo -e "${COLOR_RED}ERREUR:${COLOR_RESET} pas de lecture sur : $local_path"
-    echo "Annulation de la procédure."
-    exit 6
-  fi
-
-  TS="$(date '+%Y-%m-%d_%H-%M-%S')"
-  DEBUG_LOG="$LOG_DIR/rclone_DEBUG_${TS}.log"
-  INFO_LOG="$LOG_DIR/rclone_INFO_${TS}.log"
-
-  : > "$DEBUG_LOG" || { echo -e "${COLOR_RED}ERREUR:${COLOR_RESET} impossible de créer $DEBUG_LOG"; exit 7; }
-  : > "$INFO_LOG"  || { echo -e "${COLOR_RED}ERREUR:${COLOR_RESET} impossible de créer $INFO_LOG"; exit 7; }
-
-  print_rclone_cmd "$local_path" "$remote_path" "$DRY_RUN_ARG"
-  echo
-
-  extra_opts=()
-  if [[ -n "$DRY_RUN_ARG" ]]; then
-    extra_opts+=("$DRY_RUN_ARG")
-  fi
-
-  rclone sync "$local_path" "$remote_path" \
-    --log-level DEBUG \
-    --log-file "$DEBUG_LOG" \
-    "${RCLONE_OPTS[@]}" \
-    "${extra_opts[@]}" 2>&1 \
-    | awk -v green="$COLOR_GREEN" -v red="$COLOR_RED" -v reset="$COLOR_RESET" '
-        /\[(INFO|NOTICE|WARNING|ERROR)\]/ {
-          ts=strftime("%Y-%m-%d %H:%M:%S")
-          line=$0
-          if (line ~ /Copied \(|Updated /) {
-            print ts, green line reset
-          } else if (line ~ /Deleted/) {
-            print ts, red line reset
-          } else {
-            print ts, line
-          }
-          fflush()
-        }' \
-    | tee -a "$INFO_LOG"
-
-  rc=${PIPESTATUS[0]:-0}
-  if [[ $rc -eq 0 ]]; then
-    echo -e "Job #$job_count terminé avec ${COLOR_GREEN}succès${COLOR_RESET} (code $rc)."
-    ((success_count++))
-  else
-    echo -e "Job #$job_count terminé avec ${COLOR_RED}échec${COLOR_RESET} (code $rc). Voir $DEBUG_LOG."
-    echo "Annulation de la procédure."
-    exit 8
-  fi
-  echo
+    if [[ "$dst" == *":"* ]]; then
+        remote_name="${dst%%:*}"
+        if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote_name} " ]]; then
+            echo "❌ Remote inconnu dans rclone : $remote_name" >&2
+            ERROR_CODE=5
+            exit $ERROR_CODE
+        fi
+    fi
 done < "$JOBS_FILE"
 
-# Affichage date fin
-END_TS=$(date '+%Y-%m-%d à %H:%M:%S')
-printf "%-20s : %s\n" "Tâche terminée le" "$END_TS"
-echo
+###############################################################################
+# Exécution des jobs
+###############################################################################
+while IFS= read -r line; do
+    [[ -z "$line" || "$line" =~ ^# ]] && continue
 
-# ==== FUTUR CODE EMAIL ====
-if $AUTO_MODE; then
-  # Espace réservé pour futur envoi d'email
-  # Exemple d'utilisation future :
-  # send_email "$INFO_LOG" "$DEBUG_LOG" "$job_count" "$success_count" "$fail_count" "$START_TS" "$END_TS"
-  :
-fi
-# ===========================
+    IFS='|' read -r src dst <<< "$line"
+    src="${src#"${src%%[![:space:]]*}"}"
+    src="${src%"${src##*[![:space:]]}"}"
+    dst="${dst#"${dst%%[![:space:]]*}"}"
+    dst="${dst%"${dst##*[![:space:]]}"}"
 
-echo "Nettoyage des logs plus anciens que $KEEP_DAYS jours dans $LOG_DIR..."
-find "$LOG_DIR" -type f -name 'rclone_*_*.log' -mtime +"$KEEP_DAYS" -print -delete || true
+    echo "=== Synchronisation : $src → $dst ==="
+    echo "=== Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE) ==="
+        echo
 
-echo "============================================="
-printf "%-12s %d\n" "Total jobs:" "$job_count"
-printf "%-12s ${COLOR_GREEN}%d${COLOR_RESET}\n" "Succès:" "$success_count"
-printf "%-12s ${COLOR_RED}%d${COLOR_RESET}\n" "Échecs:" "$fail_count"
-echo
-printf "%-12s %s\n" "Log INFO:"  "$INFO_LOG"
-printf "%-12s %s\n" "Log DEBUG:" "$DEBUG_LOG"
-echo "============================================="
+    # Exécution avec colorisation (awk) — set -o pipefail permet de récupérer correctement le code retour de rclone
+    if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" 2>&1 | colorize; then
+        ERROR_CODE=6
+    fi
 
-exit 0
+    ((JOBS_COUNT++))
+    echo
+done < "$JOBS_FILE"
+
+exit $ERROR_CODE
