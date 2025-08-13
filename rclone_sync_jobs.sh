@@ -24,6 +24,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"   # Modifier ici si besoin
 TMP_RCLONE="/mnt/tmp_rclone"
 END_REPORT_TEXT="--- Fin de rapport ---"
+TERM_WIDTH_DEFAULT=80   # Largeur par défaut pour les affichages fixes
 
 # Couleurs : on utilise $'...' pour insérer le caractère ESC réel
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
@@ -63,7 +64,7 @@ LAUNCH_MODE="manuel"
 print_centered_line() {
     local line="$1"
     local term_width
-    term_width=$(tput cols 2>/dev/null || echo 80)  # Défaut 80 si échec
+    term_width=$(tput cols 2>/dev/null || echo "$TERM_WIDTH_DEFAULT")  # Défaut 80 si échec
 
     # Calcul longueur visible (sans séquences d’échappement)
     # Ici la ligne n’a pas de couleur, donc simple :
@@ -125,7 +126,7 @@ print_summary_table() {
     END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
     echo
     echo "INFOS"
-    printf '%*s\n' 80 '' | tr ' ' '='   # ligne = de 80 caractères
+    printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='   # ligne = de 80 caractères
 
     print_aligned "Date / Heure début" "$START_TIME"
     print_aligned "Date / Heure fin" "$END_TIME"
@@ -133,12 +134,12 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
 
-    printf '%*s\n' 80 '' | tr ' ' '='   # ligne = de 80 caractères
+    printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='   # ligne = de 80 caractères
 
-	 
+  
 # Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
     local text="$END_REPORT_TEXT"
-    local term_width=80
+    local term_width="$TERM_WIDTH_DEFAULT"
     local text_len=${#text}
     local pad_total=$((term_width - text_len))
     local pad_side=0
@@ -218,19 +219,19 @@ trap 'print_summary_table' EXIT
 # Vérifications initiales
 ###############################################################################
 if [[ ! -f "$JOBS_FILE" ]]; then
-    echo "❌ Fichier jobs introuvable : $JOBS_FILE" >&2
+    echo "✗ Fichier jobs introuvable : $JOBS_FILE" >&2
     ERROR_CODE=1
     exit $ERROR_CODE
 fi
 if [[ ! -r "$JOBS_FILE" ]]; then
-    echo "❌ Fichier jobs non lisible : $JOBS_FILE" >&2
+    echo "✗ Fichier jobs non lisible : $JOBS_FILE" >&2
     ERROR_CODE=2
     exit $ERROR_CODE
 fi
 
 # **Vérification ajoutée pour TMP_RCLONE**
 if [[ ! -d "$TMP_RCLONE" ]]; then
-    echo "❌ Dossier temporaire rclone introuvable : $TMP_RCLONE" >&2
+    echo "✗ Dossier temporaire rclone introuvable : $TMP_RCLONE" >&2
     ERROR_CODE=7
     exit $ERROR_CODE
 fi
@@ -251,13 +252,13 @@ while IFS= read -r line; do
     dst="${dst%"${dst##*[![:space:]]}"}"
 
     if [[ -z "$src" || -z "$dst" ]]; then
-        echo "❌ Ligne invalide dans $JOBS_FILE : $line" >&2
+        echo "✗ Ligne invalide dans $JOBS_FILE : $line" >&2
         ERROR_CODE=3
         exit $ERROR_CODE
     fi
 
     if [[ ! -d "$src" ]]; then
-        echo "❌ Dossier source introuvable ou inaccessible : $src" >&2
+        echo "✗ Dossier source introuvable ou inaccessible : $src" >&2
         ERROR_CODE=4
         exit $ERROR_CODE
     fi
@@ -265,7 +266,7 @@ while IFS= read -r line; do
     if [[ "$dst" == *":"* ]]; then
         remote_name="${dst%%:*}"
         if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote_name} " ]]; then
-            echo "❌ Remote inconnu dans rclone : $remote_name" >&2
+            echo "✗ Remote inconnu dans rclone : $remote_name" >&2
             ERROR_CODE=5
             exit $ERROR_CODE
         fi
