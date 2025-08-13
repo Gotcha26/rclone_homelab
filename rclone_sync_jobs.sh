@@ -66,7 +66,14 @@ LAUNCH_MODE="manuel"
 ###############################################################################
 # Fonction LOG pour les journaux
 ###############################################################################
-mkdir -p "$LOG_DIR"
+# Création conditionnelle du répertoire LOG_DIR
+if [[ ! -d "$LOG_DIR" ]]; then
+    if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
+        echo "${RED}✗ Impossible de créer le dossier de logs : $LOG_DIR${RESET}" >&2
+        ERROR_CODE=8
+        exit $ERROR_CODE
+    fi
+fi
 
 ###############################################################################
 # Fonction pour centrer une ligne avec des '=' de chaque côté + coloration
@@ -143,8 +150,10 @@ print_summary_table() {
     print_aligned "Mode de lancement" "$LAUNCH_MODE"
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
+    print_aligned "Log INFO" "$LOG_FILE_INFO"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='   # ligne = de 80 caractères
+
 
   
 # Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
