@@ -317,7 +317,7 @@ while IFS= read -r line; do
 	fi
 
 	# Exécution DEBUG (en arrière-plan, pour capture complète)
-	rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
+	if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
 		--log-level DEBUG --log-file "$LOG_FILE_DEBUG" >/dev/null 2>&1
         ERROR_CODE=6
     fi
