@@ -25,6 +25,11 @@ JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"   # Modifier ici si besoin
 TMP_RCLONE="/mnt/tmp_rclone"
 END_REPORT_TEXT="--- Fin de rapport ---"
 TERM_WIDTH_DEFAULT=80   # Largeur par défaut pour les affichages fixes
+LOG_DIR="/var/log/rclone"					# Emplacement des logs
+LOG_RETENTION_DAYS=15						#Durée de conservation des logs
+LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
+LOG_FILE_INFO="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_INFO.log"
+LOG_FILE_DEBUG="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_DEBUG.log"
 
 # Couleurs : on utilise $'...' pour insérer le caractère ESC réel
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
@@ -57,6 +62,11 @@ END_TIME=""
 ERROR_CODE=0
 JOBS_COUNT=0
 LAUNCH_MODE="manuel"
+
+###############################################################################
+# Fonction LOG pour les journaux
+###############################################################################
+mkdir -p "$LOG_DIR"
 
 ###############################################################################
 # Fonction pour centrer une ligne avec des '=' de chaque côté + coloration
@@ -290,12 +300,26 @@ while IFS= read -r line; do
     echo
 
     # Exécution avec colorisation (awk) — set -o pipefail permet de récupérer correctement le code retour de rclone
-    if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" 2>&1 | colorize; then
+	# Exécution rclone avec double log (INFO et DEBUG)
+	if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
+		--log-level INFO --log-file "$LOG_FILE_INFO" \
+		2>&1 | tee -a "$LOG_FILE_INFO" | colorize; then
+		ERROR_CODE=6
+	fi
+
+	# Exécution DEBUG (en arrière-plan, pour capture complète)
+	rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
+		--log-level DEBUG --log-file "$LOG_FILE_DEBUG" >/dev/null 2>&1
         ERROR_CODE=6
     fi
 
     ((JOBS_COUNT++))
     echo
 done < "$JOBS_FILE"
+
+# Purge des logs si rclone a réussi
+if [[ $ERROR_CODE -eq 0 ]]; then
+    find "$LOG_DIR" -type f -name "rclone_log_*" -mtime +$LOG_RETENTION_DAYS -delete
+fi
 
 exit $ERROR_CODE
