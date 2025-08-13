@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.10 - 2025-08-09
+# Version : 1.20 - 2025-08-13
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -304,8 +304,8 @@ while IFS= read -r line; do
     dst="${dst#"${dst%%[![:space:]]*}"}"
     dst="${dst%"${dst##*[![:space:]]}"}"
 
-    print_centered_line "=== Synchronisation : $src → $dst ==="
-    print_centered_line "=== Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE) ==="
+    print_centered_line "Synchronisation : $src → $dst"
+    print_centered_line "Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE)"
     echo
 
     # Exécution avec colorisation (awk) — set -o pipefail permet de récupérer correctement le code retour de rclone
