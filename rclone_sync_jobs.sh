@@ -263,7 +263,10 @@ mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 ###############################################################################
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
-    IFS='|' read -r src dst <<< "$line"
+
+	# Nettoyage de la ligne : trim + uniformisation séparateurs
+	line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
+	IFS='|' read -r src dst <<< "$line"
 
     src="${src#"${src%%[![:space:]]*}"}"
     src="${src%"${src##*[![:space:]]}"}"
@@ -298,7 +301,10 @@ done < "$JOBS_FILE"
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
-    IFS='|' read -r src dst <<< "$line"
+	# Nettoyage de la ligne : trim + uniformisation séparateurs
+	line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
+	IFS='|' read -r src dst <<< "$line"
+
     src="${src#"${src%%[![:space:]]*}"}"
     src="${src%"${src##*[![:space:]]}"}"
     dst="${dst#"${dst%%[![:space:]]*}"}"
