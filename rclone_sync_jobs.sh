@@ -309,18 +309,18 @@ while IFS= read -r line; do
     echo
 
     # Exécution avec colorisation (awk) — set -o pipefail permet de récupérer correctement le code retour de rclone
-	# Exécution rclone avec double log (INFO et DEBUG)
+	# Première exécution : affichage + log INFO
 	if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
-		--log-level INFO --log-file "$LOG_FILE_INFO" \
+		--log-level INFO \
 		2>&1 | tee -a "$LOG_FILE_INFO" | colorize; then
 		ERROR_CODE=6
 	fi
 
-	# Exécution DEBUG (en arrière-plan, pour capture complète)
+	# Deuxième exécution DEBUG (silencieuse, complète dans log DEBUG)
 	if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
-		--log-level DEBUG --log-file "$LOG_FILE_DEBUG" >/dev/null 2>&1
-        ERROR_CODE=6
-    fi
+		--log-level DEBUG --log-file "$LOG_FILE_DEBUG" >/dev/null 2>&1; then
+		ERROR_CODE=6
+	fi
 
     ((JOBS_COUNT++))
     echo
