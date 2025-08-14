@@ -72,5 +72,10 @@ Argument | Explication
 - Coloration synthaxique dans l'email html
 - Joindre le fichier "DEBUG" uniquement en cas d'erreur dans l'exécution de rclone (pas de fichier à joindre en cas d'erreur autre)
 
-## Petite info
-*Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).
+## Petites infos
+*Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).  
+NotePad++ (avec plugin "Compare")  
+https://dillinger.io (pour la rédaction du présent Readme)  
+https://stackedit.io (pour l'aide sur le markedown) Je pourrais me passer de dellinger en plus...  
+https://emojikeyboard.org/ (Pour les émojis)  
+https://www.desmoulins.fr (Pour ma bannière ASCII)
