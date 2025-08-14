@@ -393,13 +393,20 @@ while IFS= read -r line; do
     MAIL_CONTENT+="</pre>"
 done < "$JOBS_FILE"
 
+### Partie emails
+
 # Pièces jointes : log INFO (toujours), DEBUG (en cas d’erreur globale)
 ATTACHMENTS+=("$LOG_FILE_INFO")
 if ! $MAIL_SUBJECT_OK; then
 	ATTACHMENTS+=("$LOG_FILE_DEBUG")
 fi
 
-### Partie emails
+# Vérification présence msmtp (ne stoppe pas le script)
+if ! command -v msmtp >/dev/null 2>&1; then
+    echo "${ORANGE}⚠ Attention : msmtp n'est pas installé ou introuvable dans le PATH.${RESET}" >&2
+    echo "Le rapport par e-mail ne sera pas envoyé." >&2
+    ERROR_CODE=9
+fi
 
 MAIL_CONTENT+="<p>– Fin du message automatique –</p></body></html>"
 
@@ -441,7 +448,9 @@ done
 echo "--BOUNDARY123--" >> "$MAIL"
 
 # === Envoi du mail ===
-msmtp -t < "$MAIL"
+if command -v msmtp >/dev/null 2>&1; then
+    msmtp -t < "$MAIL"
+fi
 
 # === Nettoyage ===
 rm -f "$MAIL"
