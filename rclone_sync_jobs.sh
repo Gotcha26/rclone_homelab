@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.20 - 2025-08-13
+# Version : 1.30 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -30,6 +30,9 @@ LOG_RETENTION_DAYS=15						#Durée de conservation des logs
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 LOG_FILE_INFO="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_INFO.log"
 LOG_FILE_DEBUG="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_DEBUG.log"
+DATE="$(date '+%Y-%m-%d_%H-%M-%S')"
+NOW="$(date '+%Y/%m/%d %H:%M:%S')"
+MAIL="${TMP_RCLONE}/rclone_report.mail"
 
 # Couleurs : on utilise $'...' pour insérer le caractère ESC réel
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
@@ -62,6 +65,34 @@ END_TIME=""
 ERROR_CODE=0
 JOBS_COUNT=0
 LAUNCH_MODE="manuel"
+
+###############################################################################
+# Fonction MAIL
+###############################################################################
+
+# === Initialisation des données pour le mail ===
+MAIL_SUBJECT_OK=true
+MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
+MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
+
+# === Fonction HTML pour logs partiels ===
+log_to_html() {
+  local file="$1"
+  tail -n 500 "$file" | while IFS= read -r line; do
+    safe_line=$(echo "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+    if [[ "$line" == *"Deleted"* ]]; then
+      echo "<span style='color:red;'>$safe_line</span><br>"
+    elif [[ "$line" == *"Copied"* ]]; then
+      echo "<span style='color:blue;'>$safe_line</span><br>"
+    elif [[ "$line" == *"Updated"* ]]; then
+      echo "<span style='color:orange;'>$safe_line</span><br>"
+    elif [[ "$line" == *"NOTICE"* ]]; then
+      echo "<b>$safe_line</b><br>"
+    else
+      echo "$safe_line<br>"
+    fi
+  done
+}
 
 ###############################################################################
 # Fonction LOG pour les journaux
@@ -298,6 +329,9 @@ done < "$JOBS_FILE"
 ###############################################################################
 # Exécution des jobs
 ###############################################################################
+# Initialisation des pièces jointes (évite erreur avec set -u)
+declare -a ATTACHMENTS=()
+
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
@@ -314,23 +348,105 @@ while IFS= read -r line; do
     print_centered_line "Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE)"
     echo
 
-    # Exécution avec colorisation (awk) — set -o pipefail permet de récupérer correctement le code retour de rclone
-	# Première exécution : affichage + log INFO
+    # Exécution avec colorisation (awk) — récupération immédiate du code retour rclone
 	if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
 		--log-level INFO \
 		2>&1 | tee -a "$LOG_FILE_INFO" | colorize; then
-		ERROR_CODE=6
+		:
 	fi
+	job_rc=${PIPESTATUS[0]}   # Code de rclone dans le pipeline INFO
+	(( job_rc != 0 )) && ERROR_CODE=6
 
 	# Deuxième exécution DEBUG (silencieuse, complète dans log DEBUG)
 	if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
 		--log-level DEBUG --log-file "$LOG_FILE_DEBUG" >/dev/null 2>&1; then
-		ERROR_CODE=6
+		:
 	fi
+	debug_rc=$?
+	(( debug_rc != 0 )) && ERROR_CODE=6
 
     ((JOBS_COUNT++))
     echo
+	
+    EXIT_CODE=$job_rc
+    (( EXIT_CODE != 0 )) && MAIL_SUBJECT_OK=false
+
+    # Nettoyage log INFO (garde une seule ligne NOTICE)
+    tmp_log="$(mktemp)"
+    grep -v "NOTICE" "$LOG_FILE_INFO" > "$tmp_log" || true
+    last_notice=$(grep "NOTICE" "$LOG_FILE_INFO" | tail -n 1)
+    [ -n "$last_notice" ] && echo "$last_notice" >> "$tmp_log"
+    mv "$tmp_log" "$LOG_FILE_INFO"
+
+    # Compteurs avec grep -E pour expressions régulières
+    COPIED_COUNT=$(grep -E -c "Copied (new|replaced)" "$LOG_FILE_INFO" || true)
+    UPDATED_COUNT=$(grep -c "Updated" "$LOG_FILE_INFO" || true)
+
+    # Ajout au contenu du mail (utilisation de $src / $dst)
+    MAIL_CONTENT+="<hr><h3>📁 $src ➜ $dst</h3>"
+    MAIL_CONTENT+="<pre><b>📅 Démarrée :</b> $NOW"
+    MAIL_CONTENT+="<br><b>Code retour :</b> $EXIT_CODE"
+    MAIL_CONTENT+="<br><b>Fichiers copiés :</b> $COPIED_COUNT"
+    MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $UPDATED_COUNT</pre>"
+    MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
+    MAIL_CONTENT+="$(log_to_html "$LOG_FILE_INFO")"
+    MAIL_CONTENT+="</pre>"
 done < "$JOBS_FILE"
+
+# Pièces jointes : log INFO (toujours), DEBUG (en cas d’erreur globale)
+ATTACHMENTS+=("$LOG_FILE_INFO")
+if ! $MAIL_SUBJECT_OK; then
+	ATTACHMENTS+=("$LOG_FILE_DEBUG")
+fi
+
+### Partie emails
+
+MAIL_CONTENT+="<p>– Fin du message automatique –</p></body></html>"
+
+# === Sujet du mail global ===
+if $MAIL_SUBJECT_OK; then
+  SUBJECT="✅ Sauvegardes vers OneDrive réussies"
+else
+  SUBJECT="❌ Des erreurs lors des sauvegardes vers OneDrive"
+fi
+
+# === Création du mail ===
+{
+  echo "From: Sauvegarde Rclone <spambiengentil@gmail.com>"
+  echo "To: quelleheureestilsvp@gmail.com"
+  echo "Date: $(date -R)"
+  echo "Subject: $SUBJECT"
+  echo "MIME-Version: 1.0"
+  echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
+  echo
+  echo "--BOUNDARY123"
+  echo "Content-Type: text/html; charset=UTF-8"
+  echo
+  echo "$MAIL_CONTENT"
+} > "$MAIL"
+
+# === Ajout des pièces jointes ===
+for file in "${ATTACHMENTS[@]}"; do
+  {
+    echo
+    echo "--BOUNDARY123"
+    echo "Content-Type: text/plain; name=\"$(basename "$file")\""
+    echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
+    echo "Content-Transfer-Encoding: base64"
+    echo
+    base64 "$file"
+  } >> "$MAIL"
+done
+
+echo "--BOUNDARY123--" >> "$MAIL"
+
+# === Envoi du mail ===
+msmtp -t < "$MAIL"
+
+# === Nettoyage ===
+rm -f "$MAIL"
+
+### /Partie emails
 
 # Purge des logs si rclone a réussi
 if [[ $ERROR_CODE -eq 0 ]]; then
