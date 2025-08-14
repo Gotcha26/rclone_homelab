@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.30 - 2025-08-14
+# Version : 1.31 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -11,6 +11,7 @@
 #
 #   Les lignes commençant par # ou vides sont ignorées.
 #   L'option --auto permet d'indiquer un lancement automatique.
+#   L'option --mail permet d'envoyer un rapport par e-mail.
 #
 #   En fin d'exécution, un tableau récapitulatif avec bordures est affiché.
 ###############################################################################
@@ -65,7 +66,7 @@ END_TIME=""
 ERROR_CODE=0
 JOBS_COUNT=0
 LAUNCH_MODE="manuel"
-
+SEND_MAIL=false   # <- par défaut, pas d'envoi d'email
 ###############################################################################
 # Fonction MAIL
 ###############################################################################
@@ -141,6 +142,10 @@ for arg in "$@"; do
     case "$arg" in
         --auto)
             LAUNCH_MODE="automatique"
+            shift
+            ;;
+        --mail)
+            SEND_MAIL=true
             shift
             ;;
         *)
@@ -382,82 +387,86 @@ while IFS= read -r line; do
     COPIED_COUNT=$(grep -E -c "Copied (new|replaced)" "$LOG_FILE_INFO" || true)
     UPDATED_COUNT=$(grep -c "Updated" "$LOG_FILE_INFO" || true)
 
-    # Ajout au contenu du mail (utilisation de $src / $dst)
-    MAIL_CONTENT+="<hr><h3>📁 $src ➜ $dst</h3>"
-    MAIL_CONTENT+="<pre><b>📅 Démarrée :</b> $NOW"
-    MAIL_CONTENT+="<br><b>Code retour :</b> $EXIT_CODE"
-    MAIL_CONTENT+="<br><b>Fichiers copiés :</b> $COPIED_COUNT"
-    MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $UPDATED_COUNT</pre>"
-    MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
-    MAIL_CONTENT+="$(log_to_html "$LOG_FILE_INFO")"
-    MAIL_CONTENT+="</pre>"
+    if $SEND_MAIL; then
+        MAIL_CONTENT+="<hr><h3>📁 $src ➜ $dst</h3>"
+        MAIL_CONTENT+="<pre><b>📅 Démarrée :</b> $NOW"
+        MAIL_CONTENT+="<br><b>Code retour :</b> $EXIT_CODE"
+        MAIL_CONTENT+="<br><b>Fichiers copiés :</b> $COPIED_COUNT"
+        MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $UPDATED_COUNT</pre>"
+        MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
+        MAIL_CONTENT+="$(log_to_html "$LOG_FILE_INFO")"
+        MAIL_CONTENT+="</pre>"
+    fi
 done < "$JOBS_FILE"
 
-### Partie emails
+###############################################################################
+# Partie email conditionnelle
+###############################################################################
 
 # Pièces jointes : log INFO (toujours), DEBUG (en cas d’erreur globale)
-ATTACHMENTS+=("$LOG_FILE_INFO")
-if ! $MAIL_SUBJECT_OK; then
-	ATTACHMENTS+=("$LOG_FILE_DEBUG")
+if $SEND_MAIL; then
+    ATTACHMENTS+=("$LOG_FILE_INFO")
+    if ! $MAIL_SUBJECT_OK; then
+        ATTACHMENTS+=("$LOG_FILE_DEBUG")
+    fi
+
+	# Vérification présence msmtp (ne stoppe pas le script)
+    if ! command -v msmtp >/dev/null 2>&1; then
+        echo "${ORANGE}⚠ Attention : msmtp n'est pas installé ou introuvable dans le PATH.${RESET}" >&2
+        echo "Le rapport par e-mail ne sera pas envoyé." >&2
+        ERROR_CODE=9
+    else
+        MAIL_CONTENT+="<p>– Fin du message automatique –</p></body></html>"
+		
+		# === Sujet du mail global ===
+        if $MAIL_SUBJECT_OK; then
+          SUBJECT="✅ Sauvegardes vers OneDrive réussies"
+        else
+          SUBJECT="❌ Des erreurs lors des sauvegardes vers OneDrive"
+        fi
+		
+        {
+		
+		  # === Création du mail ===
+          echo "From: Sauvegarde Rclone <spambiengentil@gmail.com>"
+          echo "To: quelleheureestilsvp@gmail.com"
+          echo "Date: $(date -R)"
+          echo "Subject: $SUBJECT"
+          echo "MIME-Version: 1.0"
+          echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
+          echo
+          echo "--BOUNDARY123"
+          echo "Content-Type: text/html; charset=UTF-8"
+          echo
+          echo "$MAIL_CONTENT"
+        } > "$MAIL"
+
+        # === Ajout des pièces jointes ===
+		for file in "${ATTACHMENTS[@]}"; do
+          {
+            echo
+            echo "--BOUNDARY123"
+            echo "Content-Type: text/plain; name=\"$(basename "$file")\""
+            echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
+            echo "Content-Transfer-Encoding: base64"
+            echo
+            base64 "$file"
+          } >> "$MAIL"
+        done
+        echo "--BOUNDARY123--" >> "$MAIL"
+
+		# === Envoi du mail ===
+        msmtp -t < "$MAIL"
+
+		# === Nettoyage ===
+        rm -f "$MAIL"
+
+    fi
 fi
 
-# Vérification présence msmtp (ne stoppe pas le script)
-if ! command -v msmtp >/dev/null 2>&1; then
-    echo "${ORANGE}⚠ Attention : msmtp n'est pas installé ou introuvable dans le PATH.${RESET}" >&2
-    echo "Le rapport par e-mail ne sera pas envoyé." >&2
-    ERROR_CODE=9
-fi
-
-MAIL_CONTENT+="<p>– Fin du message automatique –</p></body></html>"
-
-# === Sujet du mail global ===
-if $MAIL_SUBJECT_OK; then
-  SUBJECT="✅ Sauvegardes vers OneDrive réussies"
-else
-  SUBJECT="❌ Des erreurs lors des sauvegardes vers OneDrive"
-fi
-
-# === Création du mail ===
-{
-  echo "From: Sauvegarde Rclone <spambiengentil@gmail.com>"
-  echo "To: quelleheureestilsvp@gmail.com"
-  echo "Date: $(date -R)"
-  echo "Subject: $SUBJECT"
-  echo "MIME-Version: 1.0"
-  echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
-  echo
-  echo "--BOUNDARY123"
-  echo "Content-Type: text/html; charset=UTF-8"
-  echo
-  echo "$MAIL_CONTENT"
-} > "$MAIL"
-
-# === Ajout des pièces jointes ===
-for file in "${ATTACHMENTS[@]}"; do
-  {
-    echo
-    echo "--BOUNDARY123"
-    echo "Content-Type: text/plain; name=\"$(basename "$file")\""
-    echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
-    echo "Content-Transfer-Encoding: base64"
-    echo
-    base64 "$file"
-  } >> "$MAIL"
-done
-
-echo "--BOUNDARY123--" >> "$MAIL"
-
-# === Envoi du mail ===
-if command -v msmtp >/dev/null 2>&1; then
-    msmtp -t < "$MAIL"
-fi
-
-# === Nettoyage ===
-rm -f "$MAIL"
-
-### /Partie emails
-
-# Purge des logs si rclone a réussi
+###############################################################################
+# Purge des logs si succès
+###############################################################################
 if [[ $ERROR_CODE -eq 0 ]]; then
     find "$LOG_DIR" -type f -name "rclone_log_*" -mtime +$LOG_RETENTION_DAYS -delete
 fi
