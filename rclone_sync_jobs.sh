@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.35 - 2025-08-14
+# Version : 1.36 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -450,25 +450,30 @@ if $SEND_MAIL; then
         ATTACHMENTS+=("$LOG_FILE_DEBUG")
     fi
 
-	# Vérification présence msmtp (ne stoppe pas le script)
+    # Vérification présence msmtp (ne stoppe pas le script)
     if ! command -v msmtp >/dev/null 2>&1; then
         echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
         ERROR_CODE=9
     else
         MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
 
-		# === Sujet du mail global modifié ===
+        # === Détermination du sujet brut ===
         if ! $MAIL_SUBJECT_OK; then
-            SUBJECT="$MSG_EMAIL_FAIL"
+            SUBJECT_RAW="$MSG_EMAIL_FAIL"
         elif [[ "$NO_CHANGES_ALL" == true ]]; then
-            SUBJECT="$MSG_MAIL_SUSPECT"
+            SUBJECT_RAW="$MSG_MAIL_SUSPECT"
         else
-            SUBJECT="$MSG_EMAIL_SUCCESS"
+            SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
         fi
 
-        {
+        # === Encodage MIME UTF-8 Base64 du sujet ===
+        encode_subject() {
+            local raw="$1"
+            printf "%s" "$raw" | base64 | tr -d '\n'
+        }
+        SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
 
-		  # === Création du mail ===
+        {
           echo "From: RCLONE"  # Laisser msmtp gérer l'expéditeur configuré
           echo "To: $MAIL_TO"
           echo "Date: $(date -R)"
@@ -483,7 +488,7 @@ if $SEND_MAIL; then
         } > "$MAIL"
 
         # === Ajout des pièces jointes ===
-		for file in "${ATTACHMENTS[@]}"; do
+        for file in "${ATTACHMENTS[@]}"; do
           {
             echo
             echo "--BOUNDARY123"
@@ -497,7 +502,7 @@ if $SEND_MAIL; then
 
         echo "--BOUNDARY123--" >> "$MAIL"
 
-		# === Envoi du mail ===
+        # === Envoi du mail ===
         msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
 
     fi
