@@ -12,9 +12,9 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ✅ Affiche des informations utiles mais compactes
 - ✅ Résume la tâche effectuée
 - ❌ Ecrit des logs séparés pour une lecture fluide (INFOS) ou précise (DEBUG)
-- ⚠️ Persistance limitée à 15 jours pour les fichiers de logs
+- ✅ Persistance limitée à 15 jours pour les fichiers de logs
 - ✅ Coloration synthaxique
-- ❌ Vous rend riche, beau et irresistible
+- ❗ Vous rend riche, beau et irresistible
 - ✅ Durée de conservation des logs : 15 jours par défaut.
 
 ## Utilisation
