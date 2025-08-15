@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.37 - 2025-08-14
+# Version : 1.38 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -157,7 +157,7 @@ print_centered_line() {
     fi
 
     # Coloriser uniquement la partie texte, pas les '='
-    printf "%s%s%s%s%s\n" "$pad_left" "$BG_BLUE_DARK" "$line" "$RESET" "$pad_right"
+    printf "%s%s %s %s%s\n" "$pad_left" "$BG_BLUE_DARK" "$line" "$RESET" "$pad_right"
 }
 
 ###############################################################################
@@ -227,6 +227,7 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
+	printf "$format" "Logs (DEBUG)" "$LOG_FILE_DEBUG"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
