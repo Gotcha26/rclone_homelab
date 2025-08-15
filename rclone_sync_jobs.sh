@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.38 - 2025-08-14
+# Version : 1.39 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -88,8 +88,8 @@ MSG_LOG_DIR_CREATE_FAIL="✗ Impossible de créer le dossier de logs"
 MSG_RCLONE_START="Synchronisation :"
 MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
-MSG_EMAIL_SUCCESS="✅ Sauvegardes vers OneDrive réussies"
-MSG_EMAIL_FAIL="❌ Des erreurs lors des sauvegardes vers OneDrive"
+MSG_EMAIL_SUCCESS="✅ Sauvegardes vers le cloud réussies"
+MSG_EMAIL_FAIL="❌ Des erreurs lors des sauvegardes vers le cloud"
 MSG_MAIL_SUSPECT="⚠ Synchronisation réussie mais aucun fichier transféré"
 
 ###############################################################################
@@ -227,7 +227,7 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
-	printf "$format" "Logs (DEBUG)" "$LOG_FILE_DEBUG"
+    print_aligned "Logs (DEBUG)" "$LOG_FILE_DEBUG"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
@@ -478,7 +478,6 @@ if $SEND_MAIL; then
         {
           FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
 		  echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
-
           echo "To: $MAIL_TO"
           echo "Date: $(date -R)"
           echo "Subject: $SUBJECT"
