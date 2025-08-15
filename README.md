@@ -65,7 +65,7 @@ Veuillez vous référer à cet utilitaire pour le configurer (très simple).
 ### Arguments 
 Ils sont optionnels au lancement de `rclone_sync_jobs.sh`
 Argument | Explication
-- | -
+--- | ---
   --auto        | Permet simplement de supprimer le logo (bannière).
   --dry-run     | Simule la synchronisation sans transférer ni supprimer de fichiers.
   -h, --help    | Affiche cette humble aide
