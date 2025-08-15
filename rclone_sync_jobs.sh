@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.34 - 2025-08-14
+# Version : 1.35 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -89,6 +89,7 @@ MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
 MSG_EMAIL_SUCCESS="✅ Sauvegardes vers OneDrive réussies"
 MSG_EMAIL_FAIL="❌ Des erreurs lors des sauvegardes vers OneDrive"
+MSG_MAIL_SUSPECT="⚠ Synchronisation réussie mais aucun fichier transféré"
 
 ###############################################################################
 # Fonction MAIL
@@ -183,6 +184,12 @@ if [[ -z "$MAIL_TO" ]]; then
     SEND_MAIL=false
 else
     SEND_MAIL=true
+fi
+
+# === Vérification non bloquante si --mail activé sans --mailto ===
+if $SEND_MAIL && [[ -z "$MAIL_TO" ]]; then
+    echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
+    SEND_MAIL=false
 fi
 
 ###############################################################################
@@ -411,6 +418,14 @@ while IFS= read -r line; do
     # Compteurs avec grep -E pour expressions régulières
     COPIED_COUNT=$(grep -E -c "Copied (new|replaced)" "$LOG_FILE_INFO" || true)
     UPDATED_COUNT=$(grep -c "Updated" "$LOG_FILE_INFO" || true)
+	
+    # === Ajout pour détecter si rien n'a été transféré ===
+    : "${NO_CHANGES_ALL:=true}"
+    if (( COPIED_COUNT == 0 && UPDATED_COUNT == 0 )); then
+        :
+    else
+        NO_CHANGES_ALL=false
+    fi
 
     if $SEND_MAIL; then
         MAIL_CONTENT+="<hr><h3>📁 $src ➜ $dst</h3>"
@@ -442,11 +457,13 @@ if $SEND_MAIL; then
     else
         MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
 
-		# === Sujet du mail global ===
-        if $MAIL_SUBJECT_OK; then
-          SUBJECT="$MSG_EMAIL_SUCCESS"
+		# === Sujet du mail global modifié ===
+        if ! $MAIL_SUBJECT_OK; then
+            SUBJECT="$MSG_EMAIL_FAIL"
+        elif [[ "$NO_CHANGES_ALL" == true ]]; then
+            SUBJECT="$MSG_MAIL_SUSPECT"
         else
-          SUBJECT="$MSG_EMAIL_FAIL"
+            SUBJECT="$MSG_EMAIL_SUCCESS"
         fi
 
         {
