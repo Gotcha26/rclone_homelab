@@ -478,6 +478,7 @@ if $SEND_MAIL; then
         {
           FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
 		  echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
+
           echo "To: $MAIL_TO"
           echo "Date: $(date -R)"
           echo "Subject: $SUBJECT"
