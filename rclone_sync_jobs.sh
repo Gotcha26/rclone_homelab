@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.36 - 2025-08-14
+# Version : 1.37 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -33,6 +33,7 @@ LOG_FILE_DEBUG="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_DEBUG.log"
 DATE="$(date '+%Y-%m-%d_%H-%M-%S')"
 NOW="$(date '+%Y/%m/%d %H:%M:%S')"
 MAIL="${TMP_RCLONE}/rclone_report.mail"
+MAIL_DISPLAY_NAME="RCLONE Script Backup"
 MAIL_TO=""   # valeur par défaut vide
 MAIL_TO_ABS="⚠ Option --mail activée mais aucun destinataire fourni (--mailto).
 Le rapport ne sera pas envoyé."
@@ -474,7 +475,8 @@ if $SEND_MAIL; then
         SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
 
         {
-          echo "From: RCLONE"  # Laisser msmtp gérer l'expéditeur configuré
+          FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+		  echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
           echo "To: $MAIL_TO"
           echo "Date: $(date -R)"
           echo "Subject: $SUBJECT"
