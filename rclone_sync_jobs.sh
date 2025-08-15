@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.31 - 2025-08-14
+# Version : 1.33 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -24,10 +24,9 @@ set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le co
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"   # Modifier ici si besoin
 TMP_RCLONE="/mnt/tmp_rclone"
-END_REPORT_TEXT="--- Fin de rapport ---"
 TERM_WIDTH_DEFAULT=80   # Largeur par défaut pour les affichages fixes
 LOG_DIR="/var/log/rclone"					# Emplacement des logs
-LOG_RETENTION_DAYS=15						#Durée de conservation des logs
+LOG_RETENTION_DAYS=15						# Durée de conservation des logs
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 LOG_FILE_INFO="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_INFO.log"
 LOG_FILE_DEBUG="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_DEBUG.log"
@@ -43,7 +42,7 @@ BG_BLUE_DARK=$'\e[44m'        # fond bleu foncé
 BG_YELLOW_DARK=$'\e[43m'      # fond jaune classique (visible partout, jaune "standard")
 BLACK=$'\e[30m'               # texte noir
 BOLD=$'\e[1m'                 # texte gras
-RESET=$'\e[0m'
+RESET=$'\e[0m'                # Effaceur
 
 # Options rclone (1 par ligne)
 RCLONE_OPTS=(
@@ -60,13 +59,34 @@ RCLONE_OPTS=(
     --log-level INFO
     --stats-log-level NOTICE
 )
-		   
+
 START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 END_TIME=""
 ERROR_CODE=0
 JOBS_COUNT=0
 LAUNCH_MODE="manuel"
 SEND_MAIL=false   # <- par défaut, pas d'envoi d'email
+
+###############################################################################
+# Messages (centralisés pour affichage et email)
+###############################################################################
+MSG_FILE_NOT_FOUND="✗ Fichier jobs introuvable"
+MSG_FILE_NOT_READ="✗ Fichier jobs non lisible"
+MSG_TMP_NOT_FOUND="✗ Dossier temporaire rclone introuvable"
+MSG_JOB_LINE_INVALID="✗ Ligne invalide dans le fichier jobs"
+MSG_SRC_NOT_FOUND="✗ Dossier source introuvable ou inaccessible"
+MSG_REMOTE_UNKNOWN="✗ Remote inconnu dans rclone"
+MSG_MSMTP_NOT_FOUND="⚠ Attention : msmtp n'est pas installé ou introuvable dans le PATH.
+Le rapport par e-mail ne sera pas envoyé."
+MSG_MSMTP_ERROR="⚠ Echec envoi email via msmtp"
+MSG_END_REPORT="--- Fin de rapport ---"
+MSG_LOG_DIR_CREATE_FAIL="✗ Impossible de créer le dossier de logs"
+MSG_RCLONE_START="Synchronisation :"
+MSG_TASK_LAUNCH="Tâche lancée le"
+MSG_EMAIL_END="– Fin du message automatique –"
+MSG_EMAIL_SUCCESS="✅ Sauvegardes vers OneDrive réussies"
+MSG_EMAIL_FAIL="❌ Des erreurs lors des sauvegardes vers OneDrive"
+
 ###############################################################################
 # Fonction MAIL
 ###############################################################################
@@ -101,7 +121,7 @@ log_to_html() {
 # Création conditionnelle du répertoire LOG_DIR
 if [[ ! -d "$LOG_DIR" ]]; then
     if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
-        echo "${RED}✗ Impossible de créer le dossier de logs : $LOG_DIR${RESET}" >&2
+        echo "${RED}$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR${RESET}" >&2
         ERROR_CODE=8
         exit $ERROR_CODE
     fi
@@ -113,17 +133,15 @@ fi
 print_centered_line() {
     local line="$1"
     local term_width
-    term_width=$(tput cols 2>/dev/null || echo "$TERM_WIDTH_DEFAULT")  # Défaut 80 si échec
+    term_width=$(tput cols 2>/dev/null || echo "$TERM_WIDTH_DEFAULT")
 
     # Calcul longueur visible (sans séquences d’échappement)
     # Ici la ligne n’a pas de couleur, donc simple :
     local line_len=${#line}
-
     local pad_total=$((term_width - line_len))
     local pad_side=0
     local pad_left=""
     local pad_right=""
-
     if (( pad_total > 0 )); then
         pad_side=$((pad_total / 2))
         # Si pad_total est impair, on met un '=' en plus à droite
@@ -179,21 +197,17 @@ print_summary_table() {
     END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
     echo
     echo "INFOS"
-    printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='   # ligne = de 80 caractères
-
+    printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
     print_aligned "Date / Heure début" "$START_TIME"
     print_aligned "Date / Heure fin" "$END_TIME"
     print_aligned "Mode de lancement" "$LAUNCH_MODE"
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
+    printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
-    printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='   # ligne = de 80 caractères
-
-
-  
 # Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
-    local text="$END_REPORT_TEXT"
+    local text="$MSG_END_REPORT"
     local term_width="$TERM_WIDTH_DEFAULT"
     local text_len=${#text}
     local pad_total=$((term_width - text_len))
@@ -274,19 +288,18 @@ trap 'print_summary_table' EXIT
 # Vérifications initiales
 ###############################################################################
 if [[ ! -f "$JOBS_FILE" ]]; then
-    echo "✗ Fichier jobs introuvable : $JOBS_FILE" >&2
+    echo "$MSG_FILE_NOT_FOUND : $JOBS_FILE" >&2
     ERROR_CODE=1
     exit $ERROR_CODE
 fi
 if [[ ! -r "$JOBS_FILE" ]]; then
-    echo "✗ Fichier jobs non lisible : $JOBS_FILE" >&2
+    echo "$MSG_FILE_NOT_READ : $JOBS_FILE" >&2
     ERROR_CODE=2
     exit $ERROR_CODE
 fi
-
 # **Vérification ajoutée pour TMP_RCLONE**
 if [[ ! -d "$TMP_RCLONE" ]]; then
-    echo "✗ Dossier temporaire rclone introuvable : $TMP_RCLONE" >&2
+    echo "$MSG_TMP_NOT_FOUND : $TMP_RCLONE" >&2
     ERROR_CODE=7
     exit $ERROR_CODE
 fi
@@ -301,30 +314,26 @@ while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
 	# Nettoyage de la ligne : trim + uniformisation séparateurs
-	line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
-	IFS='|' read -r src dst <<< "$line"
-
+    line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
+    IFS='|' read -r src dst <<< "$line"
     src="${src#"${src%%[![:space:]]*}"}"
     src="${src%"${src##*[![:space:]]}"}"
     dst="${dst#"${dst%%[![:space:]]*}"}"
     dst="${dst%"${dst##*[![:space:]]}"}"
-
     if [[ -z "$src" || -z "$dst" ]]; then
-        echo "✗ Ligne invalide dans $JOBS_FILE : $line" >&2
+        echo "$MSG_JOB_LINE_INVALID : $line" >&2
         ERROR_CODE=3
         exit $ERROR_CODE
     fi
-
     if [[ ! -d "$src" ]]; then
-        echo "✗ Dossier source introuvable ou inaccessible : $src" >&2
+        echo "$MSG_SRC_NOT_FOUND : $src" >&2
         ERROR_CODE=4
         exit $ERROR_CODE
     fi
-
     if [[ "$dst" == *":"* ]]; then
         remote_name="${dst%%:*}"
         if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote_name} " ]]; then
-            echo "✗ Remote inconnu dans rclone : $remote_name" >&2
+            echo "$MSG_REMOTE_UNKNOWN : $remote_name" >&2
             ERROR_CODE=5
             exit $ERROR_CODE
         fi
@@ -334,6 +343,7 @@ done < "$JOBS_FILE"
 ###############################################################################
 # Exécution des jobs
 ###############################################################################
+
 # Initialisation des pièces jointes (évite erreur avec set -u)
 declare -a ATTACHMENTS=()
 
@@ -341,16 +351,15 @@ while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
 	# Nettoyage de la ligne : trim + uniformisation séparateurs
-	line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
-	IFS='|' read -r src dst <<< "$line"
-
+    line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
+    IFS='|' read -r src dst <<< "$line"
     src="${src#"${src%%[![:space:]]*}"}"
     src="${src%"${src##*[![:space:]]}"}"
     dst="${dst#"${dst%%[![:space:]]*}"}"
     dst="${dst%"${dst##*[![:space:]]}"}"
 
-    print_centered_line "Synchronisation : $src → $dst"
-    print_centered_line "Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE)"
+    print_centered_line "$MSG_RCLONE_START $src → $dst"
+    print_centered_line "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE)"
     echo
 
     # Exécution avec colorisation (awk) — récupération immédiate du code retour rclone
@@ -359,7 +368,7 @@ while IFS= read -r line; do
 		2>&1 | tee -a "$LOG_FILE_INFO" | colorize; then
 		:
 	fi
-	job_rc=${PIPESTATUS[0]}   # Code de rclone dans le pipeline INFO
+	job_rc=${PIPESTATUS[0]}
 	(( job_rc != 0 )) && ERROR_CODE=6
 
 	# Deuxième exécution DEBUG (silencieuse, complète dans log DEBUG)
@@ -412,21 +421,20 @@ if $SEND_MAIL; then
 
 	# Vérification présence msmtp (ne stoppe pas le script)
     if ! command -v msmtp >/dev/null 2>&1; then
-        echo "${ORANGE}⚠ Attention : msmtp n'est pas installé ou introuvable dans le PATH.${RESET}" >&2
-        echo "Le rapport par e-mail ne sera pas envoyé." >&2
+        echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
         ERROR_CODE=9
     else
-        MAIL_CONTENT+="<p>– Fin du message automatique –</p></body></html>"
-		
+        MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
+
 		# === Sujet du mail global ===
         if $MAIL_SUBJECT_OK; then
-          SUBJECT="✅ Sauvegardes vers OneDrive réussies"
+          SUBJECT="$MSG_EMAIL_SUCCESS"
         else
-          SUBJECT="❌ Des erreurs lors des sauvegardes vers OneDrive"
+          SUBJECT="$MSG_EMAIL_FAIL"
         fi
-		
+
         {
-		
+
 		  # === Création du mail ===
           echo "From: Sauvegarde Rclone <spambiengentil@gmail.com>"
           echo "To: quelleheureestilsvp@gmail.com"
@@ -453,13 +461,11 @@ if $SEND_MAIL; then
             base64 "$file"
           } >> "$MAIL"
         done
+
         echo "--BOUNDARY123--" >> "$MAIL"
 
 		# === Envoi du mail ===
-        msmtp -t < "$MAIL"
-
-		# === Nettoyage ===
-        rm -f "$MAIL"
+        msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
 
     fi
 fi
