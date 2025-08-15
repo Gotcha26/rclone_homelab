@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.44 - 2025-08-15
+# Version : 1.45 - 2025-08-15
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -643,10 +643,8 @@ if $SEND_MAIL; then
 fi
 
 ###############################################################################
-# Purge des logs si succès
+# Purge inconditionnel des logs anciens (tous fichiers du dossier)
 ###############################################################################
-if [[ $ERROR_CODE -eq 0 ]]; then
-    find "$LOG_DIR" -type f -name "rclone_log_*" -mtime +$LOG_RETENTION_DAYS -delete
-fi
+find "$LOG_DIR" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
 exit $ERROR_CODE
