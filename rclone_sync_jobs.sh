@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.34 - 2025-08-14
+# Version : 1.38 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -33,6 +33,7 @@ LOG_FILE_DEBUG="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_DEBUG.log"
 DATE="$(date '+%Y-%m-%d_%H-%M-%S')"
 NOW="$(date '+%Y/%m/%d %H:%M:%S')"
 MAIL="${TMP_RCLONE}/rclone_report.mail"
+MAIL_DISPLAY_NAME="RCLONE Script Backup"
 MAIL_TO=""   # valeur par défaut vide
 MAIL_TO_ABS="⚠ Option --mail activée mais aucun destinataire fourni (--mailto).
 Le rapport ne sera pas envoyé."
@@ -89,6 +90,7 @@ MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
 MSG_EMAIL_SUCCESS="✅ Sauvegardes vers OneDrive réussies"
 MSG_EMAIL_FAIL="❌ Des erreurs lors des sauvegardes vers OneDrive"
+MSG_MAIL_SUSPECT="⚠ Synchronisation réussie mais aucun fichier transféré"
 
 ###############################################################################
 # Fonction MAIL
@@ -155,7 +157,7 @@ print_centered_line() {
     fi
 
     # Coloriser uniquement la partie texte, pas les '='
-    printf "%s%s%s%s%s\n" "$pad_left" "$BG_BLUE_DARK" "$line" "$RESET" "$pad_right"
+    printf "%s%s %s %s%s\n" "$pad_left" "$BG_BLUE_DARK" "$line" "$RESET" "$pad_right"
 }
 
 ###############################################################################
@@ -183,6 +185,12 @@ if [[ -z "$MAIL_TO" ]]; then
     SEND_MAIL=false
 else
     SEND_MAIL=true
+fi
+
+# === Vérification non bloquante si --mail activé sans --mailto ===
+if $SEND_MAIL && [[ -z "$MAIL_TO" ]]; then
+    echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
+    SEND_MAIL=false
 fi
 
 ###############################################################################
@@ -219,6 +227,7 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
+	printf "$format" "Logs (DEBUG)" "$LOG_FILE_DEBUG"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
@@ -411,6 +420,14 @@ while IFS= read -r line; do
     # Compteurs avec grep -E pour expressions régulières
     COPIED_COUNT=$(grep -E -c "Copied (new|replaced)" "$LOG_FILE_INFO" || true)
     UPDATED_COUNT=$(grep -c "Updated" "$LOG_FILE_INFO" || true)
+	
+    # === Ajout pour détecter si rien n'a été transféré ===
+    : "${NO_CHANGES_ALL:=true}"
+    if (( COPIED_COUNT == 0 && UPDATED_COUNT == 0 )); then
+        :
+    else
+        NO_CHANGES_ALL=false
+    fi
 
     if $SEND_MAIL; then
         MAIL_CONTENT+="<hr><h3>📁 $src ➜ $dst</h3>"
@@ -435,24 +452,33 @@ if $SEND_MAIL; then
         ATTACHMENTS+=("$LOG_FILE_DEBUG")
     fi
 
-	# Vérification présence msmtp (ne stoppe pas le script)
+    # Vérification présence msmtp (ne stoppe pas le script)
     if ! command -v msmtp >/dev/null 2>&1; then
         echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
         ERROR_CODE=9
     else
         MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
 
-		# === Sujet du mail global ===
-        if $MAIL_SUBJECT_OK; then
-          SUBJECT="$MSG_EMAIL_SUCCESS"
+        # === Détermination du sujet brut ===
+        if ! $MAIL_SUBJECT_OK; then
+            SUBJECT_RAW="$MSG_EMAIL_FAIL"
+        elif [[ "$NO_CHANGES_ALL" == true ]]; then
+            SUBJECT_RAW="$MSG_MAIL_SUSPECT"
         else
-          SUBJECT="$MSG_EMAIL_FAIL"
+            SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
         fi
 
-        {
+        # === Encodage MIME UTF-8 Base64 du sujet ===
+        encode_subject() {
+            local raw="$1"
+            printf "%s" "$raw" | base64 | tr -d '\n'
+        }
+        SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
 
-		  # === Création du mail ===
-          echo "From: RCLONE"  # Laisser msmtp gérer l'expéditeur configuré
+        {
+          FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+		  echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
+
           echo "To: $MAIL_TO"
           echo "Date: $(date -R)"
           echo "Subject: $SUBJECT"
@@ -466,7 +492,7 @@ if $SEND_MAIL; then
         } > "$MAIL"
 
         # === Ajout des pièces jointes ===
-		for file in "${ATTACHMENTS[@]}"; do
+        for file in "${ATTACHMENTS[@]}"; do
           {
             echo
             echo "--BOUNDARY123"
@@ -480,7 +506,7 @@ if $SEND_MAIL; then
 
         echo "--BOUNDARY123--" >> "$MAIL"
 
-		# === Envoi du mail ===
+        # === Envoi du mail ===
         msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
 
     fi
@@ -493,4 +519,4 @@ if [[ $ERROR_CODE -eq 0 ]]; then
     find "$LOG_DIR" -type f -name "rclone_log_*" -mtime +$LOG_RETENTION_DAYS -delete
 fi
 
-exit $ERROR_CODE
+exit $ERROR_CODE
