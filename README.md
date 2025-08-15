@@ -2,7 +2,7 @@
 ## _MON script de synchronisation **rclone_sync_jobs.sh**_
 _✌️🥖🔆Fait avec amour dans le sud de la France.❤️️🇫🇷🐓_
 
-Juste un script qui permet de synchroniser un dossier local avec un dossier distant en utilisant le script rclone.
+Juste un script qui permet de synchroniser un dossier local avec un dossier distant en utilisant le script [rclone](https://rclone.org/).
 
 ## Fonctions principales
 - ✅ Fonctionne aussi bien de manière autonome (cron) ou manuel
@@ -15,6 +15,7 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ⚠️ Persistance limitée à 15 jours pour les fichiers de logs
 - ✅ Coloration synthaxique
 - ❌ Vous rend riche, beau et irresistible
+- ✅ Durée de conservation des logs : 15 jours par défaut.
 
 ## Utilisation
 Le script est à rendre executable via la commande :
@@ -75,16 +76,15 @@ Argument | Explication
 - Privilégiez toujours un conteneur LXC ou une VM.
 - Utilisez les sauvegardes avant toute modification, c'est facile à restaurer !
 
+## Personnaliser rclone
+Le script rclone dispose d'énormément d'options !  
+📖 Lisez la [documentation](https://rclone.org/commands/rclone/) !  
+Pour adapter selon votre besoin, il est possible de modifier le script principal pour trouver la section `# Options rclone (1 par ligne)`  
+Là vous pourrez mettre/enlever vos propores options.
+
   
 ## A faire / Ajouter
-- Mettre la durée de conservation comme un argument de configuration en tête du fichier (configuration)
-- Ajouter une en-tête personnalisée mais uniquement lors d'une exécution manuel (affichage cmd)
-- Fonction d'envoi d'emails 
-- Gérer l'absence de fichiers à synchroniser
-  - Non normal pour un fonctionnement auto
-  - Pas anormal pour un fonctionnement manuel (tests)
-- Coloration synthaxique dans l'email html
-- Joindre le fichier "DEBUG" uniquement en cas d'erreur dans l'exécution de rclone (pas de fichier à joindre en cas d'erreur autre)
+- Scinder le fichier pour arrêter l'aspect monolithique
 
 ## Petites infos
 *Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).  
