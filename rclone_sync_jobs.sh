@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.43 - 2025-08-15
+# Version : 1.44 - 2025-08-15
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -96,6 +96,41 @@ MSG_EMAIL_FAIL="❌  Des erreurs lors des sauvegardes vers le cloud"
 MSG_MAIL_SUSPECT="❗  Synchronisation réussie mais aucun fichier transféré"
 MSG_PREP="📧  Préparation de l'email..."
 MSG_SENT="... Email envoyé ✅ "
+MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
+
+###############################################################################
+# Fonction help (aide)
+###############################################################################
+
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Options :
+  --auto             Lance le script en mode automatique (pas d'affichage du logo)
+  --mailto=ADRESSE   Envoie un rapport par e-mail à l'adresse fournie
+  --dry-run          Simule la synchronisation sans transférer ni supprimer de fichiers
+  -h, --help         Affiche cette aide et quitte
+
+Description :
+  Ce script lit la liste des jobs à exécuter depuis le fichier :
+      $JOBS_FILE
+  Chaque ligne doit contenir :
+      chemin_source|remote:chemin_destination
+  Les lignes vides ou commençant par '#' sont ignorées.
+
+  Exemple de ligne :
+      /home/user/Documents|OneDrive:Backups/Documents
+
+Fonctionnement :
+  - Vérifie la présence du dossier temporaire : $TMP_RCLONE
+  - Lance 'rclone sync' pour chaque job avec les options par défaut
+  - Affiche la sortie colorisée dans le terminal
+  - Génère un fichier log INFO dans : $LOG_DIR
+  - Si --mailto est fourni et msmtp est configuré, envoie un rapport HTML
+
+EOF
+}
 
 ###############################################################################
 # Fonction MAIL
@@ -208,6 +243,8 @@ print_centered_text() {
 ###############################################################################
 # Lecture des options du script
 ###############################################################################
+DRY_RUN=false
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --auto)
@@ -218,15 +255,28 @@ while [[ $# -gt 0 ]]; do
             MAIL_TO="${1#*=}"
             shift
             ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
         *)
             shift
             ;;
     esac
 done
 
+# Activation dry-run si demandé
+if $DRY_RUN; then
+    RCLONE_OPTS+=(--dry-run)
+fi
+
 # Vérification si --mailto est fourni
 if [[ -z "$MAIL_TO" ]]; then
-	echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
+    echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
     SEND_MAIL=false
 else
     SEND_MAIL=true
@@ -272,8 +322,11 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
-	print_aligned "Email adressé à" "$MAIL_TO"
+	print_aligned "Email envoyé à" "$MAIL_TO"
 	print_aligned "Sujet email" "$SUBJECT_RAW"
+	if $DRY_RUN; then
+		print_aligned "Simulation (dry-run)" "$MSG_DRYRUN"
+	fi
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
@@ -497,7 +550,7 @@ if $SEND_MAIL; then
 
 	echo
     print_centered_text "$MSG_PREP"
-	
+
     ATTACHMENTS+=("$LOG_FILE_INFO")
 
     # Vérification présence msmtp (ne stoppe pas le script)
@@ -582,7 +635,7 @@ if $SEND_MAIL; then
 
 		# === Envoi du mail ===
 		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
-		
+
     print_centered_text "$MSG_SENT"
     echo
 
