@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.42 - 2025-08-15
+# Version : 1.43 - 2025-08-15
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -136,6 +136,26 @@ if [[ ! -d "$LOG_DIR" ]]; then
         exit $ERROR_CODE
     fi
 fi
+
+###############################################################################
+# Fonction spinner
+###############################################################################
+spinner() {
+    local pid=$1       # PID du processus à surveiller
+    local delay=0.1    # vitesse du spinner
+    local spinstr='|/-\'
+    tput civis         # cacher le curseur
+
+    while kill -0 "$pid" 2>/dev/null; do
+        for (( i=0; i<${#spinstr}; i++ )); do
+            printf "\r[%c] Traitement en cours..." "${spinstr:i:1}"
+            sleep $delay
+        done
+    done
+
+    printf "\r[✔] Terminé !                   \n"
+    tput cnorm         # réafficher le curseur
+}
 
 ###############################################################################
 # Fonction pour centrer une ligne avec des '=' de chaque côté + coloration
@@ -432,11 +452,21 @@ while IFS= read -r line; do
     JOB_LOG_INFO="$(mktemp)"
 
     # Exécution rclone, préfixe le job sur chaque ligne, capture dans INFO.log + affichage terminal colorisé
-    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" --log-level INFO 2>&1 \
-        | sed "s/^/[$JOB_ID] /" \
-        | tee "$JOB_LOG_INFO" | colorize
-    job_rc=${PIPESTATUS[0]}
-    (( job_rc != 0 )) && ERROR_CODE=6
+	# Lancer rclone en arrière-plan
+	rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" --log-level INFO >"$JOB_LOG_INFO" 2>&1 &
+	RCLONE_PID=$!
+
+	# Afficher le spinner tant que rclone tourne
+	spinner $RCLONE_PID
+
+	# Récupérer le code retour de rclone
+	wait $RCLONE_PID
+	job_rc=$?
+	(( job_rc != 0 )) && ERROR_CODE=6
+
+	# Affichage colorisé après exécution
+	sed "s/^/[$JOB_ID] /" "$JOB_LOG_INFO" | colorize
+
 
     # Mise à jour du mail
     if $SEND_MAIL; then
