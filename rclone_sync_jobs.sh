@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.38 - 2025-08-14
+# Version : 1.41 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -29,7 +29,6 @@ LOG_DIR="/var/log/rclone"					# Emplacement des logs
 LOG_RETENTION_DAYS=15						# Durée de conservation des logs
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 LOG_FILE_INFO="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_INFO.log"
-LOG_FILE_DEBUG="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_DEBUG.log"
 DATE="$(date '+%Y-%m-%d_%H-%M-%S')"
 NOW="$(date '+%Y/%m/%d %H:%M:%S')"
 MAIL="${TMP_RCLONE}/rclone_report.mail"
@@ -37,6 +36,7 @@ MAIL_DISPLAY_NAME="RCLONE Script Backup"
 MAIL_TO=""   # valeur par défaut vide
 MAIL_TO_ABS="⚠ Option --mail activée mais aucun destinataire fourni (--mailto).
 Le rapport ne sera pas envoyé."
+LOG_LINE_MAX="200"
 
 # Couleurs : on utilise $'...' pour insérer le caractère ESC réel
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
@@ -88,9 +88,11 @@ MSG_LOG_DIR_CREATE_FAIL="✗ Impossible de créer le dossier de logs"
 MSG_RCLONE_START="Synchronisation :"
 MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
-MSG_EMAIL_SUCCESS="✅ Sauvegardes vers OneDrive réussies"
-MSG_EMAIL_FAIL="❌ Des erreurs lors des sauvegardes vers OneDrive"
-MSG_MAIL_SUSPECT="⚠ Synchronisation réussie mais aucun fichier transféré"
+MSG_EMAIL_SUCCESS="✅  Sauvegardes vers le cloud réussies"
+MSG_EMAIL_FAIL="❌  Des erreurs lors des sauvegardes vers le cloud"
+MSG_MAIL_SUSPECT="❗  Synchronisation réussie mais aucun fichier transféré"
+MSG_PREP="📧  Préparation de l'email..."
+MSG_SENT="... Email envoyé ✅ "
 
 ###############################################################################
 # Fonction MAIL
@@ -104,7 +106,7 @@ MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
 # === Fonction HTML pour logs partiels ===
 log_to_html() {
   local file="$1"
-  tail -n 500 "$file" | while IFS= read -r line; do
+  tail -n "$LOG_LINE_MAX" "$file" | while IFS= read -r line; do
     safe_line=$(echo "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
     if [[ "$line" == *"Deleted"* ]]; then
       echo "<span style='color:red;'>$safe_line</span><br>"
@@ -137,11 +139,9 @@ fi
 ###############################################################################
 print_centered_line() {
     local line="$1"
-    local term_width
-    term_width=$(tput cols 2>/dev/null || echo "$TERM_WIDTH_DEFAULT")
+    local term_width=$((TERM_WIDTH_DEFAULT - 2))   # <- Force largeur fixe à 80-2
 
     # Calcul longueur visible (sans séquences d’échappement)
-    # Ici la ligne n’a pas de couleur, donc simple :
     local line_len=${#line}
 
     local pad_total=$((term_width - line_len))
@@ -227,7 +227,8 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
-	printf "$format" "Logs (DEBUG)" "$LOG_FILE_DEBUG"
+	print_aligned "Email adressé à" "$MAIL_TO"
+	print_aligned "Sujet email" "$SUBJECT_RAW"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
@@ -369,13 +370,16 @@ done < "$JOBS_FILE"
 # Exécution des jobs
 ###############################################################################
 
+# === Initialisation du flag global avant la boucle des jobs ===
+NO_CHANGES_ALL=true
+
 # Initialisation des pièces jointes (évite erreur avec set -u)
 declare -a ATTACHMENTS=()
 
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
-	# Nettoyage de la ligne : trim + uniformisation séparateurs
+    # Nettoyage de la ligne : trim + uniformisation séparateurs
     line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
     IFS='|' read -r src dst <<< "$line"
     src="${src#"${src%%[![:space:]]*}"}"
@@ -387,58 +391,29 @@ while IFS= read -r line; do
     print_centered_line "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE)"
     echo
 
-    # Exécution avec colorisation (awk) — récupération immédiate du code retour rclone
-	if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
-		--log-level INFO \
-		2>&1 | tee -a "$LOG_FILE_INFO" | colorize; then
-		:
-	fi
-	job_rc=${PIPESTATUS[0]}
-	(( job_rc != 0 )) && ERROR_CODE=6
+    # === Créer un log temporaire pour ce job ===
+    JOB_LOG_INFO="$(mktemp)"
 
-	# Deuxième exécution DEBUG (silencieuse, complète dans log DEBUG)
-	if ! rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
-		--log-level DEBUG --log-file "$LOG_FILE_DEBUG" >/dev/null 2>&1; then
-		:
-	fi
-	debug_rc=$?
-	(( debug_rc != 0 )) && ERROR_CODE=6
+    # Exécution rclone unique, capture dans INFO.log + affichage terminal colorisé
+    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
+        --log-level INFO 2>&1 | tee "$JOB_LOG_INFO" | colorize
+    job_rc=${PIPESTATUS[0]}
+    (( job_rc != 0 )) && ERROR_CODE=6
 
-    ((JOBS_COUNT++))
-    echo
-	
-    EXIT_CODE=$job_rc
-    (( EXIT_CODE != 0 )) && MAIL_SUBJECT_OK=false
-
-    # Nettoyage log INFO (garde une seule ligne NOTICE)
-    tmp_log="$(mktemp)"
-    grep -v "NOTICE" "$LOG_FILE_INFO" > "$tmp_log" || true
-    last_notice=$(grep "NOTICE" "$LOG_FILE_INFO" | tail -n 1)
-    [ -n "$last_notice" ] && echo "$last_notice" >> "$tmp_log"
-    mv "$tmp_log" "$LOG_FILE_INFO"
-
-    # Compteurs avec grep -E pour expressions régulières
-    COPIED_COUNT=$(grep -E -c "Copied (new|replaced)" "$LOG_FILE_INFO" || true)
-    UPDATED_COUNT=$(grep -c "Updated" "$LOG_FILE_INFO" || true)
-	
-    # === Ajout pour détecter si rien n'a été transféré ===
-    : "${NO_CHANGES_ALL:=true}"
-    if (( COPIED_COUNT == 0 && UPDATED_COUNT == 0 )); then
-        :
-    else
-        NO_CHANGES_ALL=false
-    fi
-
+    # Mise à jour du mail
     if $SEND_MAIL; then
-        MAIL_CONTENT+="<hr><h3>📁 $src ➜ $dst</h3>"
-        MAIL_CONTENT+="<pre><b>📅 Démarrée :</b> $NOW"
-        MAIL_CONTENT+="<br><b>Code retour :</b> $EXIT_CODE"
-        MAIL_CONTENT+="<br><b>Fichiers copiés :</b> $COPIED_COUNT"
-        MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $UPDATED_COUNT</pre>"
         MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
-        MAIL_CONTENT+="$(log_to_html "$LOG_FILE_INFO")"
+        MAIL_CONTENT+="$(log_to_html "$JOB_LOG_INFO")"
         MAIL_CONTENT+="</pre>"
     fi
+
+    # Concatenation du log temporaire dans le log global
+    cat "$JOB_LOG_INFO" >> "$LOG_FILE_INFO"
+    rm -f "$JOB_LOG_INFO"
+
+    ((JOBS_COUNT++))
+    (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
+    echo
 done < "$JOBS_FILE"
 
 ###############################################################################
@@ -447,67 +422,97 @@ done < "$JOBS_FILE"
 
 # Pièces jointes : log INFO (toujours), DEBUG (en cas d’erreur globale)
 if $SEND_MAIL; then
+
+	echo
+    print_centered_line "$MSG_PREP"
+	
     ATTACHMENTS+=("$LOG_FILE_INFO")
-    if ! $MAIL_SUBJECT_OK; then
-        ATTACHMENTS+=("$LOG_FILE_DEBUG")
-    fi
 
     # Vérification présence msmtp (ne stoppe pas le script)
     if ! command -v msmtp >/dev/null 2>&1; then
         echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
         ERROR_CODE=9
     else
+		# === Compter les occurrences sur l'ensemble des jobs, uniquement lignes contenant INFO ===
+		TOTAL_COPIED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Copied" || true)
+		TOTAL_UPDATED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Updated" || true)
+		TOTAL_DELETED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Deleted" || true)
+
+		# Ajouter un résumé général dans le mail
+		MAIL_CONTENT+="<hr><h3>📊 Résumé global</h3>"
+		MAIL_CONTENT+="<pre><b>Fichiers copiés :</b> $TOTAL_COPIED"
+		MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $TOTAL_UPDATED"
+		MAIL_CONTENT+="<br><b>Fichiers supprimés :</b> $TOTAL_DELETED</pre>"
+
         MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
 
-        # === Détermination du sujet brut ===
-        if ! $MAIL_SUBJECT_OK; then
+		# === Détermination du sujet du mail selon le résultat global ===
+        # === Analyse du log global pour déterminer l'état final ===
+        HAS_ERROR=false
+        HAS_NO_TRANSFER=false
+
+        # Erreur détectée
+        if grep -iqE "(error|failed|failed to)" "$LOG_FILE_INFO"; then
+            HAS_ERROR=true
+        fi
+
+        # Aucun transfert détecté (cas précis)
+        if grep -q "There was nothing to transfer" "$LOG_FILE_INFO"; then
+            HAS_NO_TRANSFER=true
+        fi
+
+        # === Choix du sujet du mail ===
+        if $HAS_ERROR; then
             SUBJECT_RAW="$MSG_EMAIL_FAIL"
-        elif [[ "$NO_CHANGES_ALL" == true ]]; then
+        elif $HAS_NO_TRANSFER; then
             SUBJECT_RAW="$MSG_MAIL_SUSPECT"
         else
             SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
         fi
 
-        # === Encodage MIME UTF-8 Base64 du sujet ===
-        encode_subject() {
-            local raw="$1"
-            printf "%s" "$raw" | base64 | tr -d '\n'
-        }
-        SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
+		# Encodage MIME UTF-8 Base64 du sujet
+		encode_subject() {
+			local raw="$1"
+			printf "%s" "$raw" | base64 | tr -d '\n'
+		}
+		SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
 
-        {
-          FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
-		  echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
+		# === Construction du mail ===
+		{
+			FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+			echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
+			echo "To: $MAIL_TO"
+			echo "Date: $(date -R)"
+			echo "Subject: $SUBJECT"
+			echo "MIME-Version: 1.0"
+			echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
+			echo
+			echo "--BOUNDARY123"
+			echo "Content-Type: text/html; charset=UTF-8"
+			echo
+			echo "$MAIL_CONTENT"
+		} > "$MAIL"
 
-          echo "To: $MAIL_TO"
-          echo "Date: $(date -R)"
-          echo "Subject: $SUBJECT"
-          echo "MIME-Version: 1.0"
-          echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
-          echo
-          echo "--BOUNDARY123"
-          echo "Content-Type: text/html; charset=UTF-8"
-          echo
-          echo "$MAIL_CONTENT"
-        } > "$MAIL"
+		# === Ajout des pièces jointes ===
+		for file in "${ATTACHMENTS[@]}"; do
+			{
+				echo
+				echo "--BOUNDARY123"
+				echo "Content-Type: text/plain; name=\"$(basename "$file")\""
+				echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
+				echo "Content-Transfer-Encoding: base64"
+				echo
+				base64 "$file"
+			} >> "$MAIL"
+		done
 
-        # === Ajout des pièces jointes ===
-        for file in "${ATTACHMENTS[@]}"; do
-          {
-            echo
-            echo "--BOUNDARY123"
-            echo "Content-Type: text/plain; name=\"$(basename "$file")\""
-            echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
-            echo "Content-Transfer-Encoding: base64"
-            echo
-            base64 "$file"
-          } >> "$MAIL"
-        done
+		echo "--BOUNDARY123--" >> "$MAIL"
 
-        echo "--BOUNDARY123--" >> "$MAIL"
-
-        # === Envoi du mail ===
-        msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
+		# === Envoi du mail ===
+		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
+		
+    print_centered_line "$MSG_SENT"
+    echo
 
     fi
 fi
