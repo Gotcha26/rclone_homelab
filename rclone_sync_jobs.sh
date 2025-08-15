@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.40 - 2025-08-14
+# Version : 1.41 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -36,6 +36,7 @@ MAIL_DISPLAY_NAME="RCLONE Script Backup"
 MAIL_TO=""   # valeur par défaut vide
 MAIL_TO_ABS="⚠ Option --mail activée mais aucun destinataire fourni (--mailto).
 Le rapport ne sera pas envoyé."
+LOG_LINE_MAX="200"
 
 # Couleurs : on utilise $'...' pour insérer le caractère ESC réel
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
@@ -87,11 +88,11 @@ MSG_LOG_DIR_CREATE_FAIL="✗ Impossible de créer le dossier de logs"
 MSG_RCLONE_START="Synchronisation :"
 MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
-MSG_EMAIL_SUCCESS="✅ Sauvegardes vers le cloud réussies"
-MSG_EMAIL_FAIL="❌ Des erreurs lors des sauvegardes vers le cloud"
-MSG_MAIL_SUSPECT="⚠ Synchronisation réussie mais aucun fichier transféré"
-MSG_PREP="📧 Préparation de l'email..."
-MSG_SENT="✅ Email envoyé à $MAIL_TO"
+MSG_EMAIL_SUCCESS="✅  Sauvegardes vers le cloud réussies"
+MSG_EMAIL_FAIL="❌  Des erreurs lors des sauvegardes vers le cloud"
+MSG_MAIL_SUSPECT="❗  Synchronisation réussie mais aucun fichier transféré"
+MSG_PREP="📧  Préparation de l'email..."
+MSG_SENT="... Email envoyé ✅ "
 
 ###############################################################################
 # Fonction MAIL
@@ -105,7 +106,7 @@ MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
 # === Fonction HTML pour logs partiels ===
 log_to_html() {
   local file="$1"
-  tail -n 500 "$file" | while IFS= read -r line; do
+  tail -n "$LOG_LINE_MAX" "$file" | while IFS= read -r line; do
     safe_line=$(echo "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
     if [[ "$line" == *"Deleted"* ]]; then
       echo "<span style='color:red;'>$safe_line</span><br>"
@@ -138,7 +139,7 @@ fi
 ###############################################################################
 print_centered_line() {
     local line="$1"
-    local term_width="$TERM_WIDTH_DEFAULT"   # <- Force largeur fixe à 80
+    local term_width=$((TERM_WIDTH_DEFAULT - 2))   # <- Force largeur fixe à 80-2
 
     # Calcul longueur visible (sans séquences d’échappement)
     local line_len=${#line}
@@ -226,7 +227,8 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
-	print_aligned "Sujet Mail" "$SUBJECT_RAW"
+	print_aligned "Email adressé à" "$MAIL_TO"
+	print_aligned "Sujet email" "$SUBJECT_RAW"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
@@ -398,22 +400,8 @@ while IFS= read -r line; do
     job_rc=${PIPESTATUS[0]}
     (( job_rc != 0 )) && ERROR_CODE=6
 
-    # Compter fichiers copiés et mis à jour
-    JOB_COPIED=$(grep -E -c "Copied (new|replaced)" "$JOB_LOG_INFO" || true)
-    JOB_UPDATED=$(grep -c "Updated" "$JOB_LOG_INFO" || true)
-
-    # Mise à jour du flag global **seulement si le job a réussi et a transféré des fichiers**
-    if (( job_rc == 0 && (JOB_COPIED > 0 || JOB_UPDATED > 0) )); then
-        NO_CHANGES_ALL=false
-    fi
-
     # Mise à jour du mail
     if $SEND_MAIL; then
-        MAIL_CONTENT+="<hr><h3>📁 $src ➜ $dst</h3>"
-        MAIL_CONTENT+="<pre><b>📅 Démarrée :</b> $NOW"
-        MAIL_CONTENT+="<br><b>Code retour :</b> $job_rc"
-        MAIL_CONTENT+="<br><b>Fichiers copiés :</b> $JOB_COPIED"
-        MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $JOB_UPDATED</pre>"
         MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
         MAIL_CONTENT+="$(log_to_html "$JOB_LOG_INFO")"
         MAIL_CONTENT+="</pre>"
@@ -437,7 +425,6 @@ if $SEND_MAIL; then
 
 	echo
     print_centered_line "$MSG_PREP"
-    echo
 	
     ATTACHMENTS+=("$LOG_FILE_INFO")
 
@@ -446,6 +433,17 @@ if $SEND_MAIL; then
         echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
         ERROR_CODE=9
     else
+		# === Compter les occurrences sur l'ensemble des jobs, uniquement lignes contenant INFO ===
+		TOTAL_COPIED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Copied" || true)
+		TOTAL_UPDATED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Updated" || true)
+		TOTAL_DELETED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Deleted" || true)
+
+		# Ajouter un résumé général dans le mail
+		MAIL_CONTENT+="<hr><h3>📊 Résumé global</h3>"
+		MAIL_CONTENT+="<pre><b>Fichiers copiés :</b> $TOTAL_COPIED"
+		MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $TOTAL_UPDATED"
+		MAIL_CONTENT+="<br><b>Fichiers supprimés :</b> $TOTAL_DELETED</pre>"
+
         MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
 
 		# === Détermination du sujet du mail selon le résultat global ===
@@ -513,8 +511,7 @@ if $SEND_MAIL; then
 		# === Envoi du mail ===
 		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
 		
-	echo
-    print_centered_line "$MSG_SENT $MAIL_TO"
+    print_centered_line "$MSG_SENT"
     echo
 
     fi
