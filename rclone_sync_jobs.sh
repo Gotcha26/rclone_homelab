@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.41 - 2025-08-14
+# Version : 1.42 - 2025-08-15
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -74,6 +74,9 @@ SEND_MAIL=false   # <- par défaut, pas d'envoi d'email
 ###############################################################################
 # Messages (centralisés pour affichage et email)
 ###############################################################################
+MSG_WAITING1="SOYEZ PATIENT..."
+MSG_WAITING2="Mise à jour seulement à fin de l'opération de synchronisation."
+MSG_WAITING3="Pour interrompre : CTRL + C"
 MSG_FILE_NOT_FOUND="✗ Fichier jobs introuvable"
 MSG_FILE_NOT_READ="✗ Fichier jobs non lisible"
 MSG_TMP_NOT_FOUND="✗ Dossier temporaire rclone introuvable"
@@ -158,6 +161,28 @@ print_centered_line() {
 
     # Coloriser uniquement la partie texte, pas les '='
     printf "%s%s %s %s%s\n" "$pad_left" "$BG_BLUE_DARK" "$line" "$RESET" "$pad_right"
+}
+
+###############################################################################
+# Fonction pour centrer une ligne dans le terminal (simple, sans décor ni couleur)
+###############################################################################
+print_centered_text() {
+    local line="$1"
+    local term_width=${2:-$TERM_WIDTH_DEFAULT}  # largeur par défaut = TERM_WIDTH_DEFAULT
+    local line_len=${#line}
+
+    if (( line_len >= term_width )); then
+        # Si la ligne est plus longue que la largeur, on l’affiche telle quelle
+        echo "$line"
+        return
+    fi
+
+    local pad_total=$((term_width - line_len))
+    local pad_side=$((pad_total / 2))
+    local pad_left=$(printf ' %.0s' $(seq 1 $pad_side))
+    local pad_right=$(printf ' %.0s' $(seq 1 $((pad_total - pad_side))))
+
+    echo "${pad_left}${line}${pad_right}"
 }
 
 ###############################################################################
@@ -376,6 +401,9 @@ NO_CHANGES_ALL=true
 # Initialisation des pièces jointes (évite erreur avec set -u)
 declare -a ATTACHMENTS=()
 
+# Compteur de jobs pour le label [JOBxx]
+JOB_COUNTER=1
+
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
@@ -387,16 +415,26 @@ while IFS= read -r line; do
     dst="${dst#"${dst%%[![:space:]]*}"}"
     dst="${dst%"${dst##*[![:space:]]}"}"
 
-    print_centered_line "$MSG_RCLONE_START $src → $dst"
-    print_centered_line "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE)"
+    # Générer un identifiant compact du job : [JOB01], [JOB02], ...
+    JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
+
+    # Affichage header job dans terminal et log global
+    print_centered_line "$MSG_WAITING1"
+    print_centered_line "$MSG_WAITING2"
+    print_centered_line "$MSG_WAITING3"
     echo
+
+	print_centered_text "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO"
+	print_centered_text "Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S')" | tee -a "$LOG_FILE_INFO"
+    echo "" | tee -a "$LOG_FILE_INFO"
 
     # === Créer un log temporaire pour ce job ===
     JOB_LOG_INFO="$(mktemp)"
 
-    # Exécution rclone unique, capture dans INFO.log + affichage terminal colorisé
-    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
-        --log-level INFO 2>&1 | tee "$JOB_LOG_INFO" | colorize
+    # Exécution rclone, préfixe le job sur chaque ligne, capture dans INFO.log + affichage terminal colorisé
+    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" --log-level INFO 2>&1 \
+        | sed "s/^/[$JOB_ID] /" \
+        | tee "$JOB_LOG_INFO" | colorize
     job_rc=${PIPESTATUS[0]}
     (( job_rc != 0 )) && ERROR_CODE=6
 
@@ -414,7 +452,11 @@ while IFS= read -r line; do
     ((JOBS_COUNT++))
     (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
     echo
+
+    # Incrément du compteur pour le prochain job
+    ((JOB_COUNTER++))
 done < "$JOBS_FILE"
+
 
 ###############################################################################
 # Partie email conditionnelle
@@ -424,7 +466,7 @@ done < "$JOBS_FILE"
 if $SEND_MAIL; then
 
 	echo
-    print_centered_line "$MSG_PREP"
+    print_centered_text "$MSG_PREP"
 	
     ATTACHMENTS+=("$LOG_FILE_INFO")
 
@@ -511,7 +553,7 @@ if $SEND_MAIL; then
 		# === Envoi du mail ===
 		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
 		
-    print_centered_line "$MSG_SENT"
+    print_centered_text "$MSG_SENT"
     echo
 
     fi
