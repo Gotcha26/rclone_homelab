@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.33 - 2025-08-14
+# Version : 1.34 - 2025-08-14
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -11,7 +11,7 @@
 #
 #   Les lignes commençant par # ou vides sont ignorées.
 #   L'option --auto permet d'indiquer un lancement automatique.
-#   L'option --mail permet d'envoyer un rapport par e-mail.
+#   L'option --mailto=<mon_adresse@mail.com permet d'envoyer un rapport par e-mail.
 #
 #   En fin d'exécution, un tableau récapitulatif avec bordures est affiché.
 ###############################################################################
@@ -33,6 +33,9 @@ LOG_FILE_DEBUG="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_DEBUG.log"
 DATE="$(date '+%Y-%m-%d_%H-%M-%S')"
 NOW="$(date '+%Y/%m/%d %H:%M:%S')"
 MAIL="${TMP_RCLONE}/rclone_report.mail"
+MAIL_TO=""   # valeur par défaut vide
+MAIL_TO_ABS="⚠ Option --mail activée mais aucun destinataire fourni (--mailto).
+Le rapport ne sera pas envoyé."
 
 # Couleurs : on utilise $'...' pour insérer le caractère ESC réel
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
@@ -138,10 +141,12 @@ print_centered_line() {
     # Calcul longueur visible (sans séquences d’échappement)
     # Ici la ligne n’a pas de couleur, donc simple :
     local line_len=${#line}
+
     local pad_total=$((term_width - line_len))
     local pad_side=0
     local pad_left=""
     local pad_right=""
+
     if (( pad_total > 0 )); then
         pad_side=$((pad_total / 2))
         # Si pad_total est impair, on met un '=' en plus à droite
@@ -156,20 +161,29 @@ print_centered_line() {
 ###############################################################################
 # Lecture des options du script
 ###############################################################################
-for arg in "$@"; do
-    case "$arg" in
+while [[ $# -gt 0 ]]; do
+    case "$1" in
         --auto)
             LAUNCH_MODE="automatique"
             shift
             ;;
-        --mail)
-            SEND_MAIL=true
+        --mailto=*)
+            MAIL_TO="${1#*=}"
             shift
             ;;
         *)
+            shift
             ;;
     esac
 done
+
+# Vérification si --mailto est fourni
+if [[ -z "$MAIL_TO" ]]; then
+	echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
+    SEND_MAIL=false
+else
+    SEND_MAIL=true
+fi
 
 ###############################################################################
 # Fonction d'affichage du tableau récapitulatif avec bordures
@@ -198,15 +212,17 @@ print_summary_table() {
     echo
     echo "INFOS"
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
+
     print_aligned "Date / Heure début" "$START_TIME"
     print_aligned "Date / Heure fin" "$END_TIME"
     print_aligned "Mode de lancement" "$LAUNCH_MODE"
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
+
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
-# Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
+	# Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
     local text="$MSG_END_REPORT"
     local term_width="$TERM_WIDTH_DEFAULT"
     local text_len=${#text}
@@ -436,8 +452,8 @@ if $SEND_MAIL; then
         {
 
 		  # === Création du mail ===
-          echo "From: Sauvegarde Rclone <spambiengentil@gmail.com>"
-          echo "To: quelleheureestilsvp@gmail.com"
+          echo "From: RCLONE"  # Laisser msmtp gérer l'expéditeur configuré
+          echo "To: $MAIL_TO"
           echo "Date: $(date -R)"
           echo "Subject: $SUBJECT"
           echo "MIME-Version: 1.0"
