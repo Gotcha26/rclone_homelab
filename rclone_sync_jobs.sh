@@ -4,6 +4,13 @@ source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
 ###############################################################################
+# Affiche le logo uniquement si on n'est pas en mode "automatique"
+###############################################################################
+if [[ "$LAUNCH_MODE" != "automatique" ]]; then
+    print_logo
+fi
+
+###############################################################################
 # Pré-vérification de tous les jobs
 ###############################################################################
 while IFS= read -r line; do
