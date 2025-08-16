@@ -1,1 +1,12 @@
+#######################################
+# UTILISATION
+#######################################
+# Format recommandé avec séparateur "|"
+# Exemple :
+# /home/user/Mes Documents | monremote:/Sauvegardes/Mes Documents
+#
+# Format classique avec espace (toujours supporté)
+# Exemple :
+# /mnt/backup onedrive:/Backup_Proxmox
+#######################################
 /srv/backups|onedrive_gotcha:Homelab_backups
