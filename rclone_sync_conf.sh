@@ -12,7 +12,6 @@ JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"    # Fichier des jobs
 
 # Adaptables
 TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
-LOG_DIR="/var/log/rclone"                  # Emplacement des logs
 LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
 LOG_LINE_MAX="200"                         # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
 
