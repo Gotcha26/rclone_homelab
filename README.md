@@ -28,7 +28,7 @@ cd /opt/rclone_homelab
 ```
 3. Cloner le dépôt
 ```
-git clone --branch v2 https://github.com/Gotcha26/rclone_homelab.git
+git clone --branch v2 https://github.com/Gotcha26/rclone_homelab.git .
 
 git clone https://github.com/Gotcha26/rclone_homelab.git .
 ```
