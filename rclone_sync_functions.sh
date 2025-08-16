@@ -232,8 +232,3 @@ EOF
     echo
     echo
 }
-
-# Affiche le logo uniquement si on n'est pas en mode "automatique"
-if [[ "$LAUNCH_MODE" != "automatique" ]]; then
-    print_logo
-fi
