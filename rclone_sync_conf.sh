@@ -2,30 +2,15 @@
 # Variables
 ###############################################################################
 
-# === Options rclone ===
-
-# 1 par ligne
-# Plus de commandes sur https://rclone.org/commands/rclone/
-RCLONE_OPTS=(
-    --temp-dir "$TMP_RCLONE"
-    --exclude '*<*'
-    --exclude '*>*'
-    --exclude '*:*'
-    --exclude '*"*'
-    --exclude '*\\*'
-    --exclude '*\|*'
-    --exclude '*\?*'
-    --exclude '.*'
-    --exclude 'Thumbs.db'
-    --log-level INFO
-    --stats-log-level NOTICE
-)
-
 # === Générales ===
 
+# Techniques (primaires)
+BASE_DIR="/opt/rclone_homelab"             # Répertoire principal de l'application
+LOG_DIR="$BASE_DIR/logs"                   # Répertoire temporaire pour rclone
+TMP_RCLONE="$LOG_DIR/tmp"                  # Répertoire temporaire pour rclone
+JOBS_FILE="$BASE_DIR/rclone_jobs.txt"      # Fichier des jobs
+
 # Adaptables
-JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"    # Modifier ici si besoin
-TMP_RCLONE="/mnt/tmp_rclone"               # Dossier purger tous les $LOG_RETENTION_DAYS
 TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
 LOG_DIR="/var/log/rclone"                  # Emplacement des logs
 LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
@@ -87,3 +72,21 @@ BLACK=$'\e[30m'               # texte noir
 BOLD=$'\e[1m'                 # texte gras
 RESET=$'\e[0m'                # Effaceur
 
+# === Options rclone ===
+
+# 1 par ligne
+# Plus de commandes sur https://rclone.org/commands/rclone/
+RCLONE_OPTS=(
+    --temp-dir "$TMP_RCLONE"
+    --exclude '*<*'
+    --exclude '*>*'
+    --exclude '*:*'
+    --exclude '*"*'
+    --exclude '*\\*'
+    --exclude '*\|*'
+    --exclude '*\?*'
+    --exclude '.*'
+    --exclude 'Thumbs.db'
+    --log-level INFO
+    --stats-log-level NOTICE
+)
