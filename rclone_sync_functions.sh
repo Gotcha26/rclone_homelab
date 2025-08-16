@@ -1,7 +1,6 @@
 ###############################################################################
 # Fonction help (aide)
 ###############################################################################
-
 show_help() {
     cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
@@ -35,12 +34,6 @@ EOF
 ###############################################################################
 # Fonction MAIL
 ###############################################################################
-
-# === Initialisation des données pour le mail ===
-MAIL_SUBJECT_OK=true
-MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
-MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
-
 # === Fonction HTML pour logs partiels ===
 log_to_html() {
   local file="$1"
