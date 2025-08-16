@@ -109,22 +109,21 @@ Argument | Explication
   -h, --help    | Affiche cette humble aide
   --mailto=<mon_adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp
 
-## Recommandations
-- Ne pas utilser d'outils ou de script à la base d'un noeud Proxmox. Vous risquez de bloquer toute votre installation !
-- Privilégiez toujours un conteneur LXC ou une VM. Plus facile à maintenir et à isoler.
-- Utilisez les sauvegardes Proxmox avant toute modification. C'est facile faire et à restaurer !
-
 ## Personnaliser rclone
 Le script rclone dispose d'énormément d'options !  
 📖 Lisez la [documentation](https://rclone.org/commands/rclone/) !  
 Pour adapter selon vos besoins, il est possible de modifier `nano /opt/rclone_homelab/rclone_sync_conf.sh` pour trouver la section `# === Options rclone ===`  
 Là vous pourrez mettre/enlever vos propores options.
 
+## Recommandations (générales)
+- Ne pas utilser d'outils ou de script à la base d'un noeud Proxmox. Vous risquez de bloquer toute votre installation !
+- Privilégiez toujours un conteneur LXC ou une VM. Plus facile à maintenir et à isoler.
+- Utilisez les sauvegardes Proxmox avant toute modification. C'est facile faire et à restaurer !
   
 ## A faire / Ajouter
 - Scinder le fichier pour arrêter l'aspect monolithique
 
-## Petites infos
+### Petites infos
 *Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).  
 NotePad++ (avec plugin "Compare")  
 https://dillinger.io (pour la rédaction du présent Readme)  
