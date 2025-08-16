@@ -34,8 +34,11 @@ while IFS= read -r line; do
         exit $ERROR_CODE
     fi
     if [[ "$dst" == *":"* ]]; then
-        remote_name="${dst%%:*}"
-        if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote_name} " ]]; then
+        remote_name="${dst%%:*}"  # récupère la partie avant le ":"
+        # Remplissage de la liste des remotes connus (avec config correcte)
+        RCLONE_REMOTES=$(rclone listremotes "${RCLONE_OPTS[@]}")
+        # Vérification du remote
+        if ! echo "$RCLONE_REMOTES" | grep -qx "${remote_name}:"; then
             echo "$MSG_REMOTE_UNKNOWN : $remote_name" >&2
             ERROR_CODE=5
             exit $ERROR_CODE
