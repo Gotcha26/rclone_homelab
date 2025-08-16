@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
+
 set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
 
-source "$(dirname "$0")/rclone_sync_conf.sh"
-source "$(dirname "$0")/rclone_sync_functions.sh"
-source "$(dirname "$0")/rclone_sync_jobs.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$SCRIPT_DIR/rclone_sync_conf.sh"
+source "$SCRIPT_DIR/rclone_sync_functions.sh"
+source "$SCRIPT_DIR/rclone_sync_jobs.sh"
 
 ###############################################################################
 # Vérifications initiales
