@@ -89,6 +89,11 @@ fi
 ###############################################################################
 # Suite des opérations
 ###############################################################################
+# === Préparation du mail ===
+MAIL_SUBJECT_OK=true
+MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
+MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
+
 # === Vérification non bloquante si --mail activé sans --mailto ===
 if $SEND_MAIL && [[ -z "$MAIL_TO" ]]; then
     echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
