@@ -16,6 +16,11 @@ source "$SCRIPT_DIR/rclone_sync_functions.sh"
 source "$SCRIPT_DIR/rclone_sync_jobs.sh"
 
 ###############################################################################
+# Affichage récapitulatif à la sortie
+###############################################################################
+trap 'print_summary_table' EXIT
+
+###############################################################################
 # Création des répertoires nécessaires
 ###############################################################################
 if [[ ! -d "$TMP_RCLONE" ]]; then
@@ -117,8 +122,3 @@ fi
 find "$LOG_DIR" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
 exit $ERROR_CODE
-
-###############################################################################
-# Affichage récapitulatif à la sortie
-###############################################################################
-trap 'print_summary_table' EXIT
