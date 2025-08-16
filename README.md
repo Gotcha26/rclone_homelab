@@ -51,6 +51,10 @@ which rclone_homelab
 rclone_homelab --help
 # script avec ses options
 ```
+7. Pour revenir à votre "home"
+```
+cd
+```
 
 ### Mise à jour
 Pour mettre à jour facilement l'utilitaire depuis GitHub :
