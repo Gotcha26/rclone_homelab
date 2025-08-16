@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.41 - 2025-08-14
+# Version : 1.46 - 2025-08-16
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -74,6 +74,9 @@ SEND_MAIL=false   # <- par défaut, pas d'envoi d'email
 ###############################################################################
 # Messages (centralisés pour affichage et email)
 ###############################################################################
+MSG_WAITING1="SOYEZ PATIENT..."
+MSG_WAITING2="Mise à jour seulement à fin de l'opération de synchronisation."
+MSG_WAITING3="Pour interrompre : CTRL + C"
 MSG_FILE_NOT_FOUND="✗ Fichier jobs introuvable"
 MSG_FILE_NOT_READ="✗ Fichier jobs non lisible"
 MSG_TMP_NOT_FOUND="✗ Dossier temporaire rclone introuvable"
@@ -93,6 +96,41 @@ MSG_EMAIL_FAIL="❌  Des erreurs lors des sauvegardes vers le cloud"
 MSG_MAIL_SUSPECT="❗  Synchronisation réussie mais aucun fichier transféré"
 MSG_PREP="📧  Préparation de l'email..."
 MSG_SENT="... Email envoyé ✅ "
+MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
+
+###############################################################################
+# Fonction help (aide)
+###############################################################################
+
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Options :
+  --auto             Lance le script en mode automatique (pas d'affichage du logo)
+  --mailto=ADRESSE   Envoie un rapport par e-mail à l'adresse fournie
+  --dry-run          Simule la synchronisation sans transférer ni supprimer de fichiers
+  -h, --help         Affiche cette aide et quitte
+
+Description :
+  Ce script lit la liste des jobs à exécuter depuis le fichier :
+      $JOBS_FILE
+  Chaque ligne doit contenir :
+      chemin_source|remote:chemin_destination
+  Les lignes vides ou commençant par '#' sont ignorées.
+
+  Exemple de ligne :
+      /home/user/Documents|OneDrive:Backups/Documents
+
+Fonctionnement :
+  - Vérifie la présence du dossier temporaire : $TMP_RCLONE
+  - Lance 'rclone sync' pour chaque job avec les options par défaut
+  - Affiche la sortie colorisée dans le terminal
+  - Génère un fichier log INFO dans : $LOG_DIR
+  - Si --mailto est fourni et msmtp est configuré, envoie un rapport HTML
+
+EOF
+}
 
 ###############################################################################
 # Fonction MAIL
@@ -106,20 +144,22 @@ MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
 # === Fonction HTML pour logs partiels ===
 log_to_html() {
   local file="$1"
-  tail -n "$LOG_LINE_MAX" "$file" | while IFS= read -r line; do
+  local buffer=""
+  while IFS= read -r line; do
     safe_line=$(echo "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
     if [[ "$line" == *"Deleted"* ]]; then
-      echo "<span style='color:red;'>$safe_line</span><br>"
+      buffer+="<span style='color:red;'>$safe_line</span><br>"
     elif [[ "$line" == *"Copied"* ]]; then
-      echo "<span style='color:blue;'>$safe_line</span><br>"
+      buffer+="<span style='color:blue;'>$safe_line</span><br>"
     elif [[ "$line" == *"Updated"* ]]; then
-      echo "<span style='color:orange;'>$safe_line</span><br>"
+      buffer+="<span style='color:orange;'>$safe_line</span><br>"
     elif [[ "$line" == *"NOTICE"* ]]; then
-      echo "<b>$safe_line</b><br>"
+      buffer+="<b>$safe_line</b><br>"
     else
-      echo "$safe_line<br>"
+      buffer+="$safe_line<br>"
     fi
-  done
+  done < <(tail -n "$LOG_LINE_MAX" "$file")
+  echo "$buffer"
 }
 
 ###############################################################################
@@ -133,6 +173,26 @@ if [[ ! -d "$LOG_DIR" ]]; then
         exit $ERROR_CODE
     fi
 fi
+
+###############################################################################
+# Fonction spinner
+###############################################################################
+spinner() {
+    local pid=$1       # PID du processus à surveiller
+    local delay=0.1    # vitesse du spinner
+    local spinstr='|/-\'
+    tput civis         # cacher le curseur
+
+    while kill -0 "$pid" 2>/dev/null; do
+        for (( i=0; i<${#spinstr}; i++ )); do
+            printf "\r[%c] Traitement en cours..." "${spinstr:i:1}"
+            sleep $delay
+        done
+    done
+
+    printf "\r[✔] Terminé !                   \n"
+    tput cnorm         # réafficher le curseur
+}
 
 ###############################################################################
 # Fonction pour centrer une ligne avec des '=' de chaque côté + coloration
@@ -161,8 +221,32 @@ print_centered_line() {
 }
 
 ###############################################################################
+# Fonction pour centrer une ligne dans le terminal (simple, sans décor ni couleur)
+###############################################################################
+print_centered_text() {
+    local line="$1"
+    local term_width=${2:-$TERM_WIDTH_DEFAULT}  # largeur par défaut = TERM_WIDTH_DEFAULT
+    local line_len=${#line}
+
+    if (( line_len >= term_width )); then
+        # Si la ligne est plus longue que la largeur, on l’affiche telle quelle
+        echo "$line"
+        return
+    fi
+
+    local pad_total=$((term_width - line_len))
+    local pad_side=$((pad_total / 2))
+    local pad_left=$(printf ' %.0s' $(seq 1 $pad_side))
+    local pad_right=$(printf ' %.0s' $(seq 1 $((pad_total - pad_side))))
+
+    echo "${pad_left}${line}${pad_right}"
+}
+
+###############################################################################
 # Lecture des options du script
 ###############################################################################
+DRY_RUN=false
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --auto)
@@ -173,15 +257,28 @@ while [[ $# -gt 0 ]]; do
             MAIL_TO="${1#*=}"
             shift
             ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
         *)
             shift
             ;;
     esac
 done
 
+# Activation dry-run si demandé
+if $DRY_RUN; then
+    RCLONE_OPTS+=(--dry-run)
+fi
+
 # Vérification si --mailto est fourni
 if [[ -z "$MAIL_TO" ]]; then
-	echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
+    echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
     SEND_MAIL=false
 else
     SEND_MAIL=true
@@ -227,8 +324,11 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
-	print_aligned "Email adressé à" "$MAIL_TO"
+	print_aligned "Email envoyé à" "$MAIL_TO"
 	print_aligned "Sujet email" "$SUBJECT_RAW"
+	if $DRY_RUN; then
+		print_aligned "Simulation (dry-run)" "$MSG_DRYRUN"
+	fi
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
@@ -376,6 +476,9 @@ NO_CHANGES_ALL=true
 # Initialisation des pièces jointes (évite erreur avec set -u)
 declare -a ATTACHMENTS=()
 
+# Compteur de jobs pour le label [JOBxx]
+JOB_COUNTER=1
+
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
@@ -387,18 +490,38 @@ while IFS= read -r line; do
     dst="${dst#"${dst%%[![:space:]]*}"}"
     dst="${dst%"${dst##*[![:space:]]}"}"
 
-    print_centered_line "$MSG_RCLONE_START $src → $dst"
-    print_centered_line "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S') (mode : $LAUNCH_MODE)"
+    # Générer un identifiant compact du job : [JOB01], [JOB02], ...
+    JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
+
+    # Affichage header job dans terminal et log global
+    print_centered_line "$MSG_WAITING1"
+    print_centered_line "$MSG_WAITING2"
+    print_centered_line "$MSG_WAITING3"
     echo
+
+	print_centered_text "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO"
+	print_centered_text "Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S')" | tee -a "$LOG_FILE_INFO"
+    echo "" | tee -a "$LOG_FILE_INFO"
 
     # === Créer un log temporaire pour ce job ===
     JOB_LOG_INFO="$(mktemp)"
 
-    # Exécution rclone unique, capture dans INFO.log + affichage terminal colorisé
-    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" \
-        --log-level INFO 2>&1 | tee "$JOB_LOG_INFO" | colorize
-    job_rc=${PIPESTATUS[0]}
-    (( job_rc != 0 )) && ERROR_CODE=6
+    # Exécution rclone, préfixe le job sur chaque ligne, capture dans INFO.log + affichage terminal colorisé
+	# Lancer rclone en arrière-plan
+	rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" --log-level INFO >"$JOB_LOG_INFO" 2>&1 &
+	RCLONE_PID=$!
+
+	# Afficher le spinner tant que rclone tourne
+	spinner $RCLONE_PID
+
+	# Récupérer le code retour de rclone
+	wait $RCLONE_PID
+	job_rc=$?
+	(( job_rc != 0 )) && ERROR_CODE=6
+
+	# Affichage colorisé après exécution
+	sed "s/^/[$JOB_ID] /" "$JOB_LOG_INFO" | colorize
+
 
     # Mise à jour du mail
     if $SEND_MAIL; then
@@ -414,7 +537,11 @@ while IFS= read -r line; do
     ((JOBS_COUNT++))
     (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
     echo
+
+    # Incrément du compteur pour le prochain job
+    ((JOB_COUNTER++))
 done < "$JOBS_FILE"
+
 
 ###############################################################################
 # Partie email conditionnelle
@@ -424,8 +551,8 @@ done < "$JOBS_FILE"
 if $SEND_MAIL; then
 
 	echo
-    print_centered_line "$MSG_PREP"
-	
+    print_centered_text "$MSG_PREP"
+
     ATTACHMENTS+=("$LOG_FILE_INFO")
 
     # Vérification présence msmtp (ne stoppe pas le script)
@@ -510,18 +637,16 @@ if $SEND_MAIL; then
 
 		# === Envoi du mail ===
 		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
-		
-    print_centered_line "$MSG_SENT"
+
+    print_centered_text "$MSG_SENT"
     echo
 
     fi
 fi
 
 ###############################################################################
-# Purge des logs si succès
+# Purge inconditionnel des logs anciens (tous fichiers du dossier)
 ###############################################################################
-if [[ $ERROR_CODE -eq 0 ]]; then
-    find "$LOG_DIR" -type f -name "rclone_log_*" -mtime +$LOG_RETENTION_DAYS -delete
-fi
+find "$LOG_DIR" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
 exit $ERROR_CODE
