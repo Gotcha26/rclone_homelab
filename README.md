@@ -62,6 +62,17 @@ Pour mettre à jour facilement l'utilitaire depuis GitHub :
 cd /opt/rclone_homelab
 git pull origin v2
 ```
+
+### Mise à jour forcée (autre branche)
+```
+cd /opt/rclone_homelab
+```
+```
+git fetch origin
+git reset --hard origin/v2
+chmod +x rclone_sync_main.sh
+```
+
 ## Utilisation
 
 Ce script peut être lancé de manière manuelle directement via le terminal Shell cmd tout simplement en l'appelant :
