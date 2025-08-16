@@ -86,15 +86,25 @@ else
     SEND_MAIL=true
 fi
 
+###############################################################################
+# Suite des opérations
+###############################################################################
 # === Vérification non bloquante si --mail activé sans --mailto ===
 if $SEND_MAIL && [[ -z "$MAIL_TO" ]]; then
     echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
     SEND_MAIL=false
 fi
 
-###############################################################################
-# Purge inconditionnel des logs anciens (tous fichiers du dossier)
-###############################################################################
+# === Création conditionnelle du répertoire LOG_DIR ===
+if [[ ! -d "$LOG_DIR" ]]; then
+    if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
+        echo "${RED}$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR${RESET}" >&2
+        ERROR_CODE=8
+        exit $ERROR_CODE
+    fi
+fi
+
+# === Purge inconditionnel des logs anciens (tous fichiers du dossier) ===
 find "$LOG_DIR" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
 exit $ERROR_CODE
