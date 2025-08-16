@@ -187,7 +187,7 @@ print_summary_table() {
 # Utilise awk pour des correspondances robustes et insensibles à la casse.
 ###############################################################################
 colorize() {
-    awk -v BLUE="$BLUE" -v RED="$RED" -v ORANGE="$ORANGE" -v RESET="$RESET" ' # Hack '
+    awk -v BLUE="$BLUE" -v RED="$RED" -v ORANGE="$ORANGE" -v RESET="$RESET" '
     {
         line = $0
         l = tolower(line)
@@ -206,7 +206,7 @@ colorize() {
         else {
             print line
         }
-    }' # Hack '
+    }'
 }
 
 ###############################################################################
