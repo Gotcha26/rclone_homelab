@@ -18,7 +18,7 @@ source "$SCRIPT_DIR/rclone_sync_jobs.sh"
 ###############################################################################
 # Affichage récapitulatif à la sortie
 ###############################################################################
-trap 'send_email_if_needed; print_summary_table' EXIT
+trap 'print_summary_table' EXIT
 
 ###############################################################################
 # Création des répertoires nécessaires
@@ -117,6 +117,9 @@ if $SEND_MAIL && [[ -z "$MAIL_TO" ]]; then
     echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
     SEND_MAIL=false
 fi
+
+# === Exécution fonction email avant résumé ===
+send_email_if_needed
 
 # === Purge inconditionnel des logs anciens (tous fichiers du dossier) ===
 find "$LOG_DIR" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
