@@ -56,7 +56,7 @@ rclone_homelab --help
 Pour mettre à jour facilement l'utilitaire depuis GitHub :
 ```
 cd /opt/rclone_homelab
-git pull origin main
+git pull origin v2
 ```
 ## Utilisation
 
