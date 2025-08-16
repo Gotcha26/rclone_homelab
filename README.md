@@ -122,6 +122,7 @@ Là vous pourrez mettre/enlever vos propores options.
   
 ## A faire / Ajouter
 - Scinder le fichier pour arrêter l'aspect monolithique
+- Internationnalisation : *wait and see...*
 
 ### Petites infos
 *Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).  
