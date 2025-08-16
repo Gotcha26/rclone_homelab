@@ -28,8 +28,12 @@ cd /opt/rclone_homelab
 ```
 3. Cloner le dépôt
 ```
- git clone https://github.com/Gotcha26/rclone_homelab.git .
+git clone --branch v2 https://github.com/Gotcha26/rclone_homelab.git
+
+git clone https://github.com/Gotcha26/rclone_homelab.git .
 ```
+⚠ Le `.` final permet de cloner dans le dossier courant sans créer un sous-dossier supplémentaire.
+
 4. Rendre le script exécutable
 ```
 chmod +x rclone_sync_main.sh
