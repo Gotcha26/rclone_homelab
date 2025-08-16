@@ -18,7 +18,7 @@ source "$SCRIPT_DIR/rclone_sync_jobs.sh"
 ###############################################################################
 # Affichage récapitulatif à la sortie
 ###############################################################################
-trap 'print_summary_table' EXIT
+trap 'send_email_if_needed; print_summary_table' EXIT
 
 ###############################################################################
 # Création des répertoires nécessaires
