@@ -138,6 +138,15 @@ Là vous pourrez mettre/enlever vos propores options.
 - Ne pas utilser d'outils ou de script à la base d'un noeud Proxmox. Vous risquez de bloquer toute votre installation !
 - Privilégiez toujours un conteneur LXC ou une VM. Plus facile à maintenir et à isoler.
 - Utilisez les sauvegardes Proxmox avant toute modification. C'est facile faire et à restaurer !
+
+## Debogage
+| Ligne / Bloc                           | Cause                                         | `ERROR_CODE` |
+| -------------------------------------- | --------------------------------------------- | ------------ |
+| Création de `$TMP_RCLONE` échouée      | Impossible de créer le dossier temporaire     | 8            |
+| Création de `$LOG_DIR` échouée         | Impossible de créer le dossier de logs        | 8            |
+| `$JOBS_FILE` introuvable               | Fichier jobs absent                           | 1            |
+| `$JOBS_FILE` non lisible               | Fichier jobs présent mais illisible           | 2            |
+| `$TMP_RCLONE` non trouvé (après vérif) | Le dossier temporaire n’existe pas après tout | 7            |
   
 ## A faire / Ajouter
 - Scinder le fichier pour arrêter l'aspect monolithique
