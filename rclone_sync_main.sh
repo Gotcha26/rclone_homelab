@@ -18,8 +18,21 @@ source "$SCRIPT_DIR/rclone_sync_jobs.sh"
 ###############################################################################
 # Création des répertoires nécessaires
 ###############################################################################
-mkdir -p "$LOG_DIR"
-mkdir -p "$TMP_RCLONE"
+if [[ ! -d "$TMP_RCLONE" ]]; then
+    if ! mkdir -p "$TMP_RCLONE" 2>/dev/null; then
+        echo "${RED}$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE${RESET}" >&2
+        ERROR_CODE=8
+        exit $ERROR_CODE
+    fi
+fi
+
+if [[ ! -d "$LOG_DIR" ]]; then
+    if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
+        echo "${RED}$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR${RESET}" >&2
+        ERROR_CODE=8
+        exit $ERROR_CODE
+    fi
+fi
 
 ###############################################################################
 # Vérifications initiales
@@ -98,15 +111,6 @@ MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
 if $SEND_MAIL && [[ -z "$MAIL_TO" ]]; then
     echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
     SEND_MAIL=false
-fi
-
-# === Création conditionnelle du répertoire LOG_DIR ===
-if [[ ! -d "$LOG_DIR" ]]; then
-    if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
-        echo "${RED}$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR${RESET}" >&2
-        ERROR_CODE=8
-        exit $ERROR_CODE
-    fi
 fi
 
 # === Purge inconditionnel des logs anciens (tous fichiers du dossier) ===
