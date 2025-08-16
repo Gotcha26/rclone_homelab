@@ -63,18 +63,6 @@ log_to_html() {
 }
 
 ###############################################################################
-# Fonction LOG pour les journaux
-###############################################################################
-# Création conditionnelle du répertoire LOG_DIR
-if [[ ! -d "$LOG_DIR" ]]; then
-    if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
-        echo "${RED}$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR${RESET}" >&2
-        ERROR_CODE=8
-        exit $ERROR_CODE
-    fi
-fi
-
-###############################################################################
 # Fonction spinner
 ###############################################################################
 spinner() {
