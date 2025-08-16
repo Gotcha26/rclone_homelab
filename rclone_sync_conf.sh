@@ -54,6 +54,7 @@ DATE="$(date '+%Y-%m-%d_%H-%M-%S')"
 NOW="$(date '+%Y/%m/%d %H:%M:%S')"
 MAIL="${TMP_RCLONE}/rclone_report.mail"
 MAIL_TO=""                     # valeur par défaut vide
+SUBJECT_RAW=""
 START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 END_TIME=""
 ERROR_CODE=0
