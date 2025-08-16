@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ###############################################################################
 # Script : rclone_sync_job.sh
-# Version : 1.45 - 2025-08-15
+# Version : 1.46 - 2025-08-16
 # Auteur  : Julien & ChatGPT
 #
 # Description :
@@ -144,20 +144,22 @@ MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
 # === Fonction HTML pour logs partiels ===
 log_to_html() {
   local file="$1"
-  tail -n "$LOG_LINE_MAX" "$file" | while IFS= read -r line; do
+  local buffer=""
+  while IFS= read -r line; do
     safe_line=$(echo "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
     if [[ "$line" == *"Deleted"* ]]; then
-      echo "<span style='color:red;'>$safe_line</span><br>"
+      buffer+="<span style='color:red;'>$safe_line</span><br>"
     elif [[ "$line" == *"Copied"* ]]; then
-      echo "<span style='color:blue;'>$safe_line</span><br>"
+      buffer+="<span style='color:blue;'>$safe_line</span><br>"
     elif [[ "$line" == *"Updated"* ]]; then
-      echo "<span style='color:orange;'>$safe_line</span><br>"
+      buffer+="<span style='color:orange;'>$safe_line</span><br>"
     elif [[ "$line" == *"NOTICE"* ]]; then
-      echo "<b>$safe_line</b><br>"
+      buffer+="<b>$safe_line</b><br>"
     else
-      echo "$safe_line<br>"
+      buffer+="$safe_line<br>"
     fi
-  done
+  done < <(tail -n "$LOG_LINE_MAX" "$file")
+  echo "$buffer"
 }
 
 ###############################################################################
