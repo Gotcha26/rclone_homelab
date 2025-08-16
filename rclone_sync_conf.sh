@@ -4,11 +4,11 @@
 
 # === Générales ===
 
-# Techniques (primaires)
-BASE_DIR="/opt/rclone_homelab"             # Répertoire principal de l'application
-LOG_DIR="$BASE_DIR/logs"                   # Répertoire temporaire pour rclone
+# Techniques (primaires) - NE PAS TOUCHER
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOG_DIR="$SCRIPT_DIR/logs"                 # Répertoire temporaire pour rclone
 TMP_RCLONE="$LOG_DIR/tmp"                  # Répertoire temporaire pour rclone
-JOBS_FILE="$BASE_DIR/rclone_jobs.txt"      # Fichier des jobs
+JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"    # Fichier des jobs
 
 # Adaptables
 TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
@@ -49,7 +49,6 @@ MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
 # === Variables techniques ===
 
 # Ne pas toucher
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 LOG_FILE_INFO="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_INFO.log"
 DATE="$(date '+%Y-%m-%d_%H-%M-%S')"
