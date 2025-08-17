@@ -2,9 +2,9 @@
 
 set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
 
-# ---------------------------
+# ###############################################################################
 # 1. Initialisation par défaut
-# ---------------------------
+# ###############################################################################
 
 # Résoudre le chemin réel du script (suivi des symlinks)
 SOURCE="${BASH_SOURCE[0]}"
@@ -15,12 +15,14 @@ while [ -h "$SOURCE" ]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 
+# Sourcing global
 source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
-###############################################################################
+# ---------------------------
 # Création des répertoires nécessaires
-###############################################################################
+# ---------------------------
+
 if [[ ! -d "$TMP_RCLONE" ]]; then
     if ! mkdir -p "$TMP_RCLONE" 2>/dev/null; then
         echo "${RED}$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE${RESET}" >&2
@@ -37,9 +39,10 @@ if [[ ! -d "$LOG_DIR" ]]; then
     fi
 fi
 
-###############################################################################
+# ---------------------------
 # Vérifications initiales
-###############################################################################
+# ---------------------------
+
 if [[ ! -f "$JOBS_FILE" ]]; then
     echo "$MSG_FILE_NOT_FOUND : $JOBS_FILE" >&2
     ERROR_CODE=1
@@ -50,17 +53,16 @@ if [[ ! -r "$JOBS_FILE" ]]; then
     ERROR_CODE=2
     exit $ERROR_CODE
 fi
-# **Vérification ajoutée pour TMP_RCLONE**
 if [[ ! -d "$TMP_RCLONE" ]]; then
     echo "$MSG_TMP_NOT_FOUND : $TMP_RCLONE" >&2
     ERROR_CODE=7
     exit $ERROR_CODE
 fi
 
-# ---------------------------
+###############################################################################
 # 2. Parsing complet des arguments
 # Lecture des options du script
-# ---------------------------
+###############################################################################
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -91,15 +93,23 @@ if $DRY_RUN; then
     RCLONE_OPTS+=(--dry-run)
 fi
 
-###############################################################################
+# ---------------------------
 # Charger la liste des remotes configurés dans rclone
-###############################################################################
+# ---------------------------
+
 mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 
-# ---------------------------
+###############################################################################
 # 3. Exécution des jobs rclone
-# ---------------------------
+# Sourcing
+###############################################################################
+
 source "$SCRIPT_DIR/rclone_sync_jobs.sh"
+
+###############################################################################
+# 4. Traitement des emails
+# Sourcing
+###############################################################################
 
 # Vérification si --mailto est fourni
 if [[ -z "$MAIL_TO" ]]; then
@@ -107,25 +117,17 @@ if [[ -z "$MAIL_TO" ]]; then
     SEND_MAIL=false
 else
     SEND_MAIL=true
+    source "$SCRIPT_DIR/rclone_sync_mail.sh"
 fi
 
 ###############################################################################
-# Suite des opérations
+# 4. Suite des opérations
 ###############################################################################
-# === Préparation du mail ===
-MAIL_SUBJECT_OK=true
-MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
-MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
 
-# === Exécution fonction email avant résumé ===
-send_email_if_needed
-
-# === Purge inconditionnel des logs anciens (tous fichiers du dossier) ===
+# Purge inconditionnel des logs anciens (tous fichiers du dossier)
 find "$LOG_DIR" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
-###############################################################################
 # Affichage récapitulatif à la sortie
-###############################################################################
 trap 'print_summary_table' EXIT
 
 exit $ERROR_CODE
