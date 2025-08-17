@@ -102,14 +102,6 @@ while IFS= read -r line; do
 	# Affichage colorisé après exécution
 	sed "s/^/[$JOB_ID] /" "$JOB_LOG_INFO" | colorize
 
-
-    # Mise à jour du mail
-    if $SEND_MAIL; then
-        MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
-        MAIL_CONTENT+="$(log_to_html "$JOB_LOG_INFO")"
-        MAIL_CONTENT+="</pre>"
-    fi
-
     # Concatenation du log temporaire dans le log global
     cat "$JOB_LOG_INFO" >> "$LOG_FILE_INFO"
     rm -f "$JOB_LOG_INFO"
