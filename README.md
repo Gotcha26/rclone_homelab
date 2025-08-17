@@ -16,6 +16,7 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ✅ Coloration synthaxique
 - ❗ Vous rend riche, beau et irresistible
 - ✅ Durée de conservation des logs : 15 jours par défaut.
+- ℹ️ Vous pouvez appeler le script depuis n'importe où (root inclu)
 
 ## Installation pas à pas
 1. Création d'un dossier dédié
