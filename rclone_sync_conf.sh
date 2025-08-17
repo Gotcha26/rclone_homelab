@@ -4,16 +4,10 @@
 
 # === Générales ===
 
-# Techniques (primaires) - NE PAS TOUCHER
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_DIR="$SCRIPT_DIR/logs"                 # Répertoire temporaire pour rclone
-TMP_RCLONE="$LOG_DIR/tmp"                  # Répertoire temporaire pour rclone
-JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"    # Fichier des jobs
-
 # Adaptables
 TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
 LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
-LOG_LINE_MAX="200"                         # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
+LOG_LINE_MAX=200                           # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
 
 # === Messages (centralisés pour affichage et email) ===
 
@@ -48,6 +42,10 @@ MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
 # === Variables techniques ===
 
 # Ne pas toucher
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TMP_RCLONE="$SCRIPT_DIR/tmp"               # Répertoire temporaire pour rclone
+LOG_DIR="$SCRIPT_DIR/logs"                 # Répertoire temporaire pour rclone
+JOBS_FILE="$SCRIPT_DIR/rclone_jobs.txt"    # Fichier des jobs
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 LOG_FILE_INFO="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_INFO.log"
 DATE="$(date '+%Y-%m-%d_%H-%M-%S')"
