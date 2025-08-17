@@ -115,7 +115,6 @@ source "$SCRIPT_DIR/rclone_sync_jobs.sh"
 
 ###############################################################################
 # 4. Traitement des emails
-# Sourcing
 ###############################################################################
 
 # Vérification si --mailto est fourni
@@ -124,7 +123,7 @@ if [[ -z "$MAIL_TO" ]]; then
     SEND_MAIL=false
 else
     SEND_MAIL=true
-    source "$SCRIPT_DIR/rclone_sync_mail.sh"
+    send_email_if_needed
 fi
 
 ###############################################################################
