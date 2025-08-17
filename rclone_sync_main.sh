@@ -2,6 +2,13 @@
 
 set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
 
+###############################################################################
+# 0. Affiche le logo uniquement si on n'est pas en mode "automatique"
+###############################################################################
+if [[ "$LAUNCH_MODE" != "automatique" ]]; then
+    print_logo
+fi
+
 # ###############################################################################
 # 1. Initialisation par défaut
 # ###############################################################################
