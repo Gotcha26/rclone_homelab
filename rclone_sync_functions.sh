@@ -1,6 +1,7 @@
 ###############################################################################
 # Fonction help (aide)
 ###############################################################################
+
 show_help() {
     cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
@@ -31,10 +32,13 @@ Fonctionnement :
 EOF
 }
 
+
 ###############################################################################
 # Fonctions EMAIL
 ###############################################################################
+
 # === Fonction HTML pour logs partiels ===
+
 log_to_html() {
   local file="$1"
   local buffer=""
@@ -56,9 +60,10 @@ log_to_html() {
 }
 
 # === Email conditionnel ===
+
 send_email_if_needed() {
 
-	# === Compter les occurrences sur l'ensemble des jobs, uniquement lignes contenant INFO ===
+	# Compter les occurrences sur l'ensemble des jobs, uniquement lignes contenant INFO
 	TOTAL_COPIED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Copied" || true)
 	TOTAL_UPDATED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Updated" || true)
 	TOTAL_DELETED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Deleted" || true)
@@ -71,7 +76,7 @@ send_email_if_needed() {
  		echo
 		print_centered_text "$MSG_EMAIL_PREP"
 
-		# === Préparation du mail ===
+		# Préparation du mail
 		MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
 		MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
 		MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
@@ -86,8 +91,8 @@ send_email_if_needed() {
 
 		MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
 
-		# === Détermination du sujet du mail selon le résultat global ===
-		# === Analyse du log global pour déterminer l'état final ===
+		# Détermination du sujet du mail selon le résultat global
+		# Analyse du log global pour déterminer l'état final
 		HAS_ERROR=false
 		HAS_NO_TRANSFER=false
 
@@ -101,7 +106,7 @@ send_email_if_needed() {
 			HAS_NO_TRANSFER=true
 		fi
 
-		# === Choix du sujet du mail ===
+		# Choix du sujet du mail
 		if $HAS_ERROR; then
 			SUBJECT_RAW="$MSG_EMAIL_FAIL"
 		elif $HAS_NO_TRANSFER; then
@@ -118,6 +123,7 @@ send_email_if_needed() {
 		SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
 
 		# === Assemblage du mail ===
+  
 		{
 			FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
 			echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
@@ -133,7 +139,7 @@ send_email_if_needed() {
 			echo "$MAIL_CONTENT"
 		} > "$MAIL"
 
-		# === Ajout des pièces jointes ===
+		# Ajout des pièces jointes
   		ATTACHMENTS+=("$LOG_FILE_INFO")
 
 		for file in "${ATTACHMENTS[@]}"; do
@@ -150,7 +156,7 @@ send_email_if_needed() {
 
 		echo "--BOUNDARY123--" >> "$MAIL"
 
-		# === Envoi du mail ===
+		# Envoi du mail
 		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
 
 	print_centered_text "$MSG_EMAIL_SENT"
@@ -158,9 +164,11 @@ send_email_if_needed() {
 	fi
 }
 
+
 ###############################################################################
 # Fonction spinner
 ###############################################################################
+
 spinner() {
     local pid=$1       # PID du processus à surveiller
     local delay=0.1    # vitesse du spinner
@@ -178,9 +186,11 @@ spinner() {
     tput cnorm         # réafficher le curseur
 }
 
+
 ###############################################################################
 # Fonction pour centrer une ligne avec des '=' de chaque côté + coloration
 ###############################################################################
+
 print_centered_line() {
     local line="$1"
     local term_width=$((TERM_WIDTH_DEFAULT - 2))   # <- Force largeur fixe à 80-2
@@ -204,9 +214,11 @@ print_centered_line() {
     printf "%s%s %s %s%s\n" "$pad_left" "$BG_BLUE_DARK" "$line" "$RESET" "$pad_right"
 }
 
+
 ###############################################################################
 # Fonction pour centrer une ligne dans le terminal (simple, sans décor ni couleur)
 ###############################################################################
+
 print_centered_text() {
     local line="$1"
     local term_width=${2:-$TERM_WIDTH_DEFAULT}  # largeur par défaut = TERM_WIDTH_DEFAULT
@@ -226,9 +238,11 @@ print_centered_text() {
     echo "${pad_left}${line}${pad_right}"
 }
 
+
 ###############################################################################
 # Fonction d'affichage du tableau récapitulatif avec bordures
 ###############################################################################
+
 print_aligned() {
     local label="$1"
     local value="$2"
@@ -285,10 +299,12 @@ print_summary_table() {
     echo
 }
 
+
 ###############################################################################
 # Colorisation de la sortie rclone (fonction)
 # Utilise awk pour des correspondances robustes et insensibles à la casse.
 ###############################################################################
+
 colorize() {
     awk -v BLUE="$BLUE" -v RED="$RED" -v ORANGE="$ORANGE" -v RESET="$RESET" '
     {
@@ -312,9 +328,11 @@ colorize() {
     }'
 }
 
+
 ###############################################################################
 # Fonction : Affiche le logo ASCII GOTCHA (uniquement en mode manuel)
 ###############################################################################
+
 print_logo() {
     echo
     echo
