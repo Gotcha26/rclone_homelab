@@ -88,7 +88,7 @@ while IFS= read -r line; do
 
     # Exécution rclone, préfixe le job sur chaque ligne, capture dans INFO.log + affichage terminal colorisé
 	# Lancer rclone en arrière-plan
-	rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" --log-level INFO >"$JOB_LOG_INFO" 2>&1 &
+	rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" > "$JOB_LOG_INFO" 2>&1 &
 	RCLONE_PID=$!
 
 	# Afficher le spinner tant que rclone tourne
