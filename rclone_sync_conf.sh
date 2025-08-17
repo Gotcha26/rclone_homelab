@@ -34,9 +34,9 @@ MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
 MSG_EMAIL_SUCCESS="✅  Sauvegardes vers le cloud réussies"
 MSG_EMAIL_FAIL="❌  Des erreurs lors des sauvegardes vers le cloud"
-MSG_MAIL_SUSPECT="❗  Synchronisation réussie mais aucun fichier transféré"
-MSG_PREP="📧  Préparation de l'email..."
-MSG_SENT="... Email envoyé ✅ "
+MSG_EMAIL_SUSPECT="❗  Synchronisation réussie mais aucun fichier transféré"
+MSG_EMAIL_PREP="📧  Préparation de l'email..."
+MSG_EMAIL_SENT="... Email envoyé ✅ "
 MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
 
 # === Variables techniques ===
