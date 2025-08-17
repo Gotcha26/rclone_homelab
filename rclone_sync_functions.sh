@@ -58,15 +58,6 @@ log_to_html() {
 # === Email conditionnel ===
 send_email_if_needed() {
 
-    # Initialisation des variables pour éviter set -u
-    # MSG_PREP="${MSG_PREP:-Préparation du mail…}"
-    # MSG_SENT="${MSG_SENT:-Mail envoyé}"
-    # SUBJECT_RAW="${SUBJECT_RAW:-}"
-    # MAIL_CONTENT="${MAIL_CONTENT:-}"
-    # ATTACHMENTS=()
-    # MAIL="${MAIL:-/tmp/mail.html}"
-    # LOG_FILE_INFO="${LOG_FILE_INFO:-/tmp/log_info.log}"
-
 	# === Compter les occurrences sur l'ensemble des jobs, uniquement lignes contenant INFO ===
 	TOTAL_COPIED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Copied" || true)
 	TOTAL_UPDATED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Updated" || true)
@@ -79,12 +70,12 @@ send_email_if_needed() {
 	else
  		echo
 		print_centered_text "$MSG_EMAIL_PREP"
-  
+
 		# === Préparation du mail ===
 		MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
 		MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
 		MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
-		MAIL_CONTENT+="$(log_to_html "$JOB_LOG_INFO")"
+		MAIL_CONTENT+="$(log_to_html "$LOG_FILE_INFO")"
 		MAIL_CONTENT+="</pre>"
 
 		# Ajouter un résumé général dans le mail
