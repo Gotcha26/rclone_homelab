@@ -90,7 +90,7 @@ Pour simplifier la vie, ces *jobs* sont à écrire à l'avance dans un fichier �
 Ce fichier du nom de `rclone_sync_jobs.txt` contiendra **1 ligne par job**.  
 
 ###### Exemples :
-`nano /opt/rclone_homelab/rclone_jobs.txt`
+`nano /opt/rclone_homelab/rclone_sync_jobs.txt`
 ```ini
 <lien_symbolique_source>|<remote rclone:dossier/sous_dossier>
 /srv/backups|onedrive_gotcha:Homelab_backups
