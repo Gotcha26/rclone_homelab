@@ -41,22 +41,23 @@ EOF
 
 log_to_html() {
   local file="$1"
-  local buffer=""
-  while IFS= read -r line; do
+  local safe_line
+
+  tail -n "$LOG_LINE_MAX" "$file" | while IFS= read -r line; do
     safe_line=$(echo "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+
     if [[ "$line" == *"Deleted"* ]]; then
-      buffer+="<span style='color:red;'>$safe_line</span><br>"
+      echo "<span style='color:red;'>$safe_line</span><br>"
     elif [[ "$line" == *"Copied"* ]]; then
-      buffer+="<span style='color:blue;'>$safe_line</span><br>"
+      echo "<span style='color:blue;'>$safe_line</span><br>"
     elif [[ "$line" == *"Updated"* ]]; then
-      buffer+="<span style='color:orange;'>$safe_line</span><br>"
+      echo "<span style='color:orange;'>$safe_line</span><br>"
     elif [[ "$line" == *"NOTICE"* ]]; then
-      buffer+="<b>$safe_line</b><br>"
+      echo "<b>$safe_line</b><br>"
     else
-      buffer+="$safe_line<br>"
+      echo "$safe_line<br>"
     fi
-  done < <(tail -n "$LOG_LINE_MAX" "$file")
-  echo "$buffer"
+  done
 }
 
 # === Email conditionnel ===
@@ -73,15 +74,16 @@ send_email_if_needed() {
 		echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
 		ERROR_CODE=9
 	else
- 		echo
+		echo
 		print_centered_text "$MSG_EMAIL_PREP"
 
 		# Préparation du mail
 		MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
 		MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
-		MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
+		MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p>"
+		MAIL_CONTENT+="<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
 		MAIL_CONTENT+="$(log_to_html "$LOG_FILE_INFO")"
-		MAIL_CONTENT+="</pre>"
+		MAIL_CONTENT+="</div>"
 
 		# Ajouter un résumé général dans le mail
 		MAIL_CONTENT+="<hr><h3>📊 Résumé global</h3>"
@@ -123,10 +125,9 @@ send_email_if_needed() {
 		SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
 
 		# === Assemblage du mail ===
-  
 		{
 			FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
-			echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
+			echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
 			echo "To: $MAIL_TO"
 			echo "Date: $(date -R)"
 			echo "Subject: $SUBJECT"
@@ -140,7 +141,7 @@ send_email_if_needed() {
 		} > "$MAIL"
 
 		# Ajout des pièces jointes
-  		ATTACHMENTS+=("$LOG_FILE_INFO")
+		ATTACHMENTS+=("$LOG_FILE_INFO")
 
 		for file in "${ATTACHMENTS[@]}"; do
 			{
@@ -274,15 +275,15 @@ print_summary_table() {
     print_aligned "Nombre de jobs" "$JOBS_COUNT"
     print_aligned "Code erreur" "$ERROR_CODE"
     print_aligned "Log INFO" "$LOG_FILE_INFO"
-	print_aligned "Email envoyé à" "$MAIL_TO"
-	print_aligned "Sujet email" "$SUBJECT_RAW"
+    print_aligned "Email envoyé à" "$MAIL_TO"
+    print_aligned "Sujet email" "$SUBJECT_RAW"
 	if $DRY_RUN; then
 		print_aligned "Simulation (dry-run)" "$MSG_DRYRUN"
 	fi
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
-	# Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
+    # Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
     local text="$MSG_END_REPORT"
     local term_width="$TERM_WIDTH_DEFAULT"
     local text_len=${#text}
