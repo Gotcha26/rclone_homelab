@@ -32,7 +32,7 @@ EOF
 }
 
 ###############################################################################
-# Fonction MAIL
+# Fonctions EMAIL
 ###############################################################################
 # === Fonction HTML pour logs partiels ===
 log_to_html() {
@@ -57,113 +57,114 @@ log_to_html() {
 
 # === Email conditionnel ===
 send_email_if_needed() {
-    [[ "$SEND_MAIL" != true ]] && return 0  # Si mail non activé, on sort
 
     # Initialisation des variables pour éviter set -u
-    MSG_PREP="${MSG_PREP:-Préparation du mail…}"
-    MSG_SENT="${MSG_SENT:-Mail envoyé}"
-    SUBJECT_RAW="${SUBJECT_RAW:-}"
-    MAIL_CONTENT="${MAIL_CONTENT:-}"
-    ATTACHMENTS=()
-    MAIL="${MAIL:-/tmp/mail.html}"
-    LOG_FILE_INFO="${LOG_FILE_INFO:-/tmp/log_info.log}"
+    # MSG_PREP="${MSG_PREP:-Préparation du mail…}"
+    # MSG_SENT="${MSG_SENT:-Mail envoyé}"
+    # SUBJECT_RAW="${SUBJECT_RAW:-}"
+    # MAIL_CONTENT="${MAIL_CONTENT:-}"
+    # ATTACHMENTS=()
+    # MAIL="${MAIL:-/tmp/mail.html}"
+    # LOG_FILE_INFO="${LOG_FILE_INFO:-/tmp/log_info.log}"
 
-    # Pièces jointes : log INFO (toujours), DEBUG (en cas d’erreur globale)
-    if $SEND_MAIL; then
+	# === Compter les occurrences sur l'ensemble des jobs, uniquement lignes contenant INFO ===
+	TOTAL_COPIED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Copied" || true)
+	TOTAL_UPDATED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Updated" || true)
+	TOTAL_DELETED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Deleted" || true)
 
-    	echo
-        print_centered_text "$MSG_PREP"
+	# Vérification présence msmtp (ne stoppe pas le script)
+	if ! command -v msmtp >/dev/null 2>&1; then
+		echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
+		ERROR_CODE=9
+	else
+ 		echo
+		print_centered_text "$MSG_EMAIL_PREP"
+  
+		# === Préparation du mail ===
+		MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
+		MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
+		MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p><pre style='background:#eee; padding:1em; border-radius:8px;'>"
+		MAIL_CONTENT+="$(log_to_html "$JOB_LOG_INFO")"
+		MAIL_CONTENT+="</pre>"
 
-        ATTACHMENTS+=("$LOG_FILE_INFO")
+		# Ajouter un résumé général dans le mail
+		MAIL_CONTENT+="<hr><h3>📊 Résumé global</h3>"
+		MAIL_CONTENT+="<pre><b>Fichiers copiés :</b> $TOTAL_COPIED"
+		MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $TOTAL_UPDATED"
+		MAIL_CONTENT+="<br><b>Fichiers supprimés :</b> $TOTAL_DELETED</pre>"
 
-        # Vérification présence msmtp (ne stoppe pas le script)
-        if ! command -v msmtp >/dev/null 2>&1; then
-            echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
-            ERROR_CODE=9
-        else
-	    	# === Compter les occurrences sur l'ensemble des jobs, uniquement lignes contenant INFO ===
-		    TOTAL_COPIED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Copied" || true)
-		    TOTAL_UPDATED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Updated" || true)
-	    	TOTAL_DELETED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Deleted" || true)
+		MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
 
-	    	# Ajouter un résumé général dans le mail
-	    	MAIL_CONTENT+="<hr><h3>📊 Résumé global</h3>"
-	    	MAIL_CONTENT+="<pre><b>Fichiers copiés :</b> $TOTAL_COPIED"
-	    	MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $TOTAL_UPDATED"
-	    	MAIL_CONTENT+="<br><b>Fichiers supprimés :</b> $TOTAL_DELETED</pre>"
+		# === Détermination du sujet du mail selon le résultat global ===
+		# === Analyse du log global pour déterminer l'état final ===
+		HAS_ERROR=false
+		HAS_NO_TRANSFER=false
 
-            MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
+		# Erreur détectée
+		if grep -iqE "(error|failed|failed to)" "$LOG_FILE_INFO"; then
+			HAS_ERROR=true
+		fi
 
-	    	# === Détermination du sujet du mail selon le résultat global ===
-            # === Analyse du log global pour déterminer l'état final ===
-            HAS_ERROR=false
-            HAS_NO_TRANSFER=false
+		# Aucun transfert détecté (cas précis)
+		if grep -q "There was nothing to transfer" "$LOG_FILE_INFO"; then
+			HAS_NO_TRANSFER=true
+		fi
 
-            # Erreur détectée
-            if grep -iqE "(error|failed|failed to)" "$LOG_FILE_INFO"; then
-                HAS_ERROR=true
-            fi
+		# === Choix du sujet du mail ===
+		if $HAS_ERROR; then
+			SUBJECT_RAW="$MSG_EMAIL_FAIL"
+		elif $HAS_NO_TRANSFER; then
+			SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
+		else
+			SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
+		fi
 
-            # Aucun transfert détecté (cas précis)
-            if grep -q "There was nothing to transfer" "$LOG_FILE_INFO"; then
-                HAS_NO_TRANSFER=true
-            fi
+		# Encodage MIME UTF-8 Base64 du sujet
+		encode_subject() {
+			local raw="$1"
+			printf "%s" "$raw" | base64 | tr -d '\n'
+		}
+		SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
 
-            # === Choix du sujet du mail ===
-            if $HAS_ERROR; then
-                SUBJECT_RAW="$MSG_EMAIL_FAIL"
-            elif $HAS_NO_TRANSFER; then
-                SUBJECT_RAW="$MSG_MAIL_SUSPECT"
-            else
-                SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
-            fi
+		# === Assemblage du mail ===
+		{
+			FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+			echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
+			echo "To: $MAIL_TO"
+			echo "Date: $(date -R)"
+			echo "Subject: $SUBJECT"
+			echo "MIME-Version: 1.0"
+			echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
+			echo
+			echo "--BOUNDARY123"
+			echo "Content-Type: text/html; charset=UTF-8"
+			echo
+			echo "$MAIL_CONTENT"
+		} > "$MAIL"
 
-		    # Encodage MIME UTF-8 Base64 du sujet
-		    encode_subject() {
-		    	local raw="$1"
-	    		printf "%s" "$raw" | base64 | tr -d '\n'
-	    	}
-	    	SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
+		# === Ajout des pièces jointes ===
+  		ATTACHMENTS+=("$LOG_FILE_INFO")
 
-	    	# === Construction du mail ===
-	    	{
-		    	FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
-	    		echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"	# Laisser msmtp gérer l'expéditeur configuré
-		    	echo "To: $MAIL_TO"
-		    	echo "Date: $(date -R)"
-		    	echo "Subject: $SUBJECT"
-		    	echo "MIME-Version: 1.0"
-		    	echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
-		    	echo
-		    	echo "--BOUNDARY123"
-		    	echo "Content-Type: text/html; charset=UTF-8"
-		    	echo
-		    	echo "$MAIL_CONTENT"
-		    } > "$MAIL"
+		for file in "${ATTACHMENTS[@]}"; do
+			{
+				echo
+				echo "--BOUNDARY123"
+				echo "Content-Type: text/plain; name=\"$(basename "$file")\""
+				echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
+				echo "Content-Transfer-Encoding: base64"
+				echo
+				base64 "$file"
+			} >> "$MAIL"
+		done
 
-	    	# === Ajout des pièces jointes ===
-	    	for file in "${ATTACHMENTS[@]}"; do
-	    		{
-	    			echo
-			    	echo "--BOUNDARY123"
-			    	echo "Content-Type: text/plain; name=\"$(basename "$file")\""
-		    		echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
-		    		echo "Content-Transfer-Encoding: base64"
-		    		echo
-		    		base64 "$file"
-		    	} >> "$MAIL"
-		    done
+		echo "--BOUNDARY123--" >> "$MAIL"
 
-	    	echo "--BOUNDARY123--" >> "$MAIL"
+		# === Envoi du mail ===
+		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
 
-	    	# === Envoi du mail ===
-	    	msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
-
-        print_centered_text "$MSG_SENT"
-        echo
-
-        fi
-    fi
+	print_centered_text "$MSG_EMAIL_SENT"
+	echo
+	fi
 }
 
 ###############################################################################
