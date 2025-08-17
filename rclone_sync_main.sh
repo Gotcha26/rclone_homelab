@@ -2,6 +2,10 @@
 
 set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
 
+# ---------------------------
+# 1. Initialisation par défaut
+# ---------------------------
+
 # Résoudre le chemin réel du script (suivi des symlinks)
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do
@@ -13,12 +17,6 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 
 source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
-source "$SCRIPT_DIR/rclone_sync_jobs.sh"
-
-###############################################################################
-# Affichage récapitulatif à la sortie
-###############################################################################
-trap 'print_summary_table' EXIT
 
 ###############################################################################
 # Création des répertoires nécessaires
@@ -59,13 +57,10 @@ if [[ ! -d "$TMP_RCLONE" ]]; then
     exit $ERROR_CODE
 fi
 
-# Charger la liste des remotes configurés dans rclone
-mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
-
-###############################################################################
+# ---------------------------
+# 2. Parsing complet des arguments
 # Lecture des options du script
-###############################################################################
-DRY_RUN=false
+# ---------------------------
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -96,6 +91,16 @@ if $DRY_RUN; then
     RCLONE_OPTS+=(--dry-run)
 fi
 
+###############################################################################
+# Charger la liste des remotes configurés dans rclone
+###############################################################################
+mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
+
+# ---------------------------
+# 3. Exécution des jobs rclone
+# ---------------------------
+source "$SCRIPT_DIR/rclone_sync_jobs.sh"
+
 # Vérification si --mailto est fourni
 if [[ -z "$MAIL_TO" ]]; then
     echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
@@ -112,16 +117,15 @@ MAIL_SUBJECT_OK=true
 MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
 MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
 
-# === Vérification non bloquante si --mail activé sans --mailto ===
-if $SEND_MAIL && [[ -z "$MAIL_TO" ]]; then
-    echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
-    SEND_MAIL=false
-fi
-
 # === Exécution fonction email avant résumé ===
 send_email_if_needed
 
 # === Purge inconditionnel des logs anciens (tous fichiers du dossier) ===
 find "$LOG_DIR" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
+
+###############################################################################
+# Affichage récapitulatif à la sortie
+###############################################################################
+trap 'print_summary_table' EXIT
 
 exit $ERROR_CODE
