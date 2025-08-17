@@ -69,6 +69,8 @@ fi
 # Lecture des options du script
 ###############################################################################
 
+DRY_RUN=false
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --auto)
@@ -88,15 +90,15 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
+            # Tous les autres arguments sont ajoutés à RCLONE_OPTS
+            RCLONE_OPTS+=("$1")
             shift
             ;;
     esac
 done
 
 # Activation dry-run si demandé
-if $DRY_RUN; then
-    RCLONE_OPTS+=(--dry-run)
-fi
+$DRY_RUN && RCLONE_OPTS+=(--dry-run)
 
 # ---------------------------
 # Charger la liste des remotes configurés dans rclone
