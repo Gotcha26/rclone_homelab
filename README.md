@@ -143,11 +143,14 @@ Là vous pourrez mettre/enlever vos propores options.
 ## Debogage
 | Ligne / Bloc                           | Cause                                         | `ERROR_CODE` |
 | -------------------------------------- | --------------------------------------------- | ------------ |
-| Création de `$TMP_RCLONE` échouée      | Impossible de créer le dossier temporaire     | 8            |
-| Création de `$LOG_DIR` échouée         | Impossible de créer le dossier de logs        | 8            |
 | `$JOBS_FILE` introuvable               | Fichier jobs absent                           | 1            |
 | `$JOBS_FILE` non lisible               | Fichier jobs présent mais illisible           | 2            |
+| Remote introuvable                     | Conofiguration rclone ou argument incorrect   | 3            |
 | `$TMP_RCLONE` non trouvé (après vérif) | Le dossier temporaire n’existe pas après tout | 7            |
+| Création de `$TMP_RCLONE` échouée      | Impossible de créer le dossier temporaire     | 8            |
+| Création de `$LOG_DIR` échouée         | Impossible de créer le dossier de logs        | 8            |
+
+
   
 ## A faire / Ajouter
 - Scinder le fichier pour arrêter l'aspect monolithique
