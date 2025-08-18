@@ -2,6 +2,7 @@
 
 set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
 
+
 # ###############################################################################
 # 1. Initialisation par défaut
 # ###############################################################################
@@ -18,6 +19,7 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 # Sourcing global
 source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
+
 
 ###############################################################################
 # 2. Parsing complet des arguments
@@ -60,10 +62,7 @@ if [[ "$LAUNCH_MODE" != "automatique" ]]; then
     print_logo
 fi
 
-# ---------------------------
 # Création des répertoires nécessaires
-# ---------------------------
-
 if [[ ! -d "$TMP_RCLONE" ]]; then
     if ! mkdir -p "$TMP_RCLONE" 2>/dev/null; then
         echo "${RED}$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE${RESET}" >&2
@@ -80,10 +79,7 @@ if [[ ! -d "$LOG_DIR" ]]; then
     fi
 fi
 
-# ---------------------------
 # Vérifications initiales
-# ---------------------------
-
 if [[ ! -f "$JOBS_FILE" ]]; then
     echo "$MSG_FILE_NOT_FOUND : $JOBS_FILE" >&2
     ERROR_CODE=1
@@ -101,11 +97,9 @@ if [[ ! -d "$TMP_RCLONE" ]]; then
 fi
 
 
-# ---------------------------
 # Charger la liste des remotes configurés dans rclone
-# ---------------------------
-
 mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
+
 
 ###############################################################################
 # 3. Exécution des jobs rclone
@@ -113,6 +107,7 @@ mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 ###############################################################################
 
 source "$SCRIPT_DIR/rclone_sync_jobs.sh"
+
 
 ###############################################################################
 # 4. Traitement des emails
