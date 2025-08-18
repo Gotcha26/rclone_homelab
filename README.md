@@ -143,14 +143,16 @@ Là vous pourrez mettre/enlever vos propores options.
 - Utilisez les sauvegardes Proxmox avant toute modification. C'est facile faire et à restaurer !
 
 ## Debogage
-| Ligne / Bloc                           | Cause                                         | `ERROR_CODE` |
-| -------------------------------------- | --------------------------------------------- | ------------ |
-| `$JOBS_FILE` introuvable               | Fichier jobs absent                           | 1            |
-| `$JOBS_FILE` non lisible               | Fichier jobs présent mais illisible           | 2            |
-| Remote introuvable                     | Conofiguration rclone ou argument incorrect   | 3            |
-| `$TMP_RCLONE` non trouvé (après vérif) | Le dossier temporaire n’existe pas après tout | 7            |
-| Création de `$TMP_RCLONE` échouée      | Impossible de créer le dossier temporaire     | 8            |
-| Création de `$LOG_DIR` échouée         | Impossible de créer le dossier de logs        | 8            |
+| Ligne / Bloc                                 | Cause                                         | `ERROR_CODE` |
+| -------------------------------------------- | --------------------------------------------- | ------------ |
+| `$JOBS_FILE` introuvable                     | Fichier jobs absent                           | 1            |
+| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible           | 2            |
+| `$MSG_JOB_LINE_INVALID` invalide             | Fichier jobs présente une ligne illisible     | 3            |
+| `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              | 4            |
+| `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration rclone ou argument incorrect    | 5            |
+| `$TMP_RCLONE` non trouvé (après vérif)       | Le dossier temporaire n’existe pas après tout | 7            |
+| Création de `$TMP_RCLONE` échouée            | Impossible de créer le dossier temporaire     | 8            |
+| Création de `$LOG_DIR` échouée               | Impossible de créer le dossier de logs        | 8            |
 
 
   
