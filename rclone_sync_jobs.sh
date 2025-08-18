@@ -8,41 +8,44 @@ source "$SCRIPT_DIR/rclone_sync_functions.sh"
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
-	# Nettoyage de la ligne : trim + uniformisation séparateurs
+    # Nettoyage de la ligne : trim + uniformisation séparateurs
     line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
     IFS='|' read -r src dst <<< "$line"
+
+    # Trim espaces résiduels
     src="${src#"${src%%[![:space:]]*}"}"
     src="${src%"${src##*[![:space:]]}"}"
     dst="${dst#"${dst%%[![:space:]]*}"}"
     dst="${dst%"${dst##*[![:space:]]}"}"
+
+    # Vérif de base
     if [[ -z "$src" || -z "$dst" ]]; then
         echo "$MSG_JOB_LINE_INVALID : $line" >&2
         ERROR_CODE=3
         exit $ERROR_CODE
     fi
+
+    # Vérif source locale
     if [[ ! -d "$src" ]]; then
         echo "$MSG_SRC_NOT_FOUND : $src" >&2
         ERROR_CODE=4
         exit $ERROR_CODE
     fi
+
+    # Vérif destination remote si besoin
     if [[ "$dst" == *":"* ]]; then
         remote_name="${dst%%:*}"  # récupère la partie avant le ":"
-        # Remplissage de la liste des remotes connus (avec config correcte)
-        RCLONE_REMOTES=$(rclone listremotes "${RCLONE_OPTS[@]}")
-        # Vérification du remote
-        if ! echo "$RCLONE_REMOTES" | grep -qx "${remote_name}:"; then
-            echo "$MSG_REMOTE_UNKNOWN : $remote_name" >&2
-            ERROR_CODE=5
-            exit $ERROR_CODE
-        fi
+        check_remote "$remote_name"
     fi
+
 done < "$JOBS_FILE"
+
 
 ###############################################################################
 # Exécution des jobs
 ###############################################################################
 
-# === Initialisation du flag global avant la boucle des jobs ===
+#  Initialisation du flag global avant la boucle des jobs
 NO_CHANGES_ALL=true
 
 # Compteur de jobs pour le label [JOBxx]
@@ -75,7 +78,7 @@ while IFS= read -r line; do
     # === Créer un log temporaire pour ce job ===
     JOB_LOG_INFO="$(mktemp)"
 
-    # Exécution rclone, préfixe le job sur chaque ligne, capture dans INFO.log + affichage terminal colorisé
+    # === Exécution rclone, préfixe le job sur chaque ligne, capture dans INFO.log + affichage terminal colorisé ===
 	# Lancer rclone en arrière-plan
 	rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" > "$JOB_LOG_INFO" 2>&1 &
 	RCLONE_PID=$!
