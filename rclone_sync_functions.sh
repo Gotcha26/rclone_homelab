@@ -134,7 +134,7 @@ send_email_if_needed() {
 		# Encodage MIME UTF-8 Base64 du sujet
 		SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
 
-		# === Assemblage du mail ===
+		# Assemblage du mail
 		{
 			FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
 			echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
@@ -250,7 +250,7 @@ print_fancy() {
 
     [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni à print_fancy" >&2; return 1; }
 
-    # --- Calcul longueur et padding ---
+    # Calcul longueur et padding
     local line_len=${#text}
     if (( line_len >= TERM_WIDTH_DEFAULT )); then
         printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
@@ -272,62 +272,10 @@ print_fancy() {
 
 
 ###############################################################################
-# Fonction pour centrer une ligne avec des '=' de chaque côté + coloration
-###############################################################################
-
-print_centered_line() {
-    local line="$1"
-    local term_width=$((TERM_WIDTH_DEFAULT - 2))   # <- Force largeur fixe à 80-2
-
-    # Calcul longueur visible (sans séquences d’échappement)
-    local line_len=${#line}
-
-    local pad_total=$((term_width - line_len))
-    local pad_side=0
-    local pad_left=""
-    local pad_right=""
-
-    if (( pad_total > 0 )); then
-        pad_side=$((pad_total / 2))
-        # Si pad_total est impair, on met un '=' en plus à droite
-        pad_left=$(printf '=%.0s' $(seq 1 $pad_side))
-        pad_right=$(printf '=%.0s' $(seq 1 $((pad_side + (pad_total % 2)))))
-    fi
-
-    # Coloriser uniquement la partie texte, pas les '='
-    printf "%s%s %s %s%s\n" "$pad_left" "$BG_BLUE_DARK" "$line" "$RESET" "$pad_right"
-}
-
-
-###############################################################################
-# Fonction pour centrer une ligne dans le terminal (simple, sans décor ni couleur)
-###############################################################################
-
-print_centered_text() {
-    local line="$1"
-    local term_width=${2:-$TERM_WIDTH_DEFAULT}  # largeur par défaut = TERM_WIDTH_DEFAULT
-    local line_len=${#line}
-
-    if (( line_len >= term_width )); then
-        # Si la ligne est plus longue que la largeur, on l’affiche telle quelle
-        echo "$line"
-        return
-    fi
-
-    local pad_total=$((term_width - line_len))
-    local pad_side=$((pad_total / 2))
-    local pad_left=$(printf ' %.0s' $(seq 1 $pad_side))
-    local pad_right=$(printf ' %.0s' $(seq 1 $((pad_total - pad_side))))
-
-    echo "${pad_left}${line}${pad_right}"
-}
-
-
-###############################################################################
 # Fonction d'affichage du tableau récapitulatif avec bordures
 ###############################################################################
 
-print_aligned() {
+print_aligned_table() {
     local label="$1"
     local value="$2"
     local label_width=20
@@ -352,16 +300,16 @@ print_summary_table() {
     echo "INFOS"
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
-    print_aligned "Date / Heure début" "$START_TIME"
-    print_aligned "Date / Heure fin" "$END_TIME"
-    print_aligned "Mode de lancement" "$LAUNCH_MODE"
-    print_aligned "Nombre de jobs" "$JOBS_COUNT"
-    print_aligned "Code erreur" "$ERROR_CODE"
-    print_aligned "Log INFO" "$LOG_FILE_INFO"
-    print_aligned "Email envoyé à" "$MAIL_TO"
-    print_aligned "Sujet email" "$SUBJECT_RAW"
+    print_aligned_table "Date / Heure début" "$START_TIME"
+    print_aligned_table "Date / Heure fin" "$END_TIME"
+    print_aligned_table "Mode de lancement" "$LAUNCH_MODE"
+    print_aligned_table "Nombre de jobs" "$JOBS_COUNT"
+    print_aligned_table "Code erreur" "$ERROR_CODE"
+    print_aligned_table "Log INFO" "$LOG_FILE_INFO"
+    print_aligned_table "Email envoyé à" "$MAIL_TO"
+    print_aligned_table "Sujet email" "$SUBJECT_RAW"
 	if $DRY_RUN; then
-		print_aligned "Simulation (dry-run)" "$MSG_DRYRUN"
+		print_aligned_table "Simulation (dry-run)" "$MSG_DRYRUN"
 	fi
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
