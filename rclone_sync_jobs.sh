@@ -5,6 +5,7 @@ source "$SCRIPT_DIR/rclone_sync_functions.sh"
 ###############################################################################
 # Pré-vérification de tous les jobs
 ###############################################################################
+
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
@@ -66,13 +67,13 @@ while IFS= read -r line; do
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
 
     # Affichage header job dans terminal et log global
-    print_centered_line "$MSG_WAITING1"
-    print_centered_line "$MSG_WAITING2"
-    print_centered_line "$MSG_WAITING3"
+    print_fancy --bg $BG_BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
+    print_fancy --bg $BG_BLUE_DARK --fill "=" --align "center"  "$MSG_WAITING2"
+    print_fancy --bg $BG_BLUE_DARK --fill "=" --align "center"  "$MSG_WAITING3"
     echo
 
-	print_centered_text "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO"
-	print_centered_text "Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S')" | tee -a "$LOG_FILE_INFO"
+	print_fancy --align "center" "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO"
+	print_fancy --align "center" "Tâche lancée le $(date '+%Y-%m-%d à %H:%M:%S')" | tee -a "$LOG_FILE_INFO"
     echo "" | tee -a "$LOG_FILE_INFO"
 
     # === Créer un log temporaire pour ce job ===
