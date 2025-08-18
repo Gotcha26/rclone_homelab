@@ -19,6 +19,42 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
+###############################################################################
+# 2. Parsing complet des arguments
+# Lecture des options du script
+###############################################################################
+
+DRY_RUN=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --auto)
+            LAUNCH_MODE="automatique"
+            shift
+            ;;
+        --mailto=*)
+            MAIL_TO="${1#*=}"
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            # Tous les autres arguments sont ajoutés à RCLONE_OPTS
+            RCLONE_OPTS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Activation dry-run si demandé
+$DRY_RUN && RCLONE_OPTS+=(--dry-run)
+
 # Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
 if [[ "$LAUNCH_MODE" != "automatique" ]]; then
     print_logo
@@ -64,41 +100,6 @@ if [[ ! -d "$TMP_RCLONE" ]]; then
     exit $ERROR_CODE
 fi
 
-###############################################################################
-# 2. Parsing complet des arguments
-# Lecture des options du script
-###############################################################################
-
-DRY_RUN=false
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --auto)
-            LAUNCH_MODE="automatique"
-            shift
-            ;;
-        --mailto=*)
-            MAIL_TO="${1#*=}"
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            # Tous les autres arguments sont ajoutés à RCLONE_OPTS
-            RCLONE_OPTS+=("$1")
-            shift
-            ;;
-    esac
-done
-
-# Activation dry-run si demandé
-$DRY_RUN && RCLONE_OPTS+=(--dry-run)
 
 # ---------------------------
 # Charger la liste des remotes configurés dans rclone
