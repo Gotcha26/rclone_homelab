@@ -16,35 +16,93 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ✅ Coloration synthaxique
 - ❗ Vous rend riche, beau et irresistible
 - ✅ Durée de conservation des logs : 15 jours par défaut.
+- ℹ️ Vous pouvez appeler le script depuis n'importe où (root inclu)
+
+## Installation pas à pas
+1. Création d'un dossier dédié
+```
+mkdir -p /opt/rclone_homelab
+```
+2. Se placer dedans
+```
+cd /opt/rclone_homelab
+```
+3. Cloner le dépôt
+```
+git clone --branch v2 https://github.com/Gotcha26/rclone_homelab.git .
+
+git clone https://github.com/Gotcha26/rclone_homelab.git .
+```
+⚠ Le `.` final permet de cloner dans le dossier courant sans créer un sous-dossier supplémentaire.
+
+4. Rendre le script exécutable
+```
+chmod +x rclone_sync_main.sh
+```
+5. Ajouter un symlink pour un accès global
+Pour pouvoir lancer la commande simplement avec `rclone_homelab` :
+```
+ln -s /opt/rclone_homelab/rclone_sync_main.sh /usr/local/bin/rclone_homelab
+```
+6. Vérifier
+```
+which rclone_homelab
+# /usr/local/bin/rclone_homelab
+
+rclone_homelab --help
+# script avec ses options
+```
+7. Pour revenir à votre "home"
+```
+cd
+```
+
+### Mise à jour
+Pour mettre à jour facilement l'utilitaire depuis GitHub :
+```
+cd /opt/rclone_homelab
+git pull origin v2
+```
+
+### Mise à jour forcée (autre branche)
+```
+cd /opt/rclone_homelab
+```
+```
+git fetch origin
+git reset --hard origin/v2
+chmod +x rclone_sync_main.sh
+```
 
 ## Utilisation
-Le script est à rendre executable via la commande :
-```
-chmod +x /root/rclone_sync_jobs.sh
-```
-*Dans le cas où le script est installé avec `root`...*
 
-Ce script peut être lancé de manière manuelle directement via l'instance Shell cmd tout simplement en l'appelant.  
+Ce script peut être lancé de manière manuelle directement via le terminal Shell cmd tout simplement en l'appelant :
+```
+rclone_homelab
+```
 Des arguments (voir [Arguments](#arguments)) peuvent être utilisés.
 
 ## Jobs
+Les jobs ne sont pas moins qu'une suite d'instructions contenant les informations pour une exécution facilité.
+
 Le script attends 2 arguments minimum pour faire **un job**.  
 Pour simplifier la vie, ces *jobs* sont à écrire à l'avance dans un fichier à placer **à coté du script** (même dossier).  
 Ce fichier du nom de `rclone_sync_jobs.txt` contiendra **1 ligne par job**.  
 
 ###### Exemples :
+`nano /opt/rclone_homelab/rclone_sync_jobs.txt`
 ```ini
-rclone_jobs.txt
 <lien_symbolique_source>|<remote rclone:dossier/sous_dossier>
 /srv/backups|onedrive_gotcha:Homelab_backups
 ```
 
 ###### Explications :
-Chaque job est constitué de 2 arguments séparés par un symbole "pipe" `|`
+Chaque job est constitué de 2 arguments séparés par un symbole "pipe" `|` ainsi que d'un sous-argument introduit par `:`
 - En premier argument, c'est le lien symbolique pour atteindre le dossier physique stocké sur notre serveur Proxmox auquel nous avons accès.
 Il aura été paramétré précédemment.
 - Le second argument consiste à indiquer quel *remote* (précédemment paramétré dans via `rclone config`) est à utiliser. rclone permettant d'en configurer une multitude, ici nous sélectionnons celui qui a déjà été configuré.
-Le présence du symbole `:` passe un sous-argument qui indique le chemin du dossier à atteindre dans **le cloud**. Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arborescence plus compliquée.
+- Le présence du symbole `:` passe un sous-argument qui indique le chemin du dossier à atteindre dans **le cloud**.  
+Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arborescence plus compliquée.
 
 ###### A retenir :
 - 1 ligne = 1 job
@@ -53,13 +111,13 @@ Le présence du symbole `:` passe un sous-argument qui indique le chemin du doss
 ## Lancement / Appel
 Exemple d'appel du script :
 ```
-./rclone_sync_job.sh --dry-run
-./rclone_sync_job.sh --auto --mailto=toto@mail.com --dry-run
-./rclone_sync_job.sh -h
+rclone_homelab --dry-run
+rclone_homelab --auto --mailto=toto@mail.com --dry-run
+rclone_homelab -h
 ```
 
 ## Envoi d'emails
-En association avec [msmtp](https://github.com/marlam/msmtp), l'envoi d'email est possible.  
+En association avec l'utilitaire SMTP [msmtp](https://github.com/marlam/msmtp), l'envoi d'email est possible.  
 Veuillez vous référer à cet utilitaire pour le configurer (très simple).
 
 ### Arguments 
@@ -71,22 +129,38 @@ Argument | Explication
   -h, --help    | Affiche cette humble aide
   --mailto=<mon_adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp
 
-## Recommandations
-- Ne pas utilser d'outils ou de script à la base d'un noeud Proxmox.
-- Privilégiez toujours un conteneur LXC ou une VM.
-- Utilisez les sauvegardes avant toute modification, c'est facile à restaurer !
-
 ## Personnaliser rclone
 Le script rclone dispose d'énormément d'options !  
 📖 Lisez la [documentation](https://rclone.org/commands/rclone/) !  
-Pour adapter selon votre besoin, il est possible de modifier le script principal pour trouver la section `# Options rclone (1 par ligne)`  
+Pour adapter selon vos besoins, il est possible de :
+* [Ponctuel] Simplement ajouter l'argument rclone dans vos arguments de lancement.
+* [Durable] Modifier `nano /opt/rclone_homelab/rclone_sync_conf.sh` pour trouver la section `# === Options rclone ===`  
 Là vous pourrez mettre/enlever vos propores options.
+
+## Recommandations (générales)
+- Ne pas utilser d'outils ou de script à la base d'un noeud Proxmox. Vous risquez de bloquer toute votre installation !
+- Privilégiez toujours un conteneur LXC ou une VM. Plus facile à maintenir et à isoler.
+- Utilisez les sauvegardes Proxmox avant toute modification. C'est facile faire et à restaurer !
+
+## Debogage
+| Ligne / Bloc                                 | Cause                                         | `ERROR_CODE` |
+| -------------------------------------------- | --------------------------------------------- | ------------ |
+| `$JOBS_FILE` introuvable                     | Fichier jobs absent                           | 1            |
+| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible           | 2            |
+| `$MSG_JOB_LINE_INVALID` invalide             | Fichier jobs présente une ligne illisible     | 3            |
+| `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              | 4            |
+| `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration rclone ou argument incorrect    | 5            |
+| `$TMP_RCLONE` non trouvé (après vérif)       | Le dossier temporaire n’existe pas après tout | 7            |
+| Création de `$TMP_RCLONE` échouée            | Impossible de créer le dossier temporaire     | 8            |
+| Création de `$LOG_DIR` échouée               | Impossible de créer le dossier de logs        | 8            |
+
 
   
 ## A faire / Ajouter
 - Scinder le fichier pour arrêter l'aspect monolithique
+- Internationnalisation : *wait and see...*
 
-## Petites infos
+### Petites infos
 *Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).  
 NotePad++ (avec plugin "Compare")  
 https://dillinger.io (pour la rédaction du présent Readme)  
