@@ -89,7 +89,7 @@ send_email_if_needed() {
 		ERROR_CODE=9
 	else
 		echo
-		print_centered_text "$MSG_EMAIL_PREP"
+		print_fancy --align "center" "$MSG_EMAIL_PREP"
 
 		# Préparation du mail
 		MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
@@ -170,7 +170,7 @@ send_email_if_needed() {
 		# Envoi du mail
 		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
 
-	print_centered_text "$MSG_EMAIL_SENT"
+	print_fancy --align "center" "$MSG_EMAIL_SENT"
 	echo
 	fi
 }
