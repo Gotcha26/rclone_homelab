@@ -205,28 +205,52 @@ spinner() {
 # print_fancy - Affichage flexible dans le terminal
 #
 # Usage :
-#   print_fancy "Texte à afficher" [couleur] [fond] [caractère remplissage] [align]
+#   print_fancy [--color couleur] [--bg fond] [--fill caractere] [--align center|left] "Texte à afficher"
 #
 # Arguments :
-#   "Texte à afficher"   : le texte principal
-#   couleur               : variable ANSI pour la couleur du texte (ex: $RED)
-#   fond                  : variable ANSI pour la couleur de fond (ex: $BG_BLUE_DARK)
-#   caractère remplissage : caractère à répéter avant/après le texte (ex: "=", " ")
-#   align                 : "center" (par défaut) ou "left"
+#   --color  : variable ANSI pour la couleur du texte (ex: $RED)
+#   --bg     : variable ANSI pour la couleur de fond (ex: $BG_BLUE_DARK)
+#   --fill   : caractère à répéter avant/après le texte (ex: "=" ou " ")
+#   --align  : "center" (par défaut) ou "left"
+#   "Texte à afficher" : texte obligatoire, toujours en dernier
 #
 # Exemples :
-#   print_fancy "Hello World" "$RED"
-#   print_fancy "Titre centré" "" "$BG_BLUE_DARK" "=" center
-#   print_fancy "Texte à gauche" "" "" " " left
+#   print_fancy --color "$RED" --fill "=" --align center "Titre décoré centré"
+#   print_fancy --bg "$BG_BLUE_DARK" "Hello World"
+#   print_fancy "Texte simple à gauche"
 # ----
 
 print_fancy() {
-    local text="$1"
-    local color="${2:-}"      # ex: "$RED" ou vide
-    local bg="${3:-}"         # ex: "$BG_BLUE_DARK" ou vide
-    local fill="${4:- }"      # ex: "=" ou " " (espace)
-    local align="${5:-center}" # center | left
+    local color=""
+    local bg=""
+    local fill=" "
+    local align="center"
+    local text=""
 
+    # --- Parsing options ---
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --color) color="$2"; shift 2 ;;
+            --bg)    bg="$2"; shift 2 ;;
+            --fill)  fill="$2"; shift 2 ;;
+            --align) align="$2"; shift 2 ;;
+            *) 
+                text="$1"
+                shift
+                break
+                ;;
+        esac
+    done
+
+    # Récupérer le reste des arguments si texte contient des espaces
+    while [[ $# -gt 0 ]]; do
+        text+=" $1"
+        shift
+    done
+
+    [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni à print_fancy" >&2; return 1; }
+
+    # --- Calcul longueur et padding ---
     local line_len=${#text}
     if (( line_len >= TERM_WIDTH_DEFAULT )); then
         printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
