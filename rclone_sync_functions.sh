@@ -132,11 +132,7 @@ send_email_if_needed() {
 		fi
 
 		# Encodage MIME UTF-8 Base64 du sujet
-		encode_subject() {
-			local raw="$1"
-			printf "%s" "$raw" | base64 | tr -d '\n'
-		}
-		SUBJECT="=?UTF-8?B?$(encode_subject "$SUBJECT_RAW")?="
+		SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
 
 		# === Assemblage du mail ===
 		{
