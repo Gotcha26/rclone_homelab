@@ -40,7 +40,7 @@ EOF
 check_remote() {
     local remote="$1"
     if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote} " ]]; then
-        echo "${RED}${REMOTE_UNKNOW} : ${remote}${RESET}" >&2
+        echo "${RED}${MSG_REMOTE_UNKNOW} : ${remote}${RESET}" >&2
         ERROR_CODE=5
         exit $ERROR_CODE
     fi
