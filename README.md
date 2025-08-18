@@ -132,7 +132,9 @@ Argument | Explication
 ## Personnaliser rclone
 Le script rclone dispose d'énormément d'options !  
 📖 Lisez la [documentation](https://rclone.org/commands/rclone/) !  
-Pour adapter selon vos besoins, il est possible de modifier `nano /opt/rclone_homelab/rclone_sync_conf.sh` pour trouver la section `# === Options rclone ===`  
+Pour adapter selon vos besoins, il est possible de :
+* [Ponctuel] Simplement ajouter l'argument rclone dans vos arguments de lancement.
+* [Durable] Modifier `nano /opt/rclone_homelab/rclone_sync_conf.sh` pour trouver la section `# === Options rclone ===`  
 Là vous pourrez mettre/enlever vos propores options.
 
 ## Recommandations (générales)
