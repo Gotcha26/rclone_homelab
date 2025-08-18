@@ -199,6 +199,55 @@ spinner() {
 
 
 ###############################################################################
+# Fonction alignement - décoration sur 1 ligne
+###############################################################################
+# ----
+# print_fancy - Affichage flexible dans le terminal
+#
+# Usage :
+#   print_fancy "Texte à afficher" [couleur] [fond] [caractère remplissage] [align]
+#
+# Arguments :
+#   "Texte à afficher"   : le texte principal
+#   couleur               : variable ANSI pour la couleur du texte (ex: $RED)
+#   fond                  : variable ANSI pour la couleur de fond (ex: $BG_BLUE_DARK)
+#   caractère remplissage : caractère à répéter avant/après le texte (ex: "=", " ")
+#   align                 : "center" (par défaut) ou "left"
+#
+# Exemples :
+#   print_fancy "Hello World" "$RED"
+#   print_fancy "Titre centré" "" "$BG_BLUE_DARK" "=" center
+#   print_fancy "Texte à gauche" "" "" " " left
+# ----
+
+print_fancy() {
+    local text="$1"
+    local color="${2:-}"      # ex: "$RED" ou vide
+    local bg="${3:-}"         # ex: "$BG_BLUE_DARK" ou vide
+    local fill="${4:- }"      # ex: "=" ou " " (espace)
+    local align="${5:-center}" # center | left
+
+    local line_len=${#text}
+    if (( line_len >= TERM_WIDTH_DEFAULT )); then
+        printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
+        return
+    fi
+
+    if [[ "$align" == "center" ]]; then
+        local pad_total=$((TERM_WIDTH_DEFAULT - line_len - 2))
+        local pad_side=$((pad_total / 2))
+        local pad_left=$(printf '%*s' "$pad_side" '' | tr ' ' "$fill")
+        local pad_right=$(printf '%*s' $((pad_total - pad_side)) '' | tr ' ' "$fill")
+        printf "%s%b %s %b%s\n" "$pad_left" "$color$bg" "$text" "$RESET" "$pad_right"
+    else
+        # align left
+        printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
+    fi
+}
+
+
+
+###############################################################################
 # Fonction pour centrer une ligne avec des '=' de chaque côté + coloration
 ###############################################################################
 
