@@ -58,7 +58,7 @@ done
 $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 
 # Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
-[[ "$LAUNCH_MODE" != "automatique" ]] && print_logo >/dev/null 2>&1
+[[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
 
 # Vérification de la présence de rclone installé
 if ! command -v rclone >/dev/null 2>&1; then
