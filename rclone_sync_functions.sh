@@ -23,12 +23,11 @@ Description :
       /home/user/Documents|OneDrive:Backups/Documents
 
 Fonctionnement :
-  - Vérifie la présence du dossier temporaire : $TMP_RCLONE
+  - Vérifie et teste les pré-requis au bon déroulement des opérations.
   - Lance 'rclone sync' pour chaque job avec les options par défaut
   - Affiche la sortie colorisée dans le terminal
   - Génère un fichier log INFO dans : $LOG_DIR
   - Si --mailto est fourni et msmtp est configuré, envoie un rapport HTML
-
 EOF
 }
 
@@ -41,7 +40,7 @@ check_remote() {
     local remote="$1"
     if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote} " ]]; then
         echo "${RED}${MSG_REMOTE_UNKNOW} : ${remote}${RESET}" >&2
-        ERROR_CODE=5
+        ERROR_CODE=9
         exit $ERROR_CODE
     fi
 }
@@ -51,128 +50,143 @@ check_remote() {
 # Fonctions EMAIL
 ###############################################################################
 
-# === Fonction HTML pour logs partiels ===
+check_email() {
+    local email="$1"
+    # Regex basique : texte@texte.domaine
+    if [[ ! "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        echo "${RED}$MSG_MAIL_ERROR : $email${RESET}" >&2
+        ERROR_CODE=11
+        exit $ERROR_CODE
+    fi
+}
 
-log_to_html() {
+prepare_mail_html() {
   local file="$1"
-  local safe_line
 
-  tail -n "$LOG_LINE_MAX" "$file" | while IFS= read -r line; do
-    safe_line=$(echo "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+  # Charger les dernières lignes dans un tableau
+  mapfile -t __lines < <(tail -n "$LOG_LINE_MAX" "$file")
+  local total=${#__lines[@]}
 
-    if [[ "$line" == *"Deleted"* ]]; then
-      echo "<span style='color:red;'>$safe_line</span><br>"
-    elif [[ "$line" == *"Copied"* ]]; then
-      echo "<span style='color:blue;'>$safe_line</span><br>"
-    elif [[ "$line" == *"Updated"* ]]; then
-      echo "<span style='color:orange;'>$safe_line</span><br>"
-    elif [[ "$line" == *"NOTICE"* ]]; then
-      echo "<b>$safe_line</b><br>"
+  for (( idx=0; idx<total; idx++ )); do
+    local line="${__lines[idx]}"
+
+    # 2 lignes vides juste AVANT la 4e ligne en partant du bas
+    if (( total >= 4 && idx == total - 4 )); then
+      echo "<br><br>"
+    fi
+
+    # Échapper le HTML
+    local safe_line
+    safe_line=$(printf '%s' "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+
+    # Normalisation pour tests insensibles à la casse
+    local lower="${line,,}"
+
+    # Flag gras si on est dans les 4 dernières lignes
+    local bold_start=""
+    local bold_end=""
+    if (( idx >= total - 4 )); then
+      bold_start="<b>"
+      bold_end="</b>"
+    fi
+
+    # Colorisation mail
+    if [[ "$lower" == *"deleted"* ]]; then
+      echo "${bold_start}<span style='color:red;'>$safe_line</span>${bold_end}<br>"
+    elif [[ "$lower" == *"copied"* ]]; then
+      echo "${bold_start}<span style='color:blue;'>$safe_line</span>${bold_end}<br>"
+    elif [[ "$lower" == *"updated"* ]]; then
+      echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
+    elif [[ "$lower" == *"there was nothing to transfer"* || "$lower" == *"there was nothing to transfert"* ]]; then
+      echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
     else
-      echo "$safe_line<br>"
+      echo "${bold_start}$safe_line${bold_end}<br>"
     fi
   done
 }
 
-# === Email conditionnel ===
+calculate_subject() {
+    local log_file="$1"
+    if grep -iqE "(error|failed|failed to)" "$log_file"; then
+        SUBJECT_RAW="$MSG_EMAIL_FAIL"
+    elif grep -q "There was nothing to transfer" "$log_file"; then
+        SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
+    else
+        SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
+    fi
+    # Encodage MIME UTF-8 Base64 du sujet
+    SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
+}
+
+assemble_and_send_mail() {
+    local log_file="$1"
+
+    FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+    {
+        echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
+        echo "To: $MAIL_TO"
+        echo "Date: $(date -R)"
+        echo "Subject: $SUBJECT"
+        echo "MIME-Version: 1.0"
+        echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
+        echo
+        echo "--BOUNDARY123"
+        echo "Content-Type: text/html; charset=UTF-8"
+        echo
+        echo "<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
+        echo "<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
+        echo "<p><b>📝 Dernières lignes du log :</b></p>"
+        echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
+        prepare_mail_html "$log_file"
+        echo "</div><hr><h3>📊 Résumé global</h3>"
+        local copied=$(grep "INFO" "$log_file" | grep -c "Copied" || true)
+        local updated=$(grep "INFO" "$log_file" | grep -c "Updated" || true)
+        local deleted=$(grep "INFO" "$log_file" | grep -c "Deleted" || true)
+        # ... après avoir calculé copied/updated/deleted ...
+cat <<HTML
+<table style="font-family: monospace; border-collapse: collapse;">
+<tr><td><b>Fichiers copiés&nbsp;</b></td>
+    <td style="text-align:right;">: $copied</td></tr>
+<tr><td><b>Fichiers mis à jour&nbsp;</b></td>
+    <td style="text-align:right;">: $updated</td></tr>
+<tr><td><b>Fichiers supprimés&nbsp;</b></td>
+    <td style="text-align:right;">: $deleted</td></tr>
+</table>
+<p>$MSG_EMAIL_END</p>
+</body></html>
+HTML
+    } > "$MAIL"
+
+    # Pièces jointes
+    ATTACHMENTS=("$log_file")
+    for file in "${ATTACHMENTS[@]}"; do
+        {
+            echo "--BOUNDARY123"
+            echo "Content-Type: text/plain; name=\"$(basename "$file")\""
+            echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
+            echo "Content-Transfer-Encoding: base64"
+            echo
+            base64 "$file"
+        } >> "$MAIL"
+    done
+    echo "--BOUNDARY123--" >> "$MAIL"
+
+    # Envoi
+    msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
+    print_fancy --align "center" "$MSG_EMAIL_SENT"
+}
 
 send_email_if_needed() {
-
-	# Compter les occurrences sur l'ensemble des jobs, uniquement lignes contenant INFO
-	TOTAL_COPIED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Copied" || true)
-	TOTAL_UPDATED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Updated" || true)
-	TOTAL_DELETED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Deleted" || true)
-
-	# Vérification présence msmtp (ne stoppe pas le script)
-	if ! command -v msmtp >/dev/null 2>&1; then
-		echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
-		ERROR_CODE=9
-	else
-		echo
-		print_fancy --align "center" "$MSG_EMAIL_PREP"
-
-		# Préparation du mail
-		MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
-		MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
-		MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p>"
-		MAIL_CONTENT+="<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
-		MAIL_CONTENT+="$(log_to_html "$LOG_FILE_INFO")"
-		MAIL_CONTENT+="</div>"
-
-		# Ajouter un résumé général dans le mail
-		MAIL_CONTENT+="<hr><h3>📊 Résumé global</h3>"
-		MAIL_CONTENT+="<pre><b>Fichiers copiés :</b> $TOTAL_COPIED"
-		MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $TOTAL_UPDATED"
-		MAIL_CONTENT+="<br><b>Fichiers supprimés :</b> $TOTAL_DELETED</pre>"
-
-		MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
-
-		# Détermination du sujet du mail selon le résultat global
-		# Analyse du log global pour déterminer l'état final
-		HAS_ERROR=false
-		HAS_NO_TRANSFER=false
-
-		# Erreur détectée
-		if grep -iqE "(error|failed|failed to)" "$LOG_FILE_INFO"; then
-			HAS_ERROR=true
-		fi
-
-		# Aucun transfert détecté (cas précis)
-		if grep -q "There was nothing to transfer" "$LOG_FILE_INFO"; then
-			HAS_NO_TRANSFER=true
-		fi
-
-		# Choix du sujet du mail
-		if $HAS_ERROR; then
-			SUBJECT_RAW="$MSG_EMAIL_FAIL"
-		elif $HAS_NO_TRANSFER; then
-			SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
-		else
-			SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
-		fi
-
-		# Encodage MIME UTF-8 Base64 du sujet
-		SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
-
-		# Assemblage du mail
-		{
-			FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
-			echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
-			echo "To: $MAIL_TO"
-			echo "Date: $(date -R)"
-			echo "Subject: $SUBJECT"
-			echo "MIME-Version: 1.0"
-			echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
-			echo
-			echo "--BOUNDARY123"
-			echo "Content-Type: text/html; charset=UTF-8"
-			echo
-			echo "$MAIL_CONTENT"
-		} > "$MAIL"
-
-		# Ajout des pièces jointes
-		ATTACHMENTS+=("$LOG_FILE_INFO")
-
-		for file in "${ATTACHMENTS[@]}"; do
-			{
-				echo
-				echo "--BOUNDARY123"
-				echo "Content-Type: text/plain; name=\"$(basename "$file")\""
-				echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
-				echo "Content-Transfer-Encoding: base64"
-				echo
-				base64 "$file"
-			} >> "$MAIL"
-		done
-
-		echo "--BOUNDARY123--" >> "$MAIL"
-
-		# Envoi du mail
-		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
-
-	print_fancy --align "center" "$MSG_EMAIL_SENT"
-	echo
-	fi
+    if [[ -z "$MAIL_TO" ]]; then
+        echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
+    elif ! command -v msmtp >/dev/null 2>&1; then
+        echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
+        ERROR_CODE=9
+    else
+        print_fancy --align "center" "$MSG_EMAIL_PREP"
+        calculate_subject "$LOG_FILE_INFO"
+        assemble_and_send_mail "$LOG_FILE_INFO"
+    fi
 }
 
 
@@ -202,22 +216,21 @@ spinner() {
 # Fonction alignement - décoration sur 1 ligne
 ###############################################################################
 # ----
-# print_fancy - Affichage flexible dans le terminal
+# print_fancy : Affiche du texte formaté avec couleurs, styles et alignement
 #
-# Usage :
-#   print_fancy [--color couleur] [--bg fond] [--fill caractere] [--align center|left] "Texte à afficher"
+# Options :
+#   --color <code|var>     : Couleur du texte (ex: "$RED" ou "\033[31m")
+#   --bg <code|var>        : Couleur de fond (ex: "$BG_BLUE" ou "\033[44m")
+#   --fill <char>          : Caractère de remplissage (défaut: espace)
+#   --align <center|left>  : Alignement du texte (défaut: center)
+#   --style <bold|italic|underline|combinaison>
+#                          : Style(s) appliqués au texte
+#   --highlight            : Active un surlignage complet (ligne entière)
+#   texte ...              : Le texte à afficher (peut contenir des espaces)
 #
-# Arguments :
-#   --color  : variable ANSI pour la couleur du texte (ex: $RED)
-#   --bg     : variable ANSI pour la couleur de fond (ex: $BG_BLUE_DARK)
-#   --fill   : caractère à répéter avant/après le texte (ex: "=" ou " ")
-#   --align  : "center" (par défaut) ou "left"
-#   "Texte à afficher" : texte obligatoire, toujours en dernier
-#
-# Exemples :
-#   print_fancy --color "$RED" --fill "=" --align center "Titre décoré centré"
-#   print_fancy --bg "$BG_BLUE_DARK" "Hello World"
-#   print_fancy "Texte simple à gauche"
+# Exemple :
+#   print_fancy --color "$RED" --bg "$BG_WHITE" --style "bold underline" "Alerte"
+#   print_fancy --color "\033[32m" --style italic "Succès en vert"
 # ----
 
 print_fancy() {
@@ -226,15 +239,25 @@ print_fancy() {
     local fill=" "
     local align="center"
     local text=""
+    local style=""
+    local highlight=""
 
-    # --- Parsing options ---
+    # Styles ANSI de base
+    local BOLD="\033[1m"
+    local ITALIC="\033[3m"
+    local UNDERLINE="\033[4m"
+    local RESET="\033[0m"
+
+    # Parsing options
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --color) color="$2"; shift 2 ;;
-            --bg)    bg="$2"; shift 2 ;;
-            --fill)  fill="$2"; shift 2 ;;
-            --align) align="$2"; shift 2 ;;
-            *) 
+            --color)     color="$2"; shift 2 ;;
+            --bg)        bg="$2"; shift 2 ;;
+            --fill)      fill="$2"; shift 2 ;;
+            --align)     align="$2"; shift 2 ;;
+            --style)     style="$2"; shift 2 ;;   # bold / italic / underline / combinaison
+            --highlight) highlight="1"; shift ;;
+            *)
                 text="$1"
                 shift
                 break
@@ -250,10 +273,16 @@ print_fancy() {
 
     [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni à print_fancy" >&2; return 1; }
 
+    # Construction de la séquence de style
+    local style_seq=""
+    [[ "$style" =~ bold ]]      && style_seq+="$BOLD"
+    [[ "$style" =~ italic ]]    && style_seq+="$ITALIC"
+    [[ "$style" =~ underline ]] && style_seq+="$UNDERLINE"
+
     # Calcul longueur et padding
     local line_len=${#text}
     if (( line_len >= TERM_WIDTH_DEFAULT )); then
-        printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
+        printf "%b%s%b\n" "${color}${bg}${style_seq}" "$text" "$RESET"
         return
     fi
 
@@ -262,10 +291,25 @@ print_fancy() {
         local pad_side=$((pad_total / 2))
         local pad_left=$(printf '%*s' "$pad_side" '' | tr ' ' "$fill")
         local pad_right=$(printf '%*s' $((pad_total - pad_side)) '' | tr ' ' "$fill")
-        printf "%s%b %s %b%s\n" "$pad_left" "$color$bg" "$text" "$RESET" "$pad_right"
+
+        if [[ -n "$highlight" ]]; then
+            # Ligne complète remplie
+            local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
+            local insert_pos=$((pad_side + 1))
+            full_line="${full_line:0:$insert_pos}$text${full_line:$((insert_pos + line_len))}"
+            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$full_line" "$RESET"
+        else
+            printf "%s%b %s %b%s\n" "$pad_left" "${color}${bg}${style_seq}" "$text" "$RESET" "$pad_right"
+        fi
     else
         # align left
-        printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
+        if [[ -n "$highlight" ]]; then
+            local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
+            full_line="${text}$(printf '%*s' $((TERM_WIDTH_DEFAULT - line_len)) '' | tr ' ' "$fill")"
+            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$full_line" "$RESET"
+        else
+            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$text" "$RESET"
+        fi
     fi
 }
 
@@ -305,29 +349,18 @@ print_summary_table() {
     print_aligned_table "Mode de lancement" "$LAUNCH_MODE"
     print_aligned_table "Nombre de jobs" "$JOBS_COUNT"
     print_aligned_table "Code erreur" "$ERROR_CODE"
-    print_aligned_table "Log INFO" "$LOG_FILE_INFO"
+    print_aligned_table "Dossier" "$LOG_DIR"
+    print_aligned_table "Log script" "$FILE_SCRIPT"
+    print_aligned_table "Log rclone" "$FILE_INFO"
+    print_aligned_table "Log mail" "$FILE_MAIL"
     print_aligned_table "Email envoyé à" "$MAIL_TO"
     print_aligned_table "Sujet email" "$SUBJECT_RAW"
-	if $DRY_RUN; then
-		print_aligned_table "Simulation (dry-run)" "$MSG_DRYRUN"
-	fi
+    [[ "$DRY_RUN" == true ]] && print_aligned_table "Simulation (dry-run)" "$MSG_DRYRUN"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
-    # Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
-    local text="$MSG_END_REPORT"
-    local term_width="$TERM_WIDTH_DEFAULT"
-    local text_len=${#text}
-    local pad_total=$((term_width - text_len))
-    local pad_side=0
-    local pad_left=""
-    local pad_right=""
-    if (( pad_total > 0 )); then
-        pad_side=$((pad_total / 2))
-        pad_left=$(printf ' %.0s' $(seq 1 $pad_side))
-        pad_right=$(printf ' %.0s' $(seq 1 $((pad_side + (pad_total % 2)))))
-    fi
-    printf "%b%s%s%s%s%b\n" "${BG_YELLOW_DARK}${BOLD}${BLACK}" "$pad_left" "$text" "$pad_right" "${RESET}" ""
+    # Ligne finale avec couleur fond jaune foncé, texte noir, centrée
+    print_fancy --bg ${YELLOW_DARK} --color ${BLACK} "$MSG_END_REPORT"
     echo
 }
 

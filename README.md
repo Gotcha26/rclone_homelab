@@ -4,6 +4,7 @@ _✌️🥖🔆Fait avec amour dans le sud de la France.❤️️🇫🇷🐓_
 
 Juste un script qui permet de synchroniser un dossier local avec un dossier distant en utilisant le script [rclone](https://rclone.org/).
 
+
 ## Fonctions principales
 - ✅ Fonctionne aussi bien de manière autonome (cron) ou manuel
 - ✅ Multi jobs
@@ -17,6 +18,8 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ❗ Vous rend riche, beau et irresistible
 - ✅ Durée de conservation des logs : 15 jours par défaut.
 - ℹ️ Vous pouvez appeler le script depuis n'importe où (root inclu)
+- ✅ Accèpte les arguments de rclone depuis l'appel du script
+
 
 ## Installation pas à pas
 1. Création d'un dossier dédié
@@ -74,6 +77,7 @@ git reset --hard origin/v2
 chmod +x rclone_sync_main.sh
 ```
 
+
 ## Utilisation
 
 Ce script peut être lancé de manière manuelle directement via le terminal Shell cmd tout simplement en l'appelant :
@@ -81,6 +85,7 @@ Ce script peut être lancé de manière manuelle directement via le terminal She
 rclone_homelab
 ```
 Des arguments (voir [Arguments](#arguments)) peuvent être utilisés.
+
 
 ## Jobs
 Les jobs ne sont pas moins qu'une suite d'instructions contenant les informations pour une exécution facilité.
@@ -108,6 +113,7 @@ Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arb
 - 1 ligne = 1 job
 - <lien_symbolique_source>`|`<remote_rclone>`:`dossier/sous_dossier>
 
+
 ## Lancement / Appel
 Exemple d'appel du script :
 ```
@@ -115,6 +121,7 @@ rclone_homelab --dry-run
 rclone_homelab --auto --mailto=toto@mail.com --dry-run
 rclone_homelab -h
 ```
+
 
 ## Envoi d'emails
 En association avec l'utilitaire SMTP [msmtp](https://github.com/marlam/msmtp), l'envoi d'email est possible.  
@@ -129,6 +136,7 @@ Argument | Explication
   -h, --help    | Affiche cette humble aide
   --mailto=<mon_adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp
 
+
 ## Personnaliser rclone
 Le script rclone dispose d'énormément d'options !  
 📖 Lisez la [documentation](https://rclone.org/commands/rclone/) !  
@@ -137,27 +145,39 @@ Pour adapter selon vos besoins, il est possible de :
 * [Durable] Modifier `nano /opt/rclone_homelab/rclone_sync_conf.sh` pour trouver la section `# === Options rclone ===`  
 Là vous pourrez mettre/enlever vos propores options.
 
+
 ## Recommandations (générales)
 - Ne pas utilser d'outils ou de script à la base d'un noeud Proxmox. Vous risquez de bloquer toute votre installation !
 - Privilégiez toujours un conteneur LXC ou une VM. Plus facile à maintenir et à isoler.
-- Utilisez les sauvegardes Proxmox avant toute modification. C'est facile faire et à restaurer !
+- Utilisez les sauvegardes pour votre installation Proxmox avant toute modification. C'est facile faire et à restaurer !
+
 
 ## Debogage
 | Ligne / Bloc                                 | Cause                                         | `ERROR_CODE` |
 | -------------------------------------------- | --------------------------------------------- | ------------ |
-| `$JOBS_FILE` introuvable                     | Fichier jobs absent                           | 1            |
-| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible           | 2            |
-| `$MSG_JOB_LINE_INVALID` invalide             | Fichier jobs présente une ligne illisible     | 3            |
-| `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              | 4            |
-| `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration rclone ou argument incorrect    | 5            |
-| `$TMP_RCLONE` non trouvé (après vérif)       | Le dossier temporaire n’existe pas après tout | 7            |
-| Création de `$TMP_RCLONE` échouée            | Impossible de créer le dossier temporaire     | 8            |
-| Création de `$LOG_DIR` échouée               | Impossible de créer le dossier de logs        | 8            |
-
+| Création de `$TMP_RCLONE` échouée            | Impossible de créer le dossier temporaire     | 1            |
+| Création de `$LOG_DIR` échouée               | Impossible de créer le dossier de logs        | 2            |
+| `$JOBS_FILE` introuvable                     | Fichier jobs absent                           | 3            |
+| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible           | 4            |
+| `$TMP_RCLONE` non trouvé (après vérif)       | Le dossier temporaire n’existe pas après tout | 5            |
+| `$MSG_JOB_LINE_INVALID` invalide             | Fichier jobs présente une ligne illisible     | 6            |
+| `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              | 7            |
+| Problème avec le processus PID rclone        | Sérieuse                                      | 8            |
+| `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration remote ou argument incorrect    | 9            |
+| Vérification présence rclone                 | rclone non présent ou injoignable             | 10           | 
+| Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 11           | 
 
   
+## Logs
+Ils sont purgés tous les 15 jours par défaut.
+```
+/opt/rclone_homelab/logs/main_xxx.log    <-- Capture la fenêtre du terminal
+/opt/rclone_homelab/logs/rclone_xxx.log  <-- Capture le niveau INFO de rclone
+/opt/rclone_homelab/logs/msmtp_xxx.log   <-- Capture les paramètres de msmtp
+```
+
+
 ## A faire / Ajouter
-- Scinder le fichier pour arrêter l'aspect monolithique
 - Internationnalisation : *wait and see...*
 
 ### Petites infos
