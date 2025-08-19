@@ -23,12 +23,11 @@ Description :
       /home/user/Documents|OneDrive:Backups/Documents
 
 Fonctionnement :
-  - Vérifie la présence du dossier temporaire : $TMP_RCLONE
+  - Vérifie et teste les pré-requis au bon déroulement des opérations.
   - Lance 'rclone sync' pour chaque job avec les options par défaut
   - Affiche la sortie colorisée dans le terminal
   - Génère un fichier log INFO dans : $LOG_DIR
   - Si --mailto est fourni et msmtp est configuré, envoie un rapport HTML
-
 EOF
 }
 
@@ -41,7 +40,7 @@ check_remote() {
     local remote="$1"
     if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote} " ]]; then
         echo "${RED}${MSG_REMOTE_UNKNOW} : ${remote}${RESET}" >&2
-        ERROR_CODE=5
+        ERROR_CODE=9
         exit $ERROR_CODE
     fi
 }
@@ -51,15 +50,11 @@ check_remote() {
 # Fonctions EMAIL
 ###############################################################################
 
-# === Fonction HTML pour logs partiels ===
-
-log_to_html() {
+prepare_mail_html() {
   local file="$1"
-  local safe_line
-
   tail -n "$LOG_LINE_MAX" "$file" | while IFS= read -r line; do
+    local safe_line
     safe_line=$(echo "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-
     if [[ "$line" == *"Deleted"* ]]; then
       echo "<span style='color:red;'>$safe_line</span><br>"
     elif [[ "$line" == *"Copied"* ]]; then
@@ -74,105 +69,77 @@ log_to_html() {
   done
 }
 
-# === Email conditionnel ===
+calculate_subject() {
+    local log_file="$1"
+    if grep -iqE "(error|failed|failed to)" "$log_file"; then
+        SUBJECT_RAW="$MSG_EMAIL_FAIL"
+    elif grep -q "There was nothing to transfer" "$log_file"; then
+        SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
+    else
+        SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
+    fi
+    # Encodage MIME UTF-8 Base64 du sujet
+    SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
+}
+
+assemble_and_send_mail() {
+    local log_file="$1"
+
+    FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+    {
+        echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
+        echo "To: $MAIL_TO"
+        echo "Date: $(date -R)"
+        echo "Subject: $SUBJECT"
+        echo "MIME-Version: 1.0"
+        echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
+        echo
+        echo "--BOUNDARY123"
+        echo "Content-Type: text/html; charset=UTF-8"
+        echo
+        echo "<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
+        echo "<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
+        echo "<p><b>📝 Dernières lignes du log :</b></p>"
+        echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
+        prepare_mail_html "$log_file"
+        echo "</div><hr><h3>📊 Résumé global</h3>"
+        local copied=$(grep "INFO" "$log_file" | grep -c "Copied" || true)
+        local updated=$(grep "INFO" "$log_file" | grep -c "Updated" || true)
+        local deleted=$(grep "INFO" "$log_file" | grep -c "Deleted" || true)
+        echo "<pre><b>Fichiers copiés :</b> $copied<br><b>Fichiers mis à jour :</b> $updated<br><b>Fichiers supprimés :</b> $deleted</pre>"
+        echo "<p>$MSG_EMAIL_END</p></body></html>"
+    } > "$MAIL"
+
+    # Pièces jointes
+    ATTACHMENTS=("$log_file")
+    for file in "${ATTACHMENTS[@]}"; do
+        {
+            echo "--BOUNDARY123"
+            echo "Content-Type: text/plain; name=\"$(basename "$file")\""
+            echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
+            echo "Content-Transfer-Encoding: base64"
+            echo
+            base64 "$file"
+        } >> "$MAIL"
+    done
+    echo "--BOUNDARY123--" >> "$MAIL"
+
+    # Envoi
+    msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
+    print_fancy --align "center" "$MSG_EMAIL_SENT"
+}
 
 send_email_if_needed() {
-
-	# Compter les occurrences sur l'ensemble des jobs, uniquement lignes contenant INFO
-	TOTAL_COPIED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Copied" || true)
-	TOTAL_UPDATED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Updated" || true)
-	TOTAL_DELETED=$(grep "INFO" "$LOG_FILE_INFO" | grep -c "Deleted" || true)
-
-	# Vérification présence msmtp (ne stoppe pas le script)
-	if ! command -v msmtp >/dev/null 2>&1; then
-		echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
-		ERROR_CODE=9
-	else
-		echo
-		print_centered_text "$MSG_EMAIL_PREP"
-
-		# Préparation du mail
-		MAIL_CONTENT="<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
-		MAIL_CONTENT+="<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
-		MAIL_CONTENT+="<p><b>📝 Dernières lignes du log :</b></p>"
-		MAIL_CONTENT+="<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
-		MAIL_CONTENT+="$(log_to_html "$LOG_FILE_INFO")"
-		MAIL_CONTENT+="</div>"
-
-		# Ajouter un résumé général dans le mail
-		MAIL_CONTENT+="<hr><h3>📊 Résumé global</h3>"
-		MAIL_CONTENT+="<pre><b>Fichiers copiés :</b> $TOTAL_COPIED"
-		MAIL_CONTENT+="<br><b>Fichiers mis à jour :</b> $TOTAL_UPDATED"
-		MAIL_CONTENT+="<br><b>Fichiers supprimés :</b> $TOTAL_DELETED</pre>"
-
-		MAIL_CONTENT+="<p>$MSG_EMAIL_END</p></body></html>"
-
-		# Détermination du sujet du mail selon le résultat global
-		# Analyse du log global pour déterminer l'état final
-		HAS_ERROR=false
-		HAS_NO_TRANSFER=false
-
-		# Erreur détectée
-		if grep -iqE "(error|failed|failed to)" "$LOG_FILE_INFO"; then
-			HAS_ERROR=true
-		fi
-
-		# Aucun transfert détecté (cas précis)
-		if grep -q "There was nothing to transfer" "$LOG_FILE_INFO"; then
-			HAS_NO_TRANSFER=true
-		fi
-
-		# Choix du sujet du mail
-		if $HAS_ERROR; then
-			SUBJECT_RAW="$MSG_EMAIL_FAIL"
-		elif $HAS_NO_TRANSFER; then
-			SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
-		else
-			SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
-		fi
-
-		# Encodage MIME UTF-8 Base64 du sujet
-		SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
-
-		# === Assemblage du mail ===
-		{
-			FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
-			echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
-			echo "To: $MAIL_TO"
-			echo "Date: $(date -R)"
-			echo "Subject: $SUBJECT"
-			echo "MIME-Version: 1.0"
-			echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
-			echo
-			echo "--BOUNDARY123"
-			echo "Content-Type: text/html; charset=UTF-8"
-			echo
-			echo "$MAIL_CONTENT"
-		} > "$MAIL"
-
-		# Ajout des pièces jointes
-		ATTACHMENTS+=("$LOG_FILE_INFO")
-
-		for file in "${ATTACHMENTS[@]}"; do
-			{
-				echo
-				echo "--BOUNDARY123"
-				echo "Content-Type: text/plain; name=\"$(basename "$file")\""
-				echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
-				echo "Content-Transfer-Encoding: base64"
-				echo
-				base64 "$file"
-			} >> "$MAIL"
-		done
-
-		echo "--BOUNDARY123--" >> "$MAIL"
-
-		# Envoi du mail
-		msmtp -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >&2
-
-	print_centered_text "$MSG_EMAIL_SENT"
-	echo
-	fi
+    if [[ -z "$MAIL_TO" ]]; then
+        echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
+    elif ! command -v msmtp >/dev/null 2>&1; then
+        echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
+        ERROR_CODE=9
+    else
+        print_fancy --align "center" "$MSG_EMAIL_PREP"
+        calculate_subject "$LOG_FILE_INFO"
+        assemble_and_send_mail "$LOG_FILE_INFO"
+    fi
 }
 
 
@@ -219,6 +186,10 @@ spinner() {
 #   print_fancy --bg "$BG_BLUE_DARK" "Hello World"
 #   print_fancy "Texte simple à gauche"
 # ----
+# @description Cette fonction fait ceci et cela.
+# @param $1 Description du premier paramètre.
+# @param $2 Description du deuxième paramètre.
+# @return Description de ce que retourne la fonction (le cas échéant).
 
 print_fancy() {
     local color=""
@@ -250,7 +221,7 @@ print_fancy() {
 
     [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni à print_fancy" >&2; return 1; }
 
-    # --- Calcul longueur et padding ---
+    # Calcul longueur et padding
     local line_len=${#text}
     if (( line_len >= TERM_WIDTH_DEFAULT )); then
         printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
@@ -272,62 +243,10 @@ print_fancy() {
 
 
 ###############################################################################
-# Fonction pour centrer une ligne avec des '=' de chaque côté + coloration
-###############################################################################
-
-print_centered_line() {
-    local line="$1"
-    local term_width=$((TERM_WIDTH_DEFAULT - 2))   # <- Force largeur fixe à 80-2
-
-    # Calcul longueur visible (sans séquences d’échappement)
-    local line_len=${#line}
-
-    local pad_total=$((term_width - line_len))
-    local pad_side=0
-    local pad_left=""
-    local pad_right=""
-
-    if (( pad_total > 0 )); then
-        pad_side=$((pad_total / 2))
-        # Si pad_total est impair, on met un '=' en plus à droite
-        pad_left=$(printf '=%.0s' $(seq 1 $pad_side))
-        pad_right=$(printf '=%.0s' $(seq 1 $((pad_side + (pad_total % 2)))))
-    fi
-
-    # Coloriser uniquement la partie texte, pas les '='
-    printf "%s%s %s %s%s\n" "$pad_left" "$BG_BLUE_DARK" "$line" "$RESET" "$pad_right"
-}
-
-
-###############################################################################
-# Fonction pour centrer une ligne dans le terminal (simple, sans décor ni couleur)
-###############################################################################
-
-print_centered_text() {
-    local line="$1"
-    local term_width=${2:-$TERM_WIDTH_DEFAULT}  # largeur par défaut = TERM_WIDTH_DEFAULT
-    local line_len=${#line}
-
-    if (( line_len >= term_width )); then
-        # Si la ligne est plus longue que la largeur, on l’affiche telle quelle
-        echo "$line"
-        return
-    fi
-
-    local pad_total=$((term_width - line_len))
-    local pad_side=$((pad_total / 2))
-    local pad_left=$(printf ' %.0s' $(seq 1 $pad_side))
-    local pad_right=$(printf ' %.0s' $(seq 1 $((pad_total - pad_side))))
-
-    echo "${pad_left}${line}${pad_right}"
-}
-
-
-###############################################################################
 # Fonction d'affichage du tableau récapitulatif avec bordures
 ###############################################################################
 
-print_aligned() {
+print_aligned_table() {
     local label="$1"
     local value="$2"
     local label_width=20
@@ -352,34 +271,20 @@ print_summary_table() {
     echo "INFOS"
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
-    print_aligned "Date / Heure début" "$START_TIME"
-    print_aligned "Date / Heure fin" "$END_TIME"
-    print_aligned "Mode de lancement" "$LAUNCH_MODE"
-    print_aligned "Nombre de jobs" "$JOBS_COUNT"
-    print_aligned "Code erreur" "$ERROR_CODE"
-    print_aligned "Log INFO" "$LOG_FILE_INFO"
-    print_aligned "Email envoyé à" "$MAIL_TO"
-    print_aligned "Sujet email" "$SUBJECT_RAW"
-	if $DRY_RUN; then
-		print_aligned "Simulation (dry-run)" "$MSG_DRYRUN"
-	fi
+    print_aligned_table "Date / Heure début" "$START_TIME"
+    print_aligned_table "Date / Heure fin" "$END_TIME"
+    print_aligned_table "Mode de lancement" "$LAUNCH_MODE"
+    print_aligned_table "Nombre de jobs" "$JOBS_COUNT"
+    print_aligned_table "Code erreur" "$ERROR_CODE"
+    print_aligned_table "Log INFO" "$LOG_FILE_INFO"
+    print_aligned_table "Email envoyé à" "$MAIL_TO"
+    print_aligned_table "Sujet email" "$SUBJECT_RAW"
+    [[ "$DRY_RUN" == true ]] && print_aligned_table "Simulation (dry-run)" "$MSG_DRYRUN"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
-    # Ligne finale avec couleur fond jaune foncé, texte noir, centrée max 80
-    local text="$MSG_END_REPORT"
-    local term_width="$TERM_WIDTH_DEFAULT"
-    local text_len=${#text}
-    local pad_total=$((term_width - text_len))
-    local pad_side=0
-    local pad_left=""
-    local pad_right=""
-    if (( pad_total > 0 )); then
-        pad_side=$((pad_total / 2))
-        pad_left=$(printf ' %.0s' $(seq 1 $pad_side))
-        pad_right=$(printf ' %.0s' $(seq 1 $((pad_side + (pad_total % 2)))))
-    fi
-    printf "%b%s%s%s%s%b\n" "${BG_YELLOW_DARK}${BOLD}${BLACK}" "$pad_left" "$text" "$pad_right" "${RESET}" ""
+    # Ligne finale avec couleur fond jaune foncé, texte noir, centrée
+    print_fancy --bg ${BG_YELLOW_DARK} --color ${BLACK} "$MSG_END_REPORT"
     echo
 }
 

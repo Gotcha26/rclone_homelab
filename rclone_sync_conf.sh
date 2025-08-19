@@ -1,5 +1,5 @@
 ###############################################################################
-# Variables
+# Variables de configuration
 ###############################################################################
 
 # === Générales ===
@@ -13,7 +13,7 @@ LOG_LINE_MAX=200                           # Nombre de lignes maximales (en part
 
 MAIL_DISPLAY_NAME="RCLONE Script Backup"   # Nom affiché de l'expéditeur
 MAIL_TO_ABS="⚠ Option --mail activée mais aucun destinataire fourni (--mailto).
-Le rapport ne sera pas envoyé."            # Affiché sur le terminal si un problème d'adresse email est rencontré
+Le rapport ne sera pas envoyé."            # Affiché si aucun destinataire email fourni
 MSG_WAITING1="SOYEZ PATIENT..."
 MSG_WAITING2="Mise à jour seulement à fin de l'opération de synchronisation."
 MSG_WAITING3="Pour interrompre : CTRL + C"
@@ -22,13 +22,14 @@ MSG_FILE_NOT_READ="✗ Fichier jobs non lisible"
 MSG_TMP_NOT_FOUND="✗ Dossier temporaire rclone introuvable"
 MSG_JOB_LINE_INVALID="✗ Ligne invalide dans le fichier jobs"
 MSG_SRC_NOT_FOUND="✗ Dossier source introuvable ou inaccessible"
-MSG_REMOTE_UNKNOWN="✗ Remote inconnu dans rclone"
+MSG_REMOTE_UNKNOW="✗ Remote inconnu dans rclone"
 MSG_MSMTP_NOT_FOUND="⚠ Attention : msmtp n'est pas installé ou introuvable dans le PATH.
 Le rapport par e-mail ne sera pas envoyé."
 MSG_MSMTP_ERROR="⚠ Echec envoi email via msmtp"
 MSG_END_REPORT="--- Fin de rapport ---"
 MSG_LOG_DIR_CREATE_FAIL="✗ Impossible de créer le dossier de logs"
 MSG_TMP_RCLONE_CREATE_FAIL="✗ Impossible de créer le dossier temporaire"
+MSG_RCLONE_FAIL="❌ Erreur : rclone n'est pas installé ou introuvable dans le PATH."
 MSG_RCLONE_START="Synchronisation :"
 MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
@@ -44,24 +45,19 @@ MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
 # Ne pas toucher
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TMP_RCLONE="$SCRIPT_DIR/tmp"               # Répertoire temporaire pour rclone
-LOG_DIR="$SCRIPT_DIR/logs"                 # Répertoire temporaire pour rclone
+LOG_DIR="$SCRIPT_DIR/logs"                 # Répertoire de logs
 JOBS_FILE="$SCRIPT_DIR/rclone_sync_jobs.txt"    # Fichier des jobs
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 LOG_FILE_INFO="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_INFO.log"
-DATE="$(date '+%Y-%m-%d_%H-%M-%S')"
 NOW="$(date '+%Y/%m/%d %H:%M:%S')"
-MAIL="${TMP_RCLONE}/rclone_report.mail"
 MAIL_TO=""                     # valeur par défaut vide
-MAIL_SUBJECT=""
-SUBJECT_RAW=""
 START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 END_TIME=""
 ERROR_CODE=0
 JOBS_COUNT=0
 LAUNCH_MODE="manuel"
-SEND_MAIL=false               # <- par défaut, pas d'envoi d'email
 
-# Couleurs : on utilise $'...' pour insérer le caractère ESC réel
+# Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
 RED=$'\e[31m'                 # rouge pour deleted / error
 ORANGE=$'\e[38;5;208m'        # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.

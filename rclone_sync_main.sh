@@ -58,15 +58,20 @@ done
 $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 
 # Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
-if [[ "$LAUNCH_MODE" != "automatique" ]]; then
-    print_logo
+[[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
+
+# Vérification de la présence de rclone installé
+if ! command -v rclone >/dev/null 2>&1; then
+    echo "${RED}$MSG_RCLONE_FAIL${RESET}" >&2
+    ERROR_CODE=10
+    exit $ERROR_CODE
 fi
 
 # Création des répertoires nécessaires
 if [[ ! -d "$TMP_RCLONE" ]]; then
     if ! mkdir -p "$TMP_RCLONE" 2>/dev/null; then
         echo "${RED}$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE${RESET}" >&2
-        ERROR_CODE=8
+        ERROR_CODE=1
         exit $ERROR_CODE
     fi
 fi
@@ -74,7 +79,7 @@ fi
 if [[ ! -d "$LOG_DIR" ]]; then
     if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
         echo "${RED}$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR${RESET}" >&2
-        ERROR_CODE=8
+        ERROR_CODE=2
         exit $ERROR_CODE
     fi
 fi
@@ -82,23 +87,19 @@ fi
 # Vérifications initiales
 if [[ ! -f "$JOBS_FILE" ]]; then
     echo "$MSG_FILE_NOT_FOUND : $JOBS_FILE" >&2
-    ERROR_CODE=1
+    ERROR_CODE=3
     exit $ERROR_CODE
 fi
 if [[ ! -r "$JOBS_FILE" ]]; then
     echo "$MSG_FILE_NOT_READ : $JOBS_FILE" >&2
-    ERROR_CODE=2
+    ERROR_CODE=4
     exit $ERROR_CODE
 fi
 if [[ ! -d "$TMP_RCLONE" ]]; then
     echo "$MSG_TMP_NOT_FOUND : $TMP_RCLONE" >&2
-    ERROR_CODE=7
+    ERROR_CODE=5
     exit $ERROR_CODE
 fi
-
-
-# Charger la liste des remotes configurés dans rclone
-mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 
 
 ###############################################################################
@@ -113,14 +114,10 @@ source "$SCRIPT_DIR/rclone_sync_jobs.sh"
 # 4. Traitement des emails
 ###############################################################################
 
-# Vérification si --mailto est fourni
-if [[ -z "$MAIL_TO" ]]; then
-    echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
-    SEND_MAIL=false
-else
-    SEND_MAIL=true
+if [[ -n "$MAIL_TO" ]]; then
     send_email_if_needed
 fi
+
 
 ###############################################################################
 # 4. Suite des opérations
