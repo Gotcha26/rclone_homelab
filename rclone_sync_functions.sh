@@ -222,7 +222,6 @@ print_fancy() {
     [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni à print_fancy" >&2; return 1; }
 
     # Calcul longueur et padding
-    # Calcul longueur et padding
     local line_len=${#text}
     if (( line_len >= TERM_WIDTH_DEFAULT )); then
         printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
@@ -247,7 +246,6 @@ print_fancy() {
 # Fonction d'affichage du tableau récapitulatif avec bordures
 ###############################################################################
 
-print_aligned_table() {
 print_aligned_table() {
     local label="$1"
     local value="$2"
