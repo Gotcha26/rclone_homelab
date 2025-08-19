@@ -61,10 +61,9 @@ LAUNCH_MODE="manuel"
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
 RED=$'\e[31m'                 # rouge pour deleted / error
 ORANGE=$'\e[38;5;208m'        # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
-BG_BLUE_DARK=$'\e[44m'        # fond bleu foncé
-BG_YELLOW_DARK=$'\e[43m'      # fond jaune classique (visible partout, jaune "standard")
+BLUE_DARK=$'\e[44m'        # fond bleu foncé
+YELLOW_DARK=$'\e[43m'      # fond jaune classique (visible partout, jaune "standard")
 BLACK=$'\e[30m'               # texte noir
-BOLD=$'\e[1m'                 # texte gras
 RESET=$'\e[0m'                # Effaceur
 
 # === Options rclone ===

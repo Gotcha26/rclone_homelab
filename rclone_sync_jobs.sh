@@ -74,9 +74,9 @@ while IFS= read -r line; do
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
 
     # Affichage header job
-    print_fancy --bg $BG_BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
-    print_fancy --bg $BG_BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
-    print_fancy --bg $BG_BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
+    print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
+    print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
+    print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
     echo
 
     print_fancy --align "center" "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO"

@@ -169,27 +169,22 @@ spinner() {
 # Fonction alignement - décoration sur 1 ligne
 ###############################################################################
 # ----
-# print_fancy - Affichage flexible dans le terminal
+# print_fancy : Affiche du texte formaté avec couleurs, styles et alignement
 #
-# Usage :
-#   print_fancy [--color couleur] [--bg fond] [--fill caractere] [--align center|left] "Texte à afficher"
+# Options :
+#   --color <code|var>     : Couleur du texte (ex: "$RED" ou "\033[31m")
+#   --bg <code|var>        : Couleur de fond (ex: "$BG_BLUE" ou "\033[44m")
+#   --fill <char>          : Caractère de remplissage (défaut: espace)
+#   --align <center|left>  : Alignement du texte (défaut: center)
+#   --style <bold|italic|underline|combinaison>
+#                          : Style(s) appliqués au texte
+#   --highlight            : Active un surlignage complet (ligne entière)
+#   texte ...              : Le texte à afficher (peut contenir des espaces)
 #
-# Arguments :
-#   --color  : variable ANSI pour la couleur du texte (ex: $RED)
-#   --bg     : variable ANSI pour la couleur de fond (ex: $BG_BLUE_DARK)
-#   --fill   : caractère à répéter avant/après le texte (ex: "=" ou " ")
-#   --align  : "center" (par défaut) ou "left"
-#   "Texte à afficher" : texte obligatoire, toujours en dernier
-#
-# Exemples :
-#   print_fancy --color "$RED" --fill "=" --align center "Titre décoré centré"
-#   print_fancy --bg "$BG_BLUE_DARK" "Hello World"
-#   print_fancy "Texte simple à gauche"
+# Exemple :
+#   print_fancy --color "$RED" --bg "$BG_WHITE" --style "bold underline" "Alerte"
+#   print_fancy --color "\033[32m" --style italic "Succès en vert"
 # ----
-# @description Cette fonction fait ceci et cela.
-# @param $1 Description du premier paramètre.
-# @param $2 Description du deuxième paramètre.
-# @return Description de ce que retourne la fonction (le cas échéant).
 
 print_fancy() {
     local color=""
@@ -197,15 +192,25 @@ print_fancy() {
     local fill=" "
     local align="center"
     local text=""
+    local style=""
+    local highlight=""
 
-    # --- Parsing options ---
+    # Styles ANSI de base
+    local BOLD="\033[1m"
+    local ITALIC="\033[3m"
+    local UNDERLINE="\033[4m"
+    local RESET="\033[0m"
+
+    # Parsing options
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --color) color="$2"; shift 2 ;;
-            --bg)    bg="$2"; shift 2 ;;
-            --fill)  fill="$2"; shift 2 ;;
-            --align) align="$2"; shift 2 ;;
-            *) 
+            --color)     color="$2"; shift 2 ;;
+            --bg)        bg="$2"; shift 2 ;;
+            --fill)      fill="$2"; shift 2 ;;
+            --align)     align="$2"; shift 2 ;;
+            --style)     style="$2"; shift 2 ;;   # bold / italic / underline / combinaison
+            --highlight) highlight="1"; shift ;;
+            *)
                 text="$1"
                 shift
                 break
@@ -221,10 +226,16 @@ print_fancy() {
 
     [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni à print_fancy" >&2; return 1; }
 
+    # Construction de la séquence de style
+    local style_seq=""
+    [[ "$style" =~ bold ]]      && style_seq+="$BOLD"
+    [[ "$style" =~ italic ]]    && style_seq+="$ITALIC"
+    [[ "$style" =~ underline ]] && style_seq+="$UNDERLINE"
+
     # Calcul longueur et padding
     local line_len=${#text}
     if (( line_len >= TERM_WIDTH_DEFAULT )); then
-        printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
+        printf "%b%s%b\n" "${color}${bg}${style_seq}" "$text" "$RESET"
         return
     fi
 
@@ -233,10 +244,25 @@ print_fancy() {
         local pad_side=$((pad_total / 2))
         local pad_left=$(printf '%*s' "$pad_side" '' | tr ' ' "$fill")
         local pad_right=$(printf '%*s' $((pad_total - pad_side)) '' | tr ' ' "$fill")
-        printf "%s%b %s %b%s\n" "$pad_left" "$color$bg" "$text" "$RESET" "$pad_right"
+
+        if [[ -n "$highlight" ]]; then
+            # Ligne complète remplie
+            local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
+            local insert_pos=$((pad_side + 1))
+            full_line="${full_line:0:$insert_pos}$text${full_line:$((insert_pos + line_len))}"
+            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$full_line" "$RESET"
+        else
+            printf "%s%b %s %b%s\n" "$pad_left" "${color}${bg}${style_seq}" "$text" "$RESET" "$pad_right"
+        fi
     else
         # align left
-        printf "%b%s%b\n" "$color$bg" "$text" "$RESET"
+        if [[ -n "$highlight" ]]; then
+            local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
+            full_line="${text}$(printf '%*s' $((TERM_WIDTH_DEFAULT - line_len)) '' | tr ' ' "$fill")"
+            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$full_line" "$RESET"
+        else
+            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$text" "$RESET"
+        fi
     fi
 }
 
@@ -284,7 +310,7 @@ print_summary_table() {
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
     # Ligne finale avec couleur fond jaune foncé, texte noir, centrée
-    print_fancy --bg ${BG_YELLOW_DARK} --color ${BLACK} "$MSG_END_REPORT"
+    print_fancy --bg ${YELLOW_DARK} --color ${BLACK} "$MSG_END_REPORT"
     echo
 }
 
