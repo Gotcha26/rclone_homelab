@@ -20,6 +20,16 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
+# ---- Journal log général (sauf rclone qui a un log dédié) ----
+
+# Création du dossier logs si absent
+mkdir -p "$LOG_DIR"
+
+# Redirige toute la sortie du script
+# - stdout vers tee (console + fichier) [standard]
+# - stderr aussi redirigé [sortie des erreurs]
+exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
+
 
 ###############################################################################
 # 2. Parsing complet des arguments

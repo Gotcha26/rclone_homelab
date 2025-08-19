@@ -50,6 +50,7 @@ LOG_DIR="$SCRIPT_DIR/logs"                 # Répertoire de logs
 JOBS_FILE="$SCRIPT_DIR/rclone_sync_jobs.txt"    # Fichier des jobs
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 LOG_FILE_INFO="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_INFO.log"
+LOG_FILE_SCRIPT="$LOG_DIR/rclone_log_${LOG_TIMESTAMP}_SCRIPT.log"
 NOW="$(date '+%Y/%m/%d %H:%M:%S')"
 MAIL_TO=""                     # valeur par défaut vide
 START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
