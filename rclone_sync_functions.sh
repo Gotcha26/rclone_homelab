@@ -94,8 +94,8 @@ calculate_subject() {
 
 assemble_and_send_mail() {
     local log_file="$1"
-
     FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+
     {
         echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
         echo "To: $MAIL_TO"
@@ -107,30 +107,41 @@ assemble_and_send_mail() {
         echo "--BOUNDARY123"
         echo "Content-Type: text/html; charset=UTF-8"
         echo
-        echo "<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
-        echo "<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
-        echo "<p><b>📝 Dernières lignes du log :</b></p>"
-        echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
+        echo "<html>"
+        echo "<body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
+        echo "  <h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
+        echo "  <p><b>📝 Dernières lignes du log :</b></p>"
+        echo "  <div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
         prepare_mail_html "$log_file"
-        echo "</div><hr><h3>📊 Résumé global</h3>"
+        echo "  </div>"
+        echo "  <hr>"
+        echo "  <h3>📊 Résumé global</h3>"
+
         local copied=$(grep "INFO" "$log_file" | grep -c "Copied" || true)
         local updated=$(grep "INFO" "$log_file" | grep -c "Updated" || true)
         local deleted=$(grep "INFO" "$log_file" | grep -c "Deleted" || true)
-        # ... après avoir calculé copied/updated/deleted ...
+
         cat <<HTML
         <table style="font-family: monospace; border-collapse: collapse;">
-        <tr><td><b>Fichiers copiés&nbsp;    :</b></td>
-            <td style="text-align:right;">  $copied</td></tr>
-        <tr><td><b>Fichiers mis à jour&nbsp;:</b></td>
-            <td style="text-align:right;">  $updated</td></tr>
-        <tr><td><b>Fichiers supprimés&nbsp; :</b></td>
-            <td style="text-align:right;">  $deleted</td></tr>
+          <tr>
+            <td><b>Fichiers copiés :</b></td>
+            <td style="text-align:right;">$copied</td>
+          </tr>
+          <tr>
+            <td><b>Fichiers mis à jour :</b></td>
+            <td style="text-align:right;">$updated</td>
+          </tr>
+          <tr>
+            <td><b>Fichiers supprimés :</b></td>
+            <td style="text-align:right;">$deleted</td>
+          </tr>
         </table>
-        HTML
-
-        echo "<p>$MSG_EMAIL_END</p></body></html>"
-
+HTML
+        echo "  <p>$MSG_EMAIL_END</p>"
+        echo "</body>"
+        echo "</html>"
     } > "$MAIL"
+}
 
     # Pièces jointes
     ATTACHMENTS=("$log_file")
