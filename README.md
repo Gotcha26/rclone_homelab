@@ -167,8 +167,16 @@ Là vous pourrez mettre/enlever vos propores options.
 | Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 11           | 
 
   
+## Logs
+Ils sont purgés tous les 15 jours par défaut.
+```
+/opt/rclone_homelab/logs/main_xxx.log
+/opt/rclone_homelab/logs/rclone_xxx.log
+/opt/rclone_homelab/logs/msmtp_xxx.log
+```
+
+
 ## A faire / Ajouter
-- Scinder le fichier pour arrêter l'aspect monolithique
 - Internationnalisation : *wait and see...*
 
 ### Petites infos
