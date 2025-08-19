@@ -118,6 +118,18 @@ assemble_and_send_mail() {
         local deleted=$(grep "INFO" "$log_file" | grep -c "Deleted" || true)
         echo "<pre><b>Fichiers copiés :</b> $copied<br><b>Fichiers mis à jour :</b> $updated<br><b>Fichiers supprimés :</b> $deleted</pre>"
         echo "<p>$MSG_EMAIL_END</p></body></html>"
+        # ... après avoir calculé copied/updated/deleted ...
+cat <<HTML
+<table style="font-family: monospace; border-collapse: collapse;">
+  <tr><td><b>Fichiers copiés&nbsp;:</b></td>
+      <td style="text-align:right;">$copied</td></tr>
+  <tr><td><b>Fichiers mis à jour&nbsp;:</b></td>
+      <td style="text-align:right;">$updated</td></tr>
+  <tr><td><b>Fichiers supprimés&nbsp;:</b></td>
+      <td style="text-align:right;">$deleted</td></tr>
+</table>
+HTML
+
     } > "$MAIL"
 
     # Pièces jointes
