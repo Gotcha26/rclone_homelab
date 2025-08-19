@@ -164,6 +164,7 @@ Là vous pourrez mettre/enlever vos propores options.
 | Problème avec le processus PID rclone        | Sérieuse                                      | 8            |
 | `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration remote ou argument incorrect    | 9            |
 | Vérification présence rclone                 | rclone non présent ou injoignable             | 10           | 
+| Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 11           | 
 
   
 ## A faire / Ajouter

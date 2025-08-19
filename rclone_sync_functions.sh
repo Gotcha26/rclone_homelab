@@ -50,6 +50,16 @@ check_remote() {
 # Fonctions EMAIL
 ###############################################################################
 
+check_email() {
+    local email="$1"
+    # Regex basique : texte@texte.domaine
+    if [[ ! "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        echo "${RED}$MSG_MAIL_ERROR : $email${RESET}" >&2
+        ERROR_CODE=11
+        exit $ERROR_CODE
+    fi
+}
+
 prepare_mail_html() {
   local file="$1"
   tail -n "$LOG_LINE_MAX" "$file" | while IFS= read -r line; do

@@ -38,6 +38,7 @@ MSG_EMAIL_FAIL="❌  Des erreurs lors des sauvegardes vers le cloud"
 MSG_EMAIL_SUSPECT="❗  Synchronisation réussie mais aucun fichier transféré"
 MSG_EMAIL_PREP="📧  Préparation de l'email..."
 MSG_EMAIL_SENT="... Email envoyé ✅ "
+MSG_MAIL_ERROR="❌ Adresse email invalide : $MAIL_TO"
 MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
 
 # === Variables techniques ===

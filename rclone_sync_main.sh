@@ -101,6 +101,9 @@ if [[ ! -d "$TMP_RCLONE" ]]; then
     exit $ERROR_CODE
 fi
 
+# Vérification du mail via la fonction
+check_email "$MAIL_TO"
+
 
 ###############################################################################
 # 3. Exécution des jobs rclone
