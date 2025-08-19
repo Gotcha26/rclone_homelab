@@ -124,16 +124,16 @@ assemble_and_send_mail() {
         cat <<HTML
         <table style="font-family: monospace; border-collapse: collapse;">
           <tr>
-            <td><b>Fichiers copiés :</b></td>
-            <td style="text-align:right;">$copied</td>
+            <td><b>Fichiers copiés     :</b></td>
+            <td style="text-align:right;">  $copied</td>
           </tr>
           <tr>
             <td><b>Fichiers mis à jour :</b></td>
-            <td style="text-align:right;">$updated</td>
+            <td style="text-align:right;">  $updated</td>
           </tr>
           <tr>
-            <td><b>Fichiers supprimés :</b></td>
-            <td style="text-align:right;">$deleted</td>
+            <td><b>Fichiers supprimés  :</b></td>
+            <td style="text-align:right;">  $deleted</td>
           </tr>
         </table>
 HTML
