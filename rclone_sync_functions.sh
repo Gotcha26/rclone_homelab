@@ -135,7 +135,7 @@ assemble_and_send_mail() {
     echo "--BOUNDARY123--" >> "$MAIL"
 
     # Envoi
-    msmtp --logfile "$LOG_DIR/msmtp.log" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_DIR/msmtp.log"
+    msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
     print_fancy --align "center" "$MSG_EMAIL_SENT"
 }
 
