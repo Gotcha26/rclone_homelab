@@ -18,6 +18,7 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ❗ Vous rend riche, beau et irresistible
 - ✅ Durée de conservation des logs : 15 jours par défaut.
 - ℹ️ Vous pouvez appeler le script depuis n'importe où (root inclu)
+- ✅ Accèpte les arguments de rclone depuis l'appel du script
 
 
 ## Installation pas à pas
@@ -170,9 +171,9 @@ Là vous pourrez mettre/enlever vos propores options.
 ## Logs
 Ils sont purgés tous les 15 jours par défaut.
 ```
-/opt/rclone_homelab/logs/main_xxx.log
-/opt/rclone_homelab/logs/rclone_xxx.log
-/opt/rclone_homelab/logs/msmtp_xxx.log
+/opt/rclone_homelab/logs/main_xxx.log    <-- Capture la fenêtre du terminal
+/opt/rclone_homelab/logs/rclone_xxx.log  <-- Capture le niveau INFO de rclone
+/opt/rclone_homelab/logs/msmtp_xxx.log   <-- Capture les paramètres de msmtp
 ```
 
 
