@@ -62,19 +62,45 @@ check_email() {
 
 prepare_mail_html() {
   local file="$1"
-  tail -n "$LOG_LINE_MAX" "$file" | while IFS= read -r line; do
+
+  # Charger les dernières lignes dans un tableau
+  mapfile -t __lines < <(tail -n "$LOG_LINE_MAX" "$file")
+  local total=${#__lines[@]}
+
+  for (( idx=0; idx<total; idx++ )); do
+    local line="${__lines[idx]}"
+
+    # 2 lignes vides juste AVANT la 4e ligne en partant du bas
+    if (( total >= 4 && idx == total - 4 )); then
+      echo "<br><br>"
+    fi
+
+    # Échapper le HTML
     local safe_line
-    safe_line=$(echo "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-    if [[ "$line" == *"Deleted"* ]]; then
-      echo "<span style='color:red;'>$safe_line</span><br>"
-    elif [[ "$line" == *"Copied"* ]]; then
-      echo "<span style='color:blue;'>$safe_line</span><br>"
-    elif [[ "$line" == *"Updated"* ]]; then
-      echo "<span style='color:orange;'>$safe_line</span><br>"
-    elif [[ "$line" == *"NOTICE"* ]]; then
-      echo "<b>$safe_line</b><br>"
+    safe_line=$(printf '%s' "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+
+    # Normalisation pour tests insensibles à la casse
+    local lower="${line,,}"
+
+    # Flag gras si on est dans les 4 dernières lignes
+    local bold_start=""
+    local bold_end=""
+    if (( idx >= total - 4 )); then
+      bold_start="<b>"
+      bold_end="</b>"
+    fi
+
+    # Colorisation mail
+    if [[ "$lower" == *"deleted"* ]]; then
+      echo "${bold_start}<span style='color:red;'>$safe_line</span>${bold_end}<br>"
+    elif [[ "$lower" == *"copied"* ]]; then
+      echo "${bold_start}<span style='color:blue;'>$safe_line</span>${bold_end}<br>"
+    elif [[ "$lower" == *"updated"* ]]; then
+      echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
+    elif [[ "$lower" == *"there was nothing to transfer"* || "$lower" == *"there was nothing to transfert"* ]]; then
+      echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
     else
-      echo "$safe_line<br>"
+      echo "${bold_start}$safe_line${bold_end}<br>"
     fi
   done
 }
