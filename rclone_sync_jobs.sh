@@ -77,12 +77,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     # Affichage header job et redirection vers le log temporaire
     JOB_LOG_INFO="$(mktemp)"
     {
-        print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
-        print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
-        print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
-        echo
-        print_fancy --align "center" "[$JOB_ID] $src → $dst"
-        print_fancy --align "center" "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S')"
+        print "[$JOB_ID] $src → $dst"
+        print "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S')"
         echo ""
     } | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
 
