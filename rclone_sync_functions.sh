@@ -71,9 +71,9 @@ prepare_mail_html() {
     local line="${__lines[idx]}"
 
     # 2 lignes vides juste AVANT la 4e ligne en partant du bas
-    if (( total >= 4 && idx == total - 4 )); then
-      echo "<br><br>"
-    fi
+    # if (( total >= 4 && idx == total - 4 )); then
+    #   echo "<br><br>"
+    # fi
 
     # Échapper le HTML
     local safe_line
