@@ -74,12 +74,18 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     # Identifiant du job [JOB01], [JOB02], ...
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
 
+    # Affichage header
+    print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
+    print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
+    print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
+    echo
+
     # Affichage header job et redirection vers le log temporaire
     # Affichage filtré vers le HTML pour supprimer les balises ANSI
     JOB_LOG_INFO="$(mktemp)"
     {
-        print_fancy --align "center" "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$JOB_LOG_INFO"
-        print_fancy --align "center" "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S')" | tee -a "$LOG_FILE_INFO" | sed 's/\x1B\[[0-9;]*[JKmsu]//g' >> "$JOB_LOG_INFO"
+        print_fancy --align "center" "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
+        print_fancy --align "center" "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S')" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
         echo ""
     } | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
 
