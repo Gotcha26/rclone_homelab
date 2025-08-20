@@ -143,7 +143,7 @@ assemble_and_send_mail() {
         echo "<p><b>📝 Dernières lignes du log :</b></p>"
         echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
         if [[ -n "$html_block" ]]; then
-            cat "$html_block"
+            printf "%s" "$html_block"
         else
             prepare_mail_html "$log_file"
         fi

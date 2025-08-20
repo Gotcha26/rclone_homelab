@@ -100,18 +100,14 @@ while IFS= read -r line; do
     # Affichage colorisé après exécution dans la console
     sed "s/^/[$JOB_ID] /" "$JOB_LOG_INFO" | colorize
 
-    # Préparer le HTML de ce job
-    JOB_HTML=$(mktemp)
-    prepare_mail_html "$JOB_LOG_INFO" > "$JOB_HTML"
+    # Générer le HTML pour ce job dans une variable
+    JOB_HTML=$(prepare_mail_html "$JOB_LOG_INFO")
 
-    # Concaténer dans le HTML global
-    GLOBAL_HTML_BLOCK+=$(cat "$JOB_HTML")
-
-    # Concaténation dans le log global brut
+    # Ajouter au HTML global
     GLOBAL_HTML_BLOCK+="$JOB_HTML"$'\n'
 
-    # Nettoyage
-    rm -f "$JOB_LOG_INFO" "$JOB_HTML"
+    # Nettoyer le log temporaire
+    rm -f "$JOB_LOG_INFO"
 
     # Incrément du compteur pour le prochain job
     ((JOBS_COUNT++))
