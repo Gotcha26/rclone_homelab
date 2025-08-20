@@ -189,6 +189,7 @@ HTML
 }
 
 send_email_if_needed() {
+    local html_block="$1"
     if [[ -z "$MAIL_TO" ]]; then
         echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
     elif ! command -v msmtp >/dev/null 2>&1; then
@@ -199,7 +200,7 @@ send_email_if_needed() {
         calculate_subject "$LOG_FILE_INFO"
 
         # Ici : soit on a un bloc HTML préformaté, soit on laisse assemble_and_send_mail parser
-        assemble_and_send_mail "$LOG_FILE_INFO" "$GLOBAL_HTML_BLOCK"
+        assemble_and_send_mail "$LOG_FILE_INFO" "$html_block"
     fi
 }
 

@@ -50,13 +50,13 @@ done < "$JOBS_FILE"
 # Exécution des jobs
 ###############################################################################
 
-#  Initialisation du flag global avant la boucle des jobs
-NO_CHANGES_ALL=true
+# Initialisation du HTML global
+GLOBAL_HTML_BLOCK=""
 
 # Compteur de jobs pour le label [JOBxx]
 JOB_COUNTER=1
-
 JOBS_COUNT=0
+NO_CHANGES_ALL=true
 
 while IFS= read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
@@ -78,7 +78,6 @@ while IFS= read -r line; do
     print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
     print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
     echo
-
     print_fancy --align "center" "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO"
     print_fancy --align "center" "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S')" | tee -a "$LOG_FILE_INFO"
     echo "" | tee -a "$LOG_FILE_INFO"
@@ -87,11 +86,10 @@ while IFS= read -r line; do
     JOB_LOG_INFO="$(mktemp)"
 
     # === Exécution rclone ===
-
     rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" > "$JOB_LOG_INFO" 2>&1 &
     RCLONE_PID=$!
 
-	# Afficher le spinner tant que rclone tourne
+    # Afficher le spinner tant que rclone tourne
     spinner $RCLONE_PID
 
     # Attendre fin rclone et récupérer code retour
@@ -99,22 +97,27 @@ while IFS= read -r line; do
     job_rc=$?
     (( job_rc != 0 )) && ERROR_CODE=8
 
-    # Affichage colorisé après exécution
+    # Affichage colorisé après exécution dans la console
     sed "s/^/[$JOB_ID] /" "$JOB_LOG_INFO" | colorize
 
-    # Concatenation du log temporaire brut dans le log global
+    # Préparer le HTML de ce job
+    JOB_HTML=$(mktemp)
+    prepare_mail_html "$JOB_LOG_INFO" > "$JOB_HTML"
+
+    # Concaténer dans le HTML global
+    GLOBAL_HTML_BLOCK+=$(cat "$JOB_HTML")
+
+    # Concaténation dans le log global brut
     cat "$JOB_LOG_INFO" >> "$LOG_FILE_INFO"
 
-    # Générer le rendu HTML pour ce job
-    JOB_HTML_INFO="$TMP_RCLONE/${JOB_ID}.html"
-    prepare_mail_html "$JOB_LOG_INFO" > "$JOB_HTML_INFO"
-
-    # On garde le .log et le .html pour l’instant (nettoyage après envoi du mail)
-
-    ((JOBS_COUNT++))
-    (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
-    echo
+    # Nettoyage
+    rm -f "$JOB_LOG_INFO" "$JOB_HTML"
 
     # Incrément du compteur pour le prochain job
+    ((JOBS_COUNT++))
+    (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
     ((JOB_COUNTER++))
+    echo
+
 done < "$JOBS_FILE"
+

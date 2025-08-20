@@ -128,15 +128,7 @@ source "$SCRIPT_DIR/rclone_sync_jobs.sh"
 ###############################################################################
 
 if [[ -n "$MAIL_TO" ]]; then
-    # Concaténer tous les blocs HTML des jobs
-    GLOBAL_HTML="$TMP_RCLONE/global_jobs.html"
-    cat "$TMP_RCLONE"/JOB*.html > "$GLOBAL_HTML"
-
-    # Envoi du mail en passant brut + rendu HTML
-    send_email_if_needed "$GLOBAL_HTML"
-
-    # Nettoyage des fichiers temporaires
-    rm -f "$TMP_RCLONE"/JOB*.html "$TMP_RCLONE"/JOB*.log
+    send_email_if_needed "$GLOBAL_HTML_BLOCK"
 fi
 
 
