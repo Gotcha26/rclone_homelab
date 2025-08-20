@@ -70,6 +70,9 @@ $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 # Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
 [[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
 
+# Vérifie l’email seulement si l’option --mailto est fournie
+[[ -n "$MAIL_TO" ]] && check_email "$MAIL_TO"
+
 # Vérification de la présence de rclone installé
 if ! command -v rclone >/dev/null 2>&1; then
     echo "${RED}$MSG_RCLONE_FAIL${RESET}" >&2
@@ -110,9 +113,6 @@ if [[ ! -d "$TMP_RCLONE" ]]; then
     ERROR_CODE=5
     exit $ERROR_CODE
 fi
-
-# Vérification du mail via la fonction
-check_email "$MAIL_TO"
 
 
 ###############################################################################
