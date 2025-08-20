@@ -91,16 +91,18 @@ prepare_mail_html() {
     fi
 
     # Colorisation mail
-    if [[ "$lower" == *"deleted"* ]]; then
-      echo "${bold_start}<span style='color:red;'>$safe_line</span>${bold_end}<br>"
+    if [[ "$lower" == *"--dry-run"* ]]; then
+        echo "${bold_start}<span style='color:orange; font-style:italic;'>$safe_line</span>${bold_end}<br>"
+    elif [[ "$lower" == *"deleted"* ]]; then
+        echo "${bold_start}<span style='color:red;'>$safe_line</span>${bold_end}<br>"
     elif [[ "$lower" == *"copied"* ]]; then
-      echo "${bold_start}<span style='color:blue;'>$safe_line</span>${bold_end}<br>"
+        echo "${bold_start}<span style='color:blue;'>$safe_line</span>${bold_end}<br>"
     elif [[ "$lower" == *"updated"* ]]; then
-      echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
+        echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
     elif [[ "$lower" == *"there was nothing to transfer"* || "$lower" == *"there was nothing to transfert"* ]]; then
-      echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
+        echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
     else
-      echo "${bold_start}$safe_line${bold_end}<br>"
+        echo "${bold_start}$safe_line${bold_end}<br>"
     fi
   done
 }
