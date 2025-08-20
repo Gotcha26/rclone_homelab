@@ -58,7 +58,8 @@ JOB_COUNTER=1
 JOBS_COUNT=0
 NO_CHANGES_ALL=true
 
-while IFS= read -r line; do
+# Lire les jobs en ignorant les lignes vides et les commentaires
+while IFS= read -r line || [[ -n "$line" ]]; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
     # Nettoyage : trim + uniformisation séparateurs
@@ -85,7 +86,7 @@ while IFS= read -r line; do
     # Log temporaire pour ce job
     JOB_LOG_INFO="$(mktemp)"
 
-    # === Exécution rclone ===
+    # === Exécution rclone en arrière-plan ===
     rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" > "$JOB_LOG_INFO" 2>&1 &
     RCLONE_PID=$!
 
@@ -100,11 +101,8 @@ while IFS= read -r line; do
     # Affichage colorisé après exécution dans la console
     sed "s/^/[$JOB_ID] /" "$JOB_LOG_INFO" | colorize
 
-    # Générer le HTML pour ce job dans une variable
-    JOB_HTML=$(prepare_mail_html "$JOB_LOG_INFO")
-
-    # Ajouter au HTML global
-    GLOBAL_HTML_BLOCK+="$JOB_HTML"$'\n'
+    # Générer le HTML pour ce job et l'ajouter au HTML global
+    GLOBAL_HTML_BLOCK+=$(prepare_mail_html "$JOB_LOG_INFO")$'\n'
 
     # Nettoyer le log temporaire
     rm -f "$JOB_LOG_INFO"
@@ -116,4 +114,3 @@ while IFS= read -r line; do
     echo
 
 done < "$JOBS_FILE"
-
