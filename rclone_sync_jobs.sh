@@ -102,9 +102,14 @@ while IFS= read -r line; do
     # Affichage colorisé après exécution
     sed "s/^/[$JOB_ID] /" "$JOB_LOG_INFO" | colorize
 
-    # Concatenation du log temporaire dans le log global
+    # Concatenation du log temporaire brut dans le log global
     cat "$JOB_LOG_INFO" >> "$LOG_FILE_INFO"
-    rm -f "$JOB_LOG_INFO"
+
+    # Générer le rendu HTML pour ce job
+    JOB_HTML_INFO="$TMP_RCLONE/${JOB_ID}.html"
+    prepare_mail_html "$JOB_LOG_INFO" > "$JOB_HTML_INFO"
+
+    # On garde le .log et le .html pour l’instant (nettoyage après envoi du mail)
 
     ((JOBS_COUNT++))
     (( job_rc != 0 )) && MAIL_SUBJECT_OK=false

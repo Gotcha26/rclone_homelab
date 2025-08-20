@@ -122,8 +122,10 @@ calculate_subject() {
 
 assemble_and_send_mail() {
     local log_file="$1"
+    local html_block="$2"   # facultatif
 
     FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+
     {
         echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
         echo "To: $MAIL_TO"
@@ -137,15 +139,23 @@ assemble_and_send_mail() {
         echo
         echo "<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
         echo "<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
+
         echo "<p><b>📝 Dernières lignes du log :</b></p>"
         echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
-        prepare_mail_html "$log_file"
-        echo "</div><hr><h3>📊 Résumé global</h3>"
-        local copied=$(grep "INFO" "$log_file" | grep -c "Copied" || true)
-        local updated=$(grep "INFO" "$log_file" | grep -c "Updated" || true)
-        local deleted=$(grep "INFO" "$log_file" | grep -c "Deleted" || true)
+        if [[ -n "$html_block" ]]; then
+            cat "$html_block"
+        else
+            prepare_mail_html "$log_file"
+        fi
+        echo "</div>"
+
+        echo "<hr><h3>📊 Résumé global</h3>"
+        local copied=$(grep -c "INFO.*Copied"   "$log_file" || true)
+        local updated=$(grep -c "INFO.*Updated" "$log_file" || true)
+        local deleted=$(grep -c "INFO.*Deleted" "$log_file" || true)
         # ... après avoir calculé copied/updated/deleted ...
-cat <<HTML
+
+        cat <<HTML
 <table style="font-family: monospace; border-collapse: collapse;">
 <tr><td><b>Fichiers copiés&nbsp;</b></td>
     <td style="text-align:right;">: $copied</td></tr>
@@ -159,7 +169,7 @@ cat <<HTML
 HTML
     } > "$MAIL"
 
-    # Pièces jointes
+    # Pièces jointes (logs bruts concaténés)
     ATTACHMENTS=("$log_file")
     for file in "${ATTACHMENTS[@]}"; do
         {
@@ -187,7 +197,9 @@ send_email_if_needed() {
     else
         print_fancy --align "center" "$MSG_EMAIL_PREP"
         calculate_subject "$LOG_FILE_INFO"
-        assemble_and_send_mail "$LOG_FILE_INFO"
+
+        # Ici : soit on a un bloc HTML préformaté, soit on laisse assemble_and_send_mail parser
+        assemble_and_send_mail "$LOG_FILE_INFO" "$GLOBAL_HTML_BLOCK"
     fi
 }
 
