@@ -1,6 +1,8 @@
 #######################################
 # UTILISATION
 #######################################
+# <source>|<remote>:<destination>
+#
 # Format recommandé avec séparateur "|"
 # Exemple :
 # /home/user/Mes Documents | monremote:/Sauvegardes/Mes Documents
@@ -10,3 +12,4 @@
 # /mnt/backup onedrive:/Backup_Proxmox
 #######################################
 /srv/backups|onedrive_gotcha:Homelab_backups
+/srv/backups|Ma_Freebox_Ultra:/Freebox_2To/Homelab/Backups
