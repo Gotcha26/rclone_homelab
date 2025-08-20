@@ -108,7 +108,7 @@ while IFS= read -r line; do
     GLOBAL_HTML_BLOCK+=$(cat "$JOB_HTML")
 
     # Concaténation dans le log global brut
-    cat "$JOB_LOG_INFO" >> "$LOG_FILE_INFO"
+    GLOBAL_HTML_BLOCK+="$JOB_HTML"$'\n'
 
     # Nettoyage
     rm -f "$JOB_LOG_INFO" "$JOB_HTML"
