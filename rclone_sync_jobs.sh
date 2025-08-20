@@ -74,20 +74,20 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     # Identifiant du job [JOB01], [JOB02], ...
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
 
-    # Affichage header job
-    print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
-    print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
-    print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
-    echo
-    print_fancy --align "center" "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO"
-    print_fancy --align "center" "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S')" | tee -a "$LOG_FILE_INFO"
-    echo "" | tee -a "$LOG_FILE_INFO"
-
-    # Log temporaire pour ce job
+    # Affichage header job et redirection vers le log temporaire
     JOB_LOG_INFO="$(mktemp)"
+    {
+        print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
+        print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
+        print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
+        echo
+        print_fancy --align "center" "[$JOB_ID] $src → $dst"
+        print_fancy --align "center" "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S')"
+        echo ""
+    } | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
 
     # === Exécution rclone en arrière-plan ===
-    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" > "$JOB_LOG_INFO" 2>&1 &
+    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$JOB_LOG_INFO" 2>&1 &
     RCLONE_PID=$!
 
     # Afficher le spinner tant que rclone tourne
@@ -98,8 +98,8 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     job_rc=$?
     (( job_rc != 0 )) && ERROR_CODE=8
 
-    # Affichage colorisé après exécution dans la console, avec ID job
-    sed "s/^/[$JOB_ID] /" "$JOB_LOG_INFO" | colorize | tee -a "$LOG_FILE_INFO"
+    # Affichage colorisé après exécution dans la console
+    colorize < "$JOB_LOG_INFO" | tee -a "$LOG_FILE_INFO"
 
     # Générer le HTML pour ce job et l'ajouter au HTML global
     GLOBAL_HTML_BLOCK+=$(prepare_mail_html "$JOB_LOG_INFO")$'\n'
