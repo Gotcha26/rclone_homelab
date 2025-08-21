@@ -123,6 +123,7 @@ calculate_subject() {
 assemble_and_send_mail() {
     local log_file="$1"
     local html_block="$2"   # facultatif
+    local MAIL="/tmp/rclone_mail_$$.tmp"  # <- fichier temporaire unique
 
     FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
 
@@ -186,6 +187,9 @@ HTML
     # Envoi
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
     print_fancy --align "center" "$MSG_EMAIL_SENT"
+
+    # Nettoyage optionnel
+    rm -f "$MAIL"
 }
 
 send_email_if_needed() {
