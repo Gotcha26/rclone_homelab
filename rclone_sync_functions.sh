@@ -120,8 +120,10 @@ prepare_mail_html() {
   done
 }
 
-    encode_subject_for_email() {
-    # Encodage MIME UTF-8 Base64 du sujet
+# Encodage MIME UTF-8 Base64 du sujet
+encode_subject_for_email() {
+    local log_file="$1"
+    calculate_subject_raw "$log_file"
     SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
 }
 
