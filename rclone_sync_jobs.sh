@@ -89,10 +89,6 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         echo ""
     } | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
 
-    # Créer une version sans ANSI pour l'email
-    JOB_LOG_EMAIL="${TMP_RCLONE}_${JOB_ID}_email_${LOG_TIMESTAMP}.log"
-    sed 's/\x1b\[[0-9;]*m//g' "$JOB_LOG_INFO" > "$JOB_LOG_EMAIL"
-
     # === Exécution rclone en arrière-plan ===
     rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$JOB_LOG_INFO" 2>&1 &
     RCLONE_PID=$!
@@ -107,6 +103,10 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
     # Affichage colorisé après exécution dans la console
     colorize < "$JOB_LOG_INFO" | tee -a "$LOG_FILE_INFO"
+
+    # Créer une version sans ANSI pour l'email
+    JOB_LOG_EMAIL="${TMP_RCLONE}_${JOB_ID}_email_${LOG_TIMESTAMP}.log"
+    sed 's/\x1b\[[0-9;]*m//g' "$JOB_LOG_INFO" > "$JOB_LOG_EMAIL"
 
     # Envoyer notification Discord **immédiatement**
     JOB_LOG_DISCORD="${TMP_RCLONE}_${JOB_ID}_${LOG_TIMESTAMP}.log"
