@@ -60,6 +60,19 @@ check_email() {
     fi
 }
 
+# Déterminer le sujet brut (SUBJECT_RAW) toujours
+# Evite les erreur lorsque aucun mail n'est saisie et est nécessaire pour notification Discord
+calculate_subject_raw() {
+    local log_file="$1"
+    if grep -iqE "(error|failed|failed to)" "$log_file"; then
+        SUBJECT_RAW="$MSG_EMAIL_FAIL"
+    elif grep -q "There was nothing to transfer" "$log_file"; then
+        SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
+    else
+        SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
+    fi
+}
+
 prepare_mail_html() {
   local file="$1"
 
@@ -107,15 +120,7 @@ prepare_mail_html() {
   done
 }
 
-calculate_subject() {
-    local log_file="$1"
-    if grep -iqE "(error|failed|failed to)" "$log_file"; then
-        SUBJECT_RAW="$MSG_EMAIL_FAIL"
-    elif grep -q "There was nothing to transfer" "$log_file"; then
-        SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
-    else
-        SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
-    fi
+    encode_subject_for_email() {
     # Encodage MIME UTF-8 Base64 du sujet
     SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
 }
@@ -201,7 +206,7 @@ send_email_if_needed() {
         ERROR_CODE=9
     else
         print_fancy --align "center" "$MSG_EMAIL_PREP"
-        calculate_subject "$LOG_FILE_INFO"
+        encode_subject_for_email "$LOG_FILE_INFO"
 
         # Ici : soit on a un bloc HTML préformaté, soit on laisse assemble_and_send_mail parser
         assemble_and_send_mail "$LOG_FILE_INFO" "$html_block"
@@ -419,6 +424,7 @@ colorize() {
 send_discord_notification() {
     local log_file="$1"
     local webhook_url="$DISCORD_WEBHOOK_URL"
+    calculate_subject_raw "$LOG_FILE_INFO"
 
     if [[ -z "$webhook_url" ]]; then
         print_fancy --align "center" "$MSG_DISCORD_ABORDED"
