@@ -104,6 +104,9 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     # Affichage colorisé après exécution dans la console
     colorize < "$JOB_LOG_INFO" | tee -a "$LOG_FILE_INFO"
 
+    # Envoyer notification Discord **immédiatement**
+    send_discord_notification "$JOB_LOG"
+
     # Générer le HTML pour ce job et l'ajouter au HTML global
     GLOBAL_HTML_BLOCK+=$(prepare_mail_html "$JOB_LOG_INFO")$'\n'
 
