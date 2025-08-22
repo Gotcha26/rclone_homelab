@@ -85,9 +85,13 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     JOB_LOG_INFO="$(mktemp)"
     {
         print_fancy --align "center" "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
-        print_fancy --align "center" "$MSG_TASK_LAUNCH $(date '+%Y-%m-%d à %H:%M:%S')" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
+        print_fancy --align "center" "$MSG_TASK_LAUNCH $(NOW)" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
         echo ""
     } | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
+
+    # Créer une version sans ANSI pour l'email
+    JOB_LOG_EMAIL="${TMP_RCLONE}_${JOB_ID}_email_${LOG_TIMESTAMP}.log"
+    sed 's/\x1b\[[0-9;]*m//g' "$JOB_LOG_INFO" > "$JOB_LOG_EMAIL"
 
     # === Exécution rclone en arrière-plan ===
     rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$JOB_LOG_INFO" 2>&1 &
@@ -105,12 +109,12 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     colorize < "$JOB_LOG_INFO" | tee -a "$LOG_FILE_INFO"
 
     # Envoyer notification Discord **immédiatement**
-    JOB_LOG_DISCORD="/tmp/rclone_${JOB_ID}_$(date '+%Y%m%d_%H%M%S').log"
+    JOB_LOG_DISCORD="${TMP_RCLONE}_${JOB_ID}_${LOG_TIMESTAMP}.log"
     sed 's/\x1b\[[0-9;]*m//g' "$JOB_LOG_INFO" > "$JOB_LOG_DISCORD"
     send_discord_notification "$JOB_LOG_DISCORD"
 
     # Générer le HTML pour ce job et l'ajouter au HTML global
-    GLOBAL_HTML_BLOCK+=$(prepare_mail_html "$JOB_LOG_INFO")$'\n'
+    GLOBAL_HTML_BLOCK+=$(prepare_mail_html "$JOB_LOG_EMAIL")$'\n'
 
     # Nettoyer le log temporaire
     rm -f "$JOB_LOG_DISCORD" "$JOB_LOG_INFO"

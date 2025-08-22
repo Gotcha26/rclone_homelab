@@ -83,11 +83,6 @@ prepare_mail_html() {
   for (( idx=0; idx<total; idx++ )); do
     local line="${__lines[idx]}"
 
-    # 2 lignes vides juste AVANT la 4e ligne en partant du bas
-    # if (( total >= 4 && idx == total - 4 )); then
-    #   echo "<br><br>"
-    # fi
-
     # Échapper le HTML
     local safe_line
     safe_line=$(printf '%s' "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
@@ -130,7 +125,7 @@ encode_subject_for_email() {
 assemble_and_send_mail() {
     local log_file="$1"
     local html_block="$2"   # facultatif
-    local MAIL="/tmp/rclone_mail_$$.tmp"  # <- fichier temporaire unique
+    local MAIL="${TMP_RCLONE}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
 
     FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
 
@@ -211,7 +206,7 @@ send_email_if_needed() {
         encode_subject_for_email "$LOG_FILE_INFO"
 
         # Ici : soit on a un bloc HTML préformaté, soit on laisse assemble_and_send_mail parser
-        assemble_and_send_mail "$LOG_FILE_INFO" "$html_block"
+        assemble_and_send_mail "$JOB_LOG_EMAIL" "$html_block"
     fi
 }
 
