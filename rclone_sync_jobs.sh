@@ -105,13 +105,15 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     colorize < "$JOB_LOG_INFO" | tee -a "$LOG_FILE_INFO"
 
     # Envoyer notification Discord **immédiatement**
-    send_discord_notification "$JOB_LOG"
+    JOB_LOG_DISCORD="/tmp/rclone_${JOB_ID}_$(date '+%Y%m%d_%H%M%S').log"
+    sed 's/\x1b\[[0-9;]*m//g' "$JOB_LOG_INFO" > "$JOB_LOG_DISCORD"
+    send_discord_notification "$JOB_LOG_DISCORD"
 
     # Générer le HTML pour ce job et l'ajouter au HTML global
     GLOBAL_HTML_BLOCK+=$(prepare_mail_html "$JOB_LOG_INFO")$'\n'
 
     # Nettoyer le log temporaire
-    rm -f "$JOB_LOG_INFO"
+    rm -f "$JOB_LOG_DISCORD" "$JOB_LOG_INFO"
 
     # Incrément du compteur pour le prochain job
     ((JOBS_COUNT++))

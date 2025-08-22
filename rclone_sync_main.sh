@@ -136,9 +136,6 @@ fi
 # 4. Suite des opérations
 ###############################################################################
 
-# Notificatin Discord
-send_discord_notification "$LOG_FILE_INFO"
-
 # Purge inconditionnel des logs anciens (tous fichiers du dossier)
 find "$LOG_DIR" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
