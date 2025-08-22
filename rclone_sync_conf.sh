@@ -8,6 +8,8 @@
 TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
 LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
 LOG_LINE_MAX=200                           # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
+DISCORD_WEBHOOK_URL=""                     # URL du webhook salon Discord
+
 
 # === Messages (centralisés pour affichage et email) ===
 
@@ -40,6 +42,9 @@ MSG_EMAIL_PREP="📧  Préparation de l'email..."
 MSG_EMAIL_SENT="... Email envoyé ✅ "
 MSG_MAIL_ERROR="❌  Adresse email saisie invalide"
 MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
+MSG_DISCORD_ABORDED="⚠️  Aucun webhook Discord défini (variable DISCORD_WEBHOOK_URL manquante)."
+MSG_DISCORD_SENT="✅ Notification Discord envoyée."
+MSG_DISCORD_ERROR="❌ Erreur lors de l'envoi Discord."
 
 # === Variables techniques ===
 

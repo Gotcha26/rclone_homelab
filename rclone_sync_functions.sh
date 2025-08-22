@@ -414,6 +414,35 @@ colorize() {
 
 
 ###############################################################################
+# Fonction : envoyer une notification Discord avec sujet + log attaché
+###############################################################################
+send_discord_notification() {
+    local log_file="$1"
+    local webhook_url="$DISCORD_WEBHOOK_URL"
+
+    if [[ -z "$webhook_url" ]]; then
+        print_fancy --align "center" "$MSG_DISCORD_ABORDED"
+        return 1
+    fi
+
+    # Message principal = même sujet que l'email
+    local message="📢 **$SUBJECT_RAW** – $NOW"
+
+    # Envoi du message + du log en pièce jointe
+    curl -s -X POST "$webhook_url" \
+        -F "payload_json={\"content\": \"$message\"}" \
+        -F "file=@$log_file" \
+        > /dev/null
+
+    if [[ $? -eq 0 ]]; then
+        print_fancy --align "center" "$MSG_DISCORD_SENT"
+    else
+        print_fancy --align "center" "$MSG_DISCORD_ERROR"
+    fi
+}
+
+
+###############################################################################
 # Fonction : Affiche le logo ASCII GOTCHA (uniquement en mode manuel)
 ###############################################################################
 
