@@ -85,7 +85,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     JOB_LOG_INFO="$(mktemp)"
     {
         print_fancy --align "center" "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
-        print_fancy --align "center" "$MSG_TASK_LAUNCH $(NOW)" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
+        print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
         echo ""
     } | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
 
