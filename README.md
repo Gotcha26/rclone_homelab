@@ -1,5 +1,5 @@
 # rclone_homelab
-## _MON script de synchronisation **rclone_sync_jobs.sh**_
+## _MON script de synchronisation **Proxmox - Freebox - Cloud**_
 _✌️🥖🔆Fait avec amour dans le sud de la France.❤️️🇫🇷🐓_
 
 Juste un script qui permet de synchroniser un dossier local avec un dossier distant en utilisant le script [rclone](https://rclone.org/).
@@ -19,9 +19,10 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ✅ Durée de conservation des logs : 15 jours par défaut.
 - ℹ️ Vous pouvez appeler le script depuis n'importe où (root inclu)
 - ✅ Accèpte les arguments de rclone depuis l'appel du script
+- ✅ Notifications Discord possibles via un webhook
 
 
-## Installation pas à pas
+## Installation pas à pas [LXC - Debian : compatible]
 1. Création d'un dossier dédié
 ```
 mkdir -p /opt/rclone_homelab
@@ -32,8 +33,6 @@ cd /opt/rclone_homelab
 ```
 3. Cloner le dépôt
 ```
-git clone --branch v2 https://github.com/Gotcha26/rclone_homelab.git .
-
 git clone https://github.com/Gotcha26/rclone_homelab.git .
 ```
 ⚠ Le `.` final permet de cloner dans le dossier courant sans créer un sous-dossier supplémentaire.
@@ -42,12 +41,11 @@ git clone https://github.com/Gotcha26/rclone_homelab.git .
 ```
 chmod +x rclone_sync_main.sh
 ```
-5. Ajouter un symlink pour un accès global
-Pour pouvoir lancer la commande simplement avec `rclone_homelab` :
+5. Ajouter un symlink pour un accès global afin de pour pouvoir lancer la commande simplement avec `rclone_homelab` :
 ```
 ln -s /opt/rclone_homelab/rclone_sync_main.sh /usr/local/bin/rclone_homelab
 ```
-6. Vérifier
+6. Vérifier l'installation
 ```
 which rclone_homelab
 # /usr/local/bin/rclone_homelab
@@ -64,17 +62,18 @@ cd
 Pour mettre à jour facilement l'utilitaire depuis GitHub :
 ```
 cd /opt/rclone_homelab
-git pull origin v2
+```
+```
+git pull origin main
 ```
 
 ### Mise à jour forcée (autre branche)
+Dans le cadre d'une installation de la branche v2 via `git clone --branch v2 https://github.com/Gotcha26/rclone_homelab.git .`
 ```
 cd /opt/rclone_homelab
 ```
 ```
-git fetch origin
-git reset --hard origin/v2
-chmod +x rclone_sync_main.sh
+git fetch origin && git reset --hard origin/v2 && chmod +x rclone_sync_main.sh
 ```
 
 
@@ -88,46 +87,34 @@ Des arguments (voir [Arguments](#arguments)) peuvent être utilisés.
 
 
 ## Jobs
-Les jobs ne sont pas moins qu'une suite d'instructions contenant les informations pour une exécution facilité.
+Les jobs ne sont pas moins que les directives dédiées pour rclone.
 
-Le script attends 2 arguments minimum pour faire **un job**.  
+Le script attends 3 arguments minimum pour faire **un job**.  
 Pour simplifier la vie, ces *jobs* sont à écrire à l'avance dans un fichier à placer **à coté du script** (même dossier).  
 Ce fichier du nom de `rclone_sync_jobs.txt` contiendra **1 ligne par job**.  
 
 ###### Exemples :
 `nano /opt/rclone_homelab/rclone_sync_jobs.txt`
 ```ini
-<lien_symbolique_source>|<remote rclone:dossier/sous_dossier>
+<lien_symbolique_source>|<remote_rclone:dossier/sous_dossier>
 /srv/backups|onedrive_gotcha:Homelab_backups
 ```
 
 ###### Explications :
-Chaque job est constitué de 2 arguments séparés par un symbole "pipe" `|` ainsi que d'un sous-argument introduit par `:`
-- En premier argument, c'est le lien symbolique pour atteindre le dossier physique stocké sur notre serveur Proxmox auquel nous avons accès.
-Il aura été paramétré précédemment.
-- Le second argument consiste à indiquer quel *remote* (précédemment paramétré dans via `rclone config`) est à utiliser. rclone permettant d'en configurer une multitude, ici nous sélectionnons celui qui a déjà été configuré.
-- Le présence du symbole `:` passe un sous-argument qui indique le chemin du dossier à atteindre dans **le cloud**.  
+Chaque job est constitué d'un ensemble de 2 arguments séparés par un symbole "pipe" `|` ainsi que d'un sous-argument introduit par le symbole `:`
+- Le premier argument constitue le dossier d'origine.
+Celui qui sera copié et pris pour référence. Vous pouvez l'indiquer "en dur" avec son chemin absolu ou via un symlink (Proxmox).
+- Le second argument consiste à indiquer quel *remote* (précédemment paramétré dans via `rclone config`) est à utiliser.
+rclone permettant d'en configurer une multitude, il faut bien préciser lequel est à utiliser.
+- Le présence du symbole `:` passe un sous-argument qui indique le chemin du dossier à atteindre dans **le cloud** (distant).  
 Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arborescence plus compliquée.
 
 ###### A retenir :
 - 1 ligne = 1 job
-- <lien_symbolique_source>`|`<remote_rclone>`:`dossier/sous_dossier>
+- <dossier_source>`|`<remote_rclone>`:`dossier_destination/sous_dossier>
 
 
-## Lancement / Appel
-Exemple d'appel du script :
-```
-rclone_homelab --dry-run
-rclone_homelab --auto --mailto=toto@mail.com --dry-run
-rclone_homelab -h
-```
-
-
-## Envoi d'emails
-En association avec l'utilitaire SMTP [msmtp](https://github.com/marlam/msmtp), l'envoi d'email est possible.  
-Veuillez vous référer à cet utilitaire pour le configurer (très simple).
-
-### Arguments 
+## Arguments 
 Ils sont optionnels au lancement de `rclone_sync_jobs.sh`
 Argument | Explication
 --- | ---
@@ -137,7 +124,21 @@ Argument | Explication
   --mailto=<mon_adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp
 
 
-## Personnaliser rclone
+### Envoi d'emails
+En association avec l'utilitaire SMTP [msmtp](https://github.com/marlam/msmtp), l'envoi d'email est possible.  
+La commande pour éditer son fichier de configuration est : `nano ~/.msmtprc`
+
+
+## Lancement / Appel
+###### Exemple d'appels du script
+```
+rclone_homelab --dry-run
+rclone_homelab --auto --mailto=toto@mail.com --dry-run
+rclone_homelab -h
+```
+
+
+### Personnaliser rclone
 Le script rclone dispose d'énormément d'options !  
 📖 Lisez la [documentation](https://rclone.org/commands/rclone/) !  
 Pour adapter selon vos besoins, il est possible de :
@@ -145,6 +146,24 @@ Pour adapter selon vos besoins, il est possible de :
 * [Durable] Modifier `nano /opt/rclone_homelab/rclone_sync_conf.sh` pour trouver la section `# === Options rclone ===`  
 Là vous pourrez mettre/enlever vos propores options.
 
+
+### Notifications Discord
+Moyennent l'edition du fichier `nano rclone_sync_conf.sh` vous y trouvere en tout début l'endroit pour ajouter l'URL du *webhook* Discord afin de faire afficher l'information pour __un message par job__.
+```
+DISCORD_WEBHOOK_URL="<URL_DISCORD_WEBHOOK>"
+```
+
+
+### Tâche Cron
+Pour exécuter une tache de manière programmée, rien de tel que l'utilitaire simpliste : CronTab  
+Pour ajouter une tâche, la commmande est : `crontab -e`  
+Exemple de commande pour une exécution tous les jours à 04h00 :
+```
+0 4 * * * /opt/rclone_homelab/rclone_sync_main.sh --auto --mailto=<votre_adresse@mail.com> --dry-run >> /var/log/rclone_cron.log 2>&1
+```
+- **/opt/rclone_homelab/rclone_sync_main.sh** Il est préférable de saisir le chemin en entier et non le symlink vers le script.
+- **--auto --mailto=<votre_adresse@mail.com> --dry-run** Options du script
+- **>> /var/log/rclone_cron.log 2>&1** [OPTIONNEL] redirection vers un fichier journal, au cas ou... contiendra l'équivalent de c equi est affiché dans la fenêtre de terminal Shell.
 
 ## Recommandations (générales)
 - Ne pas utilser d'outils ou de script à la base d'un noeud Proxmox. Vous risquez de bloquer toute votre installation !
@@ -168,7 +187,7 @@ Là vous pourrez mettre/enlever vos propores options.
 | Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 11           | 
 
   
-## Logs
+### Logs
 Ils sont purgés tous les 15 jours par défaut.
 ```
 /opt/rclone_homelab/logs/main_xxx.log    <-- Capture la fenêtre du terminal
