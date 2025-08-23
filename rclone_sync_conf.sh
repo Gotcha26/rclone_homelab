@@ -17,7 +17,7 @@ MAIL_DISPLAY_NAME="RCLONE Script Backup"   # Nom affiché de l'expéditeur
 MAIL_TO_ABS="⚠ Option --mail activée mais aucun destinataire fourni (--mailto).
 Le rapport ne sera pas envoyé."            # Affiché si aucun destinataire email fourni
 MSG_WAITING1="SOYEZ PATIENT..."
-MSG_WAITING2="Mise à jour seulement à fin de l'opération de synchronisation."
+MSG_WAITING2="Mise à jour seulement à fin du traitement du JOB."
 MSG_WAITING3="Pour interrompre : CTRL + C"
 MSG_FILE_NOT_FOUND="✗ Fichier jobs introuvable"
 MSG_FILE_NOT_READ="✗ Fichier jobs non lisible"
