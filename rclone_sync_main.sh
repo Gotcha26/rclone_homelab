@@ -136,8 +136,8 @@ fi
 # 4. Suite des opérations
 ###############################################################################
 
-# Purge inconditionnel des logs anciens (tous fichiers du dossier)
-find "$LOG_DIR" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
+# Purge inconditionnel des fichiers anciens (sous-dossiers inclus)
+find "$TMP_RCLONE" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
 # Affichage récapitulatif à la sortie
 trap 'print_summary_table' EXIT

@@ -74,7 +74,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     # Identifiant du job [JOB01], [JOB02], ...
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
 
-    # Affichage header
+    # Affichage header (terminal uniquement)
     print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
     print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
     print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
