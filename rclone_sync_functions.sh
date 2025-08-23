@@ -378,11 +378,11 @@ print_summary_table() {
     print_aligned_table "Sujet email" "$SUBJECT_RAW"
 
     if [[ -n "$DISCORD_WEBHOOK_URL" ]]; then
-        print_aligned_table "$MSG_DISCORD_PROCESSED"
+        print_aligned_table "Notifs Discord" "$MSG_DISCORD_PROCESSED"
     else
-        print_aligned_table "$MSG_DISCORD_ABORDED"
+        print_aligned_table "Notifs Discord" "$MSG_DISCORD_ABORDED"
     fi
-    
+
     [[ "$DRY_RUN" == true ]] && print_aligned_table "Simulation (dry-run)" "$MSG_DRYRUN"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
