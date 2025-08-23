@@ -68,7 +68,7 @@ git pull origin main
 ```
 
 ### Mise à jour forcée (autre branche)
-Dans le cadre d'une installation de la branche v2 via `git clone --branch v2 https://github.com/Gotcha26/rclone_homelab.git .`
+⚠ Dans le cadre d'une installation de la branche v2 via `git clone --branch v2 https://github.com/Gotcha26/rclone_homelab.git .`
 ```
 cd /opt/rclone_homelab
 ```
