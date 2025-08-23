@@ -60,6 +60,19 @@ check_email() {
     fi
 }
 
+# Déterminer le sujet brut (SUBJECT_RAW) toujours
+# Evite les erreur lorsque aucun mail n'est saisie et est nécessaire pour notification Discord
+calculate_subject_raw() {
+    local log_file="$1"
+    if grep -iqE "(error|failed|failed to)" "$log_file"; then
+        SUBJECT_RAW="$MSG_EMAIL_FAIL"
+    elif grep -q "There was nothing to transfer" "$log_file"; then
+        SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
+    else
+        SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
+    fi
+}
+
 prepare_mail_html() {
   local file="$1"
 
@@ -69,11 +82,6 @@ prepare_mail_html() {
 
   for (( idx=0; idx<total; idx++ )); do
     local line="${__lines[idx]}"
-
-    # 2 lignes vides juste AVANT la 4e ligne en partant du bas
-    if (( total >= 4 && idx == total - 4 )); then
-      echo "<br><br>"
-    fi
 
     # Échapper le HTML
     local safe_line
@@ -91,37 +99,36 @@ prepare_mail_html() {
     fi
 
     # Colorisation mail
-    if [[ "$lower" == *"deleted"* ]]; then
-      echo "${bold_start}<span style='color:red;'>$safe_line</span>${bold_end}<br>"
+    if [[ "$lower" == *"--dry-run"* ]]; then
+        echo "${bold_start}<span style='color:orange; font-style:italic;'>$safe_line</span>${bold_end}<br>"
+    elif [[ "$lower" == *"deleted"* ]]; then
+        echo "${bold_start}<span style='color:red;'>$safe_line</span>${bold_end}<br>"
     elif [[ "$lower" == *"copied"* ]]; then
-      echo "${bold_start}<span style='color:blue;'>$safe_line</span>${bold_end}<br>"
+        echo "${bold_start}<span style='color:blue;'>$safe_line</span>${bold_end}<br>"
     elif [[ "$lower" == *"updated"* ]]; then
-      echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
+        echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
     elif [[ "$lower" == *"there was nothing to transfer"* || "$lower" == *"there was nothing to transfert"* ]]; then
-      echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
+        echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
     else
-      echo "${bold_start}$safe_line${bold_end}<br>"
+        echo "${bold_start}$safe_line${bold_end}<br>"
     fi
   done
 }
 
-calculate_subject() {
+# Encodage MIME UTF-8 Base64 du sujet
+encode_subject_for_email() {
     local log_file="$1"
-    if grep -iqE "(error|failed|failed to)" "$log_file"; then
-        SUBJECT_RAW="$MSG_EMAIL_FAIL"
-    elif grep -q "There was nothing to transfer" "$log_file"; then
-        SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
-    else
-        SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
-    fi
-    # Encodage MIME UTF-8 Base64 du sujet
+    calculate_subject_raw "$log_file"
     SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
 }
 
 assemble_and_send_mail() {
     local log_file="$1"
+    local html_block="$2"   # facultatif
+    local MAIL="${TMP_RCLONE}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
 
     FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+
     {
         echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
         echo "To: $MAIL_TO"
@@ -135,15 +142,23 @@ assemble_and_send_mail() {
         echo
         echo "<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
         echo "<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
+
         echo "<p><b>📝 Dernières lignes du log :</b></p>"
         echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
-        prepare_mail_html "$log_file"
-        echo "</div><hr><h3>📊 Résumé global</h3>"
-        local copied=$(grep "INFO" "$log_file" | grep -c "Copied" || true)
-        local updated=$(grep "INFO" "$log_file" | grep -c "Updated" || true)
-        local deleted=$(grep "INFO" "$log_file" | grep -c "Deleted" || true)
+        if [[ -n "$html_block" ]]; then
+            printf "%s" "$html_block"
+        else
+            prepare_mail_html "$log_file"
+        fi
+        echo "</div>"
+
+        echo "<hr><h3>📊 Résumé global</h3>"
+        local copied=$(grep -i "INFO" "$log_file" | grep -i "Copied" | grep -vi "There was nothing to transfer" | wc -l)
+        local updated=$(grep -i "INFO" "$log_file" | grep -i "Updated" | grep -vi "There was nothing to transfer" | wc -l)
+        local deleted=$(grep -i "INFO" "$log_file" | grep -i "Deleted" | grep -vi "There was nothing to transfer" | wc -l)
         # ... après avoir calculé copied/updated/deleted ...
-cat <<HTML
+
+        cat <<HTML
 <table style="font-family: monospace; border-collapse: collapse;">
 <tr><td><b>Fichiers copiés&nbsp;</b></td>
     <td style="text-align:right;">: $copied</td></tr>
@@ -157,7 +172,7 @@ cat <<HTML
 HTML
     } > "$MAIL"
 
-    # Pièces jointes
+    # Pièces jointes (logs bruts concaténés)
     ATTACHMENTS=("$log_file")
     for file in "${ATTACHMENTS[@]}"; do
         {
@@ -174,9 +189,13 @@ HTML
     # Envoi
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
     print_fancy --align "center" "$MSG_EMAIL_SENT"
+
+    # Nettoyage optionnel
+    rm -f "$MAIL"
 }
 
 send_email_if_needed() {
+    local html_block="$1"
     if [[ -z "$MAIL_TO" ]]; then
         echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
     elif ! command -v msmtp >/dev/null 2>&1; then
@@ -184,8 +203,10 @@ send_email_if_needed() {
         ERROR_CODE=9
     else
         print_fancy --align "center" "$MSG_EMAIL_PREP"
-        calculate_subject "$LOG_FILE_INFO"
-        assemble_and_send_mail "$LOG_FILE_INFO"
+        encode_subject_for_email "$LOG_FILE_INFO"
+
+        # Ici : soit on a un bloc HTML préformaté, soit on laisse assemble_and_send_mail parser
+        assemble_and_send_mail "$JOB_LOG_EMAIL" "$html_block"
     fi
 }
 
@@ -349,12 +370,19 @@ print_summary_table() {
     print_aligned_table "Mode de lancement" "$LAUNCH_MODE"
     print_aligned_table "Nombre de jobs" "$JOBS_COUNT"
     print_aligned_table "Code erreur" "$ERROR_CODE"
-    print_aligned_table "Dossier" "$LOG_DIR"
+    print_aligned_table "Dossier" "${LOG_DIR}/"
     print_aligned_table "Log script" "$FILE_SCRIPT"
     print_aligned_table "Log rclone" "$FILE_INFO"
     print_aligned_table "Log mail" "$FILE_MAIL"
     print_aligned_table "Email envoyé à" "$MAIL_TO"
     print_aligned_table "Sujet email" "$SUBJECT_RAW"
+
+    if [[ -n "$DISCORD_WEBHOOK_URL" ]]; then
+        print_aligned_table "Notifs Discord" "$MSG_DISCORD_PROCESSED"
+    else
+        print_aligned_table "Notifs Discord" "$MSG_DISCORD_ABORDED"
+    fi
+
     [[ "$DRY_RUN" == true ]] && print_aligned_table "Simulation (dry-run)" "$MSG_DRYRUN"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
@@ -391,6 +419,42 @@ colorize() {
             print line
         }
     }'
+}
+
+
+###############################################################################
+# Fonction : créer une version sans couleurs ANSI d’un log
+###############################################################################
+make_plain_log() {
+    local src_log="$1"
+    local dest_log="$2"
+
+    sed 's/\x1b\[[0-9;]*m//g' "$src_log" > "$dest_log"
+}
+
+
+###############################################################################
+# Fonction : envoyer une notification Discord avec sujet + log attaché
+###############################################################################
+send_discord_notification() {
+    local log_file="$1"
+
+    # Si pas de webhook défini → sortir silencieusement
+    [[ -z "$DISCORD_WEBHOOK_URL" ]] && return 0
+
+    calculate_subject_raw "$LOG_FILE_INFO"
+
+    # Message principal = même sujet que l'email
+    local message="📢 **$SUBJECT_RAW** – $NOW"
+
+    # Envoi du message + du log en pièce jointe
+    curl -s -X POST "$DISCORD_WEBHOOK_URL" \
+        -F "payload_json={\"content\": \"$message\"}" \
+        -F "file=@$log_file" \
+        > /dev/null
+
+    # On considère qu’à partir du moment où la fonction est appelée, on annonce un succès
+    print_fancy --align "center" "$MSG_DISCORD_SENT"
 }
 
 

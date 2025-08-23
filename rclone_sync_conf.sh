@@ -8,6 +8,8 @@
 TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
 LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
 LOG_LINE_MAX=200                           # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
+DISCORD_WEBHOOK_URL=""                     # URL du webhook salon Discord
+
 
 # === Messages (centralisés pour affichage et email) ===
 
@@ -15,7 +17,7 @@ MAIL_DISPLAY_NAME="RCLONE Script Backup"   # Nom affiché de l'expéditeur
 MAIL_TO_ABS="⚠ Option --mail activée mais aucun destinataire fourni (--mailto).
 Le rapport ne sera pas envoyé."            # Affiché si aucun destinataire email fourni
 MSG_WAITING1="SOYEZ PATIENT..."
-MSG_WAITING2="Mise à jour seulement à fin de l'opération de synchronisation."
+MSG_WAITING2="Mise à jour seulement à fin du traitement du JOB."
 MSG_WAITING3="Pour interrompre : CTRL + C"
 MSG_FILE_NOT_FOUND="✗ Fichier jobs introuvable"
 MSG_FILE_NOT_READ="✗ Fichier jobs non lisible"
@@ -40,6 +42,10 @@ MSG_EMAIL_PREP="📧  Préparation de l'email..."
 MSG_EMAIL_SENT="... Email envoyé ✅ "
 MSG_MAIL_ERROR="❌  Adresse email saisie invalide"
 MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
+MSG_DISCORD_ABORDED="⚠️  Aucun webhook Discord de défini."
+MSG_DISCORD_SENT="✅ Notification Discord envoyée."
+MSG_DISCORD_ERROR="❌ Erreur lors de l'envoi Discord."
+MSG_DISCORD_PROCESSED="Traitée(s)"
 
 # === Variables techniques ===
 
