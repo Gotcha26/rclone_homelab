@@ -1,5 +1,3 @@
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Charger les fonctions et configurations
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
@@ -82,15 +80,15 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
     # Affichage header job et redirection vers le log temporaire
     # Affichage filtré vers le HTML pour supprimer les balises ANSI
-    JOB_LOG_INFO="$(mktemp)"
+    TMP_JOB_LOG_INFO="$(mktemp)"
     {
-        print_fancy --align "center" "[$JOB_ID] $src → $dst" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
-        print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}" | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
+        print_fancy --align "center" "[$JOB_ID] $src → $dst"
+        print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
         echo ""
-    } | tee -a "$LOG_FILE_INFO" >> "$JOB_LOG_INFO"
+    } | tee -a "$LOG_FILE_INFO" >> "$TMP_JOB_LOG_INFO"
 
     # === Exécution rclone en arrière-plan ===
-    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$JOB_LOG_INFO" 2>&1 &
+    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_INFO" 2>&1 &
     RCLONE_PID=$!
 
     # Afficher le spinner tant que rclone tourne
@@ -102,22 +100,22 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     (( job_rc != 0 )) && ERROR_CODE=8
 
     # Affichage colorisé après exécution dans la console
-    colorize < "$JOB_LOG_INFO" | tee -a "$LOG_FILE_INFO"
+    colorize < "$TMP_JOB_LOG_INFO" | tee -a "$LOG_FILE_INFO"
 
     # Créer une version sans ANSI pour l'email
     JOB_LOG_EMAIL="${TMP_RCLONE}_${JOB_ID}_email_${LOG_TIMESTAMP}.log"
-    sed 's/\x1b\[[0-9;]*m//g' "$JOB_LOG_INFO" > "$JOB_LOG_EMAIL"
-
-    # Envoyer notification Discord **immédiatement**
-    JOB_LOG_DISCORD="${TMP_RCLONE}_${JOB_ID}_${LOG_TIMESTAMP}.log"
-    sed 's/\x1b\[[0-9;]*m//g' "$JOB_LOG_INFO" > "$JOB_LOG_DISCORD"
-    send_discord_notification "$JOB_LOG_DISCORD"
+    make_plain_log "$TMP_JOB_LOG_INFO" "$JOB_LOG_EMAIL"
 
     # Générer le HTML pour ce job et l'ajouter au HTML global
     GLOBAL_HTML_BLOCK+=$(prepare_mail_html "$JOB_LOG_EMAIL")$'\n'
 
+    # Créer une version sans ANSI pour Discord et envoyer immédiatement
+    TMP_JOB_LOG_DISCORD="${TMP_RCLONE}_${JOB_ID}_${LOG_TIMESTAMP}.log"
+    make_plain_log "$TMP_JOB_LOG_INFO" "$TMP_JOB_LOG_DISCORD"
+    send_discord_notification "$TMP_JOB_LOG_DISCORD"
+
     # Nettoyer le log temporaire
-    rm -f "$JOB_LOG_DISCORD" "$JOB_LOG_INFO"
+    rm -f "$TMP_JOB_LOG_DISCORD" "$TMP_JOB_LOG_INFO"
 
     # Incrément du compteur pour le prochain job
     ((JOBS_COUNT++))

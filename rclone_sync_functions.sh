@@ -423,6 +423,17 @@ colorize() {
 
 
 ###############################################################################
+# Fonction : créer une version sans couleurs ANSI d’un log
+###############################################################################
+make_plain_log() {
+    local src_log="$1"
+    local dest_log="$2"
+
+    sed 's/\x1b\[[0-9;]*m//g' "$src_log" > "$dest_log"
+}
+
+
+###############################################################################
 # Fonction : envoyer une notification Discord avec sujet + log attaché
 ###############################################################################
 send_discord_notification() {
