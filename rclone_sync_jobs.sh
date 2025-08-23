@@ -73,7 +73,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
 
     # Affichage header (terminal uniquement si pas --dry-run et pas --auto)
-    if [[ "$DRY_RUN" != true && "$AUTO_MODE" != true ]]; then
+    if [[ "$DRY_RUN" != true && "$LAUNCH_MODE" != "automatique" ]]; then
         print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
         print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
         print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
