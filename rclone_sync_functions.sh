@@ -153,9 +153,9 @@ assemble_and_send_mail() {
         echo "</div>"
 
         echo "<hr><h3>📊 Résumé global</h3>"
-        local copied=$(grep -c "INFO.*Copied"   "$log_file" || true)
-        local updated=$(grep -c "INFO.*Updated" "$log_file" || true)
-        local deleted=$(grep -c "INFO.*Deleted" "$log_file" || true)
+        local copied=$(grep -i "INFO" "$log_file" | grep -i "Copied" | grep -vi "There was nothing to transfer" | wc -l)
+        local updated=$(grep -i "INFO" "$log_file" | grep -i "Updated" | grep -vi "There was nothing to transfer" | wc -l)
+        local deleted=$(grep -i "INFO" "$log_file" | grep -i "Deleted" | grep -vi "There was nothing to transfer" | wc -l)
         # ... après avoir calculé copied/updated/deleted ...
 
         cat <<HTML
