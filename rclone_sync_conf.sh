@@ -42,9 +42,10 @@ MSG_EMAIL_PREP="📧  Préparation de l'email..."
 MSG_EMAIL_SENT="... Email envoyé ✅ "
 MSG_MAIL_ERROR="❌  Adresse email saisie invalide"
 MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
-MSG_DISCORD_ABORDED="⚠️  Aucun webhook Discord défini (variable DISCORD_WEBHOOK_URL manquante)."
+MSG_DISCORD_ABORDED="⚠️  Aucun webhook Discord de défini."
 MSG_DISCORD_SENT="✅ Notification Discord envoyée."
 MSG_DISCORD_ERROR="❌ Erreur lors de l'envoi Discord."
+MSG_DISCORD_PROCESSED="Traitée(s)"
 
 # === Variables techniques ===
 

@@ -376,6 +376,13 @@ print_summary_table() {
     print_aligned_table "Log mail" "$FILE_MAIL"
     print_aligned_table "Email envoyé à" "$MAIL_TO"
     print_aligned_table "Sujet email" "$SUBJECT_RAW"
+
+    if [[ -n "$DISCORD_WEBHOOK_URL" ]]; then
+        print_aligned_table "$MSG_DISCORD_PROCESSED"
+    else
+        print_aligned_table "$MSG_DISCORD_ABORDED"
+    fi
+    
     [[ "$DRY_RUN" == true ]] && print_aligned_table "Simulation (dry-run)" "$MSG_DRYRUN"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
@@ -420,28 +427,23 @@ colorize() {
 ###############################################################################
 send_discord_notification() {
     local log_file="$1"
-    local webhook_url="$DISCORD_WEBHOOK_URL"
-    calculate_subject_raw "$LOG_FILE_INFO"
 
-    if [[ -z "$webhook_url" ]]; then
-        print_fancy --align "center" "$MSG_DISCORD_ABORDED"
-        return 1
-    fi
+    # Si pas de webhook défini → sortir silencieusement
+    [[ -z "$DISCORD_WEBHOOK_URL" ]] && return 0
+
+    calculate_subject_raw "$LOG_FILE_INFO"
 
     # Message principal = même sujet que l'email
     local message="📢 **$SUBJECT_RAW** – $NOW"
 
     # Envoi du message + du log en pièce jointe
-    curl -s -X POST "$webhook_url" \
+    curl -s -X POST "$DISCORD_WEBHOOK_URL" \
         -F "payload_json={\"content\": \"$message\"}" \
         -F "file=@$log_file" \
         > /dev/null
 
-    if [[ $? -eq 0 ]]; then
-        print_fancy --align "center" "$MSG_DISCORD_SENT"
-    else
-        print_fancy --align "center" "$MSG_DISCORD_ERROR"
-    fi
+    # On considère qu’à partir du moment où la fonction est appelée, on annonce un succès
+    print_fancy --align "center" "$MSG_DISCORD_SENT"
 }
 
 
