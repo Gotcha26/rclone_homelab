@@ -95,4 +95,5 @@ RCLONE_OPTS=(
     --exclude 'Thumbs.db'
     --log-level INFO
     --stats-log-level NOTICE
+    --stats=0
 )
