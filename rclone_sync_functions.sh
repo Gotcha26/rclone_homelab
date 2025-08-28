@@ -479,6 +479,25 @@ print_logo() {
 ::::::......::::::.......:::::::..:::::::......::::..:::::..:::..:::::..:::::::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 EOF
+    print_fancy --align "right" "$VERSION"
     echo
-    echo
+}
+
+
+###############################################################################
+# Fonction : Recherche si une MAJ est disponnible et proposera de la faire
+###############################################################################
+
+check_update() {
+    # Récupère le tag du dernier release publié sur GitHub
+    latest=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" \
+             | grep -oP '"tag_name": "\K(.*)(?=")')
+
+    if [ -n "$latest" ]; then
+        if [ "$latest" != "$VERSION" ]; then
+            echo "${MSG_MAJ_UPDATE}"
+        fi
+    else
+        echo "${MSG_MAJ_ERROR}"
+    fi
 }

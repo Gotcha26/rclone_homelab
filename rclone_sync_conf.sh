@@ -46,6 +46,8 @@ MSG_DISCORD_ABORDED="⚠️  Aucun webhook Discord de défini."
 MSG_DISCORD_SENT="✅ Notification Discord envoyée."
 MSG_DISCORD_ERROR="❌ Erreur lors de l'envoi Discord."
 MSG_DISCORD_PROCESSED="Traitée(s)"
+MSG_MAJ_UPDATE="⚠️  Nouvelle version disponible : $latest (vous utilisez $VERSION)"
+MSG_MAJ_ERROR="Impossible de vérifier les mises à jour (API GitHub muette)."
 
 # === Variables techniques ===
 
@@ -68,6 +70,8 @@ END_TIME=""
 ERROR_CODE=0
 JOBS_COUNT=0
 LAUNCH_MODE="manuel"
+VERSION="2.0.0"
+REPO="https://github.com/Gotcha26/rclone_homelab"
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
 BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred

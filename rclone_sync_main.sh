@@ -30,6 +30,10 @@ mkdir -p "$LOG_DIR"
 # - stderr aussi redirigé [sortie des erreurs]
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
+# --- Verification de la version du script ---
+
+check_update
+
 
 ###############################################################################
 # 2. Parsing complet des arguments
