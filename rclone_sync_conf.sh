@@ -31,7 +31,7 @@ MSG_MSMTP_ERROR="⚠ Echec envoi email via msmtp"
 MSG_END_REPORT="--- Fin de rapport ---"
 MSG_LOG_DIR_CREATE_FAIL="✗ Impossible de créer le dossier de logs"
 MSG_TMP_RCLONE_CREATE_FAIL="✗ Impossible de créer le dossier temporaire"
-MSG_RCLONE_FAIL="❌ Erreur : rclone n'est pas installé ou introuvable dans le PATH."
+MSG_RCLONE_FAIL="❌  Erreur : rclone n'est pas installé ou introuvable dans le PATH."
 MSG_RCLONE_START="Synchronisation :"
 MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
@@ -43,10 +43,10 @@ MSG_EMAIL_SENT="... Email envoyé ✅ "
 MSG_MAIL_ERROR="❌  Adresse email saisie invalide"
 MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
 MSG_DISCORD_ABORDED="⚠️  Aucun webhook Discord de défini."
-MSG_DISCORD_SENT="✅ Notification Discord envoyée."
-MSG_DISCORD_ERROR="❌ Erreur lors de l'envoi Discord."
+MSG_DISCORD_SENT="✅  Notification Discord envoyée."
+MSG_DISCORD_ERROR="❌  Erreur lors de l'envoi Discord."
 MSG_DISCORD_PROCESSED="Traitée(s)"
-MSG_MAJ_UPDATE="⚠️  Nouvelle version disponible : $latest (vous utilisez $VERSION)"
+MSG_MAJ_UPDATE="⚠️  Nouvelle version disponible : %s (vous utilisez %s)"
 MSG_MAJ_ERROR="Impossible de vérifier les mises à jour (API GitHub muette)."
 
 # === Variables techniques ===
@@ -70,17 +70,34 @@ END_TIME=""
 ERROR_CODE=0
 JOBS_COUNT=0
 LAUNCH_MODE="manuel"
-VERSION="2.0.0"
-REPO="https://github.com/Gotcha26/rclone_homelab"
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
-BLUE=$'\e[34m'                # bleu pour ajouts / copied / added / transferred
-RED=$'\e[31m'                 # rouge pour deleted / error
-ORANGE=$'\e[38;5;208m'        # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
-BLUE_DARK=$'\e[44m'        # fond bleu foncé
-YELLOW_DARK=$'\e[43m'      # fond jaune classique (visible partout, jaune "standard")
-BLACK=$'\e[30m'               # texte noir
 RESET=$'\e[0m'                # Effaceur
+
+BOLD=$'\e[1m'
+DIM=$'\e[2m'
+UNDERLINE=$'\e[4m'
+
+BLACK=$'\e[30m'
+RED=$'\e[31m'
+GREEN=$'\e[32m'
+YELLOW=$'\e[33m'
+BLUE=$'\e[34m'
+MAGENTA=$'\e[35m'
+CYAN=$'\e[36m'
+WHITE=$'\e[37m'
+
+ORANGE=$'\e[38;5;208m'        # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
+
+BG_BLACK=$'\e[40m'
+BG_RED=$'\e[41m'
+BG_GREEN=$'\e[42m'
+BG_YELLOW=$'\e[43m'
+BG_BLUE=$'\e[44m'
+BG_MAGENTA=$'\e[45m'
+BG_CYAN=$'\e[46m'
+BG_WHITE=$'\e[47m'
+
 
 # === Options rclone ===
 

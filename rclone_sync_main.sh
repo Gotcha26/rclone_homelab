@@ -32,6 +32,10 @@ exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
 # --- Verification de la version du script ---
 
+VERSION="2.2.0"
+REPO="Gotcha26/rclone_homelab"
+latest=""
+
 check_update
 
 

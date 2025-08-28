@@ -240,14 +240,15 @@ spinner() {
 # print_fancy : Affiche du texte formaté avec couleurs, styles et alignement
 #
 # Options :
-#   --color <code|var>     : Couleur du texte (ex: "$RED" ou "\033[31m")
-#   --bg <code|var>        : Couleur de fond (ex: "$BG_BLUE" ou "\033[44m")
-#   --fill <char>          : Caractère de remplissage (défaut: espace)
-#   --align <center|left>  : Alignement du texte (défaut: center)
+#   --color <code|var>       : Couleur du texte (ex: "$RED" ou "\033[31m")
+#   --bg <code|var>          : Couleur de fond (ex: "$BG_BLUE" ou "\033[44m")
+#   --fill <char>            : Caractère de remplissage (défaut: espace)
+#   --align <left|center|right>  
+#                            : Alignement du texte (défaut: center)
 #   --style <bold|italic|underline|combinaison>
-#                          : Style(s) appliqués au texte
-#   --highlight            : Active un surlignage complet (ligne entière)
-#   texte ...              : Le texte à afficher (peut contenir des espaces)
+#                            : Style(s) appliqués au texte
+#   --highlight              : Active un surlignage complet (ligne entière)
+#   texte ...                : Le texte à afficher (peut contenir des espaces)
 #
 # Exemple :
 #   print_fancy --color "$RED" --bg "$BG_WHITE" --style "bold underline" "Alerte"
@@ -314,7 +315,6 @@ print_fancy() {
         local pad_right=$(printf '%*s' $((pad_total - pad_side)) '' | tr ' ' "$fill")
 
         if [[ -n "$highlight" ]]; then
-            # Ligne complète remplie
             local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
             local insert_pos=$((pad_side + 1))
             full_line="${full_line:0:$insert_pos}$text${full_line:$((insert_pos + line_len))}"
@@ -322,6 +322,18 @@ print_fancy() {
         else
             printf "%s%b %s %b%s\n" "$pad_left" "${color}${bg}${style_seq}" "$text" "$RESET" "$pad_right"
         fi
+
+    elif [[ "$align" == "right" ]]; then
+        local pad_left=$((TERM_WIDTH_DEFAULT - line_len))
+        if [[ -n "$highlight" ]]; then
+            local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
+            full_line="${full_line:0:$pad_left}$text"
+            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$full_line" "$RESET"
+        else
+            local pad=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
+            printf "%s%b%s%b\n" "$pad" "${color}${bg}${style_seq}" "$text" "$RESET"
+        fi
+
     else
         # align left
         if [[ -n "$highlight" ]]; then
@@ -333,7 +345,6 @@ print_fancy() {
         fi
     fi
 }
-
 
 
 ###############################################################################
@@ -388,7 +399,7 @@ print_summary_table() {
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
     # Ligne finale avec couleur fond jaune foncé, texte noir, centrée
-    print_fancy --bg ${YELLOW_DARK} --color ${BLACK} "$MSG_END_REPORT"
+    print_fancy --bg ${YELLOW} --color ${BLACK} "$MSG_END_REPORT"
     echo
 }
 
@@ -495,9 +506,10 @@ check_update() {
 
     if [ -n "$latest" ]; then
         if [ "$latest" != "$VERSION" ]; then
-            echo "${MSG_MAJ_UPDATE}"
+            MSG_MAJ_UPDATE=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
+            echo "$MSG_MAJ_UPDATE"
         fi
     else
-        echo "${MSG_MAJ_ERROR}"
+        print_fancy --color "$RED" --bg "$BG_WHITE" --style "bold underline" "$MSG_MAJ_ERROR"
     fi
 }

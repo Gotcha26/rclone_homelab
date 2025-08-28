@@ -74,9 +74,9 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
     # Affichage header (terminal uniquement si pas --dry-run et pas --auto)
     if [[ "$DRY_RUN" != true && "$LAUNCH_MODE" != "automatique" ]]; then
-        print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING1"
-        print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING2"
-        print_fancy --bg $BLUE_DARK --fill "=" --align "center" "$MSG_WAITING3"
+        print_fancy --bg $BLUE --fill "=" --align "center" "$MSG_WAITING1"
+        print_fancy --bg $BLUE --fill "=" --align "center" "$MSG_WAITING2"
+        print_fancy --bg $BLUE --fill "=" --align "center" "$MSG_WAITING3"
         echo
     fi
 
