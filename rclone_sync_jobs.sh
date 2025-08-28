@@ -24,6 +24,7 @@ while IFS= read -r line; do
     # Vérif ligne valide
     if [[ -z "$src" || -z "$dst" ]]; then
         echo "$MSG_JOB_LINE_INVALID : $line" >&2
+        echo
         ERROR_CODE=6
         exit $ERROR_CODE
     fi
@@ -31,6 +32,7 @@ while IFS= read -r line; do
     # Vérif source locale
     if [[ ! -d "$src" ]]; then
         echo "$MSG_SRC_NOT_FOUND : $src" >&2
+        echo
         ERROR_CODE=7
         exit $ERROR_CODE
     fi

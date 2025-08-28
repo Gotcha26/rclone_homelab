@@ -32,7 +32,7 @@ exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
 # --- Verification de la version du script ---
 
-VERSION="2.2.0"
+VERSION="v2.2.0"
 REPO="Gotcha26/rclone_homelab"
 latest=""
 
@@ -84,6 +84,7 @@ $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 # Vérification de la présence de rclone installé
 if ! command -v rclone >/dev/null 2>&1; then
     echo "${RED}$MSG_RCLONE_FAIL${RESET}" >&2
+    echo
     ERROR_CODE=10
     exit $ERROR_CODE
 fi
@@ -92,6 +93,7 @@ fi
 if [[ ! -d "$TMP_RCLONE" ]]; then
     if ! mkdir -p "$TMP_RCLONE" 2>/dev/null; then
         echo "${RED}$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE${RESET}" >&2
+        echo
         ERROR_CODE=1
         exit $ERROR_CODE
     fi
@@ -100,6 +102,7 @@ fi
 if [[ ! -d "$LOG_DIR" ]]; then
     if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
         echo "${RED}$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR${RESET}" >&2
+        echo
         ERROR_CODE=2
         exit $ERROR_CODE
     fi
@@ -108,16 +111,19 @@ fi
 # Vérifications initiales
 if [[ ! -f "$JOBS_FILE" ]]; then
     echo "$MSG_FILE_NOT_FOUND : $JOBS_FILE" >&2
+    echo
     ERROR_CODE=3
     exit $ERROR_CODE
 fi
 if [[ ! -r "$JOBS_FILE" ]]; then
     echo "$MSG_FILE_NOT_READ : $JOBS_FILE" >&2
+    echo
     ERROR_CODE=4
     exit $ERROR_CODE
 fi
 if [[ ! -d "$TMP_RCLONE" ]]; then
     echo "$MSG_TMP_NOT_FOUND : $TMP_RCLONE" >&2
+    echo
     ERROR_CODE=5
     exit $ERROR_CODE
 fi

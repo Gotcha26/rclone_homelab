@@ -40,6 +40,7 @@ check_remote() {
     local remote="$1"
     if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote} " ]]; then
         echo "${RED}${MSG_REMOTE_UNKNOW} : ${remote}${RESET}" >&2
+        echo
         ERROR_CODE=9
         exit $ERROR_CODE
     fi
@@ -55,6 +56,7 @@ check_email() {
     # Regex basique : texte@texte.domaine
     if [[ ! "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         echo "${RED}$MSG_MAIL_ERROR : $email${RESET}" >&2
+        echo
         ERROR_CODE=11
         exit $ERROR_CODE
     fi
@@ -200,6 +202,7 @@ send_email_if_needed() {
         echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
     elif ! command -v msmtp >/dev/null 2>&1; then
         echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
+        echo
         ERROR_CODE=9
     else
         print_fancy --align "center" "$MSG_EMAIL_PREP"
@@ -240,19 +243,18 @@ spinner() {
 # print_fancy : Affiche du texte formaté avec couleurs, styles et alignement
 #
 # Options :
-#   --color <code|var>       : Couleur du texte (ex: "$RED" ou "\033[31m")
-#   --bg <code|var>          : Couleur de fond (ex: "$BG_BLUE" ou "\033[44m")
-#   --fill <char>            : Caractère de remplissage (défaut: espace)
-#   --align <left|center|right>  
-#                            : Alignement du texte (défaut: center)
+#   --color <code|var>     : Couleur du texte (ex: "$RED" ou "\033[31m")
+#   --bg <code|var>        : Couleur de fond (ex: "$BG_BLUE" ou "\033[44m")
+#   --fill <char>          : Caractère de remplissage (défaut: espace)
+#   --align <center|left|right>  : Alignement du texte (défaut: center)
 #   --style <bold|italic|underline|combinaison>
-#                            : Style(s) appliqués au texte
-#   --highlight              : Active un surlignage complet (ligne entière)
-#   texte ...                : Le texte à afficher (peut contenir des espaces)
+#                          : Style(s) appliqués au texte
+#   --highlight            : Active un surlignage complet (ligne entière)
+#   texte ...              : Le texte à afficher (peut contenir des espaces)
 #
 # Exemple :
 #   print_fancy --color "$RED" --bg "$BG_WHITE" --style "bold underline" "Alerte"
-#   print_fancy --color "\033[32m" --style italic "Succès en vert"
+#   print_f
 # ----
 
 print_fancy() {
@@ -264,7 +266,6 @@ print_fancy() {
     local style=""
     local highlight=""
 
-    # Styles ANSI de base
     local BOLD="\033[1m"
     local ITALIC="\033[3m"
     local UNDERLINE="\033[4m"
@@ -273,78 +274,73 @@ print_fancy() {
     # Parsing options
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --color)     color="$2"; shift 2 ;;
-            --bg)        bg="$2"; shift 2 ;;
-            --fill)      fill="$2"; shift 2 ;;
-            --align)     align="$2"; shift 2 ;;
-            --style)     style="$2"; shift 2 ;;   # bold / italic / underline / combinaison
+            --color) color="$2"; shift 2 ;;
+            --bg) bg="$2"; shift 2 ;;
+            --fill) fill="$2"; shift 2 ;;
+            --align) align="$2"; shift 2 ;;
+            --style) style="$2"; shift 2 ;;
             --highlight) highlight="1"; shift ;;
-            *)
-                text="$1"
-                shift
-                break
-                ;;
+            *) text="$1"; shift; break ;;
         esac
     done
 
-    # Récupérer le reste des arguments si texte contient des espaces
     while [[ $# -gt 0 ]]; do
         text+=" $1"
         shift
     done
 
-    [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni à print_fancy" >&2; return 1; }
+    [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni" >&2; return 1; }
 
-    # Construction de la séquence de style
+    # Style
     local style_seq=""
-    [[ "$style" =~ bold ]]      && style_seq+="$BOLD"
-    [[ "$style" =~ italic ]]    && style_seq+="$ITALIC"
+    [[ "$style" =~ bold ]] && style_seq+="$BOLD"
+    [[ "$style" =~ italic ]] && style_seq+="$ITALIC"
     [[ "$style" =~ underline ]] && style_seq+="$UNDERLINE"
 
-    # Calcul longueur et padding
-    local line_len=${#text}
-    if (( line_len >= TERM_WIDTH_DEFAULT )); then
-        printf "%b%s%b\n" "${color}${bg}${style_seq}" "$text" "$RESET"
-        return
-    fi
+    # Longueur visible (ignore ANSI)
+    local visible_len=${#text}
 
-    if [[ "$align" == "center" ]]; then
-        local pad_total=$((TERM_WIDTH_DEFAULT - line_len - 2))
-        local pad_side=$((pad_total / 2))
-        local pad_left=$(printf '%*s' "$pad_side" '' | tr ' ' "$fill")
-        local pad_right=$(printf '%*s' $((pad_total - pad_side)) '' | tr ' ' "$fill")
+    # Padding
+    local pad_left=0
+    local pad_right=0
 
-        if [[ -n "$highlight" ]]; then
-            local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
-            local insert_pos=$((pad_side + 1))
-            full_line="${full_line:0:$insert_pos}$text${full_line:$((insert_pos + line_len))}"
-            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$full_line" "$RESET"
-        else
-            printf "%s%b %s %b%s\n" "$pad_left" "${color}${bg}${style_seq}" "$text" "$RESET" "$pad_right"
-        fi
+    case "$align" in
+        center)
+            local total_pad=$((TERM_WIDTH_DEFAULT - visible_len))
+            pad_left=$(( (total_pad+1)/2 ))
+            pad_right=$(( total_pad - pad_left ))
+            ;;
+        right)
+            # Décalage à droite corrigé : espace fantôme
+            pad_left=$((TERM_WIDTH_DEFAULT - visible_len - 1))
+            (( pad_left < 0 )) && pad_left=0
+            pad_right=0
+            ;;
+        left)
+            pad_left=0
+            pad_right=$((TERM_WIDTH_DEFAULT - visible_len))
+            ;;
+    esac
 
-    elif [[ "$align" == "right" ]]; then
-        local pad_left=$((TERM_WIDTH_DEFAULT - line_len))
-        if [[ -n "$highlight" ]]; then
-            local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
-            full_line="${full_line:0:$pad_left}$text"
-            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$full_line" "$RESET"
-        else
-            local pad=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
-            printf "%s%b%s%b\n" "$pad" "${color}${bg}${style_seq}" "$text" "$RESET"
-        fi
+    local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
+    local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
 
+    # Pour alignement à droite, ajouter un espace fantôme avant le RESET
+    local suffix=""
+    [[ "$align" == "right" ]] && suffix=" $RESET" || suffix="$RESET"
+
+    local line="${pad_left_str}${color}${bg}${style_seq}${text}${suffix}${pad_right_str}"
+
+    if [[ -n "$highlight" ]]; then
+        local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
+        local insert_pos=$pad_left
+        full_line="${full_line:0:$insert_pos}${color}${bg}${style_seq}${text}${suffix}${full_line:$((insert_pos+visible_len))}"
+        printf "%s\n" "$full_line"
     else
-        # align left
-        if [[ -n "$highlight" ]]; then
-            local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
-            full_line="${text}$(printf '%*s' $((TERM_WIDTH_DEFAULT - line_len)) '' | tr ' ' "$fill")"
-            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$full_line" "$RESET"
-        else
-            printf "%b%s%b\n" "${color}${bg}${style_seq}" "$text" "$RESET"
-        fi
+        printf "%b\n" "$line"
     fi
 }
+
 
 
 ###############################################################################
@@ -492,6 +488,7 @@ print_logo() {
 EOF
     print_fancy --align "right" "$VERSION"
     echo
+    echo
 }
 
 
@@ -507,7 +504,8 @@ check_update() {
     if [ -n "$latest" ]; then
         if [ "$latest" != "$VERSION" ]; then
             MSG_MAJ_UPDATE=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
-            echo "$MSG_MAJ_UPDATE"
+            echo
+            print_fancy --align "center" --bg "$GREEN" --style "ITALIC" "$MSG_MAJ_UPDATE"
         fi
     else
         print_fancy --color "$RED" --bg "$BG_WHITE" --style "bold underline" "$MSG_MAJ_ERROR"

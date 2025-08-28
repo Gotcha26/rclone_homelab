@@ -46,7 +46,7 @@ MSG_DISCORD_ABORDED="⚠️  Aucun webhook Discord de défini."
 MSG_DISCORD_SENT="✅  Notification Discord envoyée."
 MSG_DISCORD_ERROR="❌  Erreur lors de l'envoi Discord."
 MSG_DISCORD_PROCESSED="Traitée(s)"
-MSG_MAJ_UPDATE="⚠️  Nouvelle version disponible : %s (vous utilisez %s)"
+MSG_MAJ_UPDATE_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez la %s)"
 MSG_MAJ_ERROR="Impossible de vérifier les mises à jour (API GitHub muette)."
 
 # === Variables techniques ===
