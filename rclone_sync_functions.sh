@@ -341,10 +341,10 @@ print_fancy() {
 
     # Application du thème (valeurs par défaut)
     case "$theme" in
-        success) [[ -z "$icon" ]] && icon="✅ " ; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
-        error)   [[ -z "$icon" ]] && icon="❌ " ; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
-        warning) [[ -z "$icon" ]] && icon="⚠️ " ; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold" ;;
-        info)    [[ -z "$icon" ]] && icon="ℹ️ " ; [[ -z "$color" ]] && color="light_blue"; [[ -z "$style" ]] && style="italic" ;;
+        success) [[ -z "$icon" ]] && icon="✅  " ; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
+        error)   [[ -z "$icon" ]] && icon="❌  " ; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
+        warning) [[ -z "$icon" ]] && icon="⚠️  " ; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold" ;;
+        info)    [[ -z "$icon" ]] && icon="ℹ️  " ; [[ -z "$color" ]] && color="light_blue"; [[ -z "$style" ]] && style="italic" ;;
     esac
 
     # Ajout de l’icône si définie
