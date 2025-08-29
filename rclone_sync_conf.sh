@@ -16,6 +16,7 @@ DISCORD_WEBHOOK_URL=""                     # URL du webhook salon Discord
 MAIL_DISPLAY_NAME="RCLONE Script Backup"   # Nom affiché de l'expéditeur
 MAIL_TO_ABS="Option --mail activée mais aucun destinataire fourni (--mailto).
 Le rapport ne sera pas envoyé."            # Affiché si aucun destinataire email fourni
+MSG_PRINT_FANCY_EMPTY="⚠️  Aucun texte fourni"
 MSG_WAITING1="SOYEZ PATIENT..."
 MSG_WAITING2="Mise à jour seulement à fin du traitement du JOB."
 MSG_WAITING3="Pour interrompre : CTRL + C"
@@ -51,7 +52,11 @@ MSG_MAJ_UPDATE_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez l
 Utiliser l'argument --update-tag la prochaine fois."
 MSG_MAJ_UPDATE_RELEASE_TEMPLATE="⚡  Mise à jour vers la dernière release : %s"
 MSG_MAJ_UPDATE_BRANCH_TEMPLATE="⚡  Mise à jour forcée de la branche %s ..."
-MSG_PRINT_FANCY_EMPTY="⚠️  Aucun texte fourni"
+MSG_MAJ_UPDATE_BRANCH_SUCCESS="Script mis à jour !"
+MSG_MAJ_UPDATE_BRANCH_REJECTED="Git : Rien à mettre à jour, vous êtes déjà sur la dernière version."
+MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE="Script mis à jour vers le tag %s !"
+MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE="Git : Rien à mettre à jour, vous êtes déjà sur le dernier tag %s."
+
 
 
 # === Variables techniques ===

@@ -598,13 +598,22 @@ force_update_branch() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
     git fetch --all
 
-    # Checkout sécurisé sans message detached HEAD
-    git -c advice.detachedHead=false checkout "$branch"
-    git reset --hard "origin/$branch"
+    # Vérifie si la branche distante est différente
+    local remote_hash
+    remote_hash=$(git rev-parse origin/$branch)
+    local local_hash
+    local_hash=$(git rev-parse HEAD)
 
-    # Rendre le script principal exécutable automatiquement
-    chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
+    if [[ "$remote_hash" != "$local_hash" ]]; then
+        git -c advice.detachedHead=false checkout "$branch"
+        git reset --hard "origin/$branch"
+        chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
+        print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
+    else
+        print_fancy --align "center" --theme "info" "$MSG_MAJ_UPDATE_BRANCH_REJECTED"
+    fi
 }
+
 
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière release (dernier tag)
@@ -614,16 +623,29 @@ update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
 
     git fetch --tags
+
+    # Dernier tag distant
     local latest_tag
     latest_tag=$(git tag -l | sort -V | tail -n1)
+
+    # Hash du tag distant et hash local
+    local remote_hash
+    remote_hash=$(git rev-parse "$latest_tag")
+    local local_hash
+    local_hash=$(git rev-parse HEAD)
 
     MSG_MAJ_UPDATE_RELEASE=$(printf "$MSG_MAJ_UPDATE_RELEASE_TEMPLATE" "$latest_tag")
     echo
     print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_RELEASE"
 
-    # Checkout sécurisé sans message detached HEAD
-    git -c advice.detachedHead=false checkout "$latest_tag"
-
-    # Rendre le script principal exécutable
-    chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
+    if [[ "$remote_hash" != "$local_hash" ]]; then
+        # Checkout sécurisé sans message detached HEAD
+        git -c advice.detachedHead=false checkout "$latest_tag"
+        chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
+        MSG_MAJ_UPDATE_TAG_SUCCESS=$(printf "MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE" "$latest_tag")
+        print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_TAG_SUCCESS"
+    else
+        MSG_MAJ_UPDATE_TAG_REJECTED=$(printf "$MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE" "$latest_tag")
+        print_fancy --align "center" --theme "info" "$MSG_MAJ_UPDATE_TAG_REJECTED"
+    fi
 }
