@@ -37,6 +37,7 @@ REPO="Gotcha26/rclone_homelab"
 latest=""
 FORCE_UPDATE=false
 FORCE_BRANCH=""     # Dois reserter vide pour prendre en compte "main" par défaut.
+UPDATE_TAG=""
 
 # Exécution des mises à jour si demandé
 if $FORCE_UPDATE; then
