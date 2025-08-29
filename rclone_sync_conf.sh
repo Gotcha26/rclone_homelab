@@ -48,14 +48,15 @@ MSG_DISCORD_SENT="✅  Notification Discord envoyée."
 MSG_DISCORD_PROCESSED="Traitée(s)"
 MSG_MAJ_ERROR="Impossible de vérifier les mises à jour (API GitHub muette)."
 MSG_MAJ_ACCESS_ERROR="Erreur : impossible d'accéder au répertoire du script"
-MSG_MAJ_UPDATE_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez la %s)
-Utiliser l'argument --update-tag la prochaine fois."
+MSG_MAJ_UPDATE_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez la %s)"
+MSG_MAJ_UPDATE2="Utiliser l'argument --update-tag la prochaine fois."
 MSG_MAJ_UPDATE_RELEASE_TEMPLATE="⚡  Mise à jour vers la dernière release : %s"
 MSG_MAJ_UPDATE_BRANCH_TEMPLATE="⚡  Mise à jour forcée de la branche %s ..."
 MSG_MAJ_UPDATE_BRANCH_SUCCESS="Script mis à jour !"
 MSG_MAJ_UPDATE_BRANCH_REJECTED="Git : Rien à mettre à jour, vous êtes déjà sur la dernière version."
 MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE="Script mis à jour vers le tag %s !"
 MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE="Git : Rien à mettre à jour, vous êtes déjà sur le dernier tag %s."
+MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE="Impossible de mettre à jour vers %s : modifications locales non sauvegardées."
 
 
 

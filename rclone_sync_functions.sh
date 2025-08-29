@@ -576,9 +576,10 @@ check_update() {
 
     if [ -n "$latest" ]; then
         if [ "$latest" != "$VERSION" ]; then
-            MSG_MAJ_UPDATE=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
+            MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
             echo
-            print_fancy --align "center" --color "green" --style "italic" "$MSG_MAJ_UPDATE"
+            print_fancy --align "left" --color "green" --style "italic" "$MSG_MAJ_UPDATE1"
+            print_fancy --align "center" --color "green" --style "italic" "$MSG_MAJ_UPDATE2"
         fi
     else
         print_fancy --color "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
@@ -638,11 +639,16 @@ update_to_latest_tag() {
     print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_RELEASE"
 
     if [[ "$remote_hash" != "$local_hash" ]]; then
-        # Checkout sécurisé sans message detached HEAD
-        git -c advice.detachedHead=false checkout "$latest_tag"
-        chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
-        MSG_MAJ_UPDATE_TAG_SUCCESS=$(printf "MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE" "$latest_tag")
-        print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_TAG_SUCCESS"
+        # Essayer le checkout sécurisé sans message detached HEAD
+        if git -c advice.detachedHead=false checkout "$latest_tag"; then
+            chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
+            MSG_MAJ_UPDATE_TAG_SUCCESS=$(printf "$MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE" "$latest_tag")
+            print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_TAG_SUCCESS"
+        else
+            # Si échec (modifications locales)
+            MSG_MAJ_UPDATE_TAG_FAILED=$(printf "$MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE" "$latest_tag")
+            print_fancy --align "center" --theme "error" "$MSG_MAJ_UPDATE_TAG_FAILED"
+        fi
     else
         MSG_MAJ_UPDATE_TAG_REJECTED=$(printf "$MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE" "$latest_tag")
         print_fancy --align "center" --theme "info" "$MSG_MAJ_UPDATE_TAG_REJECTED"
