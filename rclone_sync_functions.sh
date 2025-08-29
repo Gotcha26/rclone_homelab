@@ -578,7 +578,7 @@ check_update() {
         if [ "$latest" != "$VERSION" ]; then
             MSG_MAJ_UPDATE=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
             echo
-            print_fancy --align "center" --bg "green" --style "ITALIC" "$MSG_MAJ_UPDATE"
+            print_fancy --align "center" --color "green" --style "ITALIC" "$MSG_MAJ_UPDATE"
         fi
     else
         print_fancy --color "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"

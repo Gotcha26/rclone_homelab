@@ -47,7 +47,8 @@ MSG_DISCORD_SENT="✅  Notification Discord envoyée."
 MSG_DISCORD_PROCESSED="Traitée(s)"
 MSG_MAJ_ERROR="Impossible de vérifier les mises à jour (API GitHub muette)."
 MSG_MAJ_ACCESS_ERROR="Erreur : impossible d'accéder au répertoire du script"
-MSG_MAJ_UPDATE_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez la %s)"
+MSG_MAJ_UPDATE_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez la %s)
+Utiliser l'argument --update-tag la prochaine fois."
 MSG_MAJ_UPDATE_RELEASE_TEMPLATE="⚡  Mise à jour vers la dernière release : %s"
 MSG_MAJ_UPDATE_BRANCH_TEMPLATE="⚡  Mise à jour forcée de la branche %s ..."
 
