@@ -596,28 +596,27 @@ force_update_branch() {
     print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
 
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
-    git fetch --all
 
-    # Vérifie si la branche distante est différente
-    local remote_hash
-    remote_hash=$(git rev-parse origin/$branch)
-    local local_hash
-    local_hash=$(git rev-parse HEAD)
+    # Récupération des dernières infos du remote
+    git fetch --all --tags
 
-    if [[ "$remote_hash" != "$local_hash" ]]; then
-        git -c advice.detachedHead=false checkout "$branch"
-        git reset --hard "origin/$branch"
-        chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
-        print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
-    else
-        print_fancy --align "center" --theme "info" "$MSG_MAJ_UPDATE_BRANCH_REJECTED"
-    fi
+    # Assure que l'on est bien sur la branche souhaitée
+    git checkout -f "$branch" || { echo "Erreur lors du checkout de $branch" >&2; exit 1; }
+
+    # Écrase toutes les modifications locales, y compris fichiers non suivis
+    git reset --hard "origin/$branch"
+    git clean -fd
+
+    # Rendre le script principal exécutable
+    chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
+
+    print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
 }
 
 
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière release (dernier tag)
-# Appel explicite uniquement
+# Appel explicite uniquement.
 ###############################################################################
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
