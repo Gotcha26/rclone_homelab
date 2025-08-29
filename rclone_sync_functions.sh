@@ -578,7 +578,7 @@ check_update() {
         if [ "$latest" != "$VERSION" ]; then
             MSG_MAJ_UPDATE=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
             echo
-            print_fancy --align "center" --color "green" --style "ITALIC" "$MSG_MAJ_UPDATE"
+            print_fancy --align "center" --color "green" --style "italic" "$MSG_MAJ_UPDATE"
         fi
     else
         print_fancy --color "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
@@ -601,6 +601,9 @@ force_update_branch() {
     # Checkout sécurisé sans message detached HEAD
     git -c advice.detachedHead=false checkout "$branch"
     git reset --hard "origin/$branch"
+
+    # Rendre le script principal exécutable automatiquement
+    chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
 }
 
 ###############################################################################
@@ -620,4 +623,7 @@ update_to_latest_tag() {
 
     # Checkout sécurisé sans message detached HEAD
     git -c advice.detachedHead=false checkout "$latest_tag"
+
+    # Rendre le script principal exécutable
+    chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
 }
