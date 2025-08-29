@@ -129,7 +129,7 @@ assemble_and_send_mail() {
     local html_block="$2"   # facultatif
     local MAIL="${TMP_RCLONE}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
 
-    FROM_ADDRESS="$(grep '^from' ~/.msmtprc | awk '{print $2}')"
+    FROM_ADDRESS="$(grep '^from' /etc/msmtprc | awk '{print $2}')"
 
     {
         echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré

@@ -120,7 +120,7 @@ Argument | Explication
 
 ### Envoi d'emails
 En association avec l'utilitaire SMTP [msmtp](https://github.com/marlam/msmtp), l'envoi d'email est possible.  
-La commande pour éditer son fichier de configuration est : `nano ~/.msmtprc`
+La commande pour éditer son fichier de configuration est : `nano /etc/msmtprc`
 
 
 ## Lancement / Appel
