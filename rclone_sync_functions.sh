@@ -319,8 +319,16 @@ print_fancy() {
     text="$icon$text"
 
     # Traduction des couleurs
-    [[ -n "${FG_COLORS[$color]}" ]] && color="\033[${FG_COLORS[$color]}m"
-    [[ -n "${BG_COLORS[$bg]}" ]] && bg="\033[${BG_COLORS[$bg]}m"
+    get_fg_color() {
+        [[ -n "${FG_COLORS[$1]+_}" ]] && printf "\033[%sm" "${FG_COLORS[$1]}" || printf ""
+    }
+    get_bg_color() {
+        [[ -n "${BG_COLORS[$1]+_}" ]] && printf "\033[%sm" "${BG_COLORS[$1]}" || printf ""
+    }
+
+color=$(get_fg_color "$color")
+bg=$(get_bg_color "$bg")
+
 
     local style_seq=""
     [[ "$style" =~ bold ]] && style_seq+="$BOLD"
