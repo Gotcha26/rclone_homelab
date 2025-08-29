@@ -41,7 +41,7 @@ git clone https://github.com/Gotcha26/rclone_homelab.git .
 ```
 chmod +x rclone_sync_main.sh
 ```
-5. Ajouter un symlink pour un accès global afin de pour pouvoir lancer la commande simplement avec `rclone_homelab` :
+5. Ajouter un symlink (raccourcis) pour un accès global afin de pour pouvoir lancer la commande simplement avec `rclone_homelab` :
 ```
 ln -s /opt/rclone_homelab/rclone_sync_main.sh /usr/local/bin/rclone_homelab
 ```
@@ -59,22 +59,14 @@ cd
 ```
 
 ### Mise à jour
-Pour mettre à jour facilement l'utilitaire depuis GitHub :
-```
-cd /opt/rclone_homelab
-```
-```
-git pull origin main
-```
+Système directement intégré dans le script. Vous averti si une nouvelle version est disponnible.  
+- Pour mettre à jour vers la dernière version (tag) :  
+`rclone_homelabe --update-tag`           → mettre à jour vers la dernière realse stable
 
-### Mise à jour forcée (autre branche)
-⚠ Dans le cadre d'une installation de la branche v2 via `git clone --branch v2 https://github.com/Gotcha26/rclone_homelab.git .`
-```
-cd /opt/rclone_homelab
-```
-```
-git fetch origin && git reset --hard origin/v2 && chmod +x rclone_sync_main.sh
-```
+- Pour obtenir les dernières améliorations **BETA**  
+`rclone_holemab --update-forced`         → force la mise à jour de la branche main  
+`rclone_holemab --update-forced on_work` → force la mise à jour de la branche on_work
+Si --update-forced n’est pas présent, le script continue à vérifier le dernier tag comme avant.
 
 
 ## Utilisation

@@ -515,21 +515,66 @@ EOF
 
 
 ###############################################################################
-# Fonction : Recherche si une MAJ est disponnible et proposera de la faire
+# Fonction : Recherche si une MAJ est disponnible et proposera de la faire.
+# C'est juste l'information !
 ###############################################################################
 
 check_update() {
-    # Récupère le tag du dernier release publié sur GitHub
+    if $FORCE_UPDATE; then
+        local branch="${FORCE_BRANCH:-main}"
+        MSG_MAJ_UPDATE_BRANCH_INFO=$(printf "$MSG_MAJ_UPDATE_BRANCH_INFO_TEMPALTE" "$branch")
+        echo
+        print_fancy --align "center" --bg "$GREEN" --style "italic" "$MSG_MAJ_UPDATE_BRANCH_INFO"
+        cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+        git fetch --all
+        git checkout "$branch"
+        git reset --hard "origin/$branch"
+        return
+    fi
+
+    # Vérifie la dernière release GitHub (tags)
     latest=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" \
              | grep -oP '"tag_name": "\K(.*)(?=")')
 
     if [ -n "$latest" ]; then
         if [ "$latest" != "$VERSION" ]; then
-            MSG_MAJ_UPDATE=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
+            MSG_MAJ_UPDATE_RELEASE=$(printf "$MSG_MAJ_UPDATE_RELEASE_TEMPLATE" "$latest" "$VERSION")
             echo
-            print_fancy --align "center" --bg "$GREEN" --style "ITALIC" "$MSG_MAJ_UPDATE"
+            print_fancy --align "center" --bg "$GREEN" --style "italic" "$MSG_MAJ_UPDATE_RELEASE"
         fi
     else
         print_fancy --color "$RED" --bg "$BG_WHITE" --style "bold underline" "$MSG_MAJ_ERROR"
     fi
+}
+
+
+###############################################################################
+# Fonction : Met à jour le script vers la dernière branche (forcée)
+###############################################################################
+
+force_update_branch() {
+    local branch="${FORCE_BRANCH:-main}"
+    MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPALTE" "$branch")
+    echo
+    print_fancy --align "center" --bg "$GREEN" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+    git fetch --all
+    git checkout "$branch"
+    git reset --hard "origin/$branch"
+}
+
+
+###############################################################################
+# Fonction : Met à jour le script vers la dernière release (dernier tag)
+###############################################################################
+
+update_to_latest_tag() {
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+    git fetch --tags
+    local latest_tag
+    latest_tag=$(git tag -l | sort -V | tail -n1)
+    MSG_MAJ_UPDATE_RELEASE=$(printf "$MSG_MAJ_UPDATE_RELEASE_TEMPLATE" "$latest_tag")
+    echo
+    print_fancy --align "center" --bg "$GREEN" --style "italic" "$MSG_MAJ_UPDATE_RELEASE"
+    git checkout "$latest_tag"
 }

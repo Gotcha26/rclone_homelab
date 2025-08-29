@@ -30,13 +30,27 @@ mkdir -p "$LOG_DIR"
 # - stderr aussi redirigé [sortie des erreurs]
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
-# --- Verification de la version du script ---
+# --- Vérification de la version du script ---
 
 VERSION="v2.2.0"
 REPO="Gotcha26/rclone_homelab"
 latest=""
+FORCE_UPDATE=false
+FORCE_BRANCH=""     # Dois reserter vide pour prendre en compte "main" par défaut.
 
-check_update
+# Exécution des mises à jour si demandé
+if $FORCE_UPDATE; then
+    force_update_branch
+    exit 0
+fi
+
+if $UPDATE_TAG; then
+    update_to_latest_tag
+    exit 0
+fi
+
+# Sinon, on continue le script normalement
+check_update  # juste pour signaler la dispo d'une nouvelle release
 
 
 ###############################################################################
@@ -60,12 +74,21 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
+        --update-forced)
+            FORCE_UPDATE=true
+            shift
+            # Si une branche est fournie juste après, on la prend
+            [[ $# -gt 0 && ! "$1" =~ ^-- ]] && FORCE_BRANCH="$1" && shift
+            ;;
+        --update-tag)
+            UPDATE_TAG=true
+            shift
+            ;;
         -h|--help)
             show_help
             exit 0
             ;;
         *)
-            # Tous les autres arguments sont ajoutés à RCLONE_OPTS
             RCLONE_OPTS+=("$1")
             shift
             ;;
