@@ -243,6 +243,8 @@ spinner() {
 # print_fancy : Affiche du texte formaté avec couleurs, styles et alignement
 #
 # Options :
+#   --theme <success|error|warning|info>
+#                          : Thème appliqué avec mise en page + emoji
 #   --color <code|var>     : Couleur du texte (ex: "$RED" ou "\033[31m")
 #   --bg <code|var>        : Couleur de fond (ex: "$BG_BLUE" ou "\033[44m")
 #   --fill <char>          : Caractère de remplissage (défaut: espace)
@@ -250,11 +252,17 @@ spinner() {
 #   --style <bold|italic|underline|combinaison>
 #                          : Style(s) appliqués au texte
 #   --highlight            : Active un surlignage complet (ligne entière)
-#   texte ...              : Le texte à afficher (peut contenir des espaces)
+#   --icon                 : Ajoute une icone (emoji) en debut de texte.
+#   texte ... [OBLIGATOIRE]: Le texte à afficher (peut contenir des espaces)
 #
 # Exemple :
-#   print_fancy --color "$RED" --bg "$BG_WHITE" --style "bold underline" "Alerte"
-#   print_f
+#   print_fancy --color red --bg white --style "bold underline" "Alerte"
+#   print_fancy --color 42 --style italic "Succès en vert"
+#   print_fancy --theme success "Backup terminé avec succès"
+#   print_fancy --theme error --align right "Erreur critique détectée"
+#   print_fancy --theme warning --highlight "Attention : espace disque faible"
+#   print_fancy --theme info "Démarrage du service..."
+#   print_fancy --theme info --icon "🚀" "Lancement en cours..."
 # ----
 
 print_fancy() {
@@ -265,45 +273,63 @@ print_fancy() {
     local text=""
     local style=""
     local highlight=""
+    local theme=""
+    local icon=""
 
     local BOLD="\033[1m"
     local ITALIC="\033[3m"
     local UNDERLINE="\033[4m"
     local RESET="\033[0m"
 
-    # Parsing options
+    declare -A FG_COLORS=(
+        [black]=30 [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36 [white]=37
+        [gray]=90 [light_red]=91 [light_green]=92 [light_yellow]=93 [light_blue]=94 [light_magenta]=95 [light_cyan]=96 [bright_white]=97
+    )
+    declare -A BG_COLORS=(
+        [black]=40 [red]=41 [green]=42 [yellow]=43 [blue]=44 [magenta]=45 [cyan]=46 [white]=47
+        [gray]=100 [light_red]=101 [light_green]=102 [light_yellow]=103 [light_blue]=104 [light_magenta]=105 [light_cyan]=106 [bright_white]=107
+    )
+
+    # Lecture des arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --color) color="$2"; shift 2 ;;
-            --bg) bg="$2"; shift 2 ;;
-            --fill) fill="$2"; shift 2 ;;
-            --align) align="$2"; shift 2 ;;
-            --style) style="$2"; shift 2 ;;
+            --color)     color="$2"; shift 2 ;;
+            --bg)        bg="$2"; shift 2 ;;
+            --fill)      fill="$2"; shift 2 ;;
+            --align)     align="$2"; shift 2 ;;
+            --style)     style="$2"; shift 2 ;;
             --highlight) highlight="1"; shift ;;
+            --theme)     theme="$2"; shift 2 ;;
+            --icon)      icon="$2 "; shift 2 ;;
             *) text="$1"; shift; break ;;
         esac
     done
-
-    while [[ $# -gt 0 ]]; do
-        text+=" $1"
-        shift
-    done
-
+    while [[ $# -gt 0 ]]; do text+=" $1"; shift; done
     [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni" >&2; return 1; }
 
-    # Style
+    # Application du thème (valeurs par défaut)
+    case "$theme" in
+        success) [[ -z "$icon" ]] && icon="✅ " ; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
+        error)   [[ -z "$icon" ]] && icon="❌ " ; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
+        warning) [[ -z "$icon" ]] && icon="⚠️ " ; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold" ;;
+        info)    [[ -z "$icon" ]] && icon="ℹ️ " ; [[ -z "$color" ]] && color="light_blue"; [[ -z "$style" ]] && style="italic" ;;
+    esac
+
+    # Ajout de l’icône si définie
+    text="$icon$text"
+
+    # Traduction des couleurs
+    [[ -n "${FG_COLORS[$color]}" ]] && color="\033[${FG_COLORS[$color]}m"
+    [[ -n "${BG_COLORS[$bg]}" ]] && bg="\033[${BG_COLORS[$bg]}m"
+
     local style_seq=""
     [[ "$style" =~ bold ]] && style_seq+="$BOLD"
     [[ "$style" =~ italic ]] && style_seq+="$ITALIC"
     [[ "$style" =~ underline ]] && style_seq+="$UNDERLINE"
 
-    # Longueur visible (ignore ANSI)
     local visible_len=${#text}
-
-    # Padding
     local pad_left=0
     local pad_right=0
-
     case "$align" in
         center)
             local total_pad=$((TERM_WIDTH_DEFAULT - visible_len))
@@ -311,13 +337,10 @@ print_fancy() {
             pad_right=$(( total_pad - pad_left ))
             ;;
         right)
-            # Décalage à droite corrigé : espace fantôme
             pad_left=$((TERM_WIDTH_DEFAULT - visible_len - 1))
             (( pad_left < 0 )) && pad_left=0
-            pad_right=0
             ;;
         left)
-            pad_left=0
             pad_right=$((TERM_WIDTH_DEFAULT - visible_len))
             ;;
     esac
@@ -325,7 +348,6 @@ print_fancy() {
     local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
     local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
 
-    # Pour alignement à droite, ajouter un espace fantôme avant le RESET
     local suffix=""
     [[ "$align" == "right" ]] && suffix=" $RESET" || suffix="$RESET"
 
