@@ -12,14 +12,16 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ✅ Détecte des problèmes d'accès aux dossiers
 - ✅ Affiche des informations utiles mais compactes
 - ✅ Résume la tâche effectuée
-- ❌ Ecrit des logs séparés pour une lecture fluide (INFOS) ou précise (DEBUG)
+- ❗ A besoin de l'outil rclone pour fonctionner.
 - ✅ Persistance limitée à 15 jours pour les fichiers de logs
 - ✅ Coloration synthaxique
 - ❗ Vous rend riche, beau et irresistible
 - ✅ Durée de conservation des logs : 15 jours par défaut.
 - ℹ️ Vous pouvez appeler le script depuis n'importe où (root inclu)
 - ✅ Accèpte les arguments de rclone depuis l'appel du script
+- ✅ Notification par mail si msmtp est installé/configuré
 - ✅ Notifications Discord possibles via un webhook
+- ✅ Système de vérification de mises à jour
 
 
 ## Installation pas à pas [LXC - Debian : compatible]
@@ -129,6 +131,10 @@ rclone_homelab --auto --mailto=toto@mail.com --dry-run
 rclone_homelab -h
 ```
 
+## rclone
+L'outil rclone est indispensable.  
+Pour le [télécharger](https://rclone.org/downloads/) sur Debian (LXC) : `apt install rclone -y`  
+Il s'installe normalement dans `/usr/bin/rclone`.
 
 ### Personnaliser rclone
 Le script rclone dispose d'énormément d'options !  
