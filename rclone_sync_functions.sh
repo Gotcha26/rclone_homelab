@@ -591,7 +591,7 @@ check_update() {
 ###############################################################################
 force_update_branch() {
     local branch="${FORCE_BRANCH:-main}"
-    MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPALTE" "$branch")
+    MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
     echo
     print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
 
