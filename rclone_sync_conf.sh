@@ -14,29 +14,29 @@ DISCORD_WEBHOOK_URL=""                     # URL du webhook salon Discord
 # === Messages (centralisés pour affichage et email) ===
 
 MAIL_DISPLAY_NAME="RCLONE Script Backup"   # Nom affiché de l'expéditeur
-MAIL_TO_ABS="⚠ Option --mail activée mais aucun destinataire fourni (--mailto).
+MAIL_TO_ABS="Option --mail activée mais aucun destinataire fourni (--mailto).
 Le rapport ne sera pas envoyé."            # Affiché si aucun destinataire email fourni
 MSG_WAITING1="SOYEZ PATIENT..."
 MSG_WAITING2="Mise à jour seulement à fin du traitement du JOB."
 MSG_WAITING3="Pour interrompre : CTRL + C"
-MSG_FILE_NOT_FOUND="✗ Fichier jobs introuvable"
-MSG_FILE_NOT_READ="✗ Fichier jobs non lisible"
-MSG_TMP_NOT_FOUND="✗ Dossier temporaire rclone introuvable"
-MSG_JOB_LINE_INVALID="✗ Ligne invalide dans le fichier jobs"
-MSG_SRC_NOT_FOUND="✗ Dossier source introuvable ou inaccessible"
-MSG_REMOTE_UNKNOW="✗ Remote inconnu dans rclone"
-MSG_MSMTP_NOT_FOUND="⚠ Attention : msmtp n'est pas installé ou introuvable dans le PATH.
+MSG_FILE_NOT_FOUND="Fichier jobs introuvable"
+MSG_FILE_NOT_READ="Fichier jobs non lisible"
+MSG_TMP_NOT_FOUND="Dossier temporaire rclone introuvable"
+MSG_JOB_LINE_INVALID="Ligne invalide dans le fichier jobs"
+MSG_SRC_NOT_FOUND="Dossier source introuvable ou inaccessible"
+MSG_REMOTE_UNKNOW="Remote inconnu dans rclone"
+MSG_MSMTP_NOT_FOUND="Attention : msmtp n'est pas installé ou introuvable dans le PATH.
 Le rapport par e-mail ne sera pas envoyé."
 MSG_MSMTP_ERROR="⚠ Echec envoi email via msmtp"
 MSG_END_REPORT="--- Fin de rapport ---"
-MSG_LOG_DIR_CREATE_FAIL="✗ Impossible de créer le dossier de logs"
-MSG_TMP_RCLONE_CREATE_FAIL="✗ Impossible de créer le dossier temporaire"
-MSG_RCLONE_FAIL="❌  Erreur : rclone n'est pas installé ou introuvable dans le PATH."
+MSG_LOG_DIR_CREATE_FAIL="Impossible de créer le dossier de logs"
+MSG_TMP_RCLONE_CREATE_FAIL="Impossible de créer le dossier temporaire"
+MSG_RCLONE_FAIL="Erreur : rclone n'est pas installé ou introuvable dans le PATH."
 MSG_RCLONE_START="Synchronisation :"
 MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
 MSG_EMAIL_SUCCESS="✅  Sauvegardes vers le cloud réussies"
-MSG_EMAIL_FAIL="❌  Des erreurs lors des sauvegardes vers le cloud"
+MSG_EMAIL_FAIL="Des erreurs lors des sauvegardes vers le cloud"
 MSG_EMAIL_SUSPECT="❗  Synchronisation réussie mais aucun fichier transféré"
 MSG_EMAIL_PREP="📧  Préparation de l'email..."
 MSG_EMAIL_SENT="... Email envoyé ✅ "
@@ -44,11 +44,10 @@ MSG_MAIL_ERROR="❌  Adresse email saisie invalide"
 MSG_DRYRUN="✅  Oui : aucune modification de fichiers."
 MSG_DISCORD_ABORDED="⚠️  Aucun webhook Discord de défini."
 MSG_DISCORD_SENT="✅  Notification Discord envoyée."
-MSG_DISCORD_ERROR="❌  Erreur lors de l'envoi Discord."
 MSG_DISCORD_PROCESSED="Traitée(s)"
 MSG_MAJ_ERROR="Impossible de vérifier les mises à jour (API GitHub muette)."
 MSG_MAJ_ACCESS_ERROR="Erreur : impossible d'accéder au répertoire du script"
-MSG_MAJ_UPDATE_BRANCH_INFO_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez la %s)"
+MSG_MAJ_UPDATE_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez la %s)"
 MSG_MAJ_UPDATE_RELEASE_TEMPLATE="⚡  Mise à jour vers la dernière release : %s"
 MSG_MAJ_UPDATE_BRANCH_TEMPLATE="⚡  Mise à jour forcée de la branche %s ..."
 
@@ -76,32 +75,7 @@ JOBS_COUNT=0
 LAUNCH_MODE="manuel"
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
-RESET=$'\e[0m'                # Effaceur
-
-BOLD=$'\e[1m'
-DIM=$'\e[2m'
-UNDERLINE=$'\e[4m'
-
-BLACK=$'\e[30m'
-RED=$'\e[31m'
-GREEN=$'\e[32m'
-YELLOW=$'\e[33m'
-BLUE=$'\e[34m'
-MAGENTA=$'\e[35m'
-CYAN=$'\e[36m'
-WHITE=$'\e[37m'
-
 ORANGE=$'\e[38;5;208m'        # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
-
-BG_BLACK=$'\e[40m'
-BG_RED=$'\e[41m'
-BG_GREEN=$'\e[42m'
-BG_YELLOW=$'\e[43m'
-BG_BLUE=$'\e[44m'
-BG_MAGENTA=$'\e[45m'
-BG_CYAN=$'\e[46m'
-BG_WHITE=$'\e[47m'
-
 
 # === Options rclone ===
 

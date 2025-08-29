@@ -23,7 +23,7 @@ while IFS= read -r line; do
 
     # Vérif ligne valide
     if [[ -z "$src" || -z "$dst" ]]; then
-        echo "$MSG_JOB_LINE_INVALID : $line" >&2
+        print_fancy --theme "error" "$MSG_JOB_LINE_INVALID : $line" >&2
         echo
         ERROR_CODE=6
         exit $ERROR_CODE
@@ -31,7 +31,7 @@ while IFS= read -r line; do
 
     # Vérif source locale
     if [[ ! -d "$src" ]]; then
-        echo "$MSG_SRC_NOT_FOUND : $src" >&2
+        print_fancy --theme "error" "$MSG_SRC_NOT_FOUND : $src" >&2
         echo
         ERROR_CODE=7
         exit $ERROR_CODE
@@ -76,9 +76,9 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
     # Affichage header (terminal uniquement si pas --dry-run et pas --auto)
     if [[ "$DRY_RUN" != true && "$LAUNCH_MODE" != "automatique" ]]; then
-        print_fancy --bg $BLUE --fill "=" --align "center" "$MSG_WAITING1"
-        print_fancy --bg $BLUE --fill "=" --align "center" "$MSG_WAITING2"
-        print_fancy --bg $BLUE --fill "=" --align "center" "$MSG_WAITING3"
+        print_fancy --bg "blue" --fill "=" --align "center" "$MSG_WAITING1"
+        print_fancy --bg "blue" --fill "=" --align "center" "$MSG_WAITING2"
+        print_fancy --bg "blue" --fill "=" --align "center" "$MSG_WAITING3"
         echo
     fi
 

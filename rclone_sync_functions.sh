@@ -39,7 +39,7 @@ EOF
 check_remote() {
     local remote="$1"
     if [[ ! " ${RCLONE_REMOTES[*]} " =~ " ${remote} " ]]; then
-        echo "${RED}${MSG_REMOTE_UNKNOW} : ${remote}${RESET}" >&2
+        print_fancy --theme "error" "$MSG_REMOTE_UNKNOW : $remote" >&2
         echo
         ERROR_CODE=9
         exit $ERROR_CODE
@@ -55,7 +55,7 @@ check_email() {
     local email="$1"
     # Regex basique : texte@texte.domaine
     if [[ ! "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-        echo "${RED}$MSG_MAIL_ERROR : $email${RESET}" >&2
+        print_fancy --theme "error" "$MSG_MAIL_ERROR : $email" >&2
         echo
         ERROR_CODE=11
         exit $ERROR_CODE
@@ -199,9 +199,9 @@ HTML
 send_email_if_needed() {
     local html_block="$1"
     if [[ -z "$MAIL_TO" ]]; then
-        echo "${ORANGE}${MAIL_TO_ABS}${RESET}" >&2
+        print_fancy --theme "warning" "$MAIL_TO_ABS" >&2
     elif ! command -v msmtp >/dev/null 2>&1; then
-        echo "${ORANGE}$MSG_MSMTP_NOT_FOUND${RESET}" >&2
+        print_fancy --theme "warning" "$MSG_MSMTP_NOT_FOUND" >&2
         echo
         ERROR_CODE=9
     else
@@ -237,6 +237,46 @@ spinner() {
 
 
 ###############################################################################
+# Fonctions additionnels pour print_fancy()
+###############################################################################
+
+# --- Déclarations globales pour print_fancy ---
+# + ajoute 'reset' (et 'default' si tu veux) aux maps
+declare -A FG_COLORS=(
+  [reset]=0 [default]=39
+  [black]=30 [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36 [white]=37
+  [gray]=90 [light_red]=91 [light_green]=92 [light_yellow]=93 [light_blue]=94 [light_magenta]=95 [light_cyan]=96 [bright_white]=97
+)
+declare -A BG_COLORS=(
+  [reset]=49 [default]=49
+  [black]=40 [red]=41 [green]=42 [yellow]=43 [blue]=44 [magenta]=45 [cyan]=46 [white]=47
+  [gray]=100 [light_red]=101 [light_green]=102 [light_yellow]=103 [light_blue]=104 [light_magenta]=105 [light_cyan]=106 [bright_white]=107
+)
+
+get_fg_color() {
+  local c="$1"
+  [[ -z "$c" ]] && return 0
+  if [[ -n "${FG_COLORS[$c]+_}" ]]; then
+    # reset=0 -> \033[0m ; default=39 -> \033[39m ; etc.
+    printf "\033[%sm" "${FG_COLORS[$c]}"
+  else
+    # codes bruts (ex: $'\e[38;5;208m')
+    printf "%s" "$c"
+  fi
+}
+
+get_bg_color() {
+  local c="$1"
+  [[ -z "$c" || "$c" == "none" || "$c" == "transparent" ]] && return 0
+  if [[ -n "${BG_COLORS[$c]+_}" ]]; then
+    printf "\033[%sm" "${BG_COLORS[$c]}"
+  else
+    printf "%s" "$c"
+  fi
+}
+
+
+###############################################################################
 # Fonction alignement - décoration sur 1 ligne
 ###############################################################################
 # ----
@@ -245,8 +285,8 @@ spinner() {
 # Options :
 #   --theme <success|error|warning|info>
 #                          : Thème appliqué avec mise en page + emoji
-#   --color <code|var>     : Couleur du texte (ex: "$RED" ou "\033[31m")
-#   --bg <code|var>        : Couleur de fond (ex: "$BG_BLUE" ou "\033[44m")
+#   --color <code|var>     : Couleur du texte (ex: "red" ou "31")
+#   --bg <code|var>        : Couleur de fond (ex: "blue" ou "44")
 #   --fill <char>          : Caractère de remplissage (défaut: espace)
 #   --align <center|left|right>  : Alignement du texte (défaut: center)
 #   --style <bold|italic|underline|combinaison>
@@ -281,15 +321,6 @@ print_fancy() {
     local UNDERLINE="\033[4m"
     local RESET="\033[0m"
 
-    declare -A FG_COLORS=(
-        [black]=30 [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36 [white]=37
-        [gray]=90 [light_red]=91 [light_green]=92 [light_yellow]=93 [light_blue]=94 [light_magenta]=95 [light_cyan]=96 [bright_white]=97
-    )
-    declare -A BG_COLORS=(
-        [black]=40 [red]=41 [green]=42 [yellow]=43 [blue]=44 [magenta]=45 [cyan]=46 [white]=47
-        [gray]=100 [light_red]=101 [light_green]=102 [light_yellow]=103 [light_blue]=104 [light_magenta]=105 [light_cyan]=106 [bright_white]=107
-    )
-
     # Lecture des arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -304,6 +335,7 @@ print_fancy() {
             *) text="$1"; shift; break ;;
         esac
     done
+
     while [[ $# -gt 0 ]]; do text+=" $1"; shift; done
     [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni" >&2; return 1; }
 
@@ -318,17 +350,20 @@ print_fancy() {
     # Ajout de l’icône si définie
     text="$icon$text"
 
-    # Traduction des couleurs
-    get_fg_color() {
-        [[ -n "${FG_COLORS[$1]+_}" ]] && printf "\033[%sm" "${FG_COLORS[$1]}" || printf ""
-    }
-    get_bg_color() {
-        [[ -n "${BG_COLORS[$1]+_}" ]] && printf "\033[%sm" "${BG_COLORS[$1]}" || printf ""
-    }
+    # --- Traduction des couleurs sûres même si valeurs inconnues ou vides ---
 
-color=$(get_fg_color "$color")
-bg=$(get_bg_color "$bg")
-
+    # Couleur du texte
+    if [[ "$color" =~ ^\\e ]]; then
+        :  # laisse la séquence telle quelle
+    else
+        color=$(get_fg_color "${color:-white}")
+    fi
+    # Couleur du fond
+    if [[ "$bg" =~ ^\\e ]]; then
+        :  # rien à faire, la séquence est déjà complète
+    else
+        bg=$(get_bg_color "$bg")
+    fi
 
     local style_seq=""
     [[ "$style" =~ bold ]] && style_seq+="$BOLD"
@@ -338,6 +373,7 @@ bg=$(get_bg_color "$bg")
     local visible_len=${#text}
     local pad_left=0
     local pad_right=0
+
     case "$align" in
         center)
             local total_pad=$((TERM_WIDTH_DEFAULT - visible_len))
@@ -355,8 +391,8 @@ bg=$(get_bg_color "$bg")
 
     local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
     local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
-
     local suffix=""
+
     [[ "$align" == "right" ]] && suffix=" $RESET" || suffix="$RESET"
 
     local line="${pad_left_str}${color}${bg}${style_seq}${text}${suffix}${pad_right_str}"
@@ -425,7 +461,7 @@ print_summary_table() {
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
     # Ligne finale avec couleur fond jaune foncé, texte noir, centrée
-    print_fancy --bg ${YELLOW} --color ${BLACK} "$MSG_END_REPORT"
+    print_fancy --bg "yellow" --color "black" "$MSG_END_REPORT"
     echo
 }
 
@@ -436,6 +472,11 @@ print_summary_table() {
 ###############################################################################
 
 colorize() {
+    local BLUE=$(get_fg_color "blue")
+    local RED=$(get_fg_color "red")
+    local ORANGE=$(get_fg_color "yellow")  # tu peux choisir "yellow" ou "light_yellow"
+    local RESET=$'\033[0m'
+
     awk -v BLUE="$BLUE" -v RED="$RED" -v ORANGE="$ORANGE" -v RESET="$RESET" '
     {
         line = $0
@@ -502,9 +543,11 @@ send_discord_notification() {
 print_logo() {
     echo
     echo
-    # On colore la bannière avec sed : '#' restent normaux, le reste en rouge
-    # Pour simplifier, on colore caractère par caractère via sed
-    cat <<'EOF' | sed -E "s/([^#])/${RED}\1${RESET}/g"
+    local RED="$(get_fg_color red)"
+    local RESET="$(get_fg_color reset)"
+
+    # Règle "tout sauf #"
+    sed -E "s/([^#])/${RED}\1${RESET}/g" <<'EOF'
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::::::'######:::::'#######:::'########:::'######:::'##::::'##:::::'###:::::::::
 :::::'##... ##:::'##.... ##::... ##..:::'##... ##:: ##:::: ##::::'## ##::::::::
@@ -523,66 +566,58 @@ EOF
 
 
 ###############################################################################
-# Fonction : Recherche si une MAJ est disponnible et proposera de la faire.
-# C'est juste l'information !
+# Fonction : Vérifie s'il existe une nouvelle release ou branche
+# NE MODIFIE PAS le dépôt
 ###############################################################################
-
 check_update() {
-    if $FORCE_UPDATE; then
-        local branch="${FORCE_BRANCH:-main}"
-        MSG_MAJ_UPDATE_BRANCH_INFO=$(printf "$MSG_MAJ_UPDATE_BRANCH_INFO_TEMPALTE" "$branch")
-        echo
-        print_fancy --align "center" --bg "$GREEN" --style "italic" "$MSG_MAJ_UPDATE_BRANCH_INFO"
-        cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
-        git fetch --all
-        git checkout "$branch"
-        git reset --hard "origin/$branch"
-        return
-    fi
-
-    # Vérifie la dernière release GitHub (tags)
+    # Récupère le tag du dernier release publié sur GitHub
     latest=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" \
              | grep -oP '"tag_name": "\K(.*)(?=")')
 
     if [ -n "$latest" ]; then
         if [ "$latest" != "$VERSION" ]; then
-            MSG_MAJ_UPDATE_RELEASE=$(printf "$MSG_MAJ_UPDATE_RELEASE_TEMPLATE" "$latest" "$VERSION")
+            MSG_MAJ_UPDATE=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
             echo
-            print_fancy --align "center" --bg "$GREEN" --style "italic" "$MSG_MAJ_UPDATE_RELEASE"
+            print_fancy --align "center" --bg "green" --style "ITALIC" "$MSG_MAJ_UPDATE"
         fi
     else
-        print_fancy --color "$RED" --bg "$BG_WHITE" --style "bold underline" "$MSG_MAJ_ERROR"
+        print_fancy --color "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
     fi
 }
 
-
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière branche (forcée)
+# Appel explicite uniquement
 ###############################################################################
-
 force_update_branch() {
     local branch="${FORCE_BRANCH:-main}"
     MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPALTE" "$branch")
     echo
-    print_fancy --align "center" --bg "$GREEN" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
+    print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
+
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
     git fetch --all
-    git checkout "$branch"
+
+    # Checkout sécurisé sans message detached HEAD
+    git -c advice.detachedHead=false checkout "$branch"
     git reset --hard "origin/$branch"
 }
 
-
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière release (dernier tag)
+# Appel explicite uniquement
 ###############################################################################
-
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+
     git fetch --tags
     local latest_tag
     latest_tag=$(git tag -l | sort -V | tail -n1)
+
     MSG_MAJ_UPDATE_RELEASE=$(printf "$MSG_MAJ_UPDATE_RELEASE_TEMPLATE" "$latest_tag")
     echo
-    print_fancy --align "center" --bg "$GREEN" --style "italic" "$MSG_MAJ_UPDATE_RELEASE"
-    git checkout "$latest_tag"
+    print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_RELEASE"
+
+    # Checkout sécurisé sans message detached HEAD
+    git -c advice.detachedHead=false checkout "$latest_tag"
 }

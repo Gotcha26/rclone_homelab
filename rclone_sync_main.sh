@@ -30,29 +30,13 @@ mkdir -p "$LOG_DIR"
 # - stderr aussi redirigé [sortie des erreurs]
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
-# --- Vérification de la version du script ---
-
+# Options pour les MAJ
 VERSION="v2.2.0"
 REPO="Gotcha26/rclone_homelab"
 latest=""
 FORCE_UPDATE=false
 FORCE_BRANCH=""     # Dois reserter vide pour prendre en compte "main" par défaut.
 UPDATE_TAG=""
-
-# Exécution des mises à jour si demandé
-if $FORCE_UPDATE; then
-    force_update_branch
-    exit 0
-fi
-
-if $UPDATE_TAG; then
-    update_to_latest_tag
-    exit 0
-fi
-
-# Sinon, on continue le script normalement
-check_update  # juste pour signaler la dispo d'une nouvelle release
-
 
 ###############################################################################
 # 2. Parsing complet des arguments
@@ -96,6 +80,15 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Gestion des mises à jour selon les options passées
+if [[ "$FORCE_UPDATE" == true ]]; then
+    force_update_branch  # appel explicite
+elif [[ "$UPDATE_TAG" == true ]]; then
+    update_to_latest_tag  # appel explicite
+else
+    check_update  # juste informer
+fi
+
 # Activation dry-run si demandé
 $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 
@@ -107,7 +100,7 @@ $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 
 # Vérification de la présence de rclone installé
 if ! command -v rclone >/dev/null 2>&1; then
-    echo "${RED}$MSG_RCLONE_FAIL${RESET}" >&2
+    print_fancy --theme "error" "$MSG_RCLONE_FAIL" >&2
     echo
     ERROR_CODE=10
     exit $ERROR_CODE
@@ -116,7 +109,7 @@ fi
 # Création des répertoires nécessaires
 if [[ ! -d "$TMP_RCLONE" ]]; then
     if ! mkdir -p "$TMP_RCLONE" 2>/dev/null; then
-        echo "${RED}$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE${RESET}" >&2
+        print_fancy --theme "error" "$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE" >&2
         echo
         ERROR_CODE=1
         exit $ERROR_CODE
@@ -125,7 +118,7 @@ fi
 
 if [[ ! -d "$LOG_DIR" ]]; then
     if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
-        echo "${RED}$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR${RESET}" >&2
+        print_fancy --theme "error" "$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR" >&2
         echo
         ERROR_CODE=2
         exit $ERROR_CODE
@@ -134,19 +127,19 @@ fi
 
 # Vérifications initiales
 if [[ ! -f "$JOBS_FILE" ]]; then
-    echo "$MSG_FILE_NOT_FOUND : $JOBS_FILE" >&2
+    print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $JOBS_FILE" >&2
     echo
     ERROR_CODE=3
     exit $ERROR_CODE
 fi
 if [[ ! -r "$JOBS_FILE" ]]; then
-    echo "$MSG_FILE_NOT_READ : $JOBS_FILE" >&2
+    print_fancy --theme "error" "$MSG_FILE_NOT_READ : $JOBS_FILE" >&2
     echo
     ERROR_CODE=4
     exit $ERROR_CODE
 fi
 if [[ ! -d "$TMP_RCLONE" ]]; then
-    echo "$MSG_TMP_NOT_FOUND : $TMP_RCLONE" >&2
+    print_fancy --theme "error" "$MSG_TMP_NOT_FOUND : $TMP_RCLONE" >&2
     echo
     ERROR_CODE=5
     exit $ERROR_CODE
