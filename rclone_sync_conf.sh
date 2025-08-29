@@ -51,6 +51,7 @@ MSG_MAJ_UPDATE_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez l
 Utiliser l'argument --update-tag la prochaine fois."
 MSG_MAJ_UPDATE_RELEASE_TEMPLATE="⚡  Mise à jour vers la dernière release : %s"
 MSG_MAJ_UPDATE_BRANCH_TEMPLATE="⚡  Mise à jour forcée de la branche %s ..."
+MSG_PRINT_FANCY_EMPTY="⚠️  Aucun texte fourni"
 
 
 # === Variables techniques ===

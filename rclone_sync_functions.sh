@@ -337,7 +337,7 @@ print_fancy() {
     done
 
     while [[ $# -gt 0 ]]; do text+=" $1"; shift; done
-    [[ -z "$text" ]] && { echo "⚠️ Aucun texte fourni" >&2; return 1; }
+    [[ -z "$text" ]] && { echo "$MSG_PRINT_FANCY_EMPTY" >&2; return 1; }
 
     # Application du thème (valeurs par défaut)
     case "$theme" in
