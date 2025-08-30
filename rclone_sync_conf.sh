@@ -7,7 +7,7 @@
 # Adaptables
 TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
 LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
-LOG_LINE_MAX=200                           # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
+LOG_LINE_MAX=1000                           # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
 DISCORD_WEBHOOK_URL=""                     # URL du webhook salon Discord
 
 
@@ -37,7 +37,7 @@ MSG_RCLONE_START="Synchronisation :"
 MSG_TASK_LAUNCH="Tâche lancée le"
 MSG_EMAIL_END="– Fin du message automatique –"
 MSG_EMAIL_SUCCESS="✅  Sauvegardes vers le cloud réussies"
-MSG_EMAIL_FAIL="⚠️  Des erreurs lors des sauvegardes vers le cloud"
+MSG_EMAIL_FAIL="❌  Des erreurs lors des sauvegardes vers le cloud"
 MSG_EMAIL_SUSPECT="❗  Synchronisation réussie mais aucun fichier transféré"
 MSG_EMAIL_PREP="📧  Préparation de l'email..."
 MSG_EMAIL_SENT="... Email envoyé ✅ "

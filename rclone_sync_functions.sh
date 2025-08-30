@@ -100,22 +100,25 @@ prepare_mail_html() {
       bold_end="</b>"
     fi
 
-    # Colorisation mail
+    # Colorisation mail (équivalent à colorize())
     if [[ "$lower" == *"--dry-run"* ]]; then
         echo "${bold_start}<span style='color:orange; font-style:italic;'>$safe_line</span>${bold_end}<br>"
-    elif [[ "$lower" == *"deleted"* ]]; then
+    elif [[ "$lower" =~ \b(delete|deleted)\b ]]; then
+        # Rouge simple
         echo "${bold_start}<span style='color:red;'>$safe_line</span>${bold_end}<br>"
-    elif [[ "$lower" == *"copied"* ]]; then
+    elif [[ "$lower" =~ (error|failed|unauthenticated|io error|io errors|not deleting) ]]; then
+        # Rouge gras
+        echo "${bold_start}<span style='color:red; font-weight:bold;'>$safe_line</span>${bold_end}<br>"
+    elif [[ "$lower" =~ (copied|added|transferred|new|created|renamed|uploaded) ]]; then
         echo "${bold_start}<span style='color:blue;'>$safe_line</span>${bold_end}<br>"
-    elif [[ "$lower" == *"updated"* ]]; then
-        echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
-    elif [[ "$lower" == *"there was nothing to transfer"* || "$lower" == *"there was nothing to transfert"* ]]; then
+    elif [[ "$lower" =~ (unchanged|already exists|skipped|skipping|there was nothing to transfer|no change) ]]; then
         echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
     else
         echo "${bold_start}$safe_line${bold_end}<br>"
     fi
   done
 }
+
 
 # Encodage MIME UTF-8 Base64 du sujet
 encode_subject_for_email() {
@@ -226,7 +229,7 @@ spinner() {
 
     while kill -0 "$pid" 2>/dev/null; do
         for (( i=0; i<${#spinstr}; i++ )); do
-            printf "\r[%c] Traitement en cours..." "${spinstr:i:1}"
+            printf "\r[%c] Traitement du JOB en cours..." "${spinstr:i:1}"
             sleep $delay
         done
     done
@@ -474,10 +477,11 @@ print_summary_table() {
 colorize() {
     local BLUE=$(get_fg_color "blue")
     local RED=$(get_fg_color "red")
-    local ORANGE=$(get_fg_color "yellow")  # tu peux choisir "yellow" ou "light_yellow"
+    local RED_BOLD=$'\033[1;31m'   # rouge gras
+    local ORANGE=$(get_fg_color "yellow")
     local RESET=$'\033[0m'
 
-    awk -v BLUE="$BLUE" -v RED="$RED" -v ORANGE="$ORANGE" -v RESET="$RESET" '
+    awk -v BLUE="$BLUE" -v RED="$RED" -v RED_BOLD="$RED_BOLD" -v ORANGE="$ORANGE" -v RESET="$RESET" '
     {
         line = $0
         l = tolower(line)
@@ -485,9 +489,13 @@ colorize() {
         if (l ~ /(copied|added|transferred|new|created|renamed|uploaded)/) {
             printf "%s%s%s\n", BLUE, line, RESET
         }
-        # Suppressions / erreurs -> rouge
-        else if (l ~ /(deleted|delete|error|failed|failed to)/) {
+        # Suppressions -> rouge simple
+        else if (l ~ /\b(delete|deleted)\b/) {
             printf "%s%s%s\n", RED, line, RESET
+        }
+        # Erreurs et échecs -> rouge gras
+        else if (l ~ /(error|failed|unauthenticated|io error|io errors|not deleting)/) {
+            printf "%s%s%s\n", RED_BOLD, line, RESET
         }
         # Déjà synchronisé / inchangé / skipped -> orange
         else if (l ~ /(unchanged|already exists|skipped|skipping|there was nothing to transfer|no change)/) {
