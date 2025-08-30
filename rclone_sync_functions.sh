@@ -76,44 +76,63 @@ calculate_subject_raw() {
 }
 
 prepare_mail_html() {
-  local file="$1"
+    local file="$1"
 
-  # Charger les dernières lignes dans un tableau
-  mapfile -t __lines < <(tail -n "$LOG_LINE_MAX" "$file")
-  local total=${#__lines[@]}
+    # Charger les dernières lignes dans un tableau
+    mapfile -t __lines < <(tail -n "$LOG_LINE_MAX" "$file")
+    local total=${#__lines[@]}
 
-  for (( idx=0; idx<total; idx++ )); do
-    local line="${__lines[idx]}"
-
-    # Supprimer espaces en début/fin et ignorer lignes vides
-    local trimmed_line
-    trimmed_line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    [[ -z "$trimmed_line" ]] && continue
-
-    # Échapper le HTML
-    local safe_line
-    safe_line=$(printf '%s' "$trimmed_line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-
-    # Normalisation pour tests insensibles à la casse
-    local lower="${trimmed_line,,}"
-
-    # Colorisation mail (équivalent à colorize())
-    if [[ "$lower" == *"--dry-run"* ]]; then
-        echo "<span style='color:orange; font-style:italic;'>$safe_line</span><br>"
-    elif [[ "$lower" =~ \b(delete|deleted)\b ]]; then
-        # Rouge simple
-        echo "<span style='color:red;'>$safe_line</span><br>"
-    elif [[ "$lower" =~ (error|failed|unauthenticated|io error|io errors|not deleting) ]]; then
-        # Rouge gras
-        echo "<span style='color:red; font-weight:bold;'>$safe_line</span><br>"
-    elif [[ "$lower" =~ (copied|added|transferred|new|created|renamed|uploaded) ]]; then
-        echo "<span style='color:blue;'>$safe_line</span><br>"
-    elif [[ "$lower" =~ (unchanged|already exists|skipped|skipping|there was nothing to transfer|no change) ]]; then
-        echo "<span style='color:orange;'>$safe_line</span><br>"
-    else
-        echo "$safe_line<br>"
+    # Déterminer le bloc final selon le type de job
+    local final_count=4  # par défaut, job réussi
+    if grep -iqE "(error|failed|unauthenticated|io error|not deleting)" "$file"; then
+        final_count=9   # erreurs
+    elif grep -q "There was nothing to transfer" "$file"; then
+        final_count=1   # rien à transférer
     fi
-  done
+
+    local normal_end=$((total - final_count))
+    [[ $normal_end -lt 0 ]] && normal_end=0
+
+    # Parcourir chaque ligne et générer le HTML
+    for (( idx=0; idx<total; idx++ )); do
+        local line="${__lines[idx]}"
+
+        # Supprimer espaces en début/fin et ignorer lignes vides
+        local trimmed_line
+        trimmed_line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        [[ -z "$trimmed_line" ]] && continue
+
+        # Échapper le HTML
+        local safe_line
+        safe_line=$(printf '%s' "$trimmed_line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+
+        # Normalisation pour tests insensibles à la casse
+        local lower="${trimmed_line,,}"
+
+        # Colorisation mail (équivalent à colorize())
+        local line_html
+        if [[ "$lower" == *"--dry-run"* ]]; then
+            line_html="<span style='color:orange; font-style:italic;'>$safe_line</span><br>"
+        elif [[ "$lower" =~ \b(delete|deleted)\b ]]; then
+            line_html="<span style='color:red;'>$safe_line</span><br>"
+        elif [[ "$lower" =~ (error|failed|unauthenticated|io error|io errors|not deleting) ]]; then
+            line_html="<span style='color:red; font-weight:bold;'>$safe_line</span><br>"
+        elif [[ "$lower" =~ (copied|added|transferred|new|created|renamed|uploaded) ]]; then
+            line_html="<span style='color:blue;'>$safe_line</span><br>"
+        elif [[ "$lower" =~ (unchanged|already exists|skipped|skipping|there was nothing to transfer|no change) ]]; then
+            line_html="<span style='color:orange;'>$safe_line</span><br>"
+        else
+            line_html="$safe_line<br>"
+        fi
+
+        # Insérer un séparateur avant le bloc final
+        if (( idx == normal_end )); then
+            echo "<br>"
+        fi
+
+        # Afficher la ligne
+        echo "$line_html"
+    done
 }
 
 
