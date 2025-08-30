@@ -58,6 +58,9 @@ JOB_COUNTER=1
 JOBS_COUNT=0
 NO_CHANGES_ALL=true
 
+# Variable pour savoir si un job précédent a été ajouté
+PREVIOUS_JOB_PRESENT=false
+
 # Lire les jobs en ignorant les lignes vides et les commentaires
 while IFS= read -r line || [[ -n "$line" ]]; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
@@ -110,8 +113,19 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     JOB_LOG_EMAIL="${TMP_RCLONE}_${JOB_ID}_email_${LOG_TIMESTAMP}.log"
     make_plain_log "$TMP_JOB_LOG_INFO" "$JOB_LOG_EMAIL"
 
-    # Générer le HTML pour ce job et l'ajouter au HTML global
-    GLOBAL_HTML_BLOCK+=$(prepare_mail_html "$JOB_LOG_EMAIL")$'\n'
+    # Générer le HTML pour ce job
+    JOB_HTML=$(prepare_mail_html "$JOB_LOG_EMAIL")
+
+    # Ajouter un séparateur seulement si ce n'est pas le premier job
+    if $PREVIOUS_JOB_PRESENT; then
+        GLOBAL_HTML_BLOCK+="<br><br><hr style='border:none; border-top:1px solid #ccc; margin:2em 0;'><br><br>"
+    fi
+
+    # Ajouter le job HTML au bloc global
+    GLOBAL_HTML_BLOCK+="$JOB_HTML"
+
+    # On marque qu’un job a déjà été ajouté
+    PREVIOUS_JOB_PRESENT=true
 
     # Créer une version sans ANSI pour Discord et envoyer immédiatement
     TMP_JOB_LOG_DISCORD="${TMP_RCLONE}_${JOB_ID}_${LOG_TIMESTAMP}.log"

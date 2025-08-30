@@ -128,13 +128,15 @@ encode_subject_for_email() {
 }
 
 assemble_and_send_mail() {
-    local log_file="$1"
-    local html_block="$2"   # facultatif
+    local log_file="$1"        # Fichier log utilisé pour calcul du résumé global (copied/updated/deleted)
+    local html_block="$2"      # Bloc HTML global déjà préparé (tous les jobs), facultatif
     local MAIL="${TMP_RCLONE}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
 
+    # Récupération de l'adresse expéditeur depuis msmtp
     FROM_ADDRESS="$(grep '^from' /etc/msmtprc | awk '{print $2}')"
 
     {
+        # --- Entêtes de l'email ---
         echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
         echo "To: $MAIL_TO"
         echo "Date: $(date -R)"
@@ -142,6 +144,8 @@ assemble_and_send_mail() {
         echo "MIME-Version: 1.0"
         echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
         echo
+
+        # --- Partie HTML principale ---
         echo "--BOUNDARY123"
         echo "Content-Type: text/html; charset=UTF-8"
         echo
@@ -150,18 +154,27 @@ assemble_and_send_mail() {
 
         echo "<p><b>📝 Dernières lignes du log :</b></p>"
         echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
+
         if [[ -n "$html_block" ]]; then
-            printf "%s" "$html_block"
+            # Si plusieurs jobs sont présents, insérer des séparateurs <hr> entre eux
+            # Suppression de doublons de <hr> pour sécurité
+            printf "%s" "$html_block" | awk '
+            BEGIN { first=1 }
+            /<hr>/ { if(!first) print "<br><br><hr><br><br>"; next }
+            { first=0; print }
+            '
         else
+            # Cas fallback : un seul fichier log
             prepare_mail_html "$log_file"
         fi
+
         echo "</div>"
 
+        # --- Résumé global ---
         echo "<hr><h3>📊 Résumé global</h3>"
         local copied=$(grep -i "INFO" "$log_file" | grep -i "Copied" | grep -vi "There was nothing to transfer" | wc -l)
         local updated=$(grep -i "INFO" "$log_file" | grep -i "Updated" | grep -vi "There was nothing to transfer" | wc -l)
         local deleted=$(grep -i "INFO" "$log_file" | grep -i "Deleted" | grep -vi "There was nothing to transfer" | wc -l)
-        # ... après avoir calculé copied/updated/deleted ...
 
         cat <<HTML
 <table style="font-family: monospace; border-collapse: collapse;">
@@ -177,7 +190,7 @@ assemble_and_send_mail() {
 HTML
     } > "$MAIL"
 
-    # Pièces jointes (logs bruts concaténés)
+    # --- Pièces jointes (logs bruts concaténés) ---
     ATTACHMENTS=("$log_file")
     for file in "${ATTACHMENTS[@]}"; do
         {
@@ -191,11 +204,11 @@ HTML
     done
     echo "--BOUNDARY123--" >> "$MAIL"
 
-    # Envoi
+    # --- Envoi du mail ---
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
     print_fancy --align "center" "$MSG_EMAIL_SENT"
 
-    # Nettoyage optionnel
+    # --- Nettoyage optionnel ---
     rm -f "$MAIL"
 }
 
@@ -215,6 +228,7 @@ send_email_if_needed() {
         assemble_and_send_mail "$JOB_LOG_EMAIL" "$html_block"
     fi
 }
+
 
 
 ###############################################################################
