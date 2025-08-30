@@ -85,36 +85,33 @@ prepare_mail_html() {
   for (( idx=0; idx<total; idx++ )); do
     local line="${__lines[idx]}"
 
+    # Supprimer espaces en début/fin et ignorer lignes vides
+    local trimmed_line
+    trimmed_line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [[ -z "$trimmed_line" ]] && continue
+
     # Échapper le HTML
     local safe_line
-    safe_line=$(printf '%s' "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+    safe_line=$(printf '%s' "$trimmed_line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
 
     # Normalisation pour tests insensibles à la casse
-    local lower="${line,,}"
-
-    # Flag gras si on est dans les 4 dernières lignes
-    local bold_start=""
-    local bold_end=""
-    if (( idx >= total - 4 )); then
-      bold_start="<b>"
-      bold_end="</b>"
-    fi
+    local lower="${trimmed_line,,}"
 
     # Colorisation mail (équivalent à colorize())
     if [[ "$lower" == *"--dry-run"* ]]; then
-        echo "${bold_start}<span style='color:orange; font-style:italic;'>$safe_line</span>${bold_end}<br>"
+        echo "<span style='color:orange; font-style:italic;'>$safe_line</span><br>"
     elif [[ "$lower" =~ \b(delete|deleted)\b ]]; then
         # Rouge simple
-        echo "${bold_start}<span style='color:red;'>$safe_line</span>${bold_end}<br>"
+        echo "<span style='color:red;'>$safe_line</span><br>"
     elif [[ "$lower" =~ (error|failed|unauthenticated|io error|io errors|not deleting) ]]; then
         # Rouge gras
-        echo "${bold_start}<span style='color:red; font-weight:bold;'>$safe_line</span>${bold_end}<br>"
+        echo "<span style='color:red; font-weight:bold;'>$safe_line</span><br>"
     elif [[ "$lower" =~ (copied|added|transferred|new|created|renamed|uploaded) ]]; then
-        echo "${bold_start}<span style='color:blue;'>$safe_line</span>${bold_end}<br>"
+        echo "<span style='color:blue;'>$safe_line</span><br>"
     elif [[ "$lower" =~ (unchanged|already exists|skipped|skipping|there was nothing to transfer|no change) ]]; then
-        echo "${bold_start}<span style='color:orange;'>$safe_line</span>${bold_end}<br>"
+        echo "<span style='color:orange;'>$safe_line</span><br>"
     else
-        echo "${bold_start}$safe_line${bold_end}<br>"
+        echo "$safe_line<br>"
     fi
   done
 }
@@ -160,7 +157,7 @@ assemble_and_send_mail() {
             # Suppression de doublons de <hr> pour sécurité
             printf "%s" "$html_block" | awk '
             BEGIN { first=1 }
-            /<hr>/ { if(!first) print "<br><br><hr><br><br>"; next }
+            /<hr>/ { if(!first) print "<br><hr><br>"; next }
             { first=0; print }
             '
         else
