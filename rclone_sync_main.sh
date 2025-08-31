@@ -31,7 +31,7 @@ mkdir -p "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
 # Options pour les MAJ
-VERSION="v2.2.0"
+VERSION="v2.3.0"
 REPO="Gotcha26/rclone_homelab"
 latest=""
 FORCE_UPDATE=false
