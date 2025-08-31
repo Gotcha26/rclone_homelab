@@ -34,7 +34,7 @@ exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 # Charger la config de dev si elle existe, sinon fallback sur main (principal)
 if [ -f "$SCRIPT_DIR/config/config.dev.sh" ]; then
     source "$SCRIPT_DIR/config/config.dev.sh"
-    print_fancy --align "center" --bg "orange" --fg "black" \
+    print_fancy --align "center" --bg "yellow" --fg "black" \
         "⚠️  MODE DEV ACTIVÉ – Branche = $BRANCH ⚠️"
 else
     source "$SCRIPT_DIR/config/config.main.sh"

@@ -325,7 +325,7 @@ get_bg_color() {
 # Options :
 #   --theme <success|error|warning|info>
 #                          : Thème appliqué avec mise en page + emoji
-#   --color <code|var>     : Couleur du texte (ex: "red" ou "31")
+#   --fg <code|var>     : Couleur du texte (ex: "red" ou "31")
 #   --bg <code|var>        : Couleur de fond (ex: "blue" ou "44")
 #   --fill <char>          : Caractère de remplissage (défaut: espace)
 #   --align <center|left|right>  : Alignement du texte (défaut: center)
@@ -336,8 +336,8 @@ get_bg_color() {
 #   texte ... [OBLIGATOIRE]: Le texte à afficher (peut contenir des espaces)
 #
 # Exemple :
-#   print_fancy --color red --bg white --style "bold underline" "Alerte"
-#   print_fancy --color 42 --style italic "Succès en vert"
+#   print_fancy --fg red --bg white --style "bold underline" "Alerte"
+#   print_fancy --fg 42 --style italic "Succès en vert"
 #   print_fancy --theme success "Backup terminé avec succès"
 #   print_fancy --theme error --align right "Erreur critique détectée"
 #   print_fancy --theme warning --highlight "Attention : espace disque faible"
@@ -364,7 +364,7 @@ print_fancy() {
     # Lecture des arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --color)     color="$2"; shift 2 ;;
+            --fg)     color="$2"; shift 2 ;;
             --bg)        bg="$2"; shift 2 ;;
             --fill)      fill="$2"; shift 2 ;;
             --align)     align="$2"; shift 2 ;;
@@ -501,7 +501,7 @@ print_summary_table() {
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
     # Ligne finale avec couleur fond jaune foncé, texte noir, centrée
-    print_fancy --bg "yellow" --color "black" "$MSG_END_REPORT"
+    print_fancy --bg "yellow" --fg "black" "$MSG_END_REPORT"
     echo
 }
 
@@ -623,10 +623,10 @@ check_update() {
         if [ "$latest" != "$VERSION" ]; then
             MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
             echo
-            print_fancy --align "left" --color "green" --style "italic" "$MSG_MAJ_UPDATE1"
-            print_fancy --align "center" --color "green" --style "italic" "$MSG_MAJ_UPDATE2"
+            print_fancy --align "left" --fg "green" --style "italic" "$MSG_MAJ_UPDATE1"
+            print_fancy --align "center" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
         fi
     else
-        print_fancy --color "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
+        print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
     fi
 }
