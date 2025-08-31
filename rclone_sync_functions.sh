@@ -528,9 +528,12 @@ print_summary_table() {
     print_aligned_table "Dossier" "${LOG_DIR}/"
     print_aligned_table "Log script" "$FILE_SCRIPT"
     print_aligned_table "Log rclone" "$FILE_INFO"
-    print_aligned_table "Log mail" "$FILE_MAIL"
-    print_aligned_table "Email envoyé à" "$MAIL_TO"
-    print_aligned_table "Sujet email" "$SUBJECT_RAW"
+    
+    if [[ -n "$MAIL_TO" ]]; then
+        print_aligned_table "Log mail" "$FILE_MAIL"
+        print_aligned_table "Email envoyé à" "$MAIL_TO"
+        print_aligned_table "Sujet email" "$SUBJECT_RAW"
+    fi
 
     if [[ -n "$DISCORD_WEBHOOK_URL" ]]; then
         print_aligned_table "Notifs Discord" "$MSG_DISCORD_PROCESSED"

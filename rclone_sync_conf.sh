@@ -2,14 +2,9 @@
 # Variables de configuration
 ###############################################################################
 
-# === Générales ===
-
-# Adaptables
+LOG_LINE_MAX=1000                          # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
 TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
 LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
-LOG_LINE_MAX=1000                           # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
-DISCORD_WEBHOOK_URL=""                     # URL du webhook salon Discord
-
 
 # === Messages (centralisés pour affichage et email) ===
 
