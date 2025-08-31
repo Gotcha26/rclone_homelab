@@ -1,21 +1,45 @@
 ###############################################################################
+# Fonction : Détéction est information sur la branche en court d'utilisation
+###############################################################################
+detect_branch() {
+    if [[ -f "$SCRIPT_DIR/conf/conf.local.sh" ]]; then
+        BRANCH="local"
+        print_fancy --align "center" --bg "yellow" --fg "black" \
+        "⚠️  MODE LOCAL ACTIVÉ – Branche = $BRANCH ⚠️"
+    elif [[ -f "$SCRIPT_DIR/conf/conf.dev.sh" ]]; then
+        BRANCH="dev"
+        print_fancy --align "center" --bg "yellow" --fg "black" \
+        "⚠️  MODE DEV ACTIVÉ – Branche = $BRANCH ⚠️"
+    else
+        BRANCH="main"
+    fi
+}
+
+
+###############################################################################
 # Fonction : Vérifie s'il existe une nouvelle release ou branche
 # NE MODIFIE PAS le dépôt
 ###############################################################################
 check_update() {
-    # Récupère le tag du dernier release publié sur GitHub
-    latest=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" \
-             | grep -oP '"tag_name": "\K(.*)(?=")')
 
-    if [ -n "$latest" ]; then
-        if [ "$latest" != "$VERSION" ]; then
-            MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
-            echo
-            print_fancy --align "left" --fg "green" --style "italic" "$MSG_MAJ_UPDATE1"
-            print_fancy --align "center" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
-        fi
-    else
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+
+    # Récupérer les infos distantes
+    git fetch origin "$BRANCH" --tags
+
+    # Récupérer le dernier tag de la branche active
+    latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
+
+    if [[ -z "$latest_tag" ]]; then
         print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
+        return
+    fi
+
+    if [[ "$latest_tag" != "$VERSION" ]]; then
+        MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest_tag" "$VERSION")
+        echo
+        print_fancy --align "left" --fg "green" --style "italic" "$MSG_MAJ_UPDATE1"
+        print_fancy --align "center" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
     fi
 }
 
