@@ -28,7 +28,7 @@ check_update() {
 
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière branche (forcée)
-# Appel explicite uniquement
+# Appel explicite ou implicite si forcé via FORCE_UPDATE=true
 ###############################################################################
 force_update_branch() {
     local branch="${FORCE_BRANCH:-$BRANCH}"
@@ -40,6 +40,17 @@ force_update_branch() {
 
     # Récupération des dernières infos du remote
     git fetch --all --tags
+
+    # Vérifie si la branche locale est déjà à jour
+    local local_hash remote_hash
+    local_hash=$(git rev-parse "$branch")
+    remote_hash=$(git rev-parse "origin/$branch")
+
+    if [[ "$local_hash" == "$remote_hash" ]]; then
+        # Rien à mettre à jour → on retourne 1
+        print_fancy --align "center" --theme "info" "Branche '$branch' déjà à jour"
+        return 1
+    fi
 
     # Assure que l'on est bien sur la branche souhaitée
     git checkout -f "$branch" || { echo "Erreur lors du checkout de $branch" >&2; exit 1; }
@@ -53,8 +64,8 @@ force_update_branch() {
 
     print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
 
-    # Quitter immédiatement pour que le script relancé prenne en compte la mise à jour
-    exit 0
+    # Retourne 0 pour signaler qu’une MAJ a été effectuée
+    return 0
 }
 
 

@@ -61,6 +61,15 @@ detect_branch
 # Sourcing pour les updates
 source "$SCRIPT_DIR/update/updater.sh"
 
+# Mise à jour automatique si variable FORCE_UPDATE=true
+if [[ "$FORCE_UPDATE" == true ]]; then
+    if force_update_branch; then
+        # Une mise à jour a été faite → relance du script avec les mêmes arguments
+        exec "$0" "$@"
+    fi
+fi
+
+
 
 ###############################################################################
 # 2. Parsing complet des arguments
