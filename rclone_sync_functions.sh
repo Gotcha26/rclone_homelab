@@ -85,7 +85,7 @@ prepare_mail_html() {
     # Déterminer le bloc final selon le type de job
     local final_count=4  # par défaut, job réussi
     if grep -iqE "(error|failed|unauthenticated|io error|not deleting)" "$file"; then
-        final_count=9   # erreurs
+        final_count=6   # erreurs
     elif grep -q "There was nothing to transfer" "$file"; then
         final_count=1   # rien à transférer
     fi
@@ -93,7 +93,6 @@ prepare_mail_html() {
     local normal_end=$((total - final_count))
     [[ $normal_end -lt 0 ]] && normal_end=0
 
-    # Parcourir chaque ligne et générer le HTML
     for (( idx=0; idx<total; idx++ )); do
         local line="${__lines[idx]}"
 
@@ -106,10 +105,10 @@ prepare_mail_html() {
         local safe_line
         safe_line=$(printf '%s' "$trimmed_line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
 
-        # Normalisation pour tests insensibles à la casse
+        # Normalisation minuscule
         local lower="${trimmed_line,,}"
 
-        # Colorisation mail (équivalent à colorize())
+        # Colorisation mail
         local line_html
         if [[ "$lower" == *"--dry-run"* ]]; then
             line_html="<span style='color:orange; font-style:italic;'>$safe_line</span><br>"
@@ -125,12 +124,18 @@ prepare_mail_html() {
             line_html="$safe_line<br>"
         fi
 
-        # Insérer un séparateur avant le bloc final
+        # Ajout d'une ligne vide APRÈS les 2 premières lignes d'entête
+        if (( idx == 1 )); then
+            echo "$line_html"
+            echo "<br>"   # <<<<< la ligne vide après l'entête
+            continue
+        fi
+
+        # Séparateur avant le bloc final
         if (( idx == normal_end )); then
             echo "<br>"
         fi
 
-        # Afficher la ligne
         echo "$line_html"
     done
 }
