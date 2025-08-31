@@ -471,21 +471,19 @@ print_fancy() {
             ;;
     esac
 
-    local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
-    local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
-    local suffix=""
-
-    [[ "$align" == "right" ]] && suffix=" $RESET" || suffix="$RESET"
-
-    local line="${pad_left_str}${color}${bg}${style_seq}${text}${suffix}${pad_right_str}"
-
     if [[ -n "$highlight" ]]; then
-        local full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
-        local insert_pos=$pad_left
-        full_line="${full_line:0:$insert_pos}${color}${bg}${style_seq}${text}${suffix}${full_line:$((insert_pos+visible_len))}"
-        printf "%s\n" "$full_line"
+        # Ligne complète remplie avec le fill
+        local full_line
+        full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
+        # Insérer le texte avec style et couleur
+        full_line="${full_line:0:pad_left}${color}${bg}${style_seq}${text}${RESET}${bg}${full_line:$((pad_left + visible_len))}"
+        # Appliquer la couleur de fond sur toute la ligne
+        printf "%b\n" "${bg}${full_line}${RESET}"
     else
-        printf "%b\n" "$line"
+        # Version classique sans highlight
+        local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
+        local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
+        printf "%b\n" "${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
     fi
 }
 
@@ -528,9 +526,9 @@ print_summary_table() {
     print_aligned_table "Dossier" "${LOG_DIR}/"
     print_aligned_table "Log script" "$FILE_SCRIPT"
     print_aligned_table "Log rclone" "$FILE_INFO"
-    
+    print_aligned_table "Log mail" "$FILE_MAIL"
+
     if [[ -n "$MAIL_TO" ]]; then
-        print_aligned_table "Log mail" "$FILE_MAIL"
         print_aligned_table "Email envoyé à" "$MAIL_TO"
         print_aligned_table "Sujet email" "$SUBJECT_RAW"
     fi

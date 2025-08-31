@@ -21,7 +21,7 @@ check_update() {
         MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest_tag" "$VERSION")
         echo
         print_fancy --align "left" --fg "green" --style "italic" "$MSG_MAJ_UPDATE1"
-        print_fancy --align "center" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
+        print_fancy --align "right" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
     fi
 }
 

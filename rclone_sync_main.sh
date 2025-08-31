@@ -42,12 +42,12 @@ detect_branch() {
     if [[ -f "$SCRIPT_DIR/config/config.local.sh" ]]; then
         BRANCH="local"
         source "$SCRIPT_DIR/config/config.local.sh"
-        print_fancy --align "center" --bg "yellow" --fg "black" \
+        print_fancy --align "center" --bg "yellow" --fg "black" --highlight \
         "⚠️  MODE LOCAL ACTIVÉ – Branche = $BRANCH ⚠️ "
     elif [[ -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
         BRANCH="dev"
         source "$SCRIPT_DIR/config/config.dev.sh"
-        print_fancy --align "center" --bg "yellow" --fg "black" \
+        print_fancy --align "center" --bg "yellow" --fg "black" --highlight \
         "⚠️  MODE DEV ACTIVÉ – Branche = $BRANCH ⚠️ "
     else
         BRANCH="main"
