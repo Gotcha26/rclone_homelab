@@ -32,12 +32,12 @@ mkdir -p "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
 # Charger la config de dev si elle existe, sinon fallback sur main (principal)
-if [ -f ./config/config.dev.sh ]; then
-    source ./config/config.dev.sh
+if [ -f "$SCRIPT_DIR/config/config.dev.sh" ]; then
+    source "$SCRIPT_DIR/config/config.dev.sh"
     print_fancy --align "center" --bg "orange" --fg "black" \
         "⚠️  MODE DEV ACTIVÉ – Branche = $BRANCH ⚠️"
 else
-    source ./config/config.main.sh
+    source "$SCRIPT_DIR/config/config.main.sh"
 fi
 
 ###############################################################################

@@ -31,17 +31,26 @@ force_update_branch() {
 
 
 ###############################################################################
-# Fonction : Met à jour le script vers la dernière release (dernier tag)
-# Appel explicite uniquement.
+# Fonction : Met à jour le script vers la dernière release (dernier tag
+# présent sur la branche courante définie dans la config)
 ###############################################################################
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
 
-    git fetch --tags
+    # Déterminer la branche active via config (ou fallback main)
+    local branch="${FORCE_BRANCH:-$BRANCH}"
 
-    # Dernier tag distant
+    # Récupérer les infos distantes
+    git fetch origin "$branch" --tags
+
+    # Lister uniquement les tags atteignables depuis la branche
     local latest_tag
-    latest_tag=$(git tag -l | sort -V | tail -n1)
+    latest_tag=$(git tag --merged "origin/$branch" | sort -V | tail -n1)
+
+    if [[ -z "$latest_tag" ]]; then
+        echo "Aucun tag trouvé sur la branche $branch" >&2
+        exit 1
+    fi
 
     # Hash du tag distant et hash local
     local remote_hash
@@ -59,16 +68,15 @@ update_to_latest_tag() {
             chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
             MSG_MAJ_UPDATE_TAG_SUCCESS=$(printf "$MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE" "$latest_tag")
             print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_TAG_SUCCESS"
-            exit 0  # Quitter après succès
+            exit 0
         else
-            # Si échec (modifications locales)
             MSG_MAJ_UPDATE_TAG_FAILED=$(printf "$MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE" "$latest_tag")
             print_fancy --align "center" --theme "error" "$MSG_MAJ_UPDATE_TAG_FAILED"
-            exit 1  # Quitter après échec
+            exit 1
         fi
     else
         MSG_MAJ_UPDATE_TAG_REJECTED=$(printf "$MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE" "$latest_tag")
         print_fancy --align "center" --theme "info" "$MSG_MAJ_UPDATE_TAG_REJECTED"
-        exit 0  # Quitter même si rien à faire
+        exit 0
     fi
 }
