@@ -21,10 +21,13 @@ source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 source "$SCRIPT_DIR/update/updater.sh"
 
-# ---- Journal log général (sauf rclone qui a un log dédié) ----
-
 # Création du dossier logs si absent
 mkdir -p "$LOG_DIR"
+
+# On créait un dossier temporaire de manière temporaire
+TMP_JOBS_DIR=$(mktemp -d)
+
+# ---- Journal log général (sauf rclone qui a un log dédié) ----
 
 # Redirige toute la sortie du script
 # - stdout vers tee (console + fichier) [standard]
@@ -112,6 +115,7 @@ if [[ ! -d "$TMP_RCLONE" ]]; then
     fi
 fi
 
+#Vérification de la présence du répertoire temporaire
 if [[ ! -d "$LOG_DIR" ]]; then
     if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
         print_fancy --theme "error" "$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR" >&2

@@ -33,6 +33,55 @@ EOF
 
 
 ###############################################################################
+# Fonction pour la mise en mise en tableau des jobs
+###############################################################################
+# Déclarer le tableau global pour stocker les jobs
+declare -a JOBS_LIST
+
+# Fonction pour parser et vérifier les jobs
+parse_jobs() {
+    local file="$1"
+    # Lecture de chaque ligne du fichier jobs pour vérification
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ -z "$line" || "$line" =~ ^# ]] && continue
+
+        # Nettoyage : trim + uniformisation séparateurs
+        line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
+        IFS='|' read -r src dst <<< "$line"
+
+        src="${src#"${src%%[![:space:]]*}"}"
+        src="${src%"${src##*[![:space:]]}"}"
+        dst="${dst#"${dst%%[![:space:]]*}"}"
+        dst="${dst%"${dst##*[![:space:]]}"}"
+
+        # Vérif ligne valide
+        if [[ -z "$src" || -z "$dst" ]]; then
+            print_fancy --theme "error" "$MSG_JOB_LINE_INVALID : $line" >&2
+            echo
+            ERROR_CODE=6
+            exit $ERROR_CODE
+        fi
+
+        # Vérif source locale
+        if [[ ! -d "$src" ]]; then
+            print_fancy --theme "error" "$MSG_SRC_NOT_FOUND : $src" >&2
+            echo
+            ERROR_CODE=7
+            exit $ERROR_CODE
+        fi
+
+        # Vérif remote si nécessaire
+        if [[ "$dst" == *":"* ]]; then
+            remote_name="${dst%%:*}"  # récupère la partie avant le ":"
+            check_remote "$remote_name"
+        fi
+
+        JOBS_LIST+=("$src|$dst")
+    done < "$file"
+}
+
+
+###############################################################################
 # Fonction pour vérifier si un remote existe
 ###############################################################################
 
@@ -123,13 +172,6 @@ prepare_mail_html() {
             line_html="<span style='color:orange;'>$safe_line</span><br>"
         else
             line_html="$safe_line<br>"
-        fi
-
-        # Ajout d'une ligne vide APRÈS les 2 premières lignes d'entête
-        if (( idx == 1 )); then
-            echo "$line_html"
-            echo "<br>"   # <<<<< la ligne vide après l'entête
-            continue
         fi
 
         # Séparateur avant le bloc final

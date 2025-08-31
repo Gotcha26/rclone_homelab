@@ -1,81 +1,29 @@
+#!/bin/bash
+
 # Charger les fonctions et configurations
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
 ###############################################################################
-# Pré-vérification de tous les jobs avant exécution
+# Préparer les jobs
 ###############################################################################
 
-# Charger les remotes rclone configurés
-mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
+# Parser le fichier jobs dans JOBS_LIST
+parse_jobs "$JOBS_FILE"
 
-# Lecture de chaque ligne du fichier jobs pour vérification
-while IFS= read -r line; do
-    [[ -z "$line" || "$line" =~ ^# ]] && continue
-
-    # Nettoyage : trim + uniformisation séparateurs
-    line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
-    IFS='|' read -r src dst <<< "$line"
-
-    src="${src#"${src%%[![:space:]]*}"}"
-    src="${src%"${src##*[![:space:]]}"}"
-    dst="${dst#"${dst%%[![:space:]]*}"}"
-    dst="${dst%"${dst##*[![:space:]]}"}"
-
-    # Vérif ligne valide
-    if [[ -z "$src" || -z "$dst" ]]; then
-        print_fancy --theme "error" "$MSG_JOB_LINE_INVALID : $line" >&2
-        echo
-        ERROR_CODE=6
-        exit $ERROR_CODE
-    fi
-
-    # Vérif source locale
-    if [[ ! -d "$src" ]]; then
-        print_fancy --theme "error" "$MSG_SRC_NOT_FOUND : $src" >&2
-        echo
-        ERROR_CODE=7
-        exit $ERROR_CODE
-    fi
-
-    # Vérif remote si nécessaire
-    if [[ "$dst" == *":"* ]]; then
-        remote_name="${dst%%:*}"  # récupère la partie avant le ":"
-        check_remote "$remote_name"
-    fi
-
-done < "$JOBS_FILE"
-
+# Variables
+GLOBAL_HTML_BLOCK=""          # Initialisation du HTML global
+JOB_COUNTER=1                 # Compteur de jobs pour le label [JOBxx]
+JOBS_COUNT=0
+NO_CHANGES_ALL=true
+PREVIOUS_JOB_PRESENT=false    # Variable pour savoir si un job précédent a été ajouté
 
 ###############################################################################
 # Exécution des jobs
 ###############################################################################
-
-# Initialisation du HTML global
-GLOBAL_HTML_BLOCK=""
-
-# Compteur de jobs pour le label [JOBxx]
-JOB_COUNTER=1
-JOBS_COUNT=0
-NO_CHANGES_ALL=true
-
-# Variable pour savoir si un job précédent a été ajouté
-PREVIOUS_JOB_PRESENT=false
-
-# Lire les jobs en ignorant les lignes vides et les commentaires
-while IFS= read -r line || [[ -n "$line" ]]; do
-    [[ -z "$line" || "$line" =~ ^# ]] && continue
-
-    # Nettoyage : trim + uniformisation séparateurs
-    line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
-    IFS='|' read -r src dst <<< "$line"
-
-    src="${src#"${src%%[![:space:]]*}"}"
-    src="${src%"${src##*[![:space:]]}"}"
-    dst="${dst#"${dst%%[![:space:]]*}"}"
-    dst="${dst%"${dst##*[![:space:]]}"}"
-
-    # Identifiant du job [JOB01], [JOB02], ...
-    JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
+for job in "${JOBS_LIST[@]}"; do
+    src="${job%%|*}"
+    dst="${job##*|}"
+    JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")    # Identifiant du job [JOB01], [JOB02], ...
 
     # Affichage header (terminal uniquement si pas --dry-run et pas --auto)
     if [[ "$DRY_RUN" != true && "$LAUNCH_MODE" != "automatique" ]]; then
@@ -84,6 +32,10 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         print_fancy --bg "blue" --fill "=" --align "center" "$MSG_WAITING3"
         echo
     fi
+
+    TMP_JOB_LOG_RAW="$TMP_JOBS_DIR/${JOB_ID}_raw.log"
+    TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"
+    TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"
 
     # Affichage header job et redirection vers le log temporaire
     # Affichage filtré vers le HTML pour supprimer les balises ANSI
@@ -94,8 +46,15 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         echo ""
     } | tee -a "$LOG_FILE_INFO" >> "$TMP_JOB_LOG_INFO"
 
+        # Header HTML + ligne vide
+    {
+        echo "<b>[$JOB_ID]</b> $src → $dst<br>"
+        echo "$MSG_TASK_LAUNCH $NOW<br>"
+        echo "<br>"
+    } > "$TMP_JOB_LOG_HTML"
+
     # === Exécution rclone en arrière-plan ===
-    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_INFO" 2>&1 &
+    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
     RCLONE_PID=$!
 
     # Afficher le spinner tant que rclone tourne
@@ -107,33 +66,25 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     (( job_rc != 0 )) && ERROR_CODE=8
 
     # Affichage colorisé après exécution dans la console
-    colorize < "$TMP_JOB_LOG_INFO" | tee -a "$LOG_FILE_INFO"
+    colorize < "$TMP_JOB_LOG_RAW" | tee -a "$LOG_FILE_INFO"
 
-    # Créer une version sans ANSI pour l'email
-    JOB_LOG_EMAIL="${TMP_RCLONE}_${JOB_ID}_email_${LOG_TIMESTAMP}.log"
-    make_plain_log "$TMP_JOB_LOG_INFO" "$JOB_LOG_EMAIL"
+    # Génération logs HTML & plain
+    prepare_mail_html "$TMP_JOB_LOG_RAW" >> "$TMP_JOB_LOG_HTML"
+    make_plain_log "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_PLAIN"
 
-    # Générer le HTML pour ce job
-    JOB_HTML=$(prepare_mail_html "$JOB_LOG_EMAIL")
-
+    # Assemblage HTML global
     # Ajouter un séparateur seulement si ce n'est pas le premier job
     if $PREVIOUS_JOB_PRESENT; then
         GLOBAL_HTML_BLOCK+="<br><br><hr style='border:none; border-top:1px solid #ccc; margin:2em 0;'><br><br>"
     fi
-
-    # Ajouter le job HTML au bloc global
-    GLOBAL_HTML_BLOCK+="$JOB_HTML"
+    GLOBAL_HTML_BLOCK+=$(cat "$TMP_JOB_LOG_HTML")
+    PREVIOUS_JOB_PRESENT=true
 
     # On marque qu’un job a déjà été ajouté
     PREVIOUS_JOB_PRESENT=true
 
-    # Créer une version sans ANSI pour Discord et envoyer immédiatement
-    TMP_JOB_LOG_DISCORD="${TMP_RCLONE}_${JOB_ID}_${LOG_TIMESTAMP}.log"
-    make_plain_log "$TMP_JOB_LOG_INFO" "$TMP_JOB_LOG_DISCORD"
-    send_discord_notification "$TMP_JOB_LOG_DISCORD"
-
-    # Nettoyer le log temporaire
-    rm -f "$TMP_JOB_LOG_DISCORD" "$TMP_JOB_LOG_INFO"
+    # Notification Discord
+    send_discord_notification "$TMP_JOB_LOG_PLAIN"
 
     # Incrément du compteur pour le prochain job
     ((JOBS_COUNT++))
@@ -141,4 +92,4 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     ((JOB_COUNTER++))
     echo
 
-done < "$JOBS_FILE"
+done
