@@ -41,7 +41,7 @@ for job in "${JOBS_LIST[@]}"; do
         print_fancy --align "center" "[$JOB_ID] $src → $dst"
         print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
         echo ""
-    } | tee -a "$LOG_FILE_INFO" >> "$TMP_JOB_LOG_INFO"
+    } | tee -a "$LOG_FILE_INFO" | tee -a "$TMP_JOB_LOG_INFO"
 
         # Header HTML + ligne vide
     {
