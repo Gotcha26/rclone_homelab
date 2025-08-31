@@ -3,6 +3,9 @@
 # Charger les fonctions et configurations
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
+# Charger les remotes rclone configurés
+mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
+
 ###############################################################################
 # Préparer les jobs
 ###############################################################################
