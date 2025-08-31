@@ -1,22 +1,4 @@
 ###############################################################################
-# Fonction : Détéction est information sur la branche en court d'utilisation
-###############################################################################
-detect_branch() {
-    if [[ -f "$SCRIPT_DIR/conf/conf.local.sh" ]]; then
-        BRANCH="local"
-        print_fancy --align "center" --bg "yellow" --fg "black" \
-        "⚠️  MODE LOCAL ACTIVÉ – Branche = $BRANCH ⚠️"
-    elif [[ -f "$SCRIPT_DIR/conf/conf.dev.sh" ]]; then
-        BRANCH="dev"
-        print_fancy --align "center" --bg "yellow" --fg "black" \
-        "⚠️  MODE DEV ACTIVÉ – Branche = $BRANCH ⚠️"
-    else
-        BRANCH="main"
-    fi
-}
-
-
-###############################################################################
 # Fonction : Vérifie s'il existe une nouvelle release ou branche
 # NE MODIFIE PAS le dépôt
 ###############################################################################
@@ -25,7 +7,7 @@ check_update() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
 
     # Récupérer les infos distantes
-    git fetch origin "$BRANCH" --tags
+    git fetch origin "$BRANCH" --tags --quiet
 
     # Récupérer le dernier tag de la branche active
     latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)

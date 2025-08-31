@@ -19,7 +19,10 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 # Sourcing global
 source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
-source "$SCRIPT_DIR/update/updater.sh"
+
+# Initialisation de variables
+FORCE_UPDATE="false"
+UPDATE_TAG="false"
 
 # Création du dossier logs si absent
 mkdir -p "$LOG_DIR"
@@ -34,8 +37,30 @@ TMP_JOBS_DIR=$(mktemp -d)
 # - stderr aussi redirigé [sortie des erreurs]
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
-# Charger la config de dev si elle existe, sinon fallback sur main (principal)
+# Corrige la branch de travail en cours
+detect_branch() {
+    if [[ -f "$SCRIPT_DIR/config/config.local.sh" ]]; then
+        BRANCH="local"
+        source "$SCRIPT_DIR/config/config.local.sh"
+        print_fancy --align "center" --bg "yellow" --fg "black" \
+        "⚠️  MODE LOCAL ACTIVÉ – Branche = $BRANCH ⚠️"
+    elif [[ -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
+        BRANCH="dev"
+        source "$SCRIPT_DIR/config/config.dev.sh"
+        print_fancy --align "center" --bg "yellow" --fg "black" \
+        "⚠️  MODE DEV ACTIVÉ – Branche = $BRANCH ⚠️"
+    else
+        BRANCH="main"
+        source "$SCRIPT_DIR/config/config.main.sh"
+    fi
+}
+
+# >>> Appel direct pour initialiser BRANCH et VERSION <<<
 detect_branch
+
+# Sourcing pour les updates
+source "$SCRIPT_DIR/update/updater.sh"
+
 
 ###############################################################################
 # 2. Parsing complet des arguments
