@@ -608,25 +608,3 @@ EOF
     echo
     echo
 }
-
-
-###############################################################################
-# Fonction : Vérifie s'il existe une nouvelle release ou branche
-# NE MODIFIE PAS le dépôt
-###############################################################################
-check_update() {
-    # Récupère le tag du dernier release publié sur GitHub
-    latest=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" \
-             | grep -oP '"tag_name": "\K(.*)(?=")')
-
-    if [ -n "$latest" ]; then
-        if [ "$latest" != "$VERSION" ]; then
-            MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest" "$VERSION")
-            echo
-            print_fancy --align "left" --fg "green" --style "italic" "$MSG_MAJ_UPDATE1"
-            print_fancy --align "center" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
-        fi
-    else
-        print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
-    fi
-}
