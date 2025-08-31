@@ -19,6 +19,7 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 # Sourcing global
 source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
+source "$SCRIPT_DIR/update/updater.sh"
 
 # ---- Journal log général (sauf rclone qui a un log dédié) ----
 
@@ -30,13 +31,14 @@ mkdir -p "$LOG_DIR"
 # - stderr aussi redirigé [sortie des erreurs]
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
-# Options pour les MAJ
-VERSION="v2.3.0"
-REPO="Gotcha26/rclone_homelab"
-latest=""
-FORCE_UPDATE=false
-FORCE_BRANCH=""     # Dois reserter vide pour prendre en compte "main" par défaut.
-UPDATE_TAG=""
+# Charger la config de dev si elle existe, sinon fallback sur main (principal)
+if [ -f ./config/config.dev.sh ]; then
+    source ./config/config.dev.sh
+    print_fancy --align "center" --bg "orange" --fg "black" \
+        "⚠️  MODE DEV ACTIVÉ – Branche = $BRANCH ⚠️"
+else
+    source ./config/config.main.sh
+fi
 
 ###############################################################################
 # 2. Parsing complet des arguments
