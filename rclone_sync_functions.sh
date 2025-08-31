@@ -304,17 +304,23 @@ spinner() {
     local pid=$1       # PID du processus à surveiller
     local delay=0.1    # vitesse du spinner
     local spinstr='|/-\'
-    tput civis         # cacher l'curseur Hack
+
+    # Couleurs
+    local ORANGE=$'\033[38;5;208m'
+    local GREEN=$(get_fg_color "green")
+    local RESET=$'\033[0m'
+
+    tput civis  # cacher le curseur
 
     while kill -0 "$pid" 2>/dev/null; do
         for (( i=0; i<${#spinstr}; i++ )); do
-            printf "\r[%c] Traitement du JOB en cours..." "${spinstr:i:1}"
+            printf "\r[${ORANGE}%c${RESET}] Traitement du JOB en cours..." "${spinstr:i:1}"
             sleep $delay
         done
     done
 
-    printf "\r[✔] Terminé !                   \n"
-    tput cnorm         # réafficher le curseur
+    printf "\r[${GREEN}✔${RESET}] Terminé !                   \n"
+    tput cnorm  # réafficher le curseur
 }
 
 

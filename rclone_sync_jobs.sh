@@ -25,13 +25,10 @@ for job in "${JOBS_LIST[@]}"; do
     dst="${job##*|}"
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")    # Identifiant du job [JOB01], [JOB02], ...
 
-    # Affichage header (terminal uniquement si pas --dry-run et pas --auto)
-    if [[ "$DRY_RUN" != true && "$LAUNCH_MODE" != "automatique" ]]; then
-        print_fancy --bg "blue" --fill "=" --align "center" "$MSG_WAITING1"
-        print_fancy --bg "blue" --fill "=" --align "center" "$MSG_WAITING2"
-        print_fancy --bg "blue" --fill "=" --align "center" "$MSG_WAITING3"
-        echo
-    fi
+    print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING1"
+    print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING2"
+    print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING3"
+    echo
 
     TMP_JOB_LOG_RAW="$TMP_JOBS_DIR/${JOB_ID}_raw.log"
     TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"
