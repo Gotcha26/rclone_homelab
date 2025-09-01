@@ -318,6 +318,7 @@ HTML
             base64 "$file"
         } >> "$MAIL"
     done
+    echo "--BOUNDARY123--" >> "$MAIL"
 
     # --- Envoi du mail ---
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
