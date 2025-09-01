@@ -106,8 +106,22 @@ done
 # Gestion des mises à jour selon les options passées
 if [[ "$FORCE_UPDATE" == true ]]; then
     if force_update_branch; then
-        # Une mise à jour a été effectuée → relance du script avec les mêmes arguments
-        exec "$0" "$@"
+        # --- Une mise à jour a été effectuée → relance du script ---
+        # On reconstruit les arguments pour s'assurer que --mailto est conservé
+        NEW_ARGS=()
+
+        # Conserver spécifiquement l'option mail si elle est définie (sinon elle est perdue...)
+        [[ -n "$MAIL_TO" ]] && NEW_ARGS+=(--mailto="$MAIL_TO")
+
+        # Conserver toutes les autres options initiales
+        for arg in "$@"; do
+            # On évite de doubler --mailto si déjà présent
+            [[ "$arg" == --mailto=* ]] && continue
+            NEW_ARGS+=("$arg")
+        done
+
+        # Relance propre du script avec tous les arguments reconstruits
+        exec "$0" "${NEW_ARGS[@]}"
     fi
 elif [[ "$UPDATE_TAG" == true ]]; then
     update_to_latest_tag  # appel explicite
