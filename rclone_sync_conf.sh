@@ -6,6 +6,17 @@ LOG_LINE_MAX=1000                          # Nombre de lignes maximales (en part
 TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
 LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
 
+DISCORD_WEBHOOK_URL=""
+
+VERSION=""
+REPO="Gotcha26/rclone_homelab"
+BRANCH="main"
+latest=""
+CHECK_UPDATES=true
+FORCE_UPDATE=false
+FORCE_BRANCH=""
+UPDATE_TAG=""
+
 # === Messages (centralisés pour affichage et email) ===
 
 MAIL_DISPLAY_NAME="RCLONE Script Backup"   # Nom affiché de l'expéditeur

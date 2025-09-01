@@ -27,7 +27,7 @@ check_update() {
 
 
 ###############################################################################
-# Fonction : Met à jour le script vers la dernière branche (forcée)
+# Fonction : Met à jour (forcée) du script sur la branche en cour ou sur une branche spécifiée si précisée
 # Appel explicite ou implicite si forcé via FORCE_UPDATE=true
 ###############################################################################
 force_update_branch() {
