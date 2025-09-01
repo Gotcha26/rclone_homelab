@@ -114,7 +114,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     fi
 
     # === Colorisation et génération logs ===
-    colorize < "$TMP_JOB_LOG_RAW" | tee -a "$LOG_FILE_INFO"
+    tail -n +3 "$TMP_JOB_LOG_RAW" | colorize | tee -a "$LOG_FILE_INFO" # Affiche colorisé mais saute les 2 premières lignes
     prepare_mail_html "$TMP_JOB_LOG_RAW" >> "$TMP_JOB_LOG_HTML"
     make_plain_log "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_PLAIN"
 
