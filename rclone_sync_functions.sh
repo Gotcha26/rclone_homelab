@@ -32,20 +32,20 @@ EOF
 }
 
 
+
+
+###############################################################################
+# Fonction pour parser et vérifier les jobs
 ###############################################################################
 # Déclarer le tableau global pour stocker les jobs
-###############################################################################
 declare -a JOBS_LIST
 declare -A JOBS_STATUS     # job_id -> OK/PROBLEM
 declare -A REMOTE_STATUS   # remote_name -> OK/PROBLEM
 declare -A REMOTE_JOBS     # remote_name -> array de lignes de job
 
-###############################################################################
-# Fonction pour parser et vérifier les jobs
-###############################################################################
 parse_jobs() {
     local file="$1"
-    local job_id=0
+    local job_index=0
 
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ -z "$line" || "$line" =~ ^# ]] && continue
@@ -67,28 +67,27 @@ parse_jobs() {
             exit $ERROR_CODE
         fi
 
-        # Stocker la ligne
+        # Stocker la ligne et init status
         JOBS_LIST+=("$src|$dst")
-        JOBS_STATUS["$job_id"]="OK"  # par défaut
+        JOBS_STATUS["$job_index"]="OK"
 
-        # Collecter remotes et associer lignes
+        # Collecter remotes et associer jobs
         if [[ "$dst" == *":"* ]]; then
             local remote="${dst%%:*}"
-            REMOTE_JOBS["$remote"]+="$job_id"$'\n'
+            REMOTE_JOBS["$remote"]+="$job_index"$'\n'
         fi
 
-        ((job_id++))
+        ((job_index++))
     done < "$file"
 
     # Vérification non bloquante des remotes
     for remote in "${!REMOTE_JOBS[@]}"; do
-        # Convertir le string en tableau de job IDs
+        # convertir le string en tableau d'indices
         IFS=$'\n' read -r -d '' -a job_ids <<< "${REMOTE_JOBS[$remote]}" || true
-
-        # Check non bloquant selon le type de remote
         check_remote_non_blocking "$remote" job_ids[@]
     done
 }
+
 
 ###############################################################################
 # Fonction non bloquante pour vérifier un remote
@@ -105,18 +104,46 @@ check_remote_non_blocking() {
     remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
     REMOTE_STATUS["$remote"]="OK"
+    local msg_status=""
 
     # Test uniquement pour OneDrive / Google Drive
     if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
         if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
             REMOTE_STATUS["$remote"]="PROBLEM"
+            msg_status="inaccessible ou token expiré"
 
             # Marquer tous les jobs affectés comme PROBLEM
             for job_id in "${job_ids[@]}"; do
                 JOBS_STATUS["$job_id"]="PROBLEM"
             done
+        else
+            msg_status="accessible ✅"
         fi
+    else
+        msg_status="accessible ✅"  # Pour Samba/NFS ou autres
     fi
+
+    # Affichage du statut du remote et des jobs
+    if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
+        print_fancy --theme "warning" "Remote '$remote' $msg_status"
+        for job_id in "${job_ids[@]}"; do
+            print_fancy --theme "warning" "→ Job affecté : ${JOBS_LIST[$job_id]}"
+        done
+    else
+        print_fancy --theme "success" "Remote '$remote' $msg_status"
+    fi
+}
+
+
+###############################################################################
+# Fonction : Préparer la liste finale des jobs valides pour exécution
+###############################################################################
+get_valid_jobs() {
+    local -n out_array=$1
+    out_array=()
+    for idx in "${!JOBS_LIST[@]}"; do
+        [[ "${JOBS_STATUS[$idx]}" == "OK" ]] && out_array+=("${JOBS_LIST[$idx]}")
+    done
 }
 
 
