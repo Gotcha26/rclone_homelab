@@ -695,3 +695,29 @@ EOF
     echo
     echo
 }
+
+
+###############################################################################
+# Fonction : Avertissement sur le poids du dossier /OK/
+# Affiche un message si le dossier dépasse 0 octet
+# Condition : présence du fichier config/config.dev.sh
+###############################################################################
+warn_ok_folder_size() {
+    local ok_dir="/opt/rclone_homelab/OK"
+    local config_file="config/config.dev.sh"
+
+    # Vérifier la présence du fichier de config
+    [[ ! -f "$config_file" ]] && return 0
+
+    # Vérifier si le dossier existe
+    [[ ! -d "$ok_dir" ]] && return 0
+
+    # Calculer la taille
+    local size
+    size=$(du -sh "$ok_dir" 2>/dev/null | cut -f1)
+
+    # Affichage si non vide
+    if [[ "$size" != "0" ]]; then
+        print_fancy --theme "warning" "⚠️  Attention : le dossier '$ok_dir' pèse actuellement $size"
+    fi
+}

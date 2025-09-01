@@ -20,6 +20,9 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 source "$SCRIPT_DIR/rclone_sync_conf.sh"
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
+# Surveillance d'un dossier critique en cas de problème (uniquement pour dev)
+warn_ok_folder_size
+
 # Initialisation de variables
 FORCE_UPDATE="false"
 UPDATE_TAG="false"
