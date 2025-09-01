@@ -299,7 +299,6 @@ assemble_and_send_mail() {
     <td style="text-align:right;">: $deleted</td></tr>
 </table>
 <p>$MSG_EMAIL_END</p>
-</body></html>
 HTML
     } >> "$MAIL"
 
@@ -316,7 +315,10 @@ HTML
         } >> "$MAIL"
     done
 
-    echo "--BOUNDARY123--" >> "$MAIL"
+    {
+        echo "</body></html>"
+        echo "--BOUNDARY123--"
+    } >> "$MAIL"
 
     # --- Envoi du mail ---
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
