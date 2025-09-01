@@ -330,6 +330,13 @@ HTML
     # --- Fermeture finale ---
     echo "--MIXED_BOUNDARY--" >> "$MAIL"
 
+    # --- Message d'avertissement si le mail risque de ne pas partir ---
+    if [[ -s "$TMP_JOB_LOG_HTML" ]]; then
+        assemble_and_send_mail "$TMP_JOB_LOG_HTML" "$GLOBAL_HTML_BLOCK"
+    else
+        print_fancy --theme "warning" "Log HTML non prêt, mail ignoré pour ce run"
+    fi
+
     # --- Envoi du mail ---
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
     print_fancy --align "center" "$MSG_EMAIL_SENT"
