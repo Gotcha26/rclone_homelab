@@ -3,8 +3,7 @@
 # Charger les fonctions
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
-# Maintenant JOB_STATUS existe
-declare -A JOB_STATUS   # si tu veux être sûr qu'il existe aussi ici
+declare -A JOBS_SKIP
 
 # Charger les remotes rclone configurés
 mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')

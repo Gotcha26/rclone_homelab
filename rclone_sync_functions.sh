@@ -37,6 +37,7 @@ EOF
 ###############################################################################
 # Déclarer le tableau global pour stocker les jobs
 declare -a JOBS_LIST
+declare -A JOB_STATUS   # idx -> OK/PROBLEM
 
 parse_jobs() {
     local file="$1"
@@ -77,8 +78,6 @@ parse_jobs() {
 ###############################################################################
 # Fonction non bloquante pour vérifier un remote
 ###############################################################################
-declare -A JOB_STATUS   # idx -> OK/PROBLEM
-
 check_remote_non_blocking() {
     local remote="$1"
 
