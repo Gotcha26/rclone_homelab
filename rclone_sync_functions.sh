@@ -32,8 +32,6 @@ EOF
 }
 
 
-
-
 ###############################################################################
 # Fonction pour parser et vérifier les jobs
 ###############################################################################
@@ -99,7 +97,6 @@ parse_jobs() {
 ###############################################################################
 check_remote_non_blocking() {
     local remote="$1"
-    local job_ids=("${!2}")
 
     # Récupérer le type réel du remote
     local remote_type
@@ -115,8 +112,8 @@ check_remote_non_blocking() {
             msg_status="inaccessible ou token expiré"
 
             # Marquer tous les jobs affectés comme PROBLEM
-            for job_id in "${job_ids[@]}"; do
-                JOBS_STATUS["$job_id"]="PROBLEM"
+            for i in "${!JOBS_LIST[@]}"; do
+                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && JOBS_LIST[$i]="${JOBS_LIST[$i]%|*}|PROBLEM"
             done
         else
             msg_status="accessible ✅"
@@ -128,8 +125,8 @@ check_remote_non_blocking() {
     # Affichage du statut du remote et des jobs
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
-        for job_id in "${job_ids[@]}"; do
-            print_fancy --theme "warning" "→ Job affecté : ${JOBS_LIST[$job_id]}"
+        for i in "${!JOBS_LIST[@]}"; do
+            [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && print_fancy --theme "warning" "→ Job affecté : ${JOBS_LIST[$i]}"
         done
     else
         print_fancy --theme "success" "Remote '$remote' $msg_status"
