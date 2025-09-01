@@ -34,7 +34,6 @@ MSG_SRC_NOT_FOUND="Dossier source introuvable ou inaccessible"
 MSG_REMOTE_UNKNOW_TEMPLATE="Remote inconnu dans rclone : '%s'"
 MSG_REMOTE_UNAUTHORIZED_TEMPLATE="Impossible d'accéder au remote : %s (authentification ou permissions invalides)"
 MSG_REMOTE_UNAUTHORIZED2=" (échec reconnexion)"
-MSG_REMOTE_TYPE_UNKNOW_TEMPLATE="Le remote %s existe mais son type est '%s' (attendu : '%s')"
 MSG_REMOTE_PROBLEM_TEMPLATE="Remote %s (%s) inaccessible, tentative de reconnexion..."
 MSG_REMOTE_RECONNECTION_TEMPLATE="🔄  Remote %s : reconnexion effectuée, nouveau test..."
 MSG_MSMTP_NOT_FOUND="Attention : msmtp n'est pas installé ou introuvable dans le PATH.

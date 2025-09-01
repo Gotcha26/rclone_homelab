@@ -184,7 +184,6 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 | `$MSG_REMOTE_UNAUTHORIZED` remote            | remote inaccessible / non authentifié         | 10           |
 | Vérification présence rclone                 | rclone non présent ou injoignable             | 11           | 
 | Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 12           |
-| Vérification `$MSG_REMOTE_TYPE_UNKNOW`       | Type de remote non conforme                   | 13           |
 
 
   
