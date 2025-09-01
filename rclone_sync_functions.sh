@@ -149,31 +149,32 @@ check_remote() {
 
 check_remote_non_blocking() {
     local remote="$1"
-    local remote_type="$2"
-    local -n job_lines_ref="$3"  # tableau des lignes de job utilisant ce remote
+    local -n job_lines_ref="$2"
 
-    # Vérifier si le remote existe
-    if ! rclone config dump | jq -e --arg r "$remote" ". | has(\$r)" >/dev/null; then
+    # Récupérer le type du remote (vide si local ou réseau)
+    local remote_type
+    remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type // empty')
+
+    # Si remote inexistant, on renvoie l’erreur
+    if [[ -z "$remote_type" ]]; then
         print_fancy --theme "error" "Remote '$remote' inconnu"
         return 1
     fi
 
-    # Vérifier accessibilité / auth UNIQUEMENT si remote de type Google Drive ou OneDrive
+    # On ne teste le token que pour OneDrive et Google Drive
     if [[ "$remote_type" =~ ^(onedrive|drive)$ ]]; then
         if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
             print_fancy --theme "warning" "Remote '$remote' inaccessible ou token expiré"
+            # Afficher toutes les lignes concernées
             for line in "${job_lines_ref[@]}"; do
                 print_fancy --theme "warning" "→ Job affecté : $line"
             done
             return 1
         fi
     else
-        # Autres remotes : juste vérifier que le remote répond (sans token)
+        # Pour les autres types (SAMBA, etc.), on ne teste que la présence
         if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
             print_fancy --theme "warning" "Remote '$remote' inaccessible"
-            for line in "${job_lines_ref[@]}"; do
-                print_fancy --theme "warning" "→ Job affecté : $line"
-            done
             return 1
         fi
     fi
