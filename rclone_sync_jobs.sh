@@ -82,26 +82,23 @@ for idx in "${!JOBS_LIST[@]}"; do
     TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"
 
     # === Header Job ===
-    {
-        print_fancy --align "center" "[$JOB_ID] $src → $dst"
-        if ${JOBS_SKIP[$idx]}; then
-            print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible."
-        else
-            print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
-        fi
-        echo ""
-    } | tee -a "$LOG_FILE_INFO" | tee -a "$TMP_JOB_LOG_RAW"
 
-    # === Header HTML ===
+    print_fancy --align "center" "[$JOB_ID] $src → $dst"
+    if ${JOBS_SKIP[$idx]}; then
+        print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible."
+    else
+        print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
+    fi
+    echo ""
+
     {
-        echo "<b>[$JOB_ID]</b> $src → $dst<br>"
-        if $skip_job; then
-            echo "⚠️ Job écarté à cause d'un remote inaccessible<br>"
-        else
-            echo "$MSG_TASK_LAUNCH $NOW<br>"
-        fi
-        echo "<br>"
-    } > "$TMP_JOB_LOG_HTML"
+    echo "[$JOB_ID] $src → $dst"
+    if $skip_job; then
+        echo "⚠️ Job écarté à cause d'un remote inaccessible."
+    else
+        echo "$MSG_TASK_LAUNCH $NOW"
+    fi
+    } >> "$TMP_JOB_LOG_RAW"
 
     # === Exécution rclone si job valide ===
     if ! $skip_job; then
