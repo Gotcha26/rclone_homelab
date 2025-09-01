@@ -53,8 +53,8 @@ for job in "${JOBS_LIST[@]}"; do
     TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"
 
     # Vérifier remote si nécessaire
-    remote="${dst%%:*}"
-    skip_job=false
+    local remote="${dst%%:*}"
+    local skip_job=false
     if [[ "$dst" == *":"* ]]; then
         if [[ "${REMOTE_STATUS[$remote]}" != "OK" ]]; then
             # Remote problématique, écarter job mais générer logs simulés
