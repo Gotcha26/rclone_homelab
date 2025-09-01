@@ -235,7 +235,7 @@ prepare_mail_html() {
 # Encodage MIME UTF-8 Base64 du sujet
 encode_subject_for_email() {
     local log_file="$1"
-    calculate_subject_raw_for_job "$log_file"
+    SUBJECT_RAW="$(calculate_subject_raw_for_job "$log_file")"
     SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
 }
 
@@ -291,7 +291,7 @@ assemble_and_send_mail() {
         '
     else
         # Cas fallback : un seul fichier log
-        prepare_mail_html "$log_file"
+        prepare_mail_html "$log_file" >> "$MAIL"
     fi
 
     {
@@ -314,6 +314,7 @@ assemble_and_send_mail() {
     <td style="text-align:right;">: $deleted</td></tr>
 </table>
 <p>$MSG_EMAIL_END</p>
+</body></html>
 HTML
 
         echo "--ALT_BOUNDARY--"   # Fin alternative
