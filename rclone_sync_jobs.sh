@@ -22,12 +22,15 @@ PREVIOUS_JOB_PRESENT=false    # Variable pour savoir si un job précédent a ét
 ###############################################################################
 declare -a VALID_JOBS
 for idx in "${!JOBS_LIST[@]}"; do
-    # Vérifier si le job est marqué comme OK
-    if [[ "${JOBS_STATUS[$idx]}" == "OK" ]]; then
-        VALID_JOBS+=("${JOBS_LIST[$idx]}")
+    # Extraire le statut du job (dernier champ après le dernier '|')
+    job="${JOBS_LIST[$idx]}"
+    status="${job##*|}"
+
+    if [[ "$status" == "OK" ]]; then
+        VALID_JOBS+=("$job")
     else
         # Affichage info job écarté
-        print_fancy --theme "warning" "Job écarté : ${JOBS_LIST[$idx]} (remote inaccessible ou token expiré)"
+        print_fancy --theme "warning" "Job écarté : $job (remote inaccessible ou token expiré)"
     fi
 done
 

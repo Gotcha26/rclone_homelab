@@ -135,18 +135,6 @@ check_remote_non_blocking() {
 
 
 ###############################################################################
-# Fonction : Préparer la liste finale des jobs valides pour exécution
-###############################################################################
-get_valid_jobs() {
-    local -n out_array=$1
-    out_array=()
-    for idx in "${!JOBS_LIST[@]}"; do
-        [[ "${JOBS_STATUS[$idx]}" == "OK" ]] && out_array+=("${JOBS_LIST[$idx]}")
-    done
-}
-
-
-###############################################################################
 # Fonctions EMAIL
 ###############################################################################
 
