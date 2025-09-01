@@ -248,22 +248,36 @@ assemble_and_send_mail() {
     FROM_ADDRESS="$(grep '^from' /etc/msmtprc | awk '{print $2}')"
 
     {
-        # --- Entêtes de l'email ---
-        echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"     # Laisser msmtp gérer l'expéditeur configuré
+        # --- En-têtes ---
+        echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"
         echo "To: $MAIL_TO"
         echo "Date: $(date -R)"
         echo "Subject: $SUBJECT"
         echo "MIME-Version: 1.0"
-        echo "Content-Type: multipart/mixed; boundary=\"BOUNDARY123\""
+        echo "Content-Type: multipart/mixed; boundary=\"MIXED_BOUNDARY\""
+        echo
+        echo "This is a multi-part message in MIME format."
         echo
 
-        # --- Partie HTML principale ---
-        echo "--BOUNDARY123"
+        # --- Partie alternative (texte + HTML) ---
+        echo "--MIXED_BOUNDARY"
+        echo "Content-Type: multipart/alternative; boundary=\"ALT_BOUNDARY\""
+        echo
+
+        # Version texte brut (fallback)
+        echo "--ALT_BOUNDARY"
+        echo "Content-Type: text/plain; charset=UTF-8"
+        echo
+        echo "Rapport de synchronisation Rclone - $NOW"
+        echo "Voir la version HTML pour plus de détails."
+        echo
+
+        # Version HTML
+        echo "--ALT_BOUNDARY"
         echo "Content-Type: text/html; charset=UTF-8"
         echo
-        echo "<html><body style='font-family: monospace; background-color: #f9f9f9; padding: 1em;'>"
+        echo "<html><body style='font-family: monospace; background-color:#f9f9f9; padding:1em;'>"
         echo "<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
-
         echo "<p><b>📝 Dernières lignes du log :</b></p>"
         echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
     } > "$MAIL"
@@ -285,6 +299,7 @@ assemble_and_send_mail() {
 
         # --- Résumé global ---
         echo "<hr><h3>📊 Résumé global</h3>"
+
         local copied=$(grep -i "INFO" "$log_file" | grep -i "Copied" | grep -vi "There was nothing to transfer" | wc -l)
         local updated=$(grep -i "INFO" "$log_file" | grep -i "Updated" | grep -vi "There was nothing to transfer" | wc -l)
         local deleted=$(grep -i "INFO" "$log_file" | grep -i "Deleted" | grep -vi "There was nothing to transfer" | wc -l)
@@ -300,13 +315,15 @@ assemble_and_send_mail() {
 </table>
 <p>$MSG_EMAIL_END</p>
 HTML
+
+        echo "--ALT_BOUNDARY--"   # Fin alternative
     } >> "$MAIL"
 
     # Récupérer tous les logs HTML des jobs
     for file in "$TMP_JOBS_DIR"/JOB*_html.log; do
         [[ -f "$file" ]] || continue
         {
-            echo "--BOUNDARY123"
+            echo "--MIXED_BOUNDARY"
             echo "Content-Type: text/plain; name=\"$(basename "$file")\""
             echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
             echo "Content-Transfer-Encoding: base64"
@@ -315,10 +332,8 @@ HTML
         } >> "$MAIL"
     done
 
-    {
-        echo "</body></html>"
-        echo "--BOUNDARY123--"
-    } >> "$MAIL"
+    # --- Fermeture finale ---
+    echo "--MIXED_BOUNDARY--" >> "$MAIL"
 
     # --- Envoi du mail ---
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
