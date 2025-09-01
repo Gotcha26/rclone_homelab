@@ -156,16 +156,18 @@ check_email() {
     fi
 }
 
-# Déterminer le sujet brut (SUBJECT_RAW) toujours
+# Déterminer le sujet brut (SUBJECT_RAW) pour un job passé.
+# Valable pour un fichier concaténé ou job individuel
 # Evite les erreur lorsque aucun mail n'est saisie et est nécessaire pour notification Discord
-calculate_subject_raw() {
-    local log_file="$1"
-    if grep -iqE "(error|failed|failed to)" "$log_file"; then
-        SUBJECT_RAW="$MSG_EMAIL_FAIL"
-    elif grep -q "There was nothing to transfer" "$log_file"; then
-        SUBJECT_RAW="$MSG_EMAIL_SUSPECT"
+calculate_subject_raw_for_job() {
+    local job_log_file="$1"
+
+    if grep -iqE "(error|failed|unauthenticated|io error|io errors|not deleting)" "$job_log_file"; then
+        echo "$MSG_EMAIL_FAIL"
+    elif grep -q "There was nothing to transfer" "$job_log_file"; then
+        echo "$MSG_EMAIL_SUSPECT"
     else
-        SUBJECT_RAW="$MSG_EMAIL_SUCCESS"
+        echo "$MSG_EMAIL_SUCCESS"
     fi
 }
 
@@ -178,7 +180,7 @@ prepare_mail_html() {
 
     # Déterminer le bloc final selon le type de job
     local final_count=4  # par défaut, job réussi
-    if grep -iqE "(error|failed|unauthenticated|io error|not deleting)" "$file"; then
+    if grep -iqE "(error|failed|unauthenticated|io error|io errors|not deleting)" "$file"; then
         final_count=9   # erreurs
     elif grep -q "There was nothing to transfer" "$file"; then
         final_count=1   # rien à transférer
@@ -233,7 +235,7 @@ prepare_mail_html() {
 # Encodage MIME UTF-8 Base64 du sujet
 encode_subject_for_email() {
     local log_file="$1"
-    calculate_subject_raw "$log_file"
+    calculate_subject_raw_for_job "$log_file"
     SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
 }
 
@@ -665,10 +667,11 @@ send_discord_notification() {
     # Si pas de webhook défini → sortir silencieusement
     [[ -z "$DISCORD_WEBHOOK_URL" ]] && return 0
 
-    calculate_subject_raw "$LOG_FILE_INFO"
+    # Sujet calculé pour CE job
+    local subject_raw
+    subject_raw=$(calculate_subject_raw_for_job "$log_file")
 
-    # Message principal = même sujet que l'email
-    local message="📢 **$SUBJECT_RAW** – $NOW"
+    local message="📢 **$subject_raw** – $NOW"
 
     # Envoi du message + du log en pièce jointe
     curl -s -X POST "$DISCORD_WEBHOOK_URL" \

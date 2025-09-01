@@ -85,7 +85,7 @@ for idx in "${!JOBS_LIST[@]}"; do
 
     print_fancy --align "center" "[$JOB_ID] $src → $dst"
     if ${JOBS_SKIP[$idx]}; then
-        print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible."
+        print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible. (unauthenticated)"
     else
         print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
     fi
@@ -94,7 +94,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     {
     echo "[$JOB_ID] $src → $dst"
     if $skip_job; then
-        echo "⚠️ Job écarté à cause d'un remote inaccessible."
+        echo "⚠️ Job écarté à cause d'un remote inaccessible. (unauthenticated)"
     else
         echo "$MSG_TASK_LAUNCH $NOW"
     fi
