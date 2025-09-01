@@ -34,12 +34,12 @@ done
 ###############################################################################
 # Exécution des jobs filtrés
 ###############################################################################
-PREVIOUS_JOB_PRESENT=false
-for job in "${VALID_JOBS[@]}"; do
+for job in "${JOBS_LIST[@]}"; do
     src="${job%%|*}"
     dst="${job##*|}"
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")    # Identifiant du job [JOB01], [JOB02], ...
 
+    # Affichage d'attente
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING1"
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING2"
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING3"
@@ -49,28 +49,54 @@ for job in "${VALID_JOBS[@]}"; do
     TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"
     TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"
 
-    TMP_JOB_LOG_INFO="$(mktemp)"
+    # Vérifier remote si nécessaire
+    local remote="${dst%%:*}"
+    local skip_job=false
+    if [[ "$dst" == *":"* ]]; then
+        if [[ "${REMOTE_STATUS[$remote]}" != "OK" ]]; then
+            # Remote problématique, écarter job mais générer logs simulés
+            skip_job=true
+            echo "⚠️  Remote '$remote' inaccessible ou token expiré" > "$TMP_JOB_LOG_RAW"
+            echo "→ Job affecté : $job" >> "$TMP_JOB_LOG_RAW"
+        fi
+    fi
+
+    # Header job
     {
         print_fancy --align "center" "[$JOB_ID] $src → $dst"
-        print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
+        if $skip_job; then
+            print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible."
+        else
+            print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
+        fi
         echo ""
-    } | tee -a "$LOG_FILE_INFO" | tee -a "$TMP_JOB_LOG_INFO"
+    } | tee -a "$LOG_FILE_INFO" | tee -a "$TMP_JOB_LOG_RAW"
 
+    # Header HTML + ligne vide
     {
         echo "<b>[$JOB_ID]</b> $src → $dst<br>"
-        echo "$MSG_TASK_LAUNCH $NOW<br>"
+        if $skip_job; then
+            echo "⚠️ Job écarté à cause d'un remote inaccessible<br>"
+        else
+            echo "$MSG_TASK_LAUNCH $NOW<br>"
+        fi
         echo "<br>"
     } > "$TMP_JOB_LOG_HTML"
 
-    # === Exécution rclone en arrière-plan ===
-    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
-    RCLONE_PID=$!
+    # === Exécution rclone si job valide ===
+    if ! $skip_job; then
+        rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
+        RCLONE_PID=$!
+        spinner $RCLONE_PID
+        wait $RCLONE_PID
+        job_rc=$?
+        (( job_rc != 0 )) && ERROR_CODE=8
+    else
+        job_rc=1    # Job simulé comme échoué
+        ERROR_CODE=8
+    fi
 
-    spinner $RCLONE_PID
-    wait $RCLONE_PID
-    job_rc=$?
-    (( job_rc != 0 )) && ERROR_CODE=8
-
+    # Colorisation et génération logs
     colorize < "$TMP_JOB_LOG_RAW" | tee -a "$LOG_FILE_INFO"
     prepare_mail_html "$TMP_JOB_LOG_RAW" >> "$TMP_JOB_LOG_HTML"
     make_plain_log "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_PLAIN"
@@ -82,8 +108,10 @@ for job in "${VALID_JOBS[@]}"; do
     GLOBAL_HTML_BLOCK+=$(cat "$TMP_JOB_LOG_HTML")
     PREVIOUS_JOB_PRESENT=true
 
+    # Notification Discord
     send_discord_notification "$TMP_JOB_LOG_PLAIN"
 
+    # Incrément compteur
     ((JOBS_COUNT++))
     (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
     ((JOB_COUNTER++))

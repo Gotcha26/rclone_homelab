@@ -39,14 +39,11 @@ EOF
 ###############################################################################
 # Déclarer le tableau global pour stocker les jobs
 declare -a JOBS_LIST
-declare -A JOBS_STATUS     # job_id -> OK/PROBLEM
-declare -A REMOTE_STATUS   # remote_name -> OK/PROBLEM
-declare -A REMOTE_JOBS     # remote_name -> array de lignes de job
+declare -A REMOTE_STATUS
+declare -A REMOTE_JOBS   # remote_name -> array de lignes de job
 
 parse_jobs() {
     local file="$1"
-    local job_index=0
-
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ -z "$line" || "$line" =~ ^# ]] && continue
 
@@ -67,25 +64,30 @@ parse_jobs() {
             exit $ERROR_CODE
         fi
 
-        # Stocker la ligne et init status
-        JOBS_LIST+=("$src|$dst")
-        JOBS_STATUS["$job_index"]="OK"
+        local job_status="OK"  # statut par défaut
+        local remote=""
+        local remote_type=""
 
-        # Collecter remotes et associer jobs
+        # Détecter remote si nécessaire
         if [[ "$dst" == *":"* ]]; then
-            local remote="${dst%%:*}"
-            REMOTE_JOBS["$remote"]+="$job_index"$'\n'
+            remote="${dst%%:*}"
+            remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
+
+            # Vérif non bloquante uniquement pour certains types
+            if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
+                if ! check_remote_non_blocking "$remote"; then
+                    REMOTE_STATUS["$remote"]="PROBLEM"
+                    job_status="PROBLEM"
+                else
+                    REMOTE_STATUS["$remote"]="OK"
+                fi
+            fi
         fi
 
-        ((job_index++))
-    done < "$file"
+        # Stocker la ligne avec statut pour exécution ou simulation
+        JOBS_LIST+=("$src|$dst|$job_status")
 
-    # Vérification non bloquante des remotes
-    for remote in "${!REMOTE_JOBS[@]}"; do
-        # convertir le string en tableau d'indices
-        IFS=$'\n' read -r -d '' -a job_ids <<< "${REMOTE_JOBS[$remote]}" || true
-        check_remote_non_blocking "$remote" job_ids[@]
-    done
+    done < "$file"
 }
 
 
