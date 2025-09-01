@@ -65,14 +65,17 @@ parse_jobs() {
         JOBS_LIST+=("$src|$dst")
 
     done < "$file"
+
+    # --- Initialiser tous les jobs à OK ---
+    # On les suposes OK avant de changer ce status.
+    for idx in "${!JOBS_LIST[@]}"; do
+        JOB_STATUS[$idx]="OK"
+    done
 }
 
 
 ###############################################################################
 # Fonction non bloquante pour vérifier un remote
-# Paramètres :
-#   $1 = nom du remote
-#   $2 = tableau des job_ids affectés
 ###############################################################################
 declare -A JOB_STATUS   # idx -> OK/PROBLEM
 

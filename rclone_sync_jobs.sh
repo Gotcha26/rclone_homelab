@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Charger les fonctions
+source "$SCRIPT_DIR/rclone_sync_functions.sh"
+
+# Maintenant JOB_STATUS existe
+declare -A JOB_STATUS   # si tu veux être sûr qu'il existe aussi ici
+
 # Charger les remotes rclone configurés
 mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 
@@ -24,14 +30,12 @@ PREVIOUS_JOB_PRESENT=false    # Variable pour savoir si un job précédent a ét
 # Filtrer les jobs valides (remotes OK)
 ###############################################################################
 
-# Préparer le statut de chaque job
-for idx in "${!JOBS_LIST[@]}"; do
-    if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        JOBS_SKIP[$idx]=true
-    else
-        JOBS_SKIP[$idx]=false
-    fi
-done
+if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
+    skip_job=true
+else
+    skip_job=false
+fi
+
 
 ###############################################################################
 # Exécution des jobs filtrés
