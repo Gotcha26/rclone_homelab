@@ -87,9 +87,10 @@ parse_jobs() {
 
 check_remote() {
     local remote="$1"
+    local remote_type
 
-    # Vérifier si le remote existe dans rclone.conf
-    if ! rclone config dump | jq -e --arg r "$remote" ". | has(\$r)" >/dev/null; then
+    # Vérifier si le remote existe
+    if ! rclone config dump | jq -e --arg r "$remote" '. | has($r)' >/dev/null; then
         MSG_REMOTE_UNKNOW=$(printf "$MSG_REMOTE_UNKNOW_TEMPLATE" "$remote")
         print_fancy --theme "error" "$MSG_REMOTE_UNKNOW" >&2
         echo
@@ -97,19 +98,20 @@ check_remote() {
         exit $ERROR_CODE
     fi
 
-    # Récupérer le type réel du remote pour affichage
-    local remote_type
+    # Récupérer le type réel du remote
     remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
-    # Vérification d’accessibilité/authentification
+    # Vérification d’accessibilité
     if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
         MSG_REMOTE_PROBLEM=$(printf "$MSG_REMOTE_PROBLEM_TEMPLATE" "$remote" "$remote_type")
         print_fancy --theme "warning" "$MSG_REMOTE_PROBLEM" >&2
 
-        # Tentative de reconnexion (token expiré) [OneDrive - Google Drive]
-        if rclone config reconnect "${remote}:" --auto-confirm >/dev/null 2>&1; then
-            MSG_REMOTE_RECONNECTION=$(printf "$MSG_REMOTE_RECONNECTION_TEMPLATE" "$remote")
-            print_fancy "$MSG_REMOTE_RECONNECTION"
+        # Tentative de reconnexion sécurisée
+        MSG_REMOTE_RECONNECTION=$(printf "$MSG_REMOTE_RECONNECTION_TEMPLATE" "$remote")
+        print_fancy "$MSG_REMOTE_RECONNECTION"
+
+        if timeout 20 rclone config reconnect "${remote}:" --auto-confirm --non-interactive >/dev/null 2>&1; then
+            # Vérifier de nouveau l'accès
             if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
                 MSG_REMOTE_UNAUTHORIZED=$(printf "$MSG_REMOTE_UNAUTHORIZED_TEMPLATE" "$remote")
                 print_fancy --theme "error" "$MSG_REMOTE_UNAUTHORIZED" >&2
@@ -118,6 +120,7 @@ check_remote() {
                 exit $ERROR_CODE
             fi
         else
+            # Reconnexion impossible ou timeout
             MSG_REMOTE_UNAUTHORIZED=$(printf "$MSG_REMOTE_UNAUTHORIZED_TEMPLATE" "$remote")
             print_fancy --theme "error" "$MSG_REMOTE_UNAUTHORIZED" >&2
             echo
@@ -127,7 +130,7 @@ check_remote() {
     fi
 
     # Remote OK
-    #print_fancy --theme "success" "Remote $remote (type $remote_type) accessible ✅"
+    # print_fancy --theme "success" "Remote $remote est accessible."
 }
 
 
