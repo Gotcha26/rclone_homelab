@@ -37,8 +37,6 @@ EOF
 ###############################################################################
 # Déclarer le tableau global pour stocker les jobs
 declare -a JOBS_LIST
-declare -A REMOTE_STATUS
-declare -A REMOTE_JOBS   # remote_name -> array de lignes de job
 
 parse_jobs() {
     local file="$1"
@@ -71,8 +69,57 @@ parse_jobs() {
 
 
 ###############################################################################
-# Fonction de v"rification des remotes
+# Fonction non bloquante pour vérifier un remote
+# Paramètres :
+#   $1 = nom du remote
+#   $2 = tableau des job_ids affectés
 ###############################################################################
+declare -A REMOTE_JOBS   # remote_name -> array de lignes de job
+
+check_remote_non_blocking() {
+    local remote="$1"
+
+    # Récupérer le type réel du remote
+    local remote_type
+    remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
+
+    REMOTE_STATUS["$remote"]="OK"
+    local msg_status=""
+
+    # Test uniquement pour OneDrive / Google Drive
+    if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
+        if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+            REMOTE_STATUS["$remote"]="PROBLEM"
+            msg_status="inaccessible ou token expiré"
+
+            # Marquer tous les jobs affectés comme PROBLEM
+            for i in "${!JOBS_LIST[@]}"; do
+                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && JOBS_LIST[$i]="${JOBS_LIST[$i]%|*}|PROBLEM"
+            done
+        else
+            msg_status="accessible ✅"
+        fi
+    else
+        msg_status="accessible ✅"  # Pour Samba/NFS ou autres
+    fi
+
+    # Affichage du statut du remote et des jobs
+    if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
+        print_fancy --theme "warning" "Remote '$remote' $msg_status"
+        for i in "${!JOBS_LIST[@]}"; do
+            [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && print_fancy --theme "warning" "→ Job affecté : ${JOBS_LIST[$i]}"
+        done
+    else
+        print_fancy --theme "success" "Remote '$remote' $msg_status"
+    fi
+}
+
+
+###############################################################################
+# Fonction de vérification des remotes
+###############################################################################
+declare -A REMOTE_STATUS
+
 check_remotes() {
     for job in "${JOBS_LIST[@]}"; do
         IFS='|' read -r src dst <<< "$job"
@@ -667,8 +714,8 @@ EOF
 # Condition : présence du fichier config/config.dev.sh
 ###############################################################################
 warn_ok_folder_size() {
-    local ok_dir="/opt/rclone_homelab/OK"
-    local config_file="config/config.dev.sh"
+    local ok_dir="$SCRIPT_DIR/OK"
+    local config_file="$SCRIPT_DIR/config/config.dev.sh"
 
     # Vérifier la présence du fichier de config
     [[ ! -f "$config_file" ]] && return 0

@@ -10,6 +10,9 @@ mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 # Parser le fichier jobs dans JOBS_LIST
 parse_jobs "$JOBS_FILE"
 
+# Vérifier les remotes et remplir REMOTE_STATUS
+check_remotes
+
 # Variables
 GLOBAL_HTML_BLOCK=""          # Initialisation du HTML global
 JOB_COUNTER=1                 # Compteur de jobs pour le label [JOBxx]
@@ -20,7 +23,6 @@ PREVIOUS_JOB_PRESENT=false    # Variable pour savoir si un job précédent a ét
 ###############################################################################
 # Filtrer les jobs valides (remotes OK)
 ###############################################################################
-declare -A JOBS_SKIP  # idx -> true/false
 
 # Préparer le statut de chaque job
 for idx in "${!JOBS_LIST[@]}"; do
