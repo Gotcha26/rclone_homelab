@@ -180,8 +180,8 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 | `$MSG_JOB_LINE_INVALID` invalide             | Fichier jobs présente une ligne illisible     |              |
 | `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              | 7            |
 | Problème avec le processus PID rclone        | Sérieuse                                      | 8            |
-| `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration remote ou argument incorrect    | 9            |
-| `$MSG_REMOTE_UNAUTHORIZED` remote            | remote inaccessible / non authentifié         | 10           |
+| `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration remote ou argument incorrect    |              |
+| `$MSG_REMOTE_UNAUTHORIZED` remote            | remote inaccessible / non authentifié         |              |
 | Vérification présence rclone                 | rclone non présent ou injoignable             | 11           | 
 | Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 12           |
 

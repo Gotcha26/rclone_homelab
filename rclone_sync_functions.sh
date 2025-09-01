@@ -42,10 +42,12 @@ declare -A REMOTE_JOBS   # remote_name -> array de lignes de job
 
 parse_jobs() {
     local file="$1"
+    local tmp_jobs=()   # temporaire pour reconstruire JOBS_LIST
+
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ -z "$line" || "$line" =~ ^# ]] && continue
 
-        # Nettoyage : trim + uniformisation séparateurs
+        # Nettoyage
         line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
         IFS='|' read -r src dst <<< "$line"
 
@@ -54,35 +56,42 @@ parse_jobs() {
         dst="${dst#"${dst%%[![:space:]]*}"}"
         dst="${dst%"${dst##*[![:space:]]}"}"
 
-
         # Vérif source locale
         if [[ ! -d "$src" ]]; then
             print_fancy --theme "error" "$MSG_SRC_NOT_FOUND : $src"
             echo
-            ERROR_CODE=7
-            exit $ERROR_CODE
+            exit 7
         fi
 
-        # Stocker la ligne
-        JOBS_LIST+=("$src|$dst")
-
-        # Collecter remotes et associer lignes
+        # Collecter remotes
+        local skip_job=0
         if [[ "$dst" == *":"* ]]; then
             local remote="${dst%%:*}"
             REMOTE_JOBS["$remote"]+="$line"$'\n'
         fi
+
+        tmp_jobs+=("$line")
     done < "$file"
 
-    # Vérification non bloquante des remotes
+    # Vérification non bloquante des remotes et écarter les jobs problématiques
+    JOBS_LIST=()
     for remote in "${!REMOTE_JOBS[@]}"; do
-        # Convertir le string en tableau
         IFS=$'\n' read -r -d '' -a lines <<< "${REMOTE_JOBS[$remote]}" || true
-        if check_remote_non_blocking "$remote" lines; then
-            REMOTE_STATUS["$remote"]="OK"
-        else
+        if ! check_remote_non_blocking "$remote" lines; then
             REMOTE_STATUS["$remote"]="PROBLEM"
+            # Écarter les jobs de ce remote
+            for line in "${lines[@]}"; do
+                for i in "${!tmp_jobs[@]}"; do
+                    [[ "${tmp_jobs[i]}" == "$line" ]] && unset 'tmp_jobs[i]'
+                done
+            done
+        else
+            REMOTE_STATUS["$remote"]="OK"
         fi
     done
+
+    # Reconstruire JOBS_LIST avec les jobs valides seulement
+    JOBS_LIST=("${tmp_jobs[@]}")
 }
 
 
@@ -140,7 +149,8 @@ check_remote() {
 
 check_remote_non_blocking() {
     local remote="$1"
-    local -n job_lines_ref="$2"  # référence tableau des lignes de job utilisant ce remote
+    local remote_type="$2"
+    local -n job_lines_ref="$3"  # tableau des lignes de job utilisant ce remote
 
     # Vérifier si le remote existe
     if ! rclone config dump | jq -e --arg r "$remote" ". | has(\$r)" >/dev/null; then
@@ -148,14 +158,24 @@ check_remote_non_blocking() {
         return 1
     fi
 
-    # Vérifier accessibilité / auth
-    if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
-        print_fancy --theme "warning" "Remote '$remote' inaccessible ou token expiré"
-        # Afficher toutes les lignes concernées
-        for line in "${job_lines_ref[@]}"; do
-            print_fancy --theme "warning" "→ Job affecté : $line"
-        done
-        return 1
+    # Vérifier accessibilité / auth UNIQUEMENT si remote de type Google Drive ou OneDrive
+    if [[ "$remote_type" =~ ^(onedrive|drive)$ ]]; then
+        if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+            print_fancy --theme "warning" "Remote '$remote' inaccessible ou token expiré"
+            for line in "${job_lines_ref[@]}"; do
+                print_fancy --theme "warning" "→ Job affecté : $line"
+            done
+            return 1
+        fi
+    else
+        # Autres remotes : juste vérifier que le remote répond (sans token)
+        if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+            print_fancy --theme "warning" "Remote '$remote' inaccessible"
+            for line in "${job_lines_ref[@]}"; do
+                print_fancy --theme "warning" "→ Job affecté : $line"
+            done
+            return 1
+        fi
     fi
 
     # Remote OK
