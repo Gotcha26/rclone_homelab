@@ -26,12 +26,7 @@ PREVIOUS_JOB_PRESENT=false    # Variable pour savoir si un job précédent a ét
 
 # Préparer le statut de chaque job
 for idx in "${!JOBS_LIST[@]}"; do
-    job="${JOBS_LIST[$idx]}"
-    dst="${job##*|}"
-    remote="${dst%%:*}"
-
-    # Test uniquement pour remotes avec ":" (rclone)
-    if [[ "$dst" == *":"* ]] && [[ "${REMOTE_STATUS[$remote]}" != "OK" ]]; then
+    if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
         JOBS_SKIP[$idx]=true
     else
         JOBS_SKIP[$idx]=false
@@ -70,7 +65,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     # === Header Job ===
     {
         print_fancy --align "center" "[$JOB_ID] $src → $dst"
-        if $skip_job; then
+        if ${JOBS_SKIP[$idx]}; then
             print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible."
         else
             print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"

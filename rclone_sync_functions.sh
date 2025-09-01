@@ -74,41 +74,35 @@ parse_jobs() {
 #   $1 = nom du remote
 #   $2 = tableau des job_ids affectés
 ###############################################################################
-declare -A REMOTE_JOBS   # remote_name -> array de lignes de job
+declare -A JOB_STATUS   # idx -> OK/PROBLEM
 
 check_remote_non_blocking() {
     local remote="$1"
 
-    # Récupérer le type réel du remote
     local remote_type
     remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
     REMOTE_STATUS["$remote"]="OK"
     local msg_status=""
 
-    # Test uniquement pour OneDrive / Google Drive
     if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
         if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
             REMOTE_STATUS["$remote"]="PROBLEM"
             msg_status="inaccessible ou token expiré"
 
-            # Marquer tous les jobs affectés comme PROBLEM
+            # On marque le statut des jobs affectés
             for i in "${!JOBS_LIST[@]}"; do
-                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && JOBS_LIST[$i]="${JOBS_LIST[$i]%|*}|PROBLEM"
+                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && JOB_STATUS[$i]="PROBLEM"
             done
         else
             msg_status="accessible ✅"
         fi
     else
-        msg_status="accessible ✅"  # Pour Samba/NFS ou autres
+        msg_status="accessible ✅"
     fi
 
-    # Affichage du statut du remote et des jobs
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
-        for i in "${!JOBS_LIST[@]}"; do
-            [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && print_fancy --theme "warning" "→ Job affecté : ${JOBS_LIST[$i]}"
-        done
     else
         print_fancy --theme "success" "Remote '$remote' $msg_status"
     fi
