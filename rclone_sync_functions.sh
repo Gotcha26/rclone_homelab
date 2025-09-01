@@ -45,10 +45,11 @@ parse_jobs() {
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ -z "$line" || "$line" =~ ^# ]] && continue
 
-        # Nettoyage : trim + uniformisation séparateurs
+        # Nettoyage : trim + séparateurs
         line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
         IFS='|' read -r src dst <<< "$line"
 
+        # Trim
         src="${src#"${src%%[![:space:]]*}"}"
         src="${src%"${src##*[![:space:]]}"}"
         dst="${dst#"${dst%%[![:space:]]*}"}"
@@ -62,75 +63,38 @@ parse_jobs() {
             exit $ERROR_CODE
         fi
 
-        local job_status="OK"  # statut par défaut
-        local remote=""
-        local remote_type=""
-
-        # Détecter remote si nécessaire
-        if [[ "$dst" == *":"* ]]; then
-            remote="${dst%%:*}"
-            remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
-
-            # Vérif non bloquante uniquement pour certains types
-            if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
-                if ! check_remote_non_blocking "$remote"; then
-                    REMOTE_STATUS["$remote"]="PROBLEM"
-                    job_status="PROBLEM"
-                else
-                    REMOTE_STATUS["$remote"]="OK"
-                fi
-            fi
-        fi
-
-        # Stocker la ligne avec statut pour exécution ou simulation
-        JOBS_LIST+=("$src|$dst|$job_status")
+        # Stocker la paire src|dst, sans statut
+        JOBS_LIST+=("$src|$dst")
 
     done < "$file"
 }
 
 
 ###############################################################################
-# Fonction non bloquante pour vérifier un remote
-# Paramètres :
-#   $1 = nom du remote
-#   $2 = tableau des job_ids affectés
+# Fonction de v"rification des remotes
 ###############################################################################
-check_remote_non_blocking() {
-    local remote="$1"
+check_remotes() {
+    for job in "${JOBS_LIST[@]}"; do
+        IFS='|' read -r src dst <<< "$job"
 
-    # Récupérer le type réel du remote
-    local remote_type
-    remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
+        if [[ "$dst" == *":"* ]]; then
+            local remote="${dst%%:*}"
+            if [[ -z "${REMOTE_STATUS[$remote]+x}" ]]; then
+                local remote_type
+                remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
-    REMOTE_STATUS["$remote"]="OK"
-    local msg_status=""
-
-    # Test uniquement pour OneDrive / Google Drive
-    if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
-        if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
-            REMOTE_STATUS["$remote"]="PROBLEM"
-            msg_status="inaccessible ou token expiré"
-
-            # Marquer tous les jobs affectés comme PROBLEM
-            for i in "${!JOBS_LIST[@]}"; do
-                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && JOBS_LIST[$i]="${JOBS_LIST[$i]%|*}|PROBLEM"
-            done
-        else
-            msg_status="accessible ✅"
+                if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
+                    if ! check_remote_non_blocking "$remote"; then
+                        REMOTE_STATUS["$remote"]="PROBLEM"
+                    else
+                        REMOTE_STATUS["$remote"]="OK"
+                    fi
+                else
+                    REMOTE_STATUS["$remote"]="OK"
+                fi
+            fi
         fi
-    else
-        msg_status="accessible ✅"  # Pour Samba/NFS ou autres
-    fi
-
-    # Affichage du statut du remote et des jobs
-    if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
-        print_fancy --theme "warning" "Remote '$remote' $msg_status"
-        for i in "${!JOBS_LIST[@]}"; do
-            [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && print_fancy --theme "warning" "→ Job affecté : ${JOBS_LIST[$i]}"
-        done
-    else
-        print_fancy --theme "success" "Remote '$remote' $msg_status"
-    fi
+    done
 }
 
 

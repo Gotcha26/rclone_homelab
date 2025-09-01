@@ -41,10 +41,19 @@ done
 ###############################################################################
 for idx in "${!JOBS_LIST[@]}"; do
     job="${JOBS_LIST[$idx]}"
-    src="${job%%|*}"
-    dst="${job##*|}"
+    IFS='|' read -r src dst <<< "$job"
+
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
-    skip_job=${JOBS_SKIP[$idx]}
+    skip_job=false
+
+    # Vérif remote
+    if [[ "$dst" == *":"* ]]; then
+        remote="${dst%%:*}"
+        if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
+            print_fancy --theme "warning" "⚠️ [$JOB_ID] Remote $remote inaccessible, job sauté."
+            skip_job=true
+        fi
+    fi
 
     # Affichage d’attente
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING1"
@@ -87,7 +96,7 @@ for idx in "${!JOBS_LIST[@]}"; do
         job_rc=$?
         (( job_rc != 0 )) && ERROR_CODE=8
     else
-        job_rc=1  # Job simulé comme échoué
+        job_rc=1
         ERROR_CODE=8
     fi
 
