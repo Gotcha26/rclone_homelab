@@ -266,20 +266,21 @@ assemble_and_send_mail() {
 
         echo "<p><b>📝 Dernières lignes du log :</b></p>"
         echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
+    } > "$MAIL"
 
-        if [[ -n "$html_block" ]]; then
-            # Si plusieurs jobs sont présents, insérer des séparateurs <hr> entre eux
-            # Suppression de doublons de <hr> pour sécurité
-            printf "%s" "$html_block" | awk '
-            BEGIN { first=1 }
-            /<hr>/ { if(!first) print "<br><hr><br>"; next }
-            { first=0; print }
-            '
-        else
-            # Cas fallback : un seul fichier log
-            prepare_mail_html "$log_file"
-        fi
+    if [[ -n "$html_block" ]]; then
+        # Si plusieurs jobs sont présents, insérer des séparateurs <hr> entre eux
+        printf "%s" "$html_block" | awk '
+        BEGIN { first=1 }
+        /<hr>/ { if(!first) print "<br><hr><br>"; next }
+        { first=0; print }
+        '
+    else
+        # Cas fallback : un seul fichier log
+        prepare_mail_html "$log_file"
+    fi
 
+    {
         echo "</div>"
 
         # --- Résumé global ---
@@ -300,16 +301,11 @@ assemble_and_send_mail() {
 <p>$MSG_EMAIL_END</p>
 </body></html>
 HTML
+    } >> "$MAIL"
 
     # Récupérer tous les logs HTML des jobs
-    ATTACHMENTS=()
-    for job_file in "$TMP_JOBS_DIR"/JOB*_html.log; do
-        [[ -f "$job_file" ]] || continue
-        ATTACHMENTS+=("$job_file")
-    done
-
-    # Boucle pour créer les pièces jointes
-    for file in "${ATTACHMENTS[@]}"; do
+    for file in "$TMP_JOBS_DIR"/JOB*_html.log; do
+        [[ -f "$file" ]] || continue
         {
             echo "--BOUNDARY123"
             echo "Content-Type: text/plain; name=\"$(basename "$file")\""
@@ -319,8 +315,8 @@ HTML
             base64 "$file"
         } >> "$MAIL"
     done
+
     echo "--BOUNDARY123--" >> "$MAIL"
-    } > "$MAIL"
 
     # --- Envoi du mail ---
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
