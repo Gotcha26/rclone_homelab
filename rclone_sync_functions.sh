@@ -34,14 +34,14 @@ EOF
 
 ###############################################################################
 # Fonction pour la mise en mise en tableau des jobs
-###############################################################################
 # Déclarer le tableau global pour stocker les jobs
+###############################################################################
 declare -a JOBS_LIST
+declare -A REMOTE_STATUS
+declare -A REMOTE_JOBS   # remote_name -> array de lignes de job
 
-# Fonction pour parser et vérifier les jobs
 parse_jobs() {
     local file="$1"
-    # Lecture de chaque ligne du fichier jobs pour vérification
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ -z "$line" || "$line" =~ ^# ]] && continue
 
@@ -54,30 +54,35 @@ parse_jobs() {
         dst="${dst#"${dst%%[![:space:]]*}"}"
         dst="${dst%"${dst##*[![:space:]]}"}"
 
-        # Vérif ligne valide
-        if [[ -z "$src" || -z "$dst" ]]; then
-            print_fancy --theme "error" "$MSG_JOB_LINE_INVALID : $line" >&2
-            echo
-            ERROR_CODE=6
-            exit $ERROR_CODE
-        fi
 
         # Vérif source locale
         if [[ ! -d "$src" ]]; then
-            print_fancy --theme "error" "$MSG_SRC_NOT_FOUND : $src" >&2
+            print_fancy --theme "error" "$MSG_SRC_NOT_FOUND : $src"
             echo
             ERROR_CODE=7
             exit $ERROR_CODE
         fi
 
-        # Vérif remote si nécessaire
-        if [[ "$dst" == *":"* ]]; then
-            remote_name="${dst%%:*}"  # récupère la partie avant le ":"
-            check_remote "$remote_name"
-        fi
-
+        # Stocker la ligne
         JOBS_LIST+=("$src|$dst")
+
+        # Collecter remotes et associer lignes
+        if [[ "$dst" == *":"* ]]; then
+            local remote="${dst%%:*}"
+            REMOTE_JOBS["$remote"]+="$line"$'\n'
+        fi
     done < "$file"
+
+    # Vérification non bloquante des remotes
+    for remote in "${!REMOTE_JOBS[@]}"; do
+        # Convertir le string en tableau
+        IFS=$'\n' read -r -d '' -a lines <<< "${REMOTE_JOBS[$remote]}" || true
+        if check_remote_non_blocking "$remote" lines; then
+            REMOTE_STATUS["$remote"]="OK"
+        else
+            REMOTE_STATUS["$remote"]="PROBLEM"
+        fi
+    done
 }
 
 
@@ -131,6 +136,31 @@ check_remote() {
 
     # Remote OK
     # print_fancy --theme "success" "Remote $remote est accessible."
+}
+
+check_remote_non_blocking() {
+    local remote="$1"
+    local -n job_lines_ref="$2"  # référence tableau des lignes de job utilisant ce remote
+
+    # Vérifier si le remote existe
+    if ! rclone config dump | jq -e --arg r "$remote" ". | has(\$r)" >/dev/null; then
+        print_fancy --theme "error" "Remote '$remote' inconnu"
+        return 1
+    fi
+
+    # Vérifier accessibilité / auth
+    if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+        print_fancy --theme "warning" "Remote '$remote' inaccessible ou token expiré"
+        # Afficher toutes les lignes concernées
+        for line in "${job_lines_ref[@]}"; do
+            print_fancy --theme "warning" "→ Job affecté : $line"
+        done
+        return 1
+    fi
+
+    # Remote OK
+    print_fancy --theme "success" "Remote '$remote' accessible ✅"
+    return 0
 }
 
 

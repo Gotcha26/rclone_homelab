@@ -177,7 +177,7 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 | `$JOBS_FILE` introuvable                     | Fichier jobs absent                           | 3            |
 | `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible           | 4            |
 | `$TMP_RCLONE` non trouvé (après vérif)       | Le dossier temporaire n’existe pas après tout | 5            |
-| `$MSG_JOB_LINE_INVALID` invalide             | Fichier jobs présente une ligne illisible     | 6            |
+| `$MSG_JOB_LINE_INVALID` invalide             | Fichier jobs présente une ligne illisible     |              |
 | `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              | 7            |
 | Problème avec le processus PID rclone        | Sérieuse                                      | 8            |
 | `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration remote ou argument incorrect    | 9            |
