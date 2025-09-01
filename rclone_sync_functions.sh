@@ -298,7 +298,6 @@ assemble_and_send_mail() {
 <p>$MSG_EMAIL_END</p>
 </body></html>
 HTML
-    } > "$MAIL"
 
     # Récupérer tous les logs HTML des jobs
     ATTACHMENTS=()
@@ -319,6 +318,7 @@ HTML
         } >> "$MAIL"
     done
     echo "--BOUNDARY123--" >> "$MAIL"
+    } > "$MAIL"
 
     # --- Envoi du mail ---
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
