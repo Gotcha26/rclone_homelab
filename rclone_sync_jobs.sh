@@ -119,8 +119,9 @@ for idx in "${!JOBS_LIST[@]}"; do
     make_plain_log "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_PLAIN"
 
     # === Assemblage HTML global ===
+    # Séparation entre les jobs
     if $PREVIOUS_JOB_PRESENT; then
-        GLOBAL_HTML_BLOCK+="<br><br><hr style='border:none; border-top:1px solid #ccc; margin:2em 0;'><br><br>"
+        GLOBAL_HTML_BLOCK+="<br><hr style='border:none; border-top:1px solid #ccc; margin:2em 0;'><br>"
     fi
     GLOBAL_HTML_BLOCK+=$(cat "$TMP_JOB_LOG_HTML")
     PREVIOUS_JOB_PRESENT=true

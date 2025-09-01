@@ -283,14 +283,8 @@ assemble_and_send_mail() {
     } > "$MAIL"
 
     if [[ -n "$html_block" ]]; then
-        # Si plusieurs jobs sont présents, insérer des séparateurs <hr> entre eux
-        printf "%s" "$html_block" | awk '
-        BEGIN { first=1 }
-        /<hr>/ { if(!first) print "<br><hr><br>"; next }
-        { first=0; print }
-        ' >> "$MAIL"
+        echo "$html_block" >> "$MAIL"
     else
-        # Cas fallback : un seul fichier log
         prepare_mail_html "$log_file" >> "$MAIL"
     fi
 
