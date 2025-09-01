@@ -300,8 +300,14 @@ assemble_and_send_mail() {
 HTML
     } > "$MAIL"
 
-    # --- Pièces jointes (logs bruts concaténés) ---
-    ATTACHMENTS=("$log_file")
+    # Récupérer tous les logs HTML des jobs
+    ATTACHMENTS=()
+    for job_file in "$TMP_JOBS_DIR"/JOB*_html.log; do
+        [[ -f "$job_file" ]] || continue
+        ATTACHMENTS+=("$job_file")
+    done
+
+    # Boucle pour créer les pièces jointes
     for file in "${ATTACHMENTS[@]}"; do
         {
             echo "--BOUNDARY123"
@@ -312,7 +318,6 @@ HTML
             base64 "$file"
         } >> "$MAIL"
     done
-    echo "--BOUNDARY123--" >> "$MAIL"
 
     # --- Envoi du mail ---
     msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
@@ -335,7 +340,7 @@ send_email_if_needed() {
         encode_subject_for_email "$LOG_FILE_INFO"
 
         # Ici : soit on a un bloc HTML préformaté, soit on laisse assemble_and_send_mail parser
-        assemble_and_send_mail "$LOG_FILE_INFO" "$html_block"
+        assemble_and_send_mail "$TMP_JOB_LOG_HTML" "$html_block"
     fi
 }
 
