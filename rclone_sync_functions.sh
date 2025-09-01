@@ -335,7 +335,7 @@ send_email_if_needed() {
         encode_subject_for_email "$LOG_FILE_INFO"
 
         # Ici : soit on a un bloc HTML préformaté, soit on laisse assemble_and_send_mail parser
-        assemble_and_send_mail "$JOB_LOG_EMAIL" "$html_block"
+        assemble_and_send_mail "$LOG_FILE_INFO" "$html_block"
     fi
 }
 
