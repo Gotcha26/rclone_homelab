@@ -31,7 +31,12 @@ MSG_FILE_NOT_READ="Fichier jobs non lisible"
 MSG_TMP_NOT_FOUND="Dossier temporaire rclone introuvable"
 MSG_JOB_LINE_INVALID="Ligne invalide dans le fichier jobs"
 MSG_SRC_NOT_FOUND="Dossier source introuvable ou inaccessible"
-MSG_REMOTE_UNKNOW="Remote inconnu dans rclone"
+MSG_REMOTE_UNKNOW_TEMPLATE="Remote inconnu dans rclone : '%s'"
+MSG_REMOTE_UNAUTHORIZED_TEMPLATE="Impossible d'accéder au remote : %s (authentification ou permissions invalides)"
+MSG_REMOTE_UNAUTHORIZED2=" (échec reconnexion)"
+MSG_REMOTE_TYPE_UNKNOW_TEMPLATE="Le remote %s existe mais son type est '%s' (attendu : '%s')"
+MSG_REMOTE_PROBLEM_TEMPLATE="Remote %s (%s) inaccessible, tentative de reconnexion..."
+MSG_REMOTE_RECONNECTION_TEMPLATE="🔄  Remote %s : reconnexion effectuée, nouveau test..."
 MSG_MSMTP_NOT_FOUND="Attention : msmtp n'est pas installé ou introuvable dans le PATH.
 Le rapport par e-mail ne sera pas envoyé."
 MSG_MSMTP_ERROR="⚠ Echec envoi email via msmtp"
@@ -63,7 +68,6 @@ MSG_MAJ_UPDATE_BRANCH_REJECTED="Git : Rien à mettre à jour, vous êtes déjà 
 MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE="Script mis à jour vers le tag %s !"
 MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE="Git : Rien à mettre à jour, vous êtes déjà sur le dernier tag %s."
 MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE="Impossible de mettre à jour vers %s : modifications locales non sauvegardées."
-
 
 
 # === Variables techniques ===

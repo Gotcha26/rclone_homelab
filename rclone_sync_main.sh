@@ -128,7 +128,7 @@ $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 if ! command -v rclone >/dev/null 2>&1; then
     print_fancy --theme "error" "$MSG_RCLONE_FAIL" >&2
     echo
-    ERROR_CODE=10
+    ERROR_CODE=11
     exit $ERROR_CODE
 fi
 
