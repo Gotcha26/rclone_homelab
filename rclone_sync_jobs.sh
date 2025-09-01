@@ -1,57 +1,73 @@
 #!/bin/bash
 
+# ---------------------------------------------------------------------------
+# jobs.sh - Exécution des jobs rclone
+# ---------------------------------------------------------------------------
+
 # Charger les fonctions
 source "$SCRIPT_DIR/rclone_sync_functions.sh"
 
-declare -A JOBS_SKIP
+# Déclarer les tableaux globaux
+declare -a JOBS_LIST       # Liste des jobs src|dst
+declare -A JOB_STATUS      # idx -> OK / PROBLEM
+declare -A JOBS_SKIP       # idx -> true / false
+declare -A REMOTE_STATUS   # remote_name -> OK / PROBLEM
 
 # Charger les remotes rclone configurés
 mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 
-###############################################################################
-# Préparer les jobs
-###############################################################################
+# ---------------------------------------------------------------------------
+# 1. Parser les jobs et initialiser les statuts
+# ---------------------------------------------------------------------------
 
-# Parser le fichier jobs dans JOBS_LIST
 parse_jobs "$JOBS_FILE"
 
-# Vérifier les remotes et remplir REMOTE_STATUS
+# Initialiser tous les jobs à OK et JOBS_SKIP à false
+for idx in "${!JOBS_LIST[@]}"; do
+    JOB_STATUS[$idx]="OK"
+    JOBS_SKIP[$idx]=false
+done
+
+# ---------------------------------------------------------------------------
+# 2. Vérifier les remotes et mettre à jour JOB_STATUS
+# ---------------------------------------------------------------------------
+
 check_remotes
 
-# Variables
+# Après check_remotes, mettre JOBS_SKIP à true si JOB_STATUS est PROBLEM
+for idx in "${!JOBS_LIST[@]}"; do
+    if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
+        JOBS_SKIP[$idx]=true
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# 3. Variables globales pour exécution
+# ---------------------------------------------------------------------------
 GLOBAL_HTML_BLOCK=""          # Initialisation du HTML global
 JOB_COUNTER=1                 # Compteur de jobs pour le label [JOBxx]
 JOBS_COUNT=0
 NO_CHANGES_ALL=true
 PREVIOUS_JOB_PRESENT=false    # Variable pour savoir si un job précédent a été ajouté
 
-###############################################################################
-# Filtrer les jobs valides (remotes OK)
-###############################################################################
-
-if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-    skip_job=true
-else
-    skip_job=false
-fi
-
-
-###############################################################################
-# Exécution des jobs filtrés
-###############################################################################
+# ---------------------------------------------------------------------------
+# 4. Exécution des jobs filtrés
+# ---------------------------------------------------------------------------
 for idx in "${!JOBS_LIST[@]}"; do
     job="${JOBS_LIST[$idx]}"
     IFS='|' read -r src dst <<< "$job"
 
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
-    skip_job=false
+    skip_job=${JOBS_SKIP[$idx]}
 
-    # Vérif remote
+    # Vérif remote si applicable
     if [[ "$dst" == *":"* ]]; then
         remote="${dst%%:*}"
         if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
-            print_fancy --theme "warning" "⚠️ [$JOB_ID] Remote $remote inaccessible, job sauté."
+            JOB_STATUS[$idx]="PROBLEM"
+            JOBS_SKIP[$idx]=true
             skip_job=true
+            print_fancy --theme "warning" "⚠️  [$JOB_ID] Remote $remote inaccessible, job sauté."
         fi
     fi
 
