@@ -20,29 +20,33 @@ PREVIOUS_JOB_PRESENT=false    # Variable pour savoir si un job précédent a ét
 ###############################################################################
 # Filtrer les jobs valides (remotes OK)
 ###############################################################################
-declare -a VALID_JOBS
-for idx in "${!JOBS_LIST[@]}"; do
-    # Extraire le statut du job (dernier champ après le dernier '|')
-    job="${JOBS_LIST[$idx]}"
-    status="${job##*|}"
+declare -A JOBS_SKIP  # idx -> true/false
 
-    if [[ "$status" == "OK" ]]; then
-        VALID_JOBS+=("$job")
+# Préparer le statut de chaque job
+for idx in "${!JOBS_LIST[@]}"; do
+    job="${JOBS_LIST[$idx]}"
+    dst="${job##*|}"
+    remote="${dst%%:*}"
+
+    # Test uniquement pour remotes avec ":" (rclone)
+    if [[ "$dst" == *":"* ]] && [[ "${REMOTE_STATUS[$remote]}" != "OK" ]]; then
+        JOBS_SKIP[$idx]=true
     else
-        # Affichage info job écarté
-        print_fancy --theme "warning" "Job écarté : $job (remote inaccessible ou token expiré)"
+        JOBS_SKIP[$idx]=false
     fi
 done
 
 ###############################################################################
 # Exécution des jobs filtrés
 ###############################################################################
-for job in "${JOBS_LIST[@]}"; do
+for idx in "${!JOBS_LIST[@]}"; do
+    job="${JOBS_LIST[$idx]}"
     src="${job%%|*}"
     dst="${job##*|}"
-    JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")    # Identifiant du job [JOB01], [JOB02], ...
+    JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
+    skip_job=${JOBS_SKIP[$idx]}
 
-    # Affichage d'attente
+    # Affichage d’attente
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING1"
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING2"
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING3"
@@ -52,19 +56,7 @@ for job in "${JOBS_LIST[@]}"; do
     TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"
     TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"
 
-    # Vérifier remote si nécessaire
-    local remote="${dst%%:*}"
-    local skip_job=false
-    if [[ "$dst" == *":"* ]]; then
-        if [[ "${REMOTE_STATUS[$remote]}" != "OK" ]]; then
-            # Remote problématique, écarter job mais générer logs simulés
-            skip_job=true
-            echo "⚠️  Remote '$remote' inaccessible ou token expiré" > "$TMP_JOB_LOG_RAW"
-            echo "→ Job affecté : $job" >> "$TMP_JOB_LOG_RAW"
-        fi
-    fi
-
-    # Header job
+    # === Header Job ===
     {
         print_fancy --align "center" "[$JOB_ID] $src → $dst"
         if $skip_job; then
@@ -75,7 +67,7 @@ for job in "${JOBS_LIST[@]}"; do
         echo ""
     } | tee -a "$LOG_FILE_INFO" | tee -a "$TMP_JOB_LOG_RAW"
 
-    # Header HTML + ligne vide
+    # === Header HTML ===
     {
         echo "<b>[$JOB_ID]</b> $src → $dst<br>"
         if $skip_job; then
@@ -95,26 +87,26 @@ for job in "${JOBS_LIST[@]}"; do
         job_rc=$?
         (( job_rc != 0 )) && ERROR_CODE=8
     else
-        job_rc=1    # Job simulé comme échoué
+        job_rc=1  # Job simulé comme échoué
         ERROR_CODE=8
     fi
 
-    # Colorisation et génération logs
+    # === Colorisation et génération logs ===
     colorize < "$TMP_JOB_LOG_RAW" | tee -a "$LOG_FILE_INFO"
     prepare_mail_html "$TMP_JOB_LOG_RAW" >> "$TMP_JOB_LOG_HTML"
     make_plain_log "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_PLAIN"
 
-    # Assemblage HTML global
+    # === Assemblage HTML global ===
     if $PREVIOUS_JOB_PRESENT; then
         GLOBAL_HTML_BLOCK+="<br><br><hr style='border:none; border-top:1px solid #ccc; margin:2em 0;'><br><br>"
     fi
     GLOBAL_HTML_BLOCK+=$(cat "$TMP_JOB_LOG_HTML")
     PREVIOUS_JOB_PRESENT=true
 
-    # Notification Discord
+    # === Notification Discord ===
     send_discord_notification "$TMP_JOB_LOG_PLAIN"
 
-    # Incrément compteur
+    # === Incrément compteur ===
     ((JOBS_COUNT++))
     (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
     ((JOB_COUNTER++))
