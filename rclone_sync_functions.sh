@@ -288,7 +288,7 @@ assemble_and_send_mail() {
         BEGIN { first=1 }
         /<hr>/ { if(!first) print "<br><hr><br>"; next }
         { first=0; print }
-        '
+        ' >> "$MAIL"
     else
         # Cas fallback : un seul fichier log
         prepare_mail_html "$log_file" >> "$MAIL"
