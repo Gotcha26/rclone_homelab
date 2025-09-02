@@ -63,16 +63,22 @@ for idx in "${!JOBS_LIST[@]}"; do
     } > "$TMP_JOB_LOG_RAW"
 
     # === Exécution rclone ===
+    log_only() {
+        local msg="$1"
+        echo "$msg" >> "$TMP_JOB_LOG_RAW"
+    }
+
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible. (unauthenticated)"
         
-        {
-            echo ""
-            echo "⚠️  Job écarté à cause d'un remote inaccessible. (unauthenticated)"
-        } >> "$TMP_JOB_LOG_RAW"
-
+        log_only ""
+        log_only "⚠️  Job écarté à cause d'un remote inaccessible. (unauthenticated)"
+        
         job_rc=1
         ERROR_CODE=8
+
+        # NE PAS afficher à l'écran
+        DISPLAY_JOB=false
     else
         rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
         RCLONE_PID=$!
@@ -80,13 +86,19 @@ for idx in "${!JOBS_LIST[@]}"; do
         wait $RCLONE_PID
         job_rc=$?
         (( job_rc != 0 )) && ERROR_CODE=8
+
+        DISPLAY_JOB=true
     fi
 
-    # === Colorisation et génération logs ===
-    if [[ "${JOB_STATUS[$idx]}" != "PROBLEM" ]]; then
+    # === Affichga colorisé à l'écran et génération logs ===
+    if [[ "$DISPLAY_JOB" == true ]]; then
         tail -n +3 "$TMP_JOB_LOG_RAW" | colorize | tee -a "$LOG_FILE_INFO"
+    else
+        # Pour les jobs PROBLEM, on écrit tout de même dans LOG_FILE_INFO
+        cat "$TMP_JOB_LOG_RAW" >> "$LOG_FILE_INFO"
     fi
 
+    # Génération des logs HTML / PLAIN
     generate_logs "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_HTML" "$TMP_JOB_LOG_PLAIN"
 
     # === Assemblage HTML global ===
