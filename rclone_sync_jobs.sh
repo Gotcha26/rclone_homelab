@@ -10,7 +10,6 @@ source "$SCRIPT_DIR/rclone_sync_functions.sh"
 # Déclarer les tableaux globaux
 declare -a JOBS_LIST       # Liste des jobs src|dst
 declare -A JOB_STATUS      # idx -> OK / PROBLEM
-declare -A JOBS_SKIP       # idx -> true / false
 declare -A REMOTE_STATUS   # remote_name -> OK / PROBLEM
 
 # Charger les remotes rclone configurés
@@ -33,7 +32,6 @@ check_remotes
 # ---------------------------------------------------------------------------
 GLOBAL_HTML_BLOCK=""          # Initialisation du HTML global
 JOB_COUNTER=1                 # Compteur de jobs pour le label [JOBxx]
-JOBS_COUNT=0
 NO_CHANGES_ALL=true
 PREVIOUS_JOB_PRESENT=false    # Variable pour savoir si un job précédent a été ajouté
 
@@ -63,12 +61,13 @@ for idx in "${!JOBS_LIST[@]}"; do
 
     {
         echo "[$JOB_ID] $src → $dst"
-        echo
+        echo "$MSG_TASK_LAUNCH ${NOW}"
+        echo ""
     } > "$TMP_JOB_LOG_RAW"
 
     # === Exécution rclone ===
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        print_fancy --theme "warning" "⚠️ Job écarté à cause d'un remote inaccessible. (unauthenticated)"
+        print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible. (unauthenticated)"
         echo "⚠️ Job écarté à cause d'un remote inaccessible. (unauthenticated)" >> "$TMP_JOB_LOG_RAW"
         job_rc=1
         ERROR_CODE=8
@@ -97,7 +96,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     send_discord_notification "$TMP_JOB_LOG_PLAIN"
 
     # === Incrément compteur ===
-    ((JOBS_COUNT++))
+    (( job_rc == 0 )) && ((EXECUTED_JOBS++))   # Compte uniquement si succès
     (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
     ((JOB_COUNTER++))
     echo

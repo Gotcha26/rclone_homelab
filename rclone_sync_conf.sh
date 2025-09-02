@@ -88,7 +88,6 @@ MAIL_TO=""                     # valeur par défaut vide
 START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 END_TIME=""
 ERROR_CODE=0
-JOBS_COUNT=0
 LAUNCH_MODE="manuel"
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel

@@ -588,7 +588,7 @@ print_summary_table() {
     print_aligned_table "Date / Heure début" "$START_TIME"
     print_aligned_table "Date / Heure fin" "$END_TIME"
     print_aligned_table "Mode de lancement" "$LAUNCH_MODE"
-    print_aligned_table "Nombre de jobs" "$JOBS_COUNT"
+    print_aligned_table "Nombre de jobs" "${EXECUTED_JOBS} / ${#JOBS_LIST[@]}"
     print_aligned_table "Code erreur" "$ERROR_CODE"
     print_aligned_table "Dossier" "${LOG_DIR}/"
     print_aligned_table "Log script" "$FILE_SCRIPT"
