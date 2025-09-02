@@ -108,6 +108,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     GLOBAL_HTML_BLOCK+=$(cat "$TMP_JOB_LOG_HTML")
 
     # === Notification Discord ===
+    echo
     send_discord_notification "$TMP_JOB_LOG_PLAIN"
 
     # === Incrément compteur ===
