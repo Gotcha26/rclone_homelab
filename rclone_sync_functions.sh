@@ -314,7 +314,7 @@ HTML
         echo "--ALT_BOUNDARY--"   # Fin alternative
     } >> "$MAIL"
 
-    # Récupérer tous les logs PLAIN des jobs
+    # Récupérer tous les logs PLAIN (jobs)
     for file in "$TMP_JOBS_DIR"/JOB*_plain.log; do
         [[ -f "$file" ]] || continue
         {
