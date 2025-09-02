@@ -22,24 +22,11 @@ mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 
 parse_jobs "$JOBS_FILE"
 
-# Initialiser tous les jobs à OK et JOBS_SKIP à false
-for idx in "${!JOBS_LIST[@]}"; do
-    JOB_STATUS[$idx]="OK"
-    JOBS_SKIP[$idx]=false
-done
-
 # ---------------------------------------------------------------------------
 # 2. Vérifier les remotes et mettre à jour JOB_STATUS
 # ---------------------------------------------------------------------------
 
 check_remotes
-
-# Après check_remotes, mettre JOBS_SKIP à true si JOB_STATUS est PROBLEM
-for idx in "${!JOBS_LIST[@]}"; do
-    if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        JOBS_SKIP[$idx]=true
-    fi
-done
 
 # ---------------------------------------------------------------------------
 # 3. Variables globales pour exécution
@@ -56,71 +43,57 @@ PREVIOUS_JOB_PRESENT=false    # Variable pour savoir si un job précédent a ét
 for idx in "${!JOBS_LIST[@]}"; do
     job="${JOBS_LIST[$idx]}"
     IFS='|' read -r src dst <<< "$job"
-
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
-    skip_job=${JOBS_SKIP[$idx]}
 
-    # Vérif remote si applicable
-    if [[ "$dst" == *":"* ]]; then
-        remote="${dst%%:*}"
-        if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
-            JOB_STATUS[$idx]="PROBLEM"
-            JOBS_SKIP[$idx]=true
-            skip_job=true
-            print_fancy --theme "warning" "⚠️  [$JOB_ID] Remote $remote inaccessible, job sauté."
-        fi
+    # Si remote inaccessible => PROBLEM
+    if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
+        print_fancy --theme "warning" "⚠️  [$JOB_ID] Job marqué PROBLEM, ignoré."
+        {
+            echo "[$JOB_ID] $src → $dst"
+            echo
+            echo "⚠️ Job écarté à cause d'un remote inaccessible. (unauthenticated)"
+        } >> "$TMP_JOBS_DIR/${JOB_ID}_raw.log"
+        ((JOB_COUNTER++))
+        ((JOBS_COUNT++))
+        continue
     fi
 
-    # Affichage d’attente
+    # === Affichage d’attente coté terminal ===
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING1"
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING2"
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING3"
     echo
 
-    TMP_JOB_LOG_RAW="$TMP_JOBS_DIR/${JOB_ID}_raw.log"
-    TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"
-    TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"
+    # === Création des fichiers temporaires ===
+    TMP_JOB_LOG_RAW="$TMP_JOBS_DIR/${JOB_ID}_raw.log"       # Spécifique à la sortie de rclone
+    TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"     # Spécifique au formatage des balises HTML
+    TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"   # Version simplifié de raw, débarassée des codes ANSI / HTML
 
     # === Header Job ===
-
     print_fancy --align "center" "[$JOB_ID] $src → $dst"
-    if ${JOBS_SKIP[$idx]}; then
-        print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible. (unauthenticated)"
-    else
-        print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
-    fi
+    print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
     echo ""
 
     {
-    echo "[$JOB_ID] $src → $dst"
-    echo
-    if $skip_job; then
-        echo "⚠️ Job écarté à cause d'un remote inaccessible. (unauthenticated)"
-    else
+        echo "[$JOB_ID] $src → $dst"
+        echo
         echo "$MSG_TASK_LAUNCH $NOW"
-    fi
     } >> "$TMP_JOB_LOG_RAW"
 
-    # === Exécution rclone si job valide ===
-    if ! $skip_job; then
-        rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
-        RCLONE_PID=$!
-        spinner $RCLONE_PID
-        wait $RCLONE_PID
-        job_rc=$?
-        (( job_rc != 0 )) && ERROR_CODE=8
-    else
-        job_rc=1
-        ERROR_CODE=8
-    fi
+    # === Exécution rclone ===
+    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
+    RCLONE_PID=$!
+    spinner $RCLONE_PID
+    wait $RCLONE_PID
+    job_rc=$?
+    (( job_rc != 0 )) && ERROR_CODE=8
 
     # === Colorisation et génération logs ===
-    tail -n +3 "$TMP_JOB_LOG_RAW" | colorize | tee -a "$LOG_FILE_INFO" # Affiche colorisé mais saute les 2 premières lignes
-    prepare_mail_html "$TMP_JOB_LOG_RAW" >> "$TMP_JOB_LOG_HTML"
-    make_plain_log "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_PLAIN"
+    tail -n +3 "$TMP_JOB_LOG_RAW" | colorize | tee -a "$LOG_FILE_INFO"  # On commence à partir de la ligne 3
+    prepare_mail_html "$TMP_JOB_LOG_RAW" >> "$TMP_JOB_LOG_HTML"         # On ajoute le formatage HTML
+    make_plain_log "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_PLAIN"              # On épure RAW pour en faire du plain format
 
     # === Assemblage HTML global ===
-    # Séparation entre les jobs
     if $PREVIOUS_JOB_PRESENT; then
         GLOBAL_HTML_BLOCK+="<br><hr style='border:none; border-top:1px solid #ccc; margin:2em 0;'><br>"
     fi
