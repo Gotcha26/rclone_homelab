@@ -142,6 +142,29 @@ check_remotes() {
 
 
 ###############################################################################
+# Fonction de création de fichiers (log) pour chaque job traité
+###############################################################################
+init_job_logs() {
+    local job_id="$1"
+
+    TMP_JOB_LOG_RAW="$TMP_JOBS_DIR/${JOB_ID}_raw.log"       # Spécifique à la sortie de rclone
+    TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"     # Spécifique au formatage des balises HTML
+    TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"   # Version simplifié de raw, débarassée des codes ANSI / HTML
+}
+
+
+###############################################################################
+# Fonction de convertion des formats
+###############################################################################
+generate_logs() {
+    local raw="$1" html="$2" plain="$3"
+
+    prepare_mail_html "$raw" >> "$html" # On ajoute le formatage HTML
+    make_plain_log "$raw" "$plain"      # On épure RAW pour en faire du plain format
+}
+
+
+###############################################################################
 # Fonctions EMAIL
 ###############################################################################
 
@@ -588,7 +611,7 @@ print_summary_table() {
     print_aligned_table "Date / Heure début" "$START_TIME"
     print_aligned_table "Date / Heure fin" "$END_TIME"
     print_aligned_table "Mode de lancement" "$LAUNCH_MODE"
-    print_aligned_table "Nombre de jobs" "${EXECUTED_JOBS} / ${#JOBS_LIST[@]}"
+    print_aligned_table "Nb. de jobs traités" "${EXECUTED_JOBS} / ${#JOBS_LIST[@]}"
     print_aligned_table "Code erreur" "$ERROR_CODE"
     print_aligned_table "Dossier" "${LOG_DIR}/"
     print_aligned_table "Log script" "$FILE_SCRIPT"
