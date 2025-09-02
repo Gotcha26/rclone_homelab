@@ -45,29 +45,16 @@ for idx in "${!JOBS_LIST[@]}"; do
     IFS='|' read -r src dst <<< "$job"
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
 
-    # Si remote inaccessible => PROBLEM
-    if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        print_fancy --theme "warning" "⚠️  [$JOB_ID] Job marqué PROBLEM, ignoré."
-        {
-            echo "[$JOB_ID] $src → $dst"
-            echo
-            echo "⚠️ Job écarté à cause d'un remote inaccessible. (unauthenticated)"
-        } >> "$TMP_JOBS_DIR/${JOB_ID}_raw.log"
-        ((JOB_COUNTER++))
-        ((JOBS_COUNT++))
-        continue
-    fi
+    # === Création des fichiers temporaires ===
+    TMP_JOB_LOG_RAW="$TMP_JOBS_DIR/${JOB_ID}_raw.log"       # Spécifique à la sortie de rclone
+    TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"     # Spécifique au formatage des balises HTML
+    TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"   # Version simplifié de raw, débarassée des codes ANSI / HTML
 
     # === Affichage d’attente coté terminal ===
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING1"
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING2"
     print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING3"
     echo
-
-    # === Création des fichiers temporaires ===
-    TMP_JOB_LOG_RAW="$TMP_JOBS_DIR/${JOB_ID}_raw.log"       # Spécifique à la sortie de rclone
-    TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"     # Spécifique au formatage des balises HTML
-    TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"   # Version simplifié de raw, débarassée des codes ANSI / HTML
 
     # === Header Job ===
     print_fancy --align "center" "[$JOB_ID] $src → $dst"
@@ -77,16 +64,22 @@ for idx in "${!JOBS_LIST[@]}"; do
     {
         echo "[$JOB_ID] $src → $dst"
         echo
-        echo "$MSG_TASK_LAUNCH $NOW"
-    } >> "$TMP_JOB_LOG_RAW"
+    } > "$TMP_JOB_LOG_RAW"
 
     # === Exécution rclone ===
-    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
-    RCLONE_PID=$!
-    spinner $RCLONE_PID
-    wait $RCLONE_PID
-    job_rc=$?
-    (( job_rc != 0 )) && ERROR_CODE=8
+    if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
+        print_fancy --theme "warning" "⚠️ Job écarté à cause d'un remote inaccessible. (unauthenticated)"
+        echo "⚠️ Job écarté à cause d'un remote inaccessible. (unauthenticated)" >> "$TMP_JOB_LOG_RAW"
+        job_rc=1
+        ERROR_CODE=8
+    else
+        rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
+        RCLONE_PID=$!
+        spinner $RCLONE_PID
+        wait $RCLONE_PID
+        job_rc=$?
+        (( job_rc != 0 )) && ERROR_CODE=8
+    fi
 
     # === Colorisation et génération logs ===
     tail -n +3 "$TMP_JOB_LOG_RAW" | colorize | tee -a "$LOG_FILE_INFO"  # On commence à partir de la ligne 3
