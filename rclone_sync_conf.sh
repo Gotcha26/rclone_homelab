@@ -89,6 +89,7 @@ START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 END_TIME=""
 ERROR_CODE=0
 LAUNCH_MODE="manuel"
+EXECUTED_JOBS=""
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
 ORANGE=$'\e[38;5;208m'        # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
