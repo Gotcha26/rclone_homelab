@@ -93,6 +93,7 @@ for idx in "${!JOBS_LIST[@]}"; do
 
     {
     echo "[$JOB_ID] $src → $dst"
+    echo
     if $skip_job; then
         echo "⚠️ Job écarté à cause d'un remote inaccessible. (unauthenticated)"
     else

@@ -103,7 +103,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-
 # Gestion des mises à jour selon les options passées
 if [[ "$FORCE_UPDATE" == true ]]; then
     if force_update_branch; then

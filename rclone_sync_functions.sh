@@ -314,8 +314,8 @@ HTML
         echo "--ALT_BOUNDARY--"   # Fin alternative
     } >> "$MAIL"
 
-    # Récupérer tous les logs HTML des jobs
-    for file in "$TMP_JOBS_DIR"/JOB*_html.log; do
+    # Récupérer tous les logs PLAIN des jobs
+    for file in "$TMP_JOBS_DIR"/JOB*_plain.log; do
         [[ -f "$file" ]] || continue
         {
             echo "--MIXED_BOUNDARY"
