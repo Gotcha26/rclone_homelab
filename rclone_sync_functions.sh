@@ -91,7 +91,6 @@ check_remote_non_blocking() {
         if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
             REMOTE_STATUS["$remote"]="PROBLEM"
             msg_status="inaccessible ou token expiré"
-            echo
 
             # On marque le statut des jobs affectés
             for i in "${!JOBS_LIST[@]}"; do
@@ -106,6 +105,7 @@ check_remote_non_blocking() {
 
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
+        echo
     else
         print_fancy --theme "success" "Remote '$remote' $msg_status"
     fi

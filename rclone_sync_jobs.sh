@@ -71,7 +71,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible. (unauthenticated)"
         
-        log_only ""
+        log_only " "
         log_only "⚠️  Job écarté à cause d'un remote inaccessible. (unauthenticated)"
         
         job_rc=1
