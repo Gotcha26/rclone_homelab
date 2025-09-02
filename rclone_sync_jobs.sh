@@ -63,13 +63,15 @@ for idx in "${!JOBS_LIST[@]}"; do
     } > "$TMP_JOB_LOG_RAW"
 
     # === Exécution rclone ===
+    log_only() {
+        local msg="$1"
+        echo "$msg" >> "$TMP_JOB_LOG_RAW"
+    }
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible. (unauthenticated)"
-        
-        {
-            echo ""
-            echo "⚠️  Job écarté à cause d'un remote inaccessible. (unauthenticated)"
-        } >> "$TMP_JOB_LOG_RAW"
+
+        log_only ""
+        log_only "⚠️  Job écarté à cause d'un remote inaccessible. (unauthenticated)"
 
         job_rc=1
         ERROR_CODE=8
