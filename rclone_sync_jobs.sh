@@ -52,17 +52,24 @@ for idx in "${!JOBS_LIST[@]}"; do
     echo
 
     # === Header Job ===
+    print_fancy --align "center" "[$JOB_ID] $src → $dst"
+    print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
+    echo
+
     {
-        print_fancy --align "center" "[$JOB_ID] $src → $dst"
-        print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
+        echo "[$JOB_ID] $src → $dst"
+        echo "$MSG_TASK_LAUNCH ${NOW}"
         echo ""
-    } | tee "$TMP_JOB_LOG_RAW"
+    } > "$TMP_JOB_LOG_RAW"
 
     # === Exécution rclone ===
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
+        print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible. (unauthenticated)"
+        
         {
-            print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible. (unauthenticated)"
-        } | tee -a "$TMP_JOB_LOG_RAW"
+            echo ""
+            echo "⚠️  Job écarté à cause d'un remote inaccessible. (unauthenticated)"
+        } >> "$TMP_JOB_LOG_RAW"
 
         job_rc=1
         ERROR_CODE=8
