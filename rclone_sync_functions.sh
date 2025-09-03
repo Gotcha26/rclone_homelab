@@ -107,7 +107,10 @@ check_remote_non_blocking() {
 
             # ❗ Marquer tous les jobs qui utilisent ce remote comme PROBLEM
             for i in "${!JOBS_LIST[@]}"; do
-                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && JOB_STATUS[$i]="PROBLEM"
+                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
+                    JOB_STATUS[$i]="PROBLEM"
+                    warn_remote_problem "$remote" "$remote_type" "$i"
+                }
             done
         else
             msg_status="accessible ✅"
@@ -119,12 +122,12 @@ check_remote_non_blocking() {
     # Affichage stylisé
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
-        warn_remote_problem "$remote" "$remote_type"
         echo
     else
         print_fancy --theme "success" "Remote '$remote' $msg_status"
     fi
 }
+
 
 ###############################################################################
 # Fonction pour parcourir tous les remotes avec exécution parallèle
@@ -147,37 +150,48 @@ check_remotes() {
 warn_remote_problem() {
     local remote="$1"
     local remote_type="$2"
+    local job_idx="$3"   # optionnel, pour associer message JOB_MSG
 
-    echo
-    echo "⚠️  Attention : le remote '$remote' est inaccessible pour l'écriture."
+    local msg
+    msg="⚠️  Attention : le remote '$remote' est inaccessible pour l'écriture.
+
+"
 
     case "$remote_type" in
         onedrive)
-            echo "    Ce problème est typique de OneDrive : le token OAuth actuel"
-            echo "    ne permet plus l'écriture, même si la lecture fonctionne."
-            echo "    Il faut refaire complètement la configuration du remote :"
-            echo "      1. Supprimer ou éditer le remote existant : rclone config"
-            echo "      2. Reconnecter le remote et accepter toutes les permissions"
-            echo "         (lecture + écriture)."
+            msg+="    Ce problème est typique de OneDrive : le token OAuth actuel
+    ne permet plus l'écriture, même si la lecture fonctionne.
+    Il faut refaire complètement la configuration du remote :
+      1. Supprimer ou éditer le remote existant : rclone config
+      2. Reconnecter le remote et accepter toutes les permissions
+         (lecture + écriture).
+"
             ;;
         drive)
-            echo "    Ce problème peut se produire sur Google Drive si le token"
-            echo "    OAuth est expiré ou si les scopes d'accès sont insuffisants."
-            echo "    Pour résoudre le problème :"
-            echo "      1. Supprimer ou éditer le remote existant : rclone config"
-            echo "      2. Reconnecter le remote en suivant la procédure interactive"
-            echo "         et en acceptant toutes les permissions nécessaires."
+            msg+="    Ce problème peut se produire sur Google Drive si le token
+    OAuth est expiré ou si les scopes d'accès sont insuffisants.
+    Pour résoudre le problème :
+      1. Supprimer ou éditer le remote existant : rclone config
+      2. Reconnecter le remote et accepter toutes les permissions nécessaires.
+"
             ;;
         *)
-            echo "    Le problème provient probablement du token ou des permissions."
-            echo "    Vérifiez la configuration du remote avec : rclone config"
+            msg+="    Le problème provient probablement du token ou des permissions.
+    Vérifiez la configuration du remote avec : rclone config
+"
             ;;
     esac
 
-    echo "    Les jobs utilisant ce remote seront ignorés jusqu'à résolution."
-    echo
-}
+    msg+="    Les jobs utilisant ce remote seront ignorés jusqu'à résolution.
+"
 
+    # Affichage à l’écran
+    echo
+    echo "$msg"
+
+    # Optionnel : associer au JOB_MSG si job_idx fourni
+    [[ -n "$job_idx" ]] && JOB_MSG["$job_idx"]="$msg"
+}
 
 
 ###############################################################################

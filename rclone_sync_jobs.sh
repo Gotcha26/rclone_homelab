@@ -69,16 +69,16 @@ for idx in "${!JOBS_LIST[@]}"; do
     }
 
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible. (unauthenticated)"
-        
+        print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible."
+
         log_only " "
-        log_only "⚠️  Job écarté à cause d'un remote inaccessible. (unauthenticated)"
-        
+        log_only "${JOB_MSG[$idx]}"  # Message détaillé lié au job
+
         job_rc=1
         ERROR_CODE=8
-
-        # NE PAS afficher à l'écran
+        # Ne pas afficher à l'écran
         DISPLAY_JOB=false
+
     else
         rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
         RCLONE_PID=$!
