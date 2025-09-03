@@ -119,6 +119,7 @@ check_remote_non_blocking() {
     # Affichage stylisé
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
+        warn_remote_problem "$remote" "$remote_type"
         echo
     else
         print_fancy --theme "success" "Remote '$remote' $msg_status"
@@ -138,6 +139,45 @@ check_remotes() {
         fi
     done
 }
+
+
+###############################################################################
+# Fonction : Avertissement remote inaccessible
+###############################################################################
+warn_remote_problem() {
+    local remote="$1"
+    local remote_type="$2"
+
+    echo
+    echo "⚠️  Attention : le remote '$remote' est inaccessible pour l'écriture."
+
+    case "$remote_type" in
+        onedrive)
+            echo "    Ce problème est typique de OneDrive : le token OAuth actuel"
+            echo "    ne permet plus l'écriture, même si la lecture fonctionne."
+            echo "    Il faut refaire complètement la configuration du remote :"
+            echo "      1. Supprimer ou éditer le remote existant : rclone config"
+            echo "      2. Reconnecter le remote et accepter toutes les permissions"
+            echo "         (lecture + écriture)."
+            ;;
+        drive)
+            echo "    Ce problème peut se produire sur Google Drive si le token"
+            echo "    OAuth est expiré ou si les scopes d'accès sont insuffisants."
+            echo "    Pour résoudre le problème :"
+            echo "      1. Supprimer ou éditer le remote existant : rclone config"
+            echo "      2. Reconnecter le remote en suivant la procédure interactive"
+            echo "         et en acceptant toutes les permissions nécessaires."
+            ;;
+        *)
+            echo "    Le problème provient probablement du token ou des permissions."
+            echo "    Vérifiez la configuration du remote avec : rclone config"
+            ;;
+    esac
+
+    echo "    Les jobs utilisant ce remote seront ignorés jusqu'à résolution."
+    echo
+}
+
 
 
 ###############################################################################
