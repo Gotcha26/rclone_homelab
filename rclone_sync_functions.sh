@@ -36,7 +36,7 @@ EOF
 # Fonction pour parser et vérifier les jobs
 ###############################################################################
 # Déclarer le tableau global pour stocker les jobs
-declare -a JOBS_LIST
+declare -a JOBS_LIST    # Liste des jobs src|dst
 declare -A JOB_STATUS   # idx -> OK/PROBLEM
 
 parse_jobs() {
@@ -78,6 +78,8 @@ parse_jobs() {
 ###############################################################################
 # Fonction pour vérifier et éventuellement reconnecter un remote avec timeout
 ###############################################################################
+declare -A REMOTE_STATUS   # remote_name -> OK / PROBLEM
+
 check_remote_non_blocking() {
     local remote="$1"
     local timeout_duration=30s  # Temps max pour chaque test/reconnect
@@ -147,6 +149,8 @@ check_remotes() {
 ###############################################################################
 # Fonction : Avertissement remote inaccessible
 ###############################################################################
+declare -A JOB_MSG         # idx -> message d'erreur détaillé
+
 warn_remote_problem() {
     local remote="$1"
     local remote_type="$2"
