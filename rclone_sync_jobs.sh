@@ -25,7 +25,7 @@ parse_jobs "$JOBS_FILE"
 # 2. Vérifier les remotes et mettre à jour JOB_STATUS
 # ---------------------------------------------------------------------------
 
-check_remotes_parallel
+check_remotes
 
 # ---------------------------------------------------------------------------
 # 3. Variables globales pour exécution

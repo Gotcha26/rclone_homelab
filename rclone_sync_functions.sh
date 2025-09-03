@@ -102,7 +102,7 @@ check_remote_non_blocking() {
                 fi
             else
                 REMOTE_STATUS["$remote"]="PROBLEM"
-                msg_status="Reconnect échoué, remote inaccessible"
+                msg_status="Reconnect échoué, remote inaccessible  ⚠️"
             fi
 
             # ❗ Marquer tous les jobs qui utilisent ce remote comme PROBLEM
@@ -128,23 +128,14 @@ check_remote_non_blocking() {
 ###############################################################################
 # Fonction pour parcourir tous les remotes avec exécution parallèle
 ###############################################################################
-check_remotes_parallel() {
-    local pids=()
+check_remotes() {
     for job in "${JOBS_LIST[@]}"; do
         IFS='|' read -r src dst <<< "$job"
         if [[ "$dst" == *":"* ]]; then
             local remote="${dst%%:*}"
-            if [[ -z "${REMOTE_STATUS[$remote]+x}" ]]; then
-                # Appel en arrière-plan pour exécution parallèle
-                check_remote_non_blocking "$remote" &
-                pids+=($!)
-            fi
+            # Vérification unique par remote
+            [[ -z "${REMOTE_STATUS[$remote]+x}" ]] && check_remote_non_blocking "$remote"
         fi
-    done
-
-    # Attendre que tous les processus en arrière-plan se terminent
-    for pid in "${pids[@]}"; do
-        wait "$pid"
     done
 }
 
