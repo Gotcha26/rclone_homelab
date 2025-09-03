@@ -76,10 +76,11 @@ parse_jobs() {
 
 
 ###############################################################################
-# Fonction non bloquante pour vérifier un remote
+# Fonction pour vérifier et éventuellement reconnecter un remote avec timeout
 ###############################################################################
 check_remote_non_blocking() {
     local remote="$1"
+    local timeout_duration=30s  # Temps max pour chaque test/reconnect
 
     local remote_type
     remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
@@ -88,11 +89,23 @@ check_remote_non_blocking() {
     local msg_status=""
 
     if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
-        if ! rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
-            REMOTE_STATUS["$remote"]="PROBLEM"
-            msg_status="inaccessible ou token expiré"
+        if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+            echo "[INFO] Remote '$remote' inaccessible. Tentative de reconnect..."
+            if timeout "$timeout_duration" rclone reconnect "${remote}:" >/dev/null 2>&1; then
+                echo "[INFO] Reconnect OK, vérification..."
+                if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+                    REMOTE_STATUS["$remote"]="PROBLEM"
+                    msg_status="inaccessible malgré reconnect"
+                else
+                    REMOTE_STATUS["$remote"]="OK"
+                    msg_status="accessible après reconnect ✅"
+                fi
+            else
+                REMOTE_STATUS["$remote"]="PROBLEM"
+                msg_status="Reconnect échoué, remote inaccessible"
+            fi
 
-            # On marque le statut des jobs affectés
+            # Marquer les jobs associés comme PROBLEM
             for i in "${!JOBS_LIST[@]}"; do
                 [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && JOB_STATUS[$i]="PROBLEM"
             done
@@ -109,35 +122,29 @@ check_remote_non_blocking() {
     else
         print_fancy --theme "success" "Remote '$remote' $msg_status"
     fi
+
 }
 
-
 ###############################################################################
-# Fonction de vérification des remotes
+# Fonction pour parcourir tous les remotes avec exécution parallèle
 ###############################################################################
-declare -A REMOTE_STATUS
-
-check_remotes() {
+check_remotes_parallel() {
+    local pids=()
     for job in "${JOBS_LIST[@]}"; do
         IFS='|' read -r src dst <<< "$job"
-
         if [[ "$dst" == *":"* ]]; then
             local remote="${dst%%:*}"
             if [[ -z "${REMOTE_STATUS[$remote]+x}" ]]; then
-                local remote_type
-                remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
-
-                if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
-                    if ! check_remote_non_blocking "$remote"; then
-                        REMOTE_STATUS["$remote"]="PROBLEM"
-                    else
-                        REMOTE_STATUS["$remote"]="OK"
-                    fi
-                else
-                    REMOTE_STATUS["$remote"]="OK"
-                fi
+                # Appel en arrière-plan pour exécution parallèle
+                check_remote_non_blocking "$remote" &
+                pids+=($!)
             fi
         fi
+    done
+
+    # Attendre que tous les processus en arrière-plan se terminent
+    for pid in "${pids[@]}"; do
+        wait "$pid"
     done
 }
 
@@ -616,8 +623,8 @@ print_summary_table() {
     print_aligned_table "Code erreur" "$ERROR_CODE"
     print_aligned_table "Dossier" "${LOG_DIR}/"
     print_aligned_table "Log script" "$FILE_SCRIPT"
-    print_aligned_table "Log rclone" "$FILE_INFO"
     print_aligned_table "Log mail" "$FILE_MAIL"
+    print_aligned_table "Log rclone" "$FILE_INFO"
 
     if [[ -n "$MAIL_TO" ]]; then
         print_aligned_table "Email envoyé à" "$MAIL_TO"
