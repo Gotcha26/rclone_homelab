@@ -90,9 +90,9 @@ check_remote_non_blocking() {
 
     if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
         if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
-            echo "[INFO] Remote '$remote' inaccessible. Tentative de reconnect..."
+            print_fancy --theme "info" "Remote '$remote' inaccessible. Tentative de reconnect..."
             if timeout "$timeout_duration" rclone reconnect "${remote}:" >/dev/null 2>&1; then
-                echo "[INFO] Reconnect OK, vérification..."
+                print_fancy --theme "info" "Reconnect OK, vérification..."
                 if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
                     REMOTE_STATUS["$remote"]="PROBLEM"
                     msg_status="inaccessible malgré reconnect"
@@ -105,7 +105,7 @@ check_remote_non_blocking() {
                 msg_status="Reconnect échoué, remote inaccessible"
             fi
 
-            # Marquer les jobs associés comme PROBLEM
+            # ❗ Marquer tous les jobs qui utilisent ce remote comme PROBLEM
             for i in "${!JOBS_LIST[@]}"; do
                 [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && JOB_STATUS[$i]="PROBLEM"
             done
@@ -116,13 +116,13 @@ check_remote_non_blocking() {
         msg_status="accessible ✅"
     fi
 
+    # Affichage stylisé
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
         echo
     else
         print_fancy --theme "success" "Remote '$remote' $msg_status"
     fi
-
 }
 
 ###############################################################################
