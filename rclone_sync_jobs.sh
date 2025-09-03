@@ -72,6 +72,8 @@ for idx in "${!JOBS_LIST[@]}"; do
         print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible."
 
         log_only " "
+        log_only "⚠️  Job écarté à cause d'un remote inaccessible. (unauthenticated) ⚠️" # Besoin de ce marqueur pour le sujet du message Discord / mail
+        log_only " "
         log_only "${JOB_MSG[$idx]}"  # Message détaillé lié au job
 
         job_rc=1
