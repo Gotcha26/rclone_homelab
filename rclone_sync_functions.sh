@@ -154,39 +154,43 @@ declare -A JOB_MSG         # idx -> message d'erreur détaillé
 warn_remote_problem() {
     local remote="$1"
     local remote_type="$2"
-    local job_idx="$3"   # optionnel, pour associer message JOB_MSG
+    local job_idx="$3"     # optionnel, pour associer message JOB_MSG
 
     local msg
-    msg="⚠️  Attention : le remote '$remote' est inaccessible pour l'écriture.
+    msg="❌  Attention : le remote '$remote' est inaccessible pour l'écriture.
 
 "
 
     case "$remote_type" in
         onedrive)
-            msg+="    Ce problème est typique de OneDrive : le token OAuth actuel
-    ne permet plus l'écriture, même si la lecture fonctionne.
-    Il faut refaire complètement la configuration du remote :
-      1. Supprimer ou éditer le remote existant : rclone config
-      2. Reconnecter le remote et accepter toutes les permissions
-         (lecture + écriture).
+            msg+="
+Ce problème est typique de OneDrive : le token OAuth actuel
+ne permet plus l'écriture, même si la lecture fonctionne.
+Il faut refaire complètement la configuration du remote :
+  1. Supprimer ou éditer le remote existant : rclone config
+  2. Reconnecter le remote et accepter toutes les permissions
+     (lecture + écriture).
 "
             ;;
         drive)
-            msg+="    Ce problème peut se produire sur Google Drive si le token
-    OAuth est expiré ou si les scopes d'accès sont insuffisants.
-    Pour résoudre le problème :
-      1. Supprimer ou éditer le remote existant : rclone config
-      2. Reconnecter le remote et accepter toutes les permissions nécessaires.
+            msg+="
+Ce problème peut se produire sur Google Drive si le token
+OAuth est expiré ou si les scopes d'accès sont insuffisants.
+Pour résoudre le problème :
+  1. Supprimer ou éditer le remote existant : rclone config
+  2. Reconnecter le remote et accepter toutes les permissions nécessaires.
 "
             ;;
         *)
-            msg+="    Le problème provient probablement du token ou des permissions.
-    Vérifiez la configuration du remote avec : rclone config
+            msg+="
+Le problème provient probablement du token ou des permissions.
+Vérifiez la configuration du remote avec : rclone config
 "
             ;;
     esac
 
-    msg+="    Les jobs utilisant ce remote seront ignorés jusqu'à résolution.
+    msg+="
+Les jobs utilisant ce remote seront ignorés jusqu'à résolution.
 "
 
     # Affichage à l’écran
@@ -759,7 +763,7 @@ send_discord_notification() {
     local subject_raw
     subject_raw=$(calculate_subject_raw_for_job "$log_file")
 
-    local message="📢 **$subject_raw** – $NOW"
+    local message="🗞️  **$subject_raw** – $NOW"
 
     # Envoi du message + du log en pièce jointe
     curl -s -X POST "$DISCORD_WEBHOOK_URL" \
