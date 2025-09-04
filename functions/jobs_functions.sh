@@ -88,26 +88,28 @@ check_remotes() {
 ###############################################################################
 check_remote_non_blocking() {
     local remote="$1"
-    local timeout_duration=30s
+    local timeout_duration=30s  # Temps max pour chaque test/reconnect
 
-    # --- Vérification existence ---
+    # 1️⃣ Vérification existence du remote
     if ! remote_exists "$remote"; then
         local msg="❌  Attention : le remote '$remote' n'existe pas dans la configuration rclone."
         echo -e "\n$msg"
-
+        
+        # Marquer uniquement les jobs liés à ce remote
         for i in "${!JOBS_LIST[@]}"; do
-            [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
+            IFS='|' read -r _ dst <<< "${JOBS_LIST[$i]}"
+            job_remote="${dst%%:*}"  # partie avant le ':'
+            if [[ "$job_remote" == "$remote" ]]; then
                 JOB_STATUS[$i]="PROBLEM"
                 JOB_MSG["$i"]="$msg"
-                # Plus de tentative d'écriture dans TMP_JOB_LOG_RAW
-            }
+            fi
         done
 
         ERROR_CODE=9
         return $ERROR_CODE
     fi
 
-    # --- Vérification classique du remote (tentative de reconnect) ---
+    # 2️⃣ Vérification classique du remote
     local remote_type
     remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
@@ -118,6 +120,7 @@ check_remote_non_blocking() {
         if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
             print_fancy --theme "info" "Remote '$remote' inaccessible. Tentative de reconnect..."
             if timeout "$timeout_duration" rclone reconnect "${remote}:" >/dev/null 2>&1; then
+                print_fancy --theme "info" "Reconnect OK, vérification..."
                 if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
                     REMOTE_STATUS["$remote"]="PROBLEM"
                     msg_status="inaccessible malgré reconnect"
@@ -130,12 +133,14 @@ check_remote_non_blocking() {
                 msg_status="Reconnect échoué, remote inaccessible ⚠️"
             fi
 
+            # Marquer uniquement les jobs liés à ce remote
             for i in "${!JOBS_LIST[@]}"; do
-                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
+                IFS='|' read -r _ dst <<< "${JOBS_LIST[$i]}"
+                job_remote="${dst%%:*}"
+                if [[ "$job_remote" == "$remote" ]]; then
                     JOB_STATUS[$i]="PROBLEM"
                     warn_remote_problem "$remote" "$remote_type" "$i"
-                    # Plus d'écriture dans TMP_JOB_LOG_RAW
-                }
+                fi
             done
         else
             msg_status="accessible ✅"
@@ -144,6 +149,7 @@ check_remote_non_blocking() {
         msg_status="accessible ✅"
     fi
 
+    # 3️⃣ Affichage stylisé
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
     else
