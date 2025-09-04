@@ -219,19 +219,15 @@ init_job_logs() {
 # Fonction de convertion des formats
 ###############################################################################
 generate_logs() {
-    local src_log="$1"
-    local dest_html="$2"
-    local dest_plain="$3"
+    local raw_log="$1"
+    local html_log="$2"
+    local plain_log="$3"
 
-    # Forcer environnement UTF-8
-    export LC_ALL=en_US.UTF-8
-    export LANG=en_US.UTF-8
+    # 1) Créer la version propre (sans ANSI)
+    make_plain_log "$raw_log" "$plain_log"
 
-    # HTML (colorisé)
-    ansi2html < "$src_log" > "$dest_html"
-
-    # Plain (sans couleurs, accents préservés)
-    sed 's/\x1b\[[0-9;]*m//g' "$src_log" > "$dest_plain"
+    # 2) Construire le HTML à partir de la version propre
+    [[ -n "$html_log" ]] && prepare_mail_html "$plain_log" > "$html_log"
 }
 
 
@@ -242,7 +238,20 @@ make_plain_log() {
     local src_log="$1"
     local dest_log="$2"
 
-    sed 's/\x1b\[[0-9;]*m//g' "$src_log" > "$dest_log"
+    perl -CS -pe '
+        # --- 1) Séquences ANSI réelles (ESC) ---
+        s/\x1B\[[0-9;?]*[ -\/]*[@-~]//g;        # CSI ... command (SGR, etc.)
+        s/\x1B\][^\x07]*(?:\x07|\x1B\\)//g;     # OSC ... BEL ou ST
+        s/\x1B[@-Z\\-_]//g;                     # Codes 2 octets (RIS, etc.)
+
+        # --- 2) Versions "littérales" écrites dans les strings ---
+        s/\\e\[[0-9;?]*[ -\/]*[@-~]//g;         # \e[ ... ]
+        s/\\033\[[0-9;?]*[ -\/]*[@-~]//g;       # \033[ ... ]
+        s/\\x1[bB]\[[0-9;?]*[ -\/]*[@-~]//g;    # \x1b[ ... ] ou \x1B[ ... ]
+
+        # --- 3) Retire les \r éventuels (progrès/spinners) ---
+        s/\r//g;
+    ' "$src_log" > "$dest_log"
 }
 
 
