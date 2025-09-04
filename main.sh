@@ -18,10 +18,6 @@ source "$SCRIPT_DIR/functions/init.sh"
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"
 
-# --- DEBUG ---
-echo "DEBUG SCRIPT_DIR = $SCRIPT_DIR"
-# --- DEBUG ---
-
 # Initialisation de variables
 FORCE_UPDATE="false"
 UPDATE_TAG="false"
