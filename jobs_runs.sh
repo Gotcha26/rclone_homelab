@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 
 # Charger les fonctions
-source "$SCRIPT_DIR/functions.sh"
+source "$SCRIPT_DIR/functions/init.sh"
 
 # Déclarer les tableaux globaux
 declare -a JOBS_LIST       # Liste des jobs src|dst
