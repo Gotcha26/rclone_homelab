@@ -238,7 +238,8 @@ make_plain_log() {
     local src_log="$1"
     local dest_log="$2"
 
-    perl -CS -pe '
+    # On bosse en mode binaire (pas de conversion d’encodage)
+    perl -pe '
         # --- 1) Séquences ANSI réelles (ESC) ---
         s/\x1B\[[0-9;?]*[ -\/]*[@-~]//g;        # CSI ... command (SGR, etc.)
         s/\x1B\][^\x07]*(?:\x07|\x1B\\)//g;     # OSC ... BEL ou ST
