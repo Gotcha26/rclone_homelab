@@ -15,17 +15,27 @@ declare -A REMOTE_STATUS   # remote_name -> OK / PROBLEM
 # Charger les remotes rclone configurés
 mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 
+
 # ---------------------------------------------------------------------------
 # 1. Parser les jobs et initialiser les statuts
 # ---------------------------------------------------------------------------
 
 parse_jobs "$JOBS_FILE"
 
+
 # ---------------------------------------------------------------------------
 # 2. Vérifier les remotes et mettre à jour JOB_STATUS
 # ---------------------------------------------------------------------------
 
+# Attribution d'un ID à chaque ligne de job
+for idx in "${!JOBS_LIST[@]}"; do
+    JOB_ID=$(generate_job_id "$idx")     # <- ID unique pour ce job
+    init_job_logs "$JOB_ID"              # <- logs prêts à l’emploi
+done
+
+# Maintenant TMP_JOB_LOG_RAW existe pour les fonctions
 check_remotes
+
 
 # ---------------------------------------------------------------------------
 # 3. Variables globales pour exécution
@@ -33,6 +43,7 @@ check_remotes
 GLOBAL_HTML_BLOCK=""          # Initialisation du HTML global
 JOB_COUNTER=1                 # Compteur de jobs pour le label [JOBxx]
 NO_CHANGES_ALL=true
+
 
 # ---------------------------------------------------------------------------
 # 4. Exécution des jobs filtrés

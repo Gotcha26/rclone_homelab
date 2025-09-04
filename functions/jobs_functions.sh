@@ -44,7 +44,19 @@ parse_jobs() {
 
 
 ###############################################################################
+# Fonction : Générer un JOB_ID unique basé sur l'index du job
+###############################################################################
+generate_job_id() {
+    local job_idx="$1"
+    printf "JOB%02d" "$((job_idx + 1))"
+}
+
+
+###############################################################################
 # Vérifie si un remote existe dans la config rclone
+# S'il est invalide (n'existe pas ou mal configuré) il n'y pas de message bloquant
+# L'exécution se poursuit mais un drapeau PROBLEM sera marqué pour avoir un
+# retour dans les logs (mail, discord...).
 ###############################################################################
 remote_exists() {
     local remote="$1"
@@ -76,20 +88,18 @@ check_remotes() {
 ###############################################################################
 check_remote_non_blocking() {
     local remote="$1"
-    local timeout_duration=30s  # Temps max pour chaque test/reconnect
+    local timeout_duration=30s
 
-    # --- 1️⃣ Vérification existence du remote ---
+    # --- Vérification existence ---
     if ! remote_exists "$remote"; then
         local msg="❌  Attention : le remote '$remote' n'existe pas dans la configuration rclone."
         echo -e "\n$msg"
-        
-        # Marquer les jobs utilisant ce remote comme PROBLEM
+
         for i in "${!JOBS_LIST[@]}"; do
             [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
                 JOB_STATUS[$i]="PROBLEM"
                 JOB_MSG["$i"]="$msg"
-                # Écriture dans le log raw si défini
-                [[ -n "$TMP_JOB_LOG_RAW" ]] && echo -e "$msg" >> "$TMP_JOB_LOG_RAW"
+                # Plus de tentative d'écriture dans TMP_JOB_LOG_RAW
             }
         done
 
@@ -97,7 +107,7 @@ check_remote_non_blocking() {
         return $ERROR_CODE
     fi
 
-    # --- 2️⃣ Vérification classique du remote ---
+    # --- Vérification classique du remote (tentative de reconnect) ---
     local remote_type
     remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
@@ -108,7 +118,6 @@ check_remote_non_blocking() {
         if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
             print_fancy --theme "info" "Remote '$remote' inaccessible. Tentative de reconnect..."
             if timeout "$timeout_duration" rclone reconnect "${remote}:" >/dev/null 2>&1; then
-                print_fancy --theme "info" "Reconnect OK, vérification..."
                 if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
                     REMOTE_STATUS["$remote"]="PROBLEM"
                     msg_status="inaccessible malgré reconnect"
@@ -121,12 +130,11 @@ check_remote_non_blocking() {
                 msg_status="Reconnect échoué, remote inaccessible ⚠️"
             fi
 
-            # Marquer les jobs utilisant ce remote comme PROBLEM
             for i in "${!JOBS_LIST[@]}"; do
                 [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
                     JOB_STATUS[$i]="PROBLEM"
                     warn_remote_problem "$remote" "$remote_type" "$i"
-                    [[ -n "$TMP_JOB_LOG_RAW" ]] && echo -e "${JOB_MSG[$i]}" >> "$TMP_JOB_LOG_RAW"
+                    # Plus d'écriture dans TMP_JOB_LOG_RAW
                 }
             done
         else
@@ -136,14 +144,12 @@ check_remote_non_blocking() {
         msg_status="accessible ✅"
     fi
 
-    # --- 3️⃣ Affichage stylisé ---
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
     else
         print_fancy --theme "success" "Remote '$remote' $msg_status"
     fi
 }
-
 
 
 ###############################################################################
@@ -211,9 +217,9 @@ Les jobs utilisant ce remote seront \e[31mignorés\e[0m jusqu'à résolution.
 init_job_logs() {
     local job_id="$1"
 
-    TMP_JOB_LOG_RAW="$TMP_JOBS_DIR/${JOB_ID}_raw.log"       # Spécifique à la sortie de rclone
-    TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${JOB_ID}_html.log"     # Spécifique au formatage des balises HTML
-    TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${JOB_ID}_plain.log"   # Version simplifié de raw, débarassée des codes ANSI / HTML
+    TMP_JOB_LOG_RAW="$TMP_JOBS_DIR/${job_id}_raw.log"       # Spécifique à la sortie de rclone
+    TMP_JOB_LOG_HTML="$TMP_JOBS_DIR/${job_id}_html.log"     # Spécifique au formatage des balises HTML
+    TMP_JOB_LOG_PLAIN="$TMP_JOBS_DIR/${job_id}_plain.log"   # Version simplifié de raw, débarassée des codes ANSI / HTML
 }
 
 
