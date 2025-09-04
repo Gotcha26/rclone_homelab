@@ -85,38 +85,36 @@ check_remotes() {
 
 ###############################################################################
 # Fonction pour vérifier et éventuellement reconnecter un remote
+# Tient compte aussi d'un remote mal renseigné dans la liste des jobs
 ###############################################################################
 check_remote_non_blocking() {
     local remote="$1"
     local timeout_duration=30s  # Temps max pour chaque test/reconnect
 
-    # 1️⃣ Vérification existence du remote
+    # --- 1️⃣ Vérification existence du remote ---
     if ! remote_exists "$remote"; then
         local msg="❌  Attention : le remote '$remote' n'existe pas dans la configuration rclone."
         echo -e "\n$msg"
         
-        # Marquer uniquement les jobs liés à ce remote
+        # Marquer uniquement les jobs utilisant ce remote comme PROBLEM
         for i in "${!JOBS_LIST[@]}"; do
-            IFS='|' read -r _ dst <<< "${JOBS_LIST[$i]}"
-
-            # Extraire remote strictement comme la partie avant le premier ':' seulement
-            job_remote="${dst%%:*}"
-
-            # Comparer exactement au remote testé
-            if [[ "$job_remote" == "$remote" ]]; then
+            IFS='|' read -r _dst_remote _ <<< "${JOBS_LIST[$i]}"
+            _dst_remote="${_dst_remote#*}" # Découpage strict si besoin
+            [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
                 JOB_STATUS[$i]="PROBLEM"
-                warn_remote_problem "$remote" "$remote_type" "$i"
-            fi
+                JOB_MSG["$i"]="$msg"
+                warn_remote_problem "$remote" "missing" "$i"   # Type spécifique
+            }
         done
 
         ERROR_CODE=9
+        REMOTE_STATUS["$remote"]="PROBLEM"
         return $ERROR_CODE
     fi
 
-    # 2️⃣ Vérification classique du remote
+    # --- 2️⃣ Vérification classique du remote ---
     local remote_type
     remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
-
     REMOTE_STATUS["$remote"]="OK"
     local msg_status=""
 
@@ -137,14 +135,12 @@ check_remote_non_blocking() {
                 msg_status="Reconnect échoué, remote inaccessible ⚠️"
             fi
 
-            # Marquer uniquement les jobs liés à ce remote
+            # Marquer uniquement les jobs utilisant ce remote comme PROBLEM
             for i in "${!JOBS_LIST[@]}"; do
-                IFS='|' read -r _ dst <<< "${JOBS_LIST[$i]}"
-                job_remote="${dst%%:*}"
-                if [[ "$job_remote" == "$remote" ]]; then
+                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
                     JOB_STATUS[$i]="PROBLEM"
                     warn_remote_problem "$remote" "$remote_type" "$i"
-                fi
+                }
             done
         else
             msg_status="accessible ✅"
@@ -153,7 +149,7 @@ check_remote_non_blocking() {
         msg_status="accessible ✅"
     fi
 
-    # 3️⃣ Affichage stylisé
+    # --- 3️⃣ Affichage stylisé ---
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
     else
@@ -173,13 +169,19 @@ warn_remote_problem() {
     local job_idx="$3"     # optionnel, pour associer message JOB_MSG
 
     local msg
-    msg="❌  \e[1;33mAttention\e[0m : le remote '\e[1m$remote\e[0m' est \e[31minaccessible\e[0m pour l'écriture.
+    msg="❌  \e[1;33mAttention\e[0m : un problème empèche l'exécution du job pour le remote '\e[1m$remote\e[0m'
     
     "
 
     case "$remote_type" in
+        missing)
+            msg="Raison : le remote '$remote' n'existe pas dans la configuration rclone.
+Vous êtes invité à revoir votre configuration pour le job et/ou rclone."
+            ;;
         onedrive)
             msg+="
+Le remote '\e[1m$remote\e[0m' est \e[31minaccessible\e[0m pour l'écriture.
+
 Ce problème est typique de \e[36mOneDrive\e[0m : le token OAuth actuel
 ne permet plus l'écriture, même si la lecture fonctionne.
 Il faut refaire complètement la configuration du remote :
