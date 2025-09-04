@@ -60,7 +60,7 @@ force_update_branch() {
     git clean -fd
 
     # Rendre le script principal exécutable
-    chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
+    chmod +x "$SCRIPT_DIR/main.sh"
 
     print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
 
@@ -104,7 +104,7 @@ update_to_latest_tag() {
     if [[ "$remote_hash" != "$local_hash" ]]; then
         # Essayer le checkout sécurisé sans message detached HEAD
         if git -c advice.detachedHead=false checkout "$latest_tag"; then
-            chmod +x "$SCRIPT_DIR/rclone_sync_main.sh"
+            chmod +x "$SCRIPT_DIR/main.sh"
             MSG_MAJ_UPDATE_TAG_SUCCESS=$(printf "$MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE" "$latest_tag")
             print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_TAG_SUCCESS"
             exit 0

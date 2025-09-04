@@ -73,9 +73,9 @@ MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE="Impossible de mettre à jour vers %s : modif
 
 # Ne pas toucher
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMP_RCLONE="$SCRIPT_DIR/tmp"               # Répertoire temporaire pour rclone
-LOG_DIR="$SCRIPT_DIR/logs"                 # Répertoire de logs
-JOBS_FILE="$SCRIPT_DIR/rclone_sync_jobs.txt"    # Fichier des jobs
+TMP_RCLONE="$SCRIPT_DIR/tmp"        # Répertoire temporaire pour rclone
+LOG_DIR="$SCRIPT_DIR/logs"          # Répertoire de logs
+JOBS_FILE="$SCRIPT_DIR/jobs.txt"    # Fichier des jobs
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 FILE_SCRIPT="main_${LOG_TIMESTAMP}.log"
 LOG_FILE_SCRIPT="$LOG_DIR/${FILE_SCRIPT}"
@@ -84,7 +84,7 @@ LOG_FILE_INFO="$LOG_DIR/${FILE_INFO}"
 FILE_MAIL="msmtp_${LOG_TIMESTAMP}.log"
 LOG_FILE_MAIL="$LOG_DIR/${FILE_MAIL}"
 NOW="$(date '+%Y/%m/%d %H:%M:%S')"
-MAIL_TO=""                     # valeur par défaut vide
+MAIL_TO=""                          # valeur par défaut vide
 START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 END_TIME=""
 ERROR_CODE=0
@@ -92,7 +92,7 @@ LAUNCH_MODE="manuel"
 EXECUTED_JOBS=""
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
-ORANGE=$'\e[38;5;208m'        # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
+ORANGE=$'\e[38;5;208m'              # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
 
 # === Options rclone ===
 

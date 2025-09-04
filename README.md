@@ -41,11 +41,11 @@ git clone https://github.com/Gotcha26/rclone_homelab.git .
 
 4. Rendre le script exécutable
 ```
-chmod +x rclone_sync_main.sh
+chmod +x main.sh
 ```
 5. Ajouter un symlink (raccourcis) pour un accès global afin de pour pouvoir lancer la commande simplement avec `rclone_homelab` :
 ```
-ln -s /opt/rclone_homelab/rclone_sync_main.sh /usr/local/bin/rclone_homelab
+ln -s /opt/rclone_homelab/main.sh /usr/local/bin/rclone_homelab
 ```
 6. Vérifier l'installation
 ```
@@ -85,10 +85,10 @@ Les jobs ne sont pas moins que les directives dédiées pour rclone.
 
 Le script attends 3 arguments minimum pour faire **un job**.  
 Pour simplifier la vie, ces *jobs* sont à écrire à l'avance dans un fichier à placer **à coté du script** (même dossier).  
-Ce fichier du nom de `rclone_sync_jobs.txt` contiendra **1 ligne par job**.  
+Ce fichier du nom de `jobs.txt` contiendra **1 ligne par job**.  
 
 ###### Exemples :
-`nano /opt/rclone_homelab/rclone_sync_jobs.txt`
+`nano /opt/rclone_homelab/jobs.txt`
 ```ini
 <lien_symbolique_source>|<remote_rclone:dossier/sous_dossier>
 /srv/backups|onedrive_gotcha:Homelab_backups
@@ -109,7 +109,7 @@ Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arb
 
 
 ## Arguments 
-Ils sont optionnels au lancement de `rclone_sync_jobs.sh`
+Ils sont optionnels au lancement de `rclone_homelab` (`main.sh`)
 Argument | Explication
 --- | ---
   --auto        | Permet simplement de supprimer le logo (bannière).
@@ -141,12 +141,12 @@ Le script rclone dispose d'énormément d'options !
 📖 Lisez la [documentation](https://rclone.org/commands/rclone/) !  
 Pour adapter selon vos besoins, il est possible de :
 * [Ponctuel] Simplement ajouter l'argument rclone dans vos arguments de lancement.
-* [Durable] Modifier `nano /opt/rclone_homelab/rclone_sync_conf.sh` pour trouver la section `# === Options rclone ===`  
+* [Durable] Modifier `nano /opt/rclone_homelab/conf.sh` pour trouver la section `# === Options rclone ===`  
 Là vous pourrez mettre/enlever vos propores options.
 
 
 ### Notifications Discord
-Moyennent l'edition du fichier `nano rclone_sync_conf.sh` vous y trouvere en tout début l'endroit pour ajouter l'URL du *webhook* Discord afin de faire afficher l'information pour __un message par job__.
+Moyennent l'edition du fichier `/config/config.main.sh` vous y trouvere en tout début l'endroit pour ajouter l'URL du *webhook* Discord afin de faire afficher l'information pour __un message par job__.
 ```
 DISCORD_WEBHOOK_URL="<URL_DISCORD_WEBHOOK>"
 ```
@@ -157,9 +157,9 @@ Pour exécuter une tache de manière programmée, rien de tel que l'utilitaire s
 Pour ajouter une tâche, la commmande est : `crontab -e`  
 Exemple de commande pour une exécution tous les jours à 04h00 :
 ```
-0 4 * * * /opt/rclone_homelab/rclone_sync_main.sh --auto --mailto=<votre_adresse@mail.com> --dry-run >> /var/log/rclone_cron.log 2>&1
+0 4 * * * /opt/rclone_homelab/main.sh --auto --mailto=<votre_adresse@mail.com> --dry-run >> /var/log/rclone_cron.log 2>&1
 ```
-- **/opt/rclone_homelab/rclone_sync_main.sh** Il est préférable de saisir le chemin en entier et non le symlink vers le script.
+- **/opt/rclone_homelab/main.sh** Il est préférable de saisir le chemin en entier et non le symlink vers le script.
 - **--auto --mailto=<votre_adresse@mail.com> --dry-run** Options du script
 - **>> /var/log/rclone_cron.log 2>&1** [OPTIONNEL] redirection vers un fichier journal, au cas ou... contiendra l'équivalent de c equi est affiché dans la fenêtre de terminal Shell.
 

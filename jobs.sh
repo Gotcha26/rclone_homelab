@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 
 # Charger les fonctions
-source "$SCRIPT_DIR/rclone_sync_functions.sh"
+source "$SCRIPT_DIR/functions.sh"
 
 # Déclarer les tableaux globaux
 declare -a JOBS_LIST       # Liste des jobs src|dst

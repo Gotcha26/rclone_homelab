@@ -17,8 +17,8 @@ done
 SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 
 # Sourcing global
-source "$SCRIPT_DIR/rclone_sync_conf.sh"
-source "$SCRIPT_DIR/rclone_sync_functions.sh"
+source "$SCRIPT_DIR/conf.sh"
+source "$SCRIPT_DIR/functions.sh"
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"
 
@@ -198,7 +198,7 @@ fi
 # Sourcing
 ###############################################################################
 
-source "$SCRIPT_DIR/rclone_sync_jobs.sh"
+source "$SCRIPT_DIR/jobs.sh"
 
 
 ###############################################################################
