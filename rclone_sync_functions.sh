@@ -157,7 +157,9 @@ warn_remote_problem() {
     local job_idx="$3"     # optionnel, pour associer message JOB_MSG
 
     local msg
-    msg="❌  \e[1;33mAttention\e[0m : le remote '\e[1m$remote\e[0m' est \e[31minaccessible\e[0m pour l'écriture.\n\n"
+    msg="❌  \e[1;33mAttention\e[0m : le remote '\e[1m$remote\e[0m' est \e[31minaccessible\e[0m pour l'écriture.
+    
+    "
 
     case "$remote_type" in
         onedrive)
