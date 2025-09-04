@@ -313,7 +313,10 @@ prepare_mail_html() {
         # Supprimer espaces en début/fin et ignorer lignes vides
         local trimmed_line
         trimmed_line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-        [[ -z "$trimmed_line" ]] && continue
+        if [[ -z "$trimmed_line" ]]; then
+            echo "<br>"  # préserve la ligne vide dans le HTML
+            continue
+        fi
 
         # Échapper le HTML
         local safe_line
