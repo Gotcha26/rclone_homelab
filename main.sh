@@ -18,7 +18,8 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 
 # Sourcing global
 source "$SCRIPT_DIR/conf.sh"
-source "$SCRIPT_DIR/functions.sh"
+source "$SCRIPT_DIR/functions/dependances.sh"
+source "$SCRIPT_DIR/functions/init.sh"
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"
 
@@ -93,7 +94,7 @@ done
 
 # Gestion des mises à jour selon les options passées
 if [[ "$FORCE_UPDATE" == true ]]; then
-    if force_update_branch; then
+    if update_force_branch; then
         # --- Une mise à jour a été effectuée → relance du script ---
         # On reconstruit les arguments pour s'assurer que --mailto est conservé
         NEW_ARGS=()
@@ -114,7 +115,7 @@ if [[ "$FORCE_UPDATE" == true ]]; then
 elif [[ "$UPDATE_TAG" == true ]]; then
     update_to_latest_tag  # appel explicite
 else
-    check_update  # juste informer
+    update_check  # juste informer
 fi
 
 # Activation dry-run si demandé
@@ -124,114 +125,16 @@ $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 [[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
 
 # Vérifie l’email seulement si l’option --mailto est fournie
-[[ -n "$MAIL_TO" ]] && check_email "$MAIL_TO"
+[[ -n "$MAIL_TO" ]] && email_check "$MAIL_TO"
 
-# Vérification de la présence de rclone
-if ! command -v rclone >/dev/null 2>&1; then
-    echo
-    echo "⚠️  rclone n'est pas installé sur votre système Debian/Ubuntu."
-    
-    read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-    REPLY=${REPLY,,}  # convertit en minuscule
+# Vérif rclone
+check_rclone
+check_rclone_config
 
-    if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-        echo "Installation de rclone en cours..."
-        sudo apt update && sudo apt install rclone -y
-        if [[ $? -eq 0 ]]; then
-            echo "✅ rclone a été installé avec succès !"
-        else
-            echo >&2 "❌ Une erreur est survenue lors de l'installation de rclone."
-            ERROR_CODE=11
-            exit $ERROR_CODE
-        fi
-    else
-        echo >&2 "❌ rclone n'est toujours pas installé. Le script va s'arrêter."
-        ERROR_CODE=11
-        exit $ERROR_CODE
-    fi
-fi
-
-# Vérification que rclone est configuré
-RCLONE_CONFIG_FILE="${RCLONE_CONFIG_DIR:-$HOME/.config/rclone/rclone.conf}"
-
-if [[ ! -f "$RCLONE_CONFIG_FILE" || ! -s "$RCLONE_CONFIG_FILE" ]]; then
-    echo
-    echo "⚠️  rclone est installé mais n'est pas configuré."
-    echo "Vous devez configurer rclone avant de poursuivre."
-    echo "Pour configurer, vous pouvez exécuter : rclone config"
-    echo
-
-    read -rp \
-    "Voulez-vous éditer directement le fichier de configuration rclone ? [y/N] : " \
-    EDIT_REPLY
-
-    EDIT_REPLY=${EDIT_REPLY,,}
-
-    if [[ "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
-        ${EDITOR:-nano} "$RCLONE_CONFIG_FILE"
-        echo "Fichier de configuration édité. Relancez le script après avoir sauvegardé."
-    else
-        echo "Le script va s'arrêter. Configurez rclone et relancez le script."
-    fi
-
-    ERROR_CODE=12
-    exit $ERROR_CODE
-fi
-
-# Vérification de MSMTP seulement si --mailto est défini
+# Vérif msmtp (seulement si mail)
 if [[ -n "$MAIL_TO" ]]; then
-    # Vérification que msmtp est installé
-    if ! command -v msmtp >/dev/null 2>&1; then
-        echo
-        echo "⚠️  msmtp n'est pas installé sur votre système Debian/Ubuntu."
-        
-        read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-        REPLY=${REPLY,,}
-
-        if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            echo "Installation de msmtp en cours..."
-            sudo apt update && sudo apt install msmtp msmtp-mta -y
-            if [[ $? -eq 0 ]]; then
-                echo "✅ msmtp a été installé avec succès !"
-            else
-                echo "❌ Une erreur est survenue lors de l'installation de msmtp."
-                ERROR_CODE=21
-                exit $ERROR_CODE
-            fi
-        else
-            echo "❌ msmtp n'est toujours pas installé. Le script va s'arrêter."
-            ERROR_CODE=21
-            exit $ERROR_CODE
-        fi
-    fi
-
-    # Vérification du fichier de configuration
-    MSMTP_CONFIG_FILE="${MSMTP_CONFIG_FILE:-$HOME/.msmtprc}"
-    if [[ ! -f "$MSMTP_CONFIG_FILE" || ! -s "$MSMTP_CONFIG_FILE" ]]; then
-        echo
-        echo "⚠️  msmtp est installé mais n'est pas configuré."
-        echo "Vous devez configurer msmtp avant de poursuivre."
-        echo "Pour configurer, vous pouvez exécuter : msmtp --configure"
-        echo "Ou éditer le fichier suivant :"
-        echo "    $MSMTP_CONFIG_FILE"
-        echo
-
-        read -rp \
-        "Voulez-vous éditer directement le fichier de configuration msmtp ? [y/N] : " \
-        EDIT_REPLY
-
-        EDIT_REPLY=${EDIT_REPLY,,}
-
-        if [[ "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
-            ${EDITOR:-nano} "$MSMTP_CONFIG_FILE"
-            echo "Fichier de configuration édité. Relancez le script après avoir sauvegardé."
-        else
-            echo "Le script va s'arrêter. Configurez msmtp et relancez le script."
-        fi
-
-        ERROR_CODE=22
-        exit $ERROR_CODE
-    fi
+    check_msmtp
+    check_msmtp_config
 fi
 
 # Création des répertoires nécessaires
@@ -280,7 +183,8 @@ fi
 # Sourcing
 ###############################################################################
 
-source "$SCRIPT_DIR/jobs.sh"
+source "$SCRIPT_DIR/functions/jobs_runs.sh"
+source "$SCRIPT_DIR/jobs_runs.sh"
 
 
 ###############################################################################

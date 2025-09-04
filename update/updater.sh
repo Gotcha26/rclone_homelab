@@ -1,36 +1,10 @@
-###############################################################################
-# Fonction : Vérifie s'il existe une nouvelle release ou branche
-# NE MODIFIE PAS le dépôt
-###############################################################################
-check_update() {
-
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
-
-    # Récupérer les infos distantes
-    git fetch origin "$BRANCH" --tags --quiet
-
-    # Récupérer le dernier tag de la branche active
-    latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
-
-    if [[ -z "$latest_tag" ]]; then
-        print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
-        return
-    fi
-
-    if [[ "$latest_tag" != "$VERSION" ]]; then
-        MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest_tag" "$VERSION")
-        echo
-        print_fancy --align "left" --fg "green" --style "italic" "$MSG_MAJ_UPDATE1"
-        print_fancy --align "right" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
-    fi
-}
-
+#!/usr/bin/env bash
 
 ###############################################################################
 # Fonction : Met à jour (forcée) du script sur la branche en cour ou sur une branche spécifiée si précisée
 # Appel explicite ou implicite si forcé via FORCE_UPDATE=true
 ###############################################################################
-force_update_branch() {
+update_force_branch() {
     local branch="${FORCE_BRANCH:-$BRANCH}"
     MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
     echo
@@ -117,5 +91,33 @@ update_to_latest_tag() {
         MSG_MAJ_UPDATE_TAG_REJECTED=$(printf "$MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE" "$latest_tag")
         print_fancy --align "center" --theme "info" "$MSG_MAJ_UPDATE_TAG_REJECTED"
         exit 0
+    fi
+}
+
+
+###############################################################################
+# Fonction : Vérifie s'il existe une nouvelle release ou branche
+# NE MODIFIE PAS le dépôt
+###############################################################################
+update_check() {
+
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+
+    # Récupérer les infos distantes
+    git fetch origin "$BRANCH" --tags --quiet
+
+    # Récupérer le dernier tag de la branche active
+    latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
+
+    if [[ -z "$latest_tag" ]]; then
+        print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
+        return
+    fi
+
+    if [[ "$latest_tag" != "$VERSION" ]]; then
+        MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest_tag" "$VERSION")
+        echo
+        print_fancy --align "left" --fg "green" --style "italic" "$MSG_MAJ_UPDATE1"
+        print_fancy --align "right" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
     fi
 }
