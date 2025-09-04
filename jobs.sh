@@ -25,7 +25,7 @@ parse_jobs "$JOBS_FILE"
 # 2. Vérifier les remotes et mettre à jour JOB_STATUS
 # ---------------------------------------------------------------------------
 
-check_remote_exists
+remote_exists
 check_remotes
 
 # ---------------------------------------------------------------------------

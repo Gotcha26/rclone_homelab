@@ -57,19 +57,6 @@ remote_exists() {
 
 
 ###############################################################################
-# Vérifie si un remote existe dans la config rclone
-###############################################################################
-remote_exists() {
-    local remote="$1"
-    if rclone listremotes | grep -q "^${remote}:$"; then
-        return 0  # existe
-    else
-        return 1  # n'existe pas
-    fi
-}
-
-
-###############################################################################
 # Fonction pour parcourir tous les remotes avec exécution parallèle
 ###############################################################################
 check_remotes() {
