@@ -26,6 +26,10 @@ UPDATE_TAG="false"
 
 # Création du dossier logs si absent
 mkdir -p "$LOG_DIR"
+# --- DEBUG ---
+# TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
+# mkdir -p "$TMP_JOBS_DIR"
+# --- DEBUG ---
 
 # On créait un dossier temporaire de manière temporaire
 TMP_JOBS_DIR=$(mktemp -d)

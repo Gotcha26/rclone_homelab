@@ -215,13 +215,31 @@ init_job_logs() {
 
 
 ###############################################################################
-# Fonction de convertion des formats
+# Génération des logs HTML et PLAIN
 ###############################################################################
 generate_logs() {
-    local raw="$1" html="$2" plain="$3"
+    local raw_log="$1"
+    local html_log="$2"
+    local plain_log="$3"
 
-    prepare_mail_html "$raw" >> "$html" # On ajoute le formatage HTML
-    make_plain_log "$raw" "$plain"      # On épure RAW pour en faire du plain format
+    # === HTML ===
+    [[ -n "$html_log" ]] && prepare_mail_html "$raw_log" > "$html_log"
+
+    # === Plain ===
+    [[ -n "$plain_log" ]] && clean_raw_for_logs "$raw_log" > "$plain_log"
+}
+
+
+# -------------------------------------------------------------------------------
+# clean_raw_for_logs : supprime les ANSI et conserve les accents
+# -------------------------------------------------------------------------------
+clean_raw_for_logs() {
+    local raw_file="$1"
+
+    [[ ! -f "$raw_file" ]] && { echo "Fichier introuvable : $raw_file" >&2; return 1; }
+
+    # Suppression des séquences ANSI, mais on ne touche pas aux caractères UTF-8
+    perl -CS -pe 's/\e\[[\d;?]*[A-Za-z]//g' "$raw_file"
 }
 
 
