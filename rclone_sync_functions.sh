@@ -341,6 +341,11 @@ prepare_mail_html() {
             line_html="$safe_line<br>"
         fi
 
+        # === Mettre en gras les deux premières lignes ===
+        if (( idx == 0 || idx == 1 )); then
+            line_html="<b>$line_html</b>"
+        fi
+
         # Séparateur avant le bloc final
         if (( idx == normal_end )); then
             echo "<br>"
