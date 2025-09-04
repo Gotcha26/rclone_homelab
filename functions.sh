@@ -35,6 +35,27 @@ EOF
 
 
 ###############################################################################
+# Fonction qui corrige la branch de travail en cours
+###############################################################################
+detect_branch() {
+    if [[ -f "$SCRIPT_DIR/config/config.local.sh" ]]; then
+        BRANCH="local"
+        source "$SCRIPT_DIR/config/config.local.sh"
+        print_fancy --align "center" --bg "yellow" --fg "black" --highlight \
+        "⚠️  MODE LOCAL ACTIVÉ – Branche = $BRANCH ⚠️ "
+    elif [[ -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
+        BRANCH="dev"
+        source "$SCRIPT_DIR/config/config.dev.sh"
+        print_fancy --align "center" --bg "yellow" --fg "black" --highlight \
+        "⚠️  MODE DEV ACTIVÉ – Branche = $BRANCH ⚠️ "
+    else
+        BRANCH="main"
+        source "$SCRIPT_DIR/config/config.main.sh"
+    fi
+}
+
+
+###############################################################################
 # Fonction pour parser et vérifier les jobs
 ###############################################################################
 # Déclarer le tableau global pour stocker les jobs

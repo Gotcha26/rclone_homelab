@@ -201,7 +201,7 @@ send_email_if_needed() {
     elif ! command -v msmtp >/dev/null 2>&1; then
         print_fancy --theme "warning" "$MSG_MSMTP_NOT_FOUND" >&2
         echo
-        ERROR_CODE=9
+        ERROR_CODE=13
     else
         print_fancy --align "center" "$MSG_EMAIL_PREP"
         encode_subject_for_email "$LOG_FILE_INFO"

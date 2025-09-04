@@ -189,8 +189,9 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 | Problème avec le processus PID rclone        | Sérieuse                                      | 8            |
 | `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration remote ou argument incorrect    |              |
 | `$MSG_REMOTE_UNAUTHORIZED` remote            | remote inaccessible / non authentifié         |              |
-| Vérification présence rclone                 | rclone non présent ou injoignable             | 11           | 
-| Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 12           |
+| `rclone` Vérification présence rclone        | rclone non présent ou injoignable             | 11           | 
+| `RCLONE_CONFIG_FILE` Configuration rclone    | rclone non ou mal configuré                   | 12           | 
+| Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 13           |
 
 
   
