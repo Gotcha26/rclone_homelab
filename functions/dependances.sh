@@ -23,7 +23,7 @@ spinner() {
         done
     done
 
-    printf "\r[${GREEN}✔${RESET}] Terminé !                   \n"
+        printf "\r[${GREEN}✔${RESET}] Terminé ! \n"
     tput cnorm  # réafficher le curseur
 }
 

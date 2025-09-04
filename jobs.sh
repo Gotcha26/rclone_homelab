@@ -25,6 +25,7 @@ parse_jobs "$JOBS_FILE"
 # 2. Vérifier les remotes et mettre à jour JOB_STATUS
 # ---------------------------------------------------------------------------
 
+check_remote_exists
 check_remotes
 
 # ---------------------------------------------------------------------------
@@ -87,8 +88,9 @@ for idx in "${!JOBS_LIST[@]}"; do
         spinner $RCLONE_PID
         wait $RCLONE_PID
         job_rc=$?
-        (( job_rc != 0 )) && ERROR_CODE=8
-
+        (( job_rc != 0 ))
+        
+        ERROR_CODE=8
         DISPLAY_JOB=true
     fi
 

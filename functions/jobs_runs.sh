@@ -44,14 +44,73 @@ parse_jobs() {
 
 
 ###############################################################################
-# Fonction pour vérifier et éventuellement reconnecter un remote avec timeout
+# Vérifie si un remote existe dans la config rclone
 ###############################################################################
-declare -A REMOTE_STATUS   # remote_name -> OK / PROBLEM
+remote_exists() {
+    local remote="$1"
+    if rclone listremotes | grep -q "^${remote}:$"; then
+        return 0  # existe
+    else
+        return 1  # n'existe pas
+    fi
+}
 
+
+###############################################################################
+# Vérifie si un remote existe dans la config rclone
+###############################################################################
+remote_exists() {
+    local remote="$1"
+    if rclone listremotes | grep -q "^${remote}:$"; then
+        return 0  # existe
+    else
+        return 1  # n'existe pas
+    fi
+}
+
+
+###############################################################################
+# Fonction pour parcourir tous les remotes avec exécution parallèle
+###############################################################################
+check_remotes() {
+    for job in "${JOBS_LIST[@]}"; do
+        IFS='|' read -r src dst <<< "$job"
+        if [[ "$dst" == *":"* ]]; then
+            local remote="${dst%%:*}"
+            # Vérification unique par remote
+            [[ -z "${REMOTE_STATUS[$remote]+x}" ]] && check_remote_non_blocking "$remote"
+        fi
+    done
+}
+
+
+###############################################################################
+# Fonction pour vérifier et éventuellement reconnecter un remote
+###############################################################################
 check_remote_non_blocking() {
     local remote="$1"
     local timeout_duration=30s  # Temps max pour chaque test/reconnect
 
+    # --- 1️⃣ Vérification existence du remote ---
+    if ! remote_exists "$remote"; then
+        local msg="❌  Attention : le remote '$remote' n'existe pas dans la configuration rclone."
+        echo -e "\n$msg"
+        
+        # Marquer les jobs utilisant ce remote comme PROBLEM
+        for i in "${!JOBS_LIST[@]}"; do
+            [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
+                JOB_STATUS[$i]="PROBLEM"
+                JOB_MSG["$i"]="$msg"
+                # Écriture dans le log raw si défini
+                [[ -n "$TMP_JOB_LOG_RAW" ]] && echo -e "$msg" >> "$TMP_JOB_LOG_RAW"
+            }
+        done
+
+        ERROR_CODE=9
+        return $ERROR_CODE
+    fi
+
+    # --- 2️⃣ Vérification classique du remote ---
     local remote_type
     remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
@@ -72,14 +131,15 @@ check_remote_non_blocking() {
                 fi
             else
                 REMOTE_STATUS["$remote"]="PROBLEM"
-                msg_status="Reconnect échoué, remote inaccessible  ⚠️"
+                msg_status="Reconnect échoué, remote inaccessible ⚠️"
             fi
 
-            # ❗ Marquer tous les jobs qui utilisent ce remote comme PROBLEM
+            # Marquer les jobs utilisant ce remote comme PROBLEM
             for i in "${!JOBS_LIST[@]}"; do
                 [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
                     JOB_STATUS[$i]="PROBLEM"
                     warn_remote_problem "$remote" "$remote_type" "$i"
+                    [[ -n "$TMP_JOB_LOG_RAW" ]] && echo -e "${JOB_MSG[$i]}" >> "$TMP_JOB_LOG_RAW"
                 }
             done
         else
@@ -89,29 +149,14 @@ check_remote_non_blocking() {
         msg_status="accessible ✅"
     fi
 
-    # Affichage stylisé
+    # --- 3️⃣ Affichage stylisé ---
     if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
         print_fancy --theme "warning" "Remote '$remote' $msg_status"
-        echo
     else
         print_fancy --theme "success" "Remote '$remote' $msg_status"
     fi
 }
 
-
-###############################################################################
-# Fonction pour parcourir tous les remotes avec exécution parallèle
-###############################################################################
-check_remotes() {
-    for job in "${JOBS_LIST[@]}"; do
-        IFS='|' read -r src dst <<< "$job"
-        if [[ "$dst" == *":"* ]]; then
-            local remote="${dst%%:*}"
-            # Vérification unique par remote
-            [[ -z "${REMOTE_STATUS[$remote]+x}" ]] && check_remote_non_blocking "$remote"
-        fi
-    done
-}
 
 
 ###############################################################################
