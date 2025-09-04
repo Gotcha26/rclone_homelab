@@ -157,47 +157,48 @@ warn_remote_problem() {
     local job_idx="$3"     # optionnel, pour associer message JOB_MSG
 
     local msg
-    msg="❌  Attention : le remote '$remote' est inaccessible pour l'écriture.
-
-"
+    msg="❌  \e[1;33mAttention\e[0m : le remote '\e[1m$remote\e[0m' est \e[31minaccessible\e[0m pour l'écriture.\n\n"
 
     case "$remote_type" in
         onedrive)
             msg+="
-Ce problème est typique de OneDrive : le token OAuth actuel
+Ce problème est typique de \e[36mOneDrive\e[0m : le token OAuth actuel
 ne permet plus l'écriture, même si la lecture fonctionne.
 Il faut refaire complètement la configuration du remote :
-  1. Supprimer ou éditer le remote existant : rclone config
+  1. Supprimer ou éditer le remote existant : \e[1mrclone config\e[0m
   2. Reconnecter le remote et accepter toutes les permissions
-     (lecture + écriture).
+     (\e[32mlecture\e[0m + \e[32mécriture\e[0m).
+  3. Commande pour éditer directement le fichier de conf. de rclone :
+     \e[1mnano ~/.config/rclone/rclone.conf\e[0m
 "
             ;;
         drive)
             msg+="
-Ce problème peut se produire sur Google Drive si le token
+Ce problème peut se produire sur \e[36mGoogle Drive\e[0m si le token
 OAuth est expiré ou si les scopes d'accès sont insuffisants.
 Pour résoudre le problème :
-  1. Supprimer ou éditer le remote existant : rclone config
+  1. Supprimer ou éditer le remote existant : \e[1mrclone config\e[0m
   2. Reconnecter le remote et accepter toutes les permissions nécessaires.
+  3. Commande pour éditer directement le fichier de conf. de rclone :
+     \e[1mnano ~/.config/rclone/rclone.conf\e[0m
 "
             ;;
         *)
             msg+="
 Le problème provient probablement du token ou des permissions.
-Vérifiez la configuration du remote avec : rclone config
+Vérifiez la configuration du remote avec : \e[1mrclone config\e[0m
 "
             ;;
     esac
 
     msg+="
-Les jobs utilisant ce remote seront ignorés jusqu'à résolution.
+Les jobs utilisant ce remote seront \e[31mignorés\e[0m jusqu'à résolution.
 "
 
     # Affichage à l’écran
-    echo
-    echo "$msg"
+    echo -e "\n$msg"
 
-    # Optionnel : associer au JOB_MSG si job_idx fourni
+    # Associer au JOB_MSG si job_idx fourni
     [[ -n "$job_idx" ]] && JOB_MSG["$job_idx"]="$msg"
 }
 
