@@ -98,10 +98,14 @@ check_remote_non_blocking() {
         # Marquer uniquement les jobs liés à ce remote
         for i in "${!JOBS_LIST[@]}"; do
             IFS='|' read -r _ dst <<< "${JOBS_LIST[$i]}"
-            job_remote="${dst%%:*}"  # partie avant le ':'
+
+            # Extraire remote strictement comme la partie avant le premier ':' seulement
+            job_remote="${dst%%:*}"
+
+            # Comparer exactement au remote testé
             if [[ "$job_remote" == "$remote" ]]; then
                 JOB_STATUS[$i]="PROBLEM"
-                JOB_MSG["$i"]="$msg"
+                warn_remote_problem "$remote" "$remote_type" "$i"
             fi
         done
 
