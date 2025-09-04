@@ -219,10 +219,19 @@ init_job_logs() {
 # Fonction de convertion des formats
 ###############################################################################
 generate_logs() {
-    local raw="$1" html="$2" plain="$3"
+    local src_log="$1"
+    local dest_html="$2"
+    local dest_plain="$3"
 
-    prepare_mail_html "$raw" >> "$html" # On ajoute le formatage HTML
-    make_plain_log "$raw" "$plain"      # On épure RAW pour en faire du plain format
+    # Forcer environnement UTF-8
+    export LC_ALL=en_US.UTF-8
+    export LANG=en_US.UTF-8
+
+    # HTML (colorisé)
+    ansi2html < "$src_log" > "$dest_html"
+
+    # Plain (sans couleurs, accents préservés)
+    sed 's/\x1b\[[0-9;]*m//g' "$src_log" > "$dest_plain"
 }
 
 
