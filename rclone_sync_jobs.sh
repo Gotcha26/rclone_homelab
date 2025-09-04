@@ -59,7 +59,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     {
         echo "[$JOB_ID] $src → $dst"
         echo "$MSG_TASK_LAUNCH ${NOW}"
-        echo ""
+        echo
     } > "$TMP_JOB_LOG_RAW"
 
     # === Exécution rclone ===
