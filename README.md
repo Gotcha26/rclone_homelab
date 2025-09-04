@@ -16,12 +16,12 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ✅ Persistance limitée à 15 jours pour les fichiers de logs
 - ✅ Coloration synthaxique
 - ❗ Vous rend riche, beau et irresistible
-- ✅ Durée de conservation des logs : 15 jours par défaut.
+- ✅ Durée de conservation des logs : 15 jours par défaut
 - ℹ️ Vous pouvez appeler le script depuis n'importe où (root inclu)
 - ✅ Accèpte les arguments de rclone depuis l'appel du script
 - ✅ Notification par mail si msmtp est installé/configuré
 - ✅ Notifications Discord possibles via un webhook
-- ✅ Système de vérification de mises à jour
+- ✅ Système de vérification et de mises à jour
 
 
 ## Installation pas à pas [LXC - Debian : compatible]
@@ -41,11 +41,11 @@ git clone https://github.com/Gotcha26/rclone_homelab.git .
 
 4. Rendre le script exécutable
 ```
-chmod +x main.sh
+chmod +x /opt/rclone_homelab/main.sh
 ```
 5. Ajouter un symlink (raccourcis) pour un accès global afin de pour pouvoir lancer la commande simplement avec `rclone_homelab` :
 ```
-ln -s /opt/rclone_homelab/main.sh /usr/local/bin/rclone_homelab
+ln -sf /opt/rclone_homelab/main.sh /usr/local/bin/rclone_homelab
 ```
 6. Vérifier l'installation
 ```
@@ -60,16 +60,6 @@ rclone_homelab --help
 cd
 ```
 
-### Mise à jour
-Système directement intégré dans le script. Vous averti si une nouvelle version est disponnible.  
-- Pour mettre à jour vers la dernière version (tag) :  
-`rclone_homelabe --update-tag`           → mettre à jour vers la dernière realse stable
-
-- Pour obtenir les dernières améliorations **BETA**  
-`rclone_holemab --update-forced`         → force la mise à jour de la branche main  
-`rclone_holemab --update-forced on_work` → force la mise à jour de la branche on_work
-Si --update-forced n’est pas présent, le script continue à vérifier le dernier tag comme avant.
-
 
 ## Utilisation
 
@@ -81,7 +71,7 @@ Des arguments (voir [Arguments](#arguments)) peuvent être utilisés.
 
 
 ## Jobs
-Les jobs ne sont pas moins que les directives dédiées pour rclone.
+Les jobs ne sont pas moins que les directives *de dossiers* dédiées pour rclone.
 
 Le script attends 3 arguments minimum pour faire **un job**.  
 Pour simplifier la vie, ces *jobs* sont à écrire à l'avance dans un fichier à placer **à coté du script** (même dossier).  
@@ -99,23 +89,25 @@ Chaque job est constitué d'un ensemble de 2 arguments séparés par un symbole 
 - Le premier argument constitue le dossier d'origine.
 Celui qui sera copié et pris pour référence. Vous pouvez l'indiquer "en dur" avec son chemin absolu ou via un symlink (Proxmox).
 - Le second argument consiste à indiquer quel *remote* (précédemment paramétré dans via `rclone config`) est à utiliser.
-rclone permettant d'en configurer une multitude, il faut bien préciser lequel est à utiliser.
+rclone permettant d'en configurer une multitude, il faut bien préciser lequel est à utiliser __pour ce job__.
 - Le présence du symbole `:` passe un sous-argument qui indique le chemin du dossier à atteindre dans **le cloud** (distant).  
 Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arborescence plus compliquée.
 
 ###### A retenir :
 - 1 ligne = 1 job
-- <dossier_source>`|`<remote_rclone>`:`dossier_destination/sous_dossier>
+- <dossier_source>`|`<remote_rclone>`:`<dossier_destination/sous_dossier>
 
 
 ## Arguments 
-Ils sont optionnels au lancement de `rclone_homelab` (`main.sh`)
+Ils sont optionnels au lancement de `rclone_homelab` *(`main.sh`)*
 Argument | Explication
 --- | ---
   --auto        | Permet simplement de supprimer le logo (bannière).
   --dry-run     | Simule la synchronisation sans transférer ni supprimer de fichiers.
-  -h, --help    | Affiche cette humble aide
-  --mailto=<mon_adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp
+  -h, --help    | Affiche cette humble aide.
+  --mailto=<mon_adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp.
+  --update-forced <branch> | Oblige le script à se mettre à jour dans la branche désignée sinon, ce sera la branche en cours par défaut.
+  --update-tag <tag> | Va se mettre à jour vers le tag désigné, sinon ce sera la dernière release de la branche en cours par défaut.
 
 
 ### Envoi d'emails
@@ -130,6 +122,21 @@ rclone_homelab --dry-run
 rclone_homelab --auto --mailto=toto@mail.com --dry-run
 rclone_homelab -h
 ```
+
+
+### Mise à jour
+Système directement intégré dans le script. Vous averti si une nouvelle version est disponnible.  
+- Pour mettre à jour vers la dernière version (tag/ release) :  
+`rclone_homelab --update-tag`           → mettre à jour vers la dernière release stable
+
+- Pour obtenir les mise à jour "au fil de l'eau" vous pouvez activer le paramètre `FORCE_UPDATE=true` dans  
+le fichier `/config/config.main.sh` ainsi le script vérifira et se mettra à jour à chaque lancement.
+
+- Pour obtenir les dernières améliorations **BETA**  
+`rclone_holemab --update-forced`         → force la mise à jour sur la branche men cours.  
+`rclone_holemab --update-forced on_work` → force la mise à jour de la branche *on_work*.
+Si --update-forced n’est pas présent, le script continue à vérifier le dernier tag comme avant.
+
 
 ## rclone
 L'outil rclone est indispensable.  
