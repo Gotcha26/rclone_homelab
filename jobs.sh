@@ -95,7 +95,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     fi
 
     # === Affichage colorisé à l'écran et génération logs ===
-    tail -n +3 "$TMP_JOB_LOG_RAW" | colorize | tee -a "$LOG_FILE_INFO"
+    tail -n +3 "$TMP_JOB_LOG_RAW" | colorize
     cat "$TMP_JOB_LOG_RAW" >> "$LOG_FILE_INFO"
 
     # Génération des logs HTML / PLAIN
