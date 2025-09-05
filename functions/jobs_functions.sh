@@ -298,7 +298,7 @@ colorize() {
             printf "%s%s%s\n", BLUE, line, RESET
         }
         # Suppressions -> rouge simple
-        else if (l ~ /\b(delete|deleted)\b/) {
+        else if (l ~ /(delete|deleted)/) {
             printf "%s%s%s\n", RED, line, RESET
         }
         # Erreurs et échecs -> rouge gras
