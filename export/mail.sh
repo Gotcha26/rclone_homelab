@@ -52,7 +52,7 @@ email_check() {
 calculate_subject_raw_for_job() {
     local job_log_file="$1"
 
-    if grep -iqE "(error|failed|unauthenticated|unexpected|io error|io errors|not deleting)" "$job_log_file"; then
+    if grep -iqE "(error|failed|unexpected|io error|io errors|not deleting)" "$job_log_file"; then
         echo "$MSG_EMAIL_FAIL"
     elif grep -q "There was nothing to transfer" "$job_log_file"; then
         echo "$MSG_EMAIL_SUSPECT"
@@ -70,7 +70,7 @@ prepare_mail_html() {
 
     # Déterminer le bloc final selon le type de job
     local final_count=4  # par défaut, job réussi
-    if grep -iqE "(error|failed|unauthenticated|unexpected|io error|io errors|not deleting)" "$file"; then
+    if grep -iqE "(error|failed|unexpected|io error|io errors|not deleting)" "$file"; then
         final_count=9   # erreurs
     elif grep -q "There was nothing to transfer" "$file"; then
         final_count=1   # rien à transférer
@@ -104,7 +104,7 @@ prepare_mail_html() {
             line_html="<span style='color:orange; font-style:italic;'>$safe_line</span><br>"
         elif [[ "$lower" =~ \b(delete|deleted)\b ]]; then
             line_html="<span style='color:red;'>$safe_line</span><br>"
-        elif [[ "$lower" =~ (error|failed|unauthenticated|unexpected|io error|io errors|not deleting) ]]; then
+        elif [[ "$lower" =~ (error|failed|unexpected|io error|io errors|not deleting) ]]; then
             line_html="<span style='color:red; font-weight:bold;'>$safe_line</span><br>"
         elif [[ "$lower" =~ (copied|added|transferred|new|created|renamed|uploaded) ]]; then
             line_html="<span style='color:blue;'>$safe_line</span><br>"

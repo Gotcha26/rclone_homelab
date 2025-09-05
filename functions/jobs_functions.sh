@@ -185,7 +185,8 @@ warn_remote_problem() {
     local log_file="$4"
 
     local msg
-    msg="❌  \e[1;33mAttention\e[0m : un problème empèche l'exécution du job pour le remote '\e[1m$remote\e[0m'
+    msg="❌  \e[1;33mAttention\e[0m : erreur unexpected détectée !
+    Un problème empèche l'exécution du job pour le remote '\e[1m$remote\e[0m'
     
     "
 
@@ -317,7 +318,7 @@ colorize() {
             printf "%s%s%s\n", RED, line, RESET
         }
         # Erreurs et échecs -> rouge gras
-        else if (l ~ /(error|failed|unauthenticated|unexpected|io error|io errors|not deleting)/) {
+        else if (l ~ /(error|failed|unexpected|io error|io errors|not deleting)/) {
             printf "%s%s%s\n", RED_BOLD, line, RESET
         }
         # Déjà synchronisé / inchangé / skipped -> orange
