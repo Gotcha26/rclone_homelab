@@ -69,32 +69,49 @@ remote_exists() {
 
 
 ###############################################################################
-# Fonction pour parcourir tous les remotes avec exécution parallèle
+# Fonction pour parcourir tous les remotes et vérifier leur disponibilité
+# Silencieux : pas de messages affichés, juste mise à jour de JOB_STATUS/JOB_MSG
 ###############################################################################
 check_remotes() {
+    local timeout_duration="10s"   # Durée max pour tester un remote
+
     for idx in "${!JOBS_LIST[@]}"; do
-        job="${JOBS_LIST[$idx]}"
+        local job="${JOBS_LIST[$idx]}"
         IFS='|' read -r src dst <<< "$job"
+
+        # On part du principe que le job est OK
+        JOB_STATUS[$idx]="OK"
+        JOB_MSG[$idx]="ok"
 
         for endpoint in "$src" "$dst"; do
             if [[ "$endpoint" == *:* ]]; then
-                remote="${endpoint%%:*}"
+                local remote="${endpoint%%:*}"
 
-                if printf '%s\n' "${RCLONE_REMOTES[@]}" | grep -qx "$remote"; then
-                    REMOTE_STATUS["$remote"]="OK"
-                else
-                    REMOTE_STATUS["$remote"]="missing"
+                # Remote configuré dans rclone ?
+                if ! printf '%s\n' "${RCLONE_REMOTES[@]}" | grep -qx "$remote"; then
                     JOB_STATUS[$idx]="PROBLEM"
                     JOB_MSG[$idx]="missing"
+                    REMOTE_STATUS["$remote"]="missing"
+                    continue 2  # passe au job suivant
+                fi
+
+                # Pour OneDrive / Google Drive, on teste le token avec un petit lsf
+                local remote_type
+                remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
+
+                if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
+                    if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+                        JOB_STATUS[$idx]="PROBLEM"
+                        JOB_MSG[$idx]="$remote_type"
+                        REMOTE_STATUS["$remote"]="PROBLEM"
+                        continue 2  # passe au job suivant
+                    fi
+                else
+                    # Remote existant et OK pour les autres types
+                    REMOTE_STATUS["$remote"]="OK"
                 fi
             fi
         done
-
-        # Si aucun problème détecté, on marque explicitement OK
-        if [[ -z "${JOB_STATUS[$idx]}" ]]; then
-            JOB_STATUS[$idx]="OK"
-            JOB_MSG[$idx]="ok"
-        fi
     done
 }
 
