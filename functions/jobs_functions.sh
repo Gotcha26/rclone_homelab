@@ -312,5 +312,5 @@ colorize() {
         else {
             print line
         }
-    }'
+    END { fflush() }'
 }
