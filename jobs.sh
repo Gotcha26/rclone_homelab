@@ -90,8 +90,22 @@ for idx in "${!JOBS_LIST[@]}"; do
         RCLONE_PID=$!
         spinner $RCLONE_PID
         wait $RCLONE_PID
-
         job_rc=$?
+
+        # Détecter si le job a échoué
+        if (( job_rc != 0 )); then
+            ERROR_CODE=8
+
+            # Analyse rapide du log pour détecter token expiré ou remote inaccessible
+            if grep -q -i "unauthenticated\|invalid_grant\|couldn't fetch token" "$TMP_JOB_LOG_RAW"; then
+                JOB_MSG[$idx]="token_expired"
+            else
+                JOB_MSG[$idx]="rclone_error"
+            fi
+        else
+            JOB_STATUS[$idx]="OK"
+            JOB_MSG[$idx]="ok"
+        fi
     fi
 
     # === Affichage colorisé à l'écran et génération logs ===

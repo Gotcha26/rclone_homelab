@@ -77,6 +77,11 @@ declare -A JOB_REMOTE   # idx -> remote problématique
 check_remotes() {
     local timeout_duration="10s"
 
+    # Initialisation du code d'erreur global si non défini
+    if [[ -z "${ERROR_CODE+x}" ]]; then
+        ERROR_CODE=0
+    fi
+
     for idx in "${!JOBS_LIST[@]}"; do
         local job="${JOBS_LIST[$idx]}"
         IFS='|' read -r src dst <<< "$job"
@@ -96,6 +101,7 @@ check_remotes() {
                     JOB_MSG[$idx]="missing"
                     JOB_REMOTE[$idx]="$remote"
                     REMOTE_STATUS["$remote"]="missing"
+                    ERROR_CODE=6   # remote manquant
                     continue 2
                 fi
 
@@ -110,6 +116,7 @@ check_remotes() {
                         JOB_MSG[$idx]="$remote_type"
                         JOB_REMOTE[$idx]="$remote"
                         REMOTE_STATUS["$remote"]="PROBLEM"
+                        ERROR_CODE=14
                         continue 2
                     fi
                 else
@@ -159,12 +166,10 @@ check_remote_non_blocking() {
         fi
 
         REMOTE_STATUS["$remote"]="PROBLEM"
-        code=1
-
         for i in "${!JOBS_LIST[@]}"; do
             [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
                 JOB_STATUS[$i]="PROBLEM"
-                JOB_MSG["$i"]="$remote_type"   # on stocke juste le type ici
+                JOB_MSG["$i"]="$remote_type"
             }
         done
     else

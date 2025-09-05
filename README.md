@@ -184,7 +184,8 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 | `$JOBS_FILE` introuvable                     | Fichier jobs absent                           | 3            |
 | `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible           | 4            |
 | `$TMP_RCLONE` non trouvé (après vérif)       | Le dossier temporaire n’existe pas après tout | 5            |
-| `$MSG_JOB_LINE_INVALID` invalide             | Fichier jobs présente une ligne illisible     |              |
+| Remote rclone invalide/mal configuré         | Remote mal écrit ou introuvalble              | 6            |
+| Remote rclone invalide/mal configuré         | Remote mal écrit ou introuvalble              | 6            |
 | `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              | 7            |
 | Problème avec le processus PID rclone        | Sérieuse                                      | 8            |
 | `$MSG_REMOTE_UNKNOW` introuvable ou invalide | Configuration remote ou argument incorrect    |              |
@@ -192,6 +193,7 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 | `rclone` Vérification présence rclone        | rclone non présent ou injoignable             | 11           | 
 | `RCLONE_CONFIG_FILE` Configuration rclone    | rclone non ou mal configuré                   | 12           | 
 | Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 13           |
+| Pb. de token pour Onedrive / Google Drive    | Token invalide, refaire la configuration      | 14           |
 
 
   
