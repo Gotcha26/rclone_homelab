@@ -62,8 +62,8 @@ for idx in "${!JOBS_LIST[@]}"; do
     echo
 
     # === Header Job ===
-    print_fancy --align "center" "[$JOB_ID] $src → $dst"
-    print_fancy --align "center" "$MSG_TASK_LAUNCH ${NOW}"
+    print_fancy --style "bold" --align "center" "[$JOB_ID] $src → $dst"
+    print_fancy --style "bold" --align "center" "$MSG_TASK_LAUNCH ${NOW}"
     echo
 
     {
@@ -106,6 +106,8 @@ for idx in "${!JOBS_LIST[@]}"; do
         GLOBAL_HTML_BLOCK+="<br><hr style='border:none; border-top:1px solid #ccc; margin:2em 0;'><br>"
     fi
     GLOBAL_HTML_BLOCK+=$(cat "$TMP_JOB_LOG_HTML")
+
+    print_fancy --align "center" "====="
 
     # === Notification Discord ===
     echo
