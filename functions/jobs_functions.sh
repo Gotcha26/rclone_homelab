@@ -274,7 +274,6 @@ make_plain_log() {
 # Colorisation de la sortie rclone (fonction)
 # Utilise awk pour des correspondances robustes et insensibles à la casse.
 ###############################################################################
-
 colorize() {
     local BLUE=$(get_fg_color "blue")
     local RED=$(get_fg_color "red")
@@ -305,5 +304,8 @@ colorize() {
         else {
             print line
         }
-    END { fflush() }'
+    }
+    END {
+        fflush()
+    }'
 }
