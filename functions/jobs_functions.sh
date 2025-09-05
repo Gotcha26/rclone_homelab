@@ -72,8 +72,10 @@ remote_exists() {
 # Fonction pour parcourir tous les remotes et vérifier leur disponibilité
 # Silencieux : pas de messages affichés, juste mise à jour de JOB_STATUS/JOB_MSG
 ###############################################################################
+declare -A JOB_REMOTE   # idx -> remote problématique
+
 check_remotes() {
-    local timeout_duration="10s"   # Durée max pour tester un remote
+    local timeout_duration="10s"
 
     for idx in "${!JOBS_LIST[@]}"; do
         local job="${JOBS_LIST[$idx]}"
@@ -82,6 +84,7 @@ check_remotes() {
         # On part du principe que le job est OK
         JOB_STATUS[$idx]="OK"
         JOB_MSG[$idx]="ok"
+        JOB_REMOTE[$idx]=""
 
         for endpoint in "$src" "$dst"; do
             if [[ "$endpoint" == *:* ]]; then
@@ -91,23 +94,25 @@ check_remotes() {
                 if ! printf '%s\n' "${RCLONE_REMOTES[@]}" | grep -qx "$remote"; then
                     JOB_STATUS[$idx]="PROBLEM"
                     JOB_MSG[$idx]="missing"
+                    JOB_REMOTE[$idx]="$remote"
                     REMOTE_STATUS["$remote"]="missing"
-                    continue 2  # passe au job suivant
+                    continue 2
                 fi
 
-                # Pour OneDrive / Google Drive, on teste le token avec un petit lsf
+                # Déterminer le type du remote
                 local remote_type
                 remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
+                # Test token (onedrive / drive)
                 if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
                     if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
                         JOB_STATUS[$idx]="PROBLEM"
                         JOB_MSG[$idx]="$remote_type"
+                        JOB_REMOTE[$idx]="$remote"
                         REMOTE_STATUS["$remote"]="PROBLEM"
-                        continue 2  # passe au job suivant
+                        continue 2
                     fi
                 else
-                    # Remote existant et OK pour les autres types
                     REMOTE_STATUS["$remote"]="OK"
                 fi
             fi
@@ -176,7 +181,8 @@ declare -A JOB_MSG         # idx -> message d'erreur détaillé
 warn_remote_problem() {
     local remote="$1"
     local remote_type="$2"
-    local job_idx="$3"     # optionnel, pour associer message JOB_MSG
+    local job_idx="$3"
+    local log_file="$4"
 
     local msg
     msg="❌  \e[1;33mAttention\e[0m : un problème empèche l'exécution du job pour le remote '\e[1m$remote\e[0m'
@@ -185,7 +191,7 @@ warn_remote_problem() {
 
     case "$remote_type" in
         missing)
-            msg="Raison : le remote '$remote' n'existe pas...
+            msg+="Raison : le remote '$remote' n'existe pas...
 ... ou n'a pas été trouvé dans votre configuration de rclone.
 Vous êtes invité à revoir votre configuration pour le job et/ou rclone."
             ;;
@@ -226,8 +232,8 @@ Vérifiez la configuration du remote avec : \e[1mrclone config\e[0m
 Les jobs utilisant ce remote seront \e[31mignorés\e[0m jusqu'à résolution.
 "
 
-    # Affichage à l’écran
-    echo -e "\n$msg"
+    # Écriture dans le log RAW
+    echo -e "\n$msg\n" >> "$log_file"
 
     # Associer au JOB_MSG si job_idx fourni
     [[ -n "$job_idx" ]] && JOB_MSG["$job_idx"]="$msg"

@@ -80,45 +80,23 @@ for idx in "${!JOBS_LIST[@]}"; do
 
     # === Vérification du statut du job ===
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        # On récupère le remote + son type
-        remote="${dst%%:*}"
-        remote_type="${JOB_MSG[$idx]}"
-
-        # Affichage warning détaillé
-        warn_remote_problem "$remote" "$remote_type" "$idx"
-
-        # Logs explicites (nécessaire pour Discord / mail)
-        log_only " "
-        log_only "⚠️  Job écarté à cause d'un remote inaccessible. (unexpected) ⚠️"
-        log_only " "
-        log_only "Remote: $remote"
-        log_only "Type:   $remote_type"
-        log_only " "
+        # Génération des logs RAW directement
+        warn_remote_problem "${JOB_REMOTE[$idx]}" "${JOB_MSG[$idx]}" "$idx" "$TMP_JOB_LOG_RAW"
 
         job_rc=1
-        ERROR_CODE=8
-        DISPLAY_JOB=false
-
     else
         # === Exécution rclone ===
         rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
         RCLONE_PID=$!
         spinner $RCLONE_PID
         wait $RCLONE_PID
-        job_rc=$?
-        (( job_rc != 0 ))
 
-        ERROR_CODE=8
-        DISPLAY_JOB=true
+        job_rc=$?
     fi
 
     # === Affichage colorisé à l'écran et génération logs ===
-    if [[ "$DISPLAY_JOB" == true ]]; then
-        tail -n +3 "$TMP_JOB_LOG_RAW" | colorize | tee -a "$LOG_FILE_INFO"
-    else
-        # Pour les jobs PROBLEM, on écrit tout de même dans LOG_FILE_INFO
-        cat "$TMP_JOB_LOG_RAW" >> "$LOG_FILE_INFO"
-    fi
+    tail -n +3 "$TMP_JOB_LOG_RAW" | colorize | tee -a "$LOG_FILE_INFO"
+    cat "$TMP_JOB_LOG_RAW" >> "$LOG_FILE_INFO"
 
     # Génération des logs HTML / PLAIN
     generate_logs "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_HTML" "$TMP_JOB_LOG_PLAIN"
