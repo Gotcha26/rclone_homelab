@@ -217,7 +217,6 @@ check_msmtp_config() {
 ###############################################################################
 # Fonction d'affichage du tableau récapitulatif avec bordures
 ###############################################################################
-
 print_aligned_table() {
     local label="$1"
     local value="$2"
