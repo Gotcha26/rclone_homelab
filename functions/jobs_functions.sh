@@ -186,7 +186,7 @@ warn_remote_problem() {
 
     local msg
     msg="❌  \e[1;33mAttention\e[0m : erreur unexpected détectée !
-    Un problème empèche l'exécution du job pour le remote '\e[1m$remote\e[0m'
+Un problème empèche l'exécution du job pour le remote '\e[1m$remote\e[0m'
     
     "
 
@@ -305,7 +305,7 @@ colorize() {
     local ORANGE=$(get_fg_color "yellow")
     local RESET=$'\033[0m'
 
-    awk -v BLUE="$BLUE" -v RED="$RED" -v RED_BOLD="$RED_BOLD" -v ORANGE="$ORANGE" -v RESET="$RESET" '
+    cat "$TMP_JOB_LOG_RAW" | sed -r 's/\x1B\[[0-9;]*[mK]//g' | awk -v BLUE="$BLUE" -v RED="$RED" -v RED_BOLD="$RED_BOLD" -v ORANGE="$ORANGE" -v RESET="$RESET" '
     {
         line = $0
         l = tolower(line)

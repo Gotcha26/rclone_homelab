@@ -18,12 +18,14 @@ spinner() {
 
     while kill -0 "$pid" 2>/dev/null; do
         for (( i=0; i<${#spinstr}; i++ )); do
-            printf "\r[${ORANGE}%c${RESET}] Traitement du JOB en cours..." "${spinstr:i:1}"
+            printf "\r\033[2K[${ORANGE}%c${RESET}] Traitement du JOB en cours..." "${spinstr:i:1}"
             sleep $delay
         done
     done
 
-        printf "\r[${GREEN}✔${RESET}] Terminé ! \n"
+    # Effacer entièrement la ligne avant d’afficher le message final
+    printf "\r\033[2K[${GREEN}✔${RESET}] Terminé !\n"
+
     tput cnorm  # réafficher le curseur
 }
 
