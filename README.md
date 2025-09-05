@@ -12,7 +12,7 @@ Juste un script qui permet de synchroniser un dossier local avec un dossier dist
 - ✅ Détecte des problèmes d'accès aux dossiers
 - ✅ Affiche des informations utiles mais compactes
 - ✅ Résume la tâche effectuée
-- ❗ A besoin de l'outil rclone pour fonctionner.
+- ℹ️ si rclone n'est pas présent, le script vous poroposera de l'installer
 - ✅ Persistance limitée à 15 jours pour les fichiers de logs
 - ✅ Coloration synthaxique
 - ❗ Vous rend riche, beau et irresistible
@@ -71,18 +71,31 @@ Des arguments (voir [Arguments](#arguments)) peuvent être utilisés.
 
 
 ## Jobs
-Les jobs ne sont pas moins que les directives *de dossiers* dédiées pour rclone.
+Les jobs ne sont pas moins que les directives spécifiques aux dossiers / remotes, dédiées pour rclone.
 
+##### Enregistrement 
 Le script attends 3 arguments minimum pour faire **un job**.  
-Pour simplifier la vie, ces *jobs* sont à écrire à l'avance dans un fichier à placer **à coté du script** (même dossier).  
-Ce fichier du nom de `jobs.txt` contiendra **1 ligne par job**.  
-
-###### Exemples :
-`nano /opt/rclone_homelab/jobs.txt`
-```ini
-<lien_symbolique_source>|<remote_rclone:dossier/sous_dossier>
-/srv/backups|onedrive_gotcha:Homelab_backups
+Pour simplifier la vie, ces *jobs* sont à écrire à l'avance dans un fichier dont voici la procédure :
+1. Se placer dedans le répertoire du script
 ```
+cd /opt/rclone_homelab
+```
+2. Copier le fichier exemple pour travailler sur votre popre fichier.
+```
+cd jobs.txt.exemple jobs.txt
+```
+3. Editer le fichier ainsi créé
+```
+nano jobs.txt
+```
+4. Suivre les instructions contenues dans le fichier
+- 1 ligne par job
+- Format : `<source>|<remote>:<destination>`
+- Exemple :
+```
+/home/user/Mes Documents | monremote:/Sauvegardes/Mes Documents
+```
+Le fichier ainsi créé ne **sera pas** écrasé lors des mises à jour.
 
 ###### Explications :
 Chaque job est constitué d'un ensemble de 2 arguments séparés par un symbole "pipe" `|` ainsi que d'un sous-argument introduit par le symbole `:`
@@ -102,9 +115,9 @@ Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arb
 Ils sont optionnels au lancement de `rclone_homelab` *(`main.sh`)*
 Argument | Explication
 --- | ---
+  -h, --help    | Affiche cette humble aide.
   --auto        | Permet simplement de supprimer le logo (bannière).
   --dry-run     | Simule la synchronisation sans transférer ni supprimer de fichiers.
-  -h, --help    | Affiche cette humble aide.
   --mailto=<mon_adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp.
   --update-forced <branch> | Oblige le script à se mettre à jour dans la branche désignée sinon, ce sera la branche en cours par défaut.
   --update-tag <tag> | Va se mettre à jour vers le tag désigné, sinon ce sera la dernière release de la branche en cours par défaut.
