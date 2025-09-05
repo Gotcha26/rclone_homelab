@@ -89,71 +89,48 @@ check_remotes() {
 ###############################################################################
 check_remote_non_blocking() {
     local remote="$1"
-    local timeout_duration=30s  # Temps max pour chaque test/reconnect
+    local timeout_duration=30s
+    local msg=""
 
-    # --- 1️⃣ Vérification existence du remote ---
+    # Vérification existence du remote
     if ! remote_exists "$remote"; then
-        local msg="❌  Attention : le remote '$remote' n'existe pas dans la configuration rclone."
-        echo -e "\n$msg"
-        
-        # Marquer uniquement les jobs utilisant ce remote comme PROBLEM
+        REMOTE_STATUS["$remote"]="PROBLEM"
+
         for i in "${!JOBS_LIST[@]}"; do
-            IFS='|' read -r _dst_remote _ <<< "${JOBS_LIST[$i]}"
-            _dst_remote="${_dst_remote#*}" # Découpage strict si besoin
             [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
                 JOB_STATUS[$i]="PROBLEM"
-                JOB_MSG["$i"]="$msg"
-                warn_remote_problem "$remote" "missing" "$i"   # Type spécifique
+                JOB_MSG["$i"]="missing"
             }
         done
-
-        ERROR_CODE=9
-        REMOTE_STATUS["$remote"]="PROBLEM"
-        return $ERROR_CODE
+        return
     fi
 
-    # --- 2️⃣ Vérification classique du remote ---
+    # Récupération du type
     local remote_type
     remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
-    REMOTE_STATUS["$remote"]="OK"
-    local msg_status=""
 
-    if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
-        if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
-            print_fancy --theme "info" "Remote '$remote' inaccessible. Tentative de reconnect..."
-            if timeout "$timeout_duration" rclone reconnect "${remote}:" >/dev/null 2>&1; then
-                print_fancy --theme "info" "Reconnect OK, vérification..."
-                if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
-                    REMOTE_STATUS["$remote"]="PROBLEM"
-                    msg_status="inaccessible malgré reconnect"
-                else
-                    REMOTE_STATUS["$remote"]="OK"
-                    msg_status="accessible après reconnect ✅"
-                fi
-            else
-                REMOTE_STATUS["$remote"]="PROBLEM"
-                msg_status="Reconnect échoué, remote inaccessible ⚠️"
+    # Vérification disponibilité du remote
+    if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+        # Tentative de reconnexion pour certains types
+        if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
+            rclone config reconnect "$remote:" -auto >/dev/null 2>&1
+            if timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+                REMOTE_STATUS["$remote"]="OK"
+                return
             fi
-
-            # Marquer uniquement les jobs utilisant ce remote comme PROBLEM
-            for i in "${!JOBS_LIST[@]}"; do
-                [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
-                    JOB_STATUS[$i]="PROBLEM"
-                    warn_remote_problem "$remote" "$remote_type" "$i"
-                }
-            done
-        else
-            msg_status="accessible ✅"
         fi
-    else
-        msg_status="accessible ✅"
-    fi
 
-    # --- 3️⃣ Affichage stylisé ---
-    if [[ "${REMOTE_STATUS[$remote]}" == "PROBLEM" ]]; then
-        print_fancy --theme "warning" "Remote '$remote' $msg_status"
+        REMOTE_STATUS["$remote"]="PROBLEM"
+        code=1
+
+        for i in "${!JOBS_LIST[@]}"; do
+            [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
+                JOB_STATUS[$i]="PROBLEM"
+                JOB_MSG["$i"]="$remote_type"   # on stocke juste le type ici
+            }
+        done
     else
-        print_fancy --theme "success" "Remote '$remote' $msg_status"
+        REMOTE_STATUS["$remote"]="OK"
     fi
 }
 
@@ -184,7 +161,7 @@ Vous êtes invité à revoir votre configuration pour le job et/ou rclone."
 Le remote '\e[1m$remote\e[0m' est \e[31minaccessible\e[0m pour l'écriture.
 
 Ce problème est typique de \e[36mOneDrive\e[0m : le token OAuth actuel
-ne permet plus l'écriture, même si la lecture fonctionne.
+ne permet plus l'écriture, même si la lecture fonctionne. [unauthenticated]
 Il faut refaire complètement la configuration du remote :
   1. Supprimer ou éditer le remote existant : \e[1mrclone config\e[0m
   2. Reconnecter le remote et accepter toutes les permissions
@@ -196,7 +173,7 @@ Il faut refaire complètement la configuration du remote :
         drive)
             msg+="
 Ce problème peut se produire sur \e[36mGoogle Drive\e[0m si le token
-OAuth est expiré ou si les scopes d'accès sont insuffisants.
+OAuth est expiré ou si les scopes d'accès sont insuffisants. [unauthenticated]
 Pour résoudre le problème :
   1. Supprimer ou éditer le remote existant : \e[1mrclone config\e[0m
   2. Reconnecter le remote et accepter toutes les permissions nécessaires.
@@ -302,7 +279,7 @@ colorize() {
             printf "%s%s%s\n", RED, line, RESET
         }
         # Erreurs et échecs -> rouge gras
-        else if (l ~ /(error|failed|unauthenticated|io error|io errors|not deleting)/) {
+        else if (l ~ /(error|failed|unauthenticated|unexpected|io error|io errors|not deleting)/) {
             printf "%s%s%s\n", RED_BOLD, line, RESET
         }
         # Déjà synchronisé / inchangé / skipped -> orange

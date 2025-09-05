@@ -33,12 +33,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     init_job_logs "$JOB_ID"              # <- logs prêts à l’emploi
 done
 
-# Bandeau "pré-check"
-print_fancy --bg "blue" --fill "=" --align "center" --highlight "Phase de pré-check (jobs - remotes)"
-
 check_remotes
-
-echo
 
 
 # ---------------------------------------------------------------------------
@@ -77,38 +72,47 @@ for idx in "${!JOBS_LIST[@]}"; do
         echo
     } > "$TMP_JOB_LOG_RAW"
 
-    # === Exécution rclone ===
+    # Fonction utilitaire locale pour écrire dans le log
     log_only() {
         local msg="$1"
         echo "$msg" >> "$TMP_JOB_LOG_RAW"
     }
 
+    # === Vérification du statut du job ===
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        print_fancy --theme "warning" "Job écarté à cause d'un remote inaccessible."
+        # On récupère le remote + son type
+        local remote="${dst%%:*}"
+        local remote_type="${JOB_MSG[$idx]}"
 
+        # Affichage warning détaillé
+        warn_remote_problem "$remote" "$remote_type" "$idx"
+
+        # Logs explicites (nécessaire pour Discord / mail)
         log_only " "
-        log_only "⚠️  Job écarté à cause d'un remote inaccessible. (unauthenticated) ⚠️" # Besoin de ce marqueur pour le sujet du message Discord / mail
+        log_only "⚠️  Job écarté à cause d'un remote inaccessible. (unexpected) ⚠️"
         log_only " "
-        log_only "${JOB_MSG[$idx]}"  # Message détaillé lié au job
+        log_only "Remote: $remote"
+        log_only "Type:   $remote_type"
+        log_only " "
 
         job_rc=1
         ERROR_CODE=8
-        # Ne pas afficher à l'écran
         DISPLAY_JOB=false
 
     else
+        # === Exécution rclone ===
         rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
         RCLONE_PID=$!
         spinner $RCLONE_PID
         wait $RCLONE_PID
         job_rc=$?
         (( job_rc != 0 ))
-        
+
         ERROR_CODE=8
         DISPLAY_JOB=true
     fi
 
-    # === Affichga colorisé à l'écran et génération logs ===
+    # === Affichage colorisé à l'écran et génération logs ===
     if [[ "$DISPLAY_JOB" == true ]]; then
         tail -n +3 "$TMP_JOB_LOG_RAW" | colorize | tee -a "$LOG_FILE_INFO"
     else
