@@ -175,7 +175,8 @@ warn_remote_problem() {
 
     case "$remote_type" in
         missing)
-            msg="Raison : le remote '$remote' n'existe pas dans la configuration rclone.
+            msg="Raison : le remote '$remote' n'existe pas...
+... ou n'a pas été trouvé dans votre configuration de rclone.
 Vous êtes invité à revoir votre configuration pour le job et/ou rclone."
             ;;
         onedrive)

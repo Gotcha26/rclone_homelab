@@ -33,8 +33,12 @@ for idx in "${!JOBS_LIST[@]}"; do
     init_job_logs "$JOB_ID"              # <- logs prêts à l’emploi
 done
 
-# Maintenant TMP_JOB_LOG_RAW existe pour les fonctions
+# Bandeau "pré-check"
+print_fancy --bg "blue" --fill "=" --align "center" --highlight "Phase de pré-check (jobs - remotes)"
+
 check_remotes
+
+echo
 
 
 # ---------------------------------------------------------------------------
