@@ -81,8 +81,8 @@ for idx in "${!JOBS_LIST[@]}"; do
     # === Vérification du statut du job ===
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
         # On récupère le remote + son type
-        local remote="${dst%%:*}"
-        local remote_type="${JOB_MSG[$idx]}"
+        remote="${dst%%:*}"
+        remote_type="${JOB_MSG[$idx]}"
 
         # Affichage warning détaillé
         warn_remote_problem "$remote" "$remote_type" "$idx"
