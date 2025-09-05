@@ -72,12 +72,28 @@ remote_exists() {
 # Fonction pour parcourir tous les remotes avec exécution parallèle
 ###############################################################################
 check_remotes() {
-    for job in "${JOBS_LIST[@]}"; do
+    for idx in "${!JOBS_LIST[@]}"; do
+        job="${JOBS_LIST[$idx]}"
         IFS='|' read -r src dst <<< "$job"
-        if [[ "$dst" == *":"* ]]; then
-            local remote="${dst%%:*}"
-            # Vérification unique par remote
-            [[ -z "${REMOTE_STATUS[$remote]+x}" ]] && check_remote_non_blocking "$remote"
+
+        for endpoint in "$src" "$dst"; do
+            if [[ "$endpoint" == *:* ]]; then
+                remote="${endpoint%%:*}"
+
+                if printf '%s\n' "${RCLONE_REMOTES[@]}" | grep -qx "$remote"; then
+                    REMOTE_STATUS["$remote"]="OK"
+                else
+                    REMOTE_STATUS["$remote"]="missing"
+                    JOB_STATUS[$idx]="PROBLEM"
+                    JOB_MSG[$idx]="missing"
+                fi
+            fi
+        done
+
+        # Si aucun problème détecté, on marque explicitement OK
+        if [[ -z "${JOB_STATUS[$idx]}" ]]; then
+            JOB_STATUS[$idx]="OK"
+            JOB_MSG[$idx]="ok"
         fi
     done
 }
