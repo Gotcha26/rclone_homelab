@@ -45,6 +45,55 @@ detect_branch
 # Sourcing pour les updates
 source "$SCRIPT_DIR/update/updater.sh"
 
+
+###############################################################################
+# Si aucun argument fourni → affichage d’un menu interactif
+###############################################################################
+if [[ $# -eq 0 ]]; then
+    clear
+    echo "======================================="
+    echo "     🚀  Rclone Homelab Manager"
+    echo "======================================="
+    echo
+    echo "1) Lancer tous les jobs"
+    echo "2) Lister les jobs configurés"
+    echo "3) Afficher les logs du dernier run"
+    echo "4) Quitter"
+    echo
+    read -rp "Votre choix [1-4] : " choice
+
+    case "$choice" in
+        1)
+            echo ">> Lancement de tous les jobs..."
+            # Ici tu rappelles ton script en interne
+            exec "$0" --run-all
+            ;;
+        2)
+            echo ">> Liste des jobs :"
+            for idx in "${!JOBS_LIST[@]}"; do
+                job="${JOBS_LIST[$idx]}"
+                IFS='|' read -r src dst <<< "$job"
+                printf "  [%02d] %s → %s\n" "$((idx+1))" "$src" "$dst"
+            done
+            exit 0
+            ;;
+        3)
+            echo ">> Derniers logs :"
+            tail -n 50 "$LOG_FILE_INFO"
+            exit 0
+            ;;
+        4)
+            echo "Bye 👋"
+            exit 0
+            ;;
+        *)
+            echo "Choix invalide."
+            exit 1
+            ;;
+    esac
+fi
+
+
 ###############################################################################
 # 2. Parsing complet des arguments
 # Lecture des options du script
