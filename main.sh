@@ -7,9 +7,10 @@ set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le co
 # 1. Initialisation par défaut
 # ###############################################################################
 
-# Initialisation de variables
+# Initialisation de variables. Elles sont écrasé par la configuration personnalisée si présente.
 FORCE_UPDATE="false"
 UPDATE_TAG="false"
+DRY_RUN=false
 LAUNCH_MODE=""
 
 # Résoudre le chemin réel du script (suivi des symlinks)
@@ -51,11 +52,96 @@ source "$SCRIPT_DIR/update/updater.sh"
 
 
 ###############################################################################
+# 2. Parsing complet des arguments
+# Lecture des options du script
+###############################################################################
+# Drpeau
+INTERACTIVE_MODE=false
+[[ $# -eq 0 ]] && INTERACTIVE_MODE=true
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --auto)
+            LAUNCH_MODE="automatique"
+            shift
+            ;;
+        --mailto=*)
+            MAIL_TO="${1#*=}"
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --update-forced)
+            FORCE_UPDATE=true
+            shift
+            # Si une branche est fournie juste après, on la prend
+            [[ $# -gt 0 && ! "$1" =~ ^-- ]] && FORCE_BRANCH="$1" && shift
+            ;;
+        --update-tag)
+            UPDATE_TAG=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            RCLONE_OPTS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+###############################################################################
+# 3. Vérifications dépendantes des arguments
+###############################################################################
+
+# Gestion des mises à jour selon les options passées
+if [[ "$FORCE_UPDATE" == true ]]; then
+    if update_force_branch; then
+        # --- Une mise à jour a été effectuée → relance du script ---
+        # On reconstruit les arguments pour s'assurer que --mailto est conservé
+        NEW_ARGS=()
+
+        # Conserver spécifiquement l'option mail si elle est définie (sinon elle est perdue...)
+        [[ -n "$MAIL_TO" ]] && NEW_ARGS+=(--mailto="$MAIL_TO")
+
+        # Conserver toutes les autres options initiales
+        for arg in "$@"; do
+            # On évite de doubler --mailto si déjà présent
+            [[ "$arg" == --mailto=* ]] && continue
+            NEW_ARGS+=("$arg")
+        done
+
+        # Relance propre du script avec tous les arguments reconstruits
+        exec "$0" "${NEW_ARGS[@]}"
+    fi
+elif [[ "$UPDATE_TAG" == true ]]; then
+    update_to_latest_tag  # appel explicite
+else
+    update_check  # juste informer
+fi
+
+# Inscription de l'option dry-run (rclone) si demandée
+$DRY_RUN && RCLONE_OPTS+=(--dry-run)
+
+# Vérifie l’email seulement si l’option --mailto est fournie
+[[ -n "$MAIL_TO" ]] && email_check "$MAIL_TO"
+
+# Vérif msmtp (seulement si mail)
+if [[ -n "$MAIL_TO" ]]; then
+    check_msmtp
+    check_msmtp_config
+fi
+
+###############################################################################
 # Si aucun argument fourni → affichage d’un menu interactif
 ###############################################################################
 RUN_ALL_FROM_MENU=false
 
-if [[ $# -eq 0 ]]; then
+if [[ "$INTERACTIVE_MODE" == true ]]; then
     echo
     echo "======================================="
     echo "     🚀  Rclone Homelab Manager"
@@ -67,14 +153,14 @@ if [[ $# -eq 0 ]]; then
     echo "4) Afficher la configuration rclone"
     echo "5) Afficher la configuration msmtp"
     echo "6) Afficher l'aide"
-    echo "7) Installer rclone"
-    echo "8) Installer msmtp"
+    echo "7) Installer les dépendances (rclone + msmtp)"
+    echo "8) Mettre à jour Rclone Homelab (si release disponible)"
     echo "9) "
     echo "0) Quitter"
     echo
     echo "A part le choix #1 toutes les autres options fermeront ce menu."
     echo
-    read -rp "Votre choix [0-6] : " choice
+    read -rp "Votre choix [0-8] : " choice
 
     case "$choice" in
         1)
@@ -125,7 +211,11 @@ if [[ $# -eq 0 ]]; then
             ;;
         7)
             echo
-            echo ">> Installation de rclone..."
+            echo ">> Installation des dépendances..."
+            echo
+            echo
+            echo "Installation de rclone"
+            echo
             if command -v rclone >/dev/null 2>&1; then
                 echo "✅ rclone est déjà installé ($(rclone version | head -n1))"
             else
@@ -136,11 +226,9 @@ if [[ $# -eq 0 ]]; then
                     echo "❌ Échec de l'installation de rclone"
                 fi
             fi
-            exit 0
-            ;;
-        8)
             echo
-            echo ">> Installation de msmtp..."
+            echo
+            echo "Installation de msmtp..."
             if command -v msmtp >/dev/null 2>&1; then
                 echo "✅ msmtp est déjà installé ($(msmtp --version | head -n1))"
             else
@@ -151,6 +239,15 @@ if [[ $# -eq 0 ]]; then
                     echo "❌ Échec de l'installation de msmtp"
                 fi
             fi
+            echo
+            exit 0
+            ;;
+        8)
+            echo
+            echo ">> Mise à jour vers la dernière release"
+            echo
+            [[ "$UPDATE_TAG" == true ]]
+            update_to_latest_tag  # appel explicite
             exit 0
             ;;
         0)
@@ -164,92 +261,6 @@ if [[ $# -eq 0 ]]; then
             exit 1
             ;;
     esac
-
-
-###############################################################################
-# 2. Parsing complet des arguments
-# Lecture des options du script
-###############################################################################
-
-DRY_RUN=false
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --auto)
-            LAUNCH_MODE="automatique"
-            shift
-            ;;
-        --mailto=*)
-            MAIL_TO="${1#*=}"
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        --update-forced)
-            FORCE_UPDATE=true
-            shift
-            # Si une branche est fournie juste après, on la prend
-            [[ $# -gt 0 && ! "$1" =~ ^-- ]] && FORCE_BRANCH="$1" && shift
-            ;;
-        --update-tag)
-            UPDATE_TAG=true
-            shift
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            RCLONE_OPTS+=("$1")
-            shift
-            ;;
-    esac
-done
-
-
-###############################################################################
-# 3. Vérifications dépendantes des arguments
-###############################################################################
-
-# Gestion des mises à jour selon les options passées
-if [[ "$FORCE_UPDATE" == true ]]; then
-    if update_force_branch; then
-        # --- Une mise à jour a été effectuée → relance du script ---
-        # On reconstruit les arguments pour s'assurer que --mailto est conservé
-        NEW_ARGS=()
-
-        # Conserver spécifiquement l'option mail si elle est définie (sinon elle est perdue...)
-        [[ -n "$MAIL_TO" ]] && NEW_ARGS+=(--mailto="$MAIL_TO")
-
-        # Conserver toutes les autres options initiales
-        for arg in "$@"; do
-            # On évite de doubler --mailto si déjà présent
-            [[ "$arg" == --mailto=* ]] && continue
-            NEW_ARGS+=("$arg")
-        done
-
-        # Relance propre du script avec tous les arguments reconstruits
-        exec "$0" "${NEW_ARGS[@]}"
-    fi
-elif [[ "$UPDATE_TAG" == true ]]; then
-    update_to_latest_tag  # appel explicite
-else
-    update_check  # juste informer
-fi
-
-# Inscription de l'option dry-run (rclone) si demandée
-$DRY_RUN && RCLONE_OPTS+=(--dry-run)
-
-# Vérifie l’email seulement si l’option --mailto est fournie
-[[ -n "$MAIL_TO" ]] && email_check "$MAIL_TO"
-
-# Vérif msmtp (seulement si mail)
-if [[ -n "$MAIL_TO" ]]; then
-    check_msmtp
-    check_msmtp_config
-fi
 
 
 ###############################################################################
