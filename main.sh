@@ -164,6 +164,7 @@ add_option() {
     MENU_ACTIONS+=("$2")
 }
 
+# --- Options de configuration ---
 if rclone_configured; then
     add_option "Afficher la configuration rclone" "show_rclone_config"
 fi
@@ -172,24 +173,47 @@ if msmtp_configured; then
     add_option "Afficher la configuration msmtp" "show_msmtp_config"
 fi
 
-
+# --- Options jobs ---
 if jobs_configured; then
     add_option "Lancer tous les jobs (sans plus attendre ni options)" "run_all_jobs"
     add_option "Lister les jobs configurés" "list_jobs"
 fi
 
+# --- Installation des dépendances manquantes ---
 if [[ "$MISSING_RCLONE" == true || "$MISSING_MSMTP" == true ]]; then
     add_option "Installer les dépendances manquantes (rclone/msmtp)" "install_missing_deps"
 fi
 
-if [[ "$update_check_result" -eq 1 ]]; then
-    if [[ "$BRANCH" == "main" ]]; then
-        add_option "Mettre à jour vers la dernière release (tag)" "update_to_latest_tag"
-    else
+# --- Options mises à jour dynamiques ---
+# On récupère les infos pertinentes pour le menu
+current_commit=$(git rev-parse HEAD)
+current_commit_date=$(git show -s --format=%ci "$current_commit")
+current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
+latest_tag_commit=$(git rev-parse "$latest_tag" 2>/dev/null || echo "")
+latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit" 2>/dev/null || echo "")
+
+remote_commit=$(git rev-parse "origin/$BRANCH")
+remote_commit_date=$(git show -s --format=%ci "$remote_commit")
+
+# --- Branche main ---
+if [[ "$BRANCH" == "main" ]]; then
+    if [[ -n "$latest_tag" ]]; then
+        # Comparaison horodatage pour savoir si MAJ pertinente
+        head_epoch=$(date -d "$current_commit_date" +%s)
+        tag_epoch=$(date -d "$latest_tag_date" +%s)
+        if (( tag_epoch > head_epoch )); then
+            add_option "Mettre à jour vers la dernière release (tag)" "update_to_latest_tag"
+        fi
+    fi
+else
+    # --- Branche dev ou expérimentale ---
+    if [[ "$current_commit" != "$remote_commit" ]]; then
         add_option "Mettre à jour la branche '$BRANCH' (force branch)" "update_force_branch"
     fi
 fi
 
+# --- Options classiques ---
 add_option "Afficher les logs du dernier run" "show_logs"
 add_option "Afficher l'aide" "show_help"
 add_option "Quitter" "exit_script"
@@ -206,6 +230,17 @@ echo "     🚀  Rclone Homelab Manager"
 echo "======================================="
 echo
 
+# Affichage de l’état courant
+echo "📌  Vous êtes actuellement sur le commit : $current_commit ($current_commit_date)"
+echo "📌  Branche réelle utilisée pour les mises à jour : $BRANCH"
+if [[ "$BRANCH" == "main" && -n "$latest_tag" ]]; then
+    echo "🕒  Dernière release : $latest_tag ($latest_tag_date)"
+elif [[ "$BRANCH" != "main" ]]; then
+    echo "🕒  Commit distant : $remote_commit ($remote_commit_date)"
+fi
+echo
+
+# Affichage des options
 for i in "${!MENU_OPTIONS[@]}"; do
     echo "$((i+1))) ${MENU_OPTIONS[$i]}"
 done
@@ -217,7 +252,7 @@ read -rp "Votre choix [1-${#MENU_OPTIONS[@]}] : " choice
 if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#MENU_OPTIONS[@]} )); then
     action="${MENU_ACTIONS[$((choice-1))]}"
     case "$action" in
-        RUN_ALL_FROM_MENU=true)
+        run_all_jobs)
             RUN_ALL_FROM_MENU=true
             ;;
         list_jobs)
@@ -227,7 +262,7 @@ if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#MENU_OPTIONS[@]
         show_logs)
             tail -n 50 "$LOG_FILE_INFO" > /dev/tty
             exit 0
-            ;;    # Redirection vers stdout uniquement
+            ;;
         show_rclone_config)
             [[ -f "$RCLONE_CONF" ]] && cat "$RCLONE_CONF" || echo "⚠️ Fichier rclone introuvable ($RCLONE_CONF)"
             exit 0
@@ -257,9 +292,9 @@ if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#MENU_OPTIONS[@]
             exit 0
             ;;
         init_config_local)
-            init_config_local;
+            init_config_local
             exit 0
-            ;;     # option invisible
+            ;;
         *)
             echo "Choix invalide."
             exit 5
@@ -269,6 +304,7 @@ else
     echo "Choix invalide."
     exit 5
 fi
+
 
 
 ###############################################################################
