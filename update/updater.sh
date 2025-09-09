@@ -86,24 +86,40 @@ update_check() {
     echo "📌  Branch réelle utilisée pour les mises à jour : $branch_real"
 
     # --- Branche main (grand public) ---
-    if [[ "$branch_real" == "main" ]]; then
+    if [[ "$BRANCH" == "main" ]]; then
         if [[ -z "$latest_tag" ]]; then
             print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
             return 1
         fi
 
-        local latest_tag_commit
+        local latest_tag_commit latest_tag_date
         latest_tag_commit=$(git rev-parse "$latest_tag")
+        latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
 
+        # Déjà sur le dernier tag ou en avance sur celui-ci ?
         if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
             echo "✅  Version actuelle ${current_tag:-dev} >> A jour"
             return 0
+        fi
+
+        # Comparaison horodatage du tag vs commit local
+        local head_epoch tag_epoch
+        head_epoch=$(date -d "$head_date" +%s)
+        tag_epoch=$(date -d "$latest_tag_date" +%s)
+
+        echo
+        echo "⚡  Nouvelle release détectée : $latest_tag ($latest_tag_date)"
+        echo "🕒  Dernier commit local      : $head_commit ($head_date)"
+
+        if (( tag_epoch < head_epoch )); then
+            # Le tag est plus ancien que le commit local
+            print_fancy --bg "yellow" --align "center" --highlight \
+                "⚠️  Attention : votre commit local est plus récent que la dernière release !"
+            echo "👉  Forcer la mise à jour pourrait écraser des changements locaux"
+            return 0
         else
-            echo
-            echo "⚡  Nouvelle release disponible : $latest_tag"
-            echo "🕒  Dernier commit local  : $head_commit ($head_date)"
-            echo "🕒  Dernier commit distant: $remote_commit ($remote_date)"
-            echo "🕒  Dernière release      : $latest_tag"
+            # Le tag est plus récent que le commit local → MAJ possible
+            echo "🕒  Dernière release disponible : $latest_tag ($latest_tag_date)"
             echo "ℹ️  Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
             return 1
         fi
