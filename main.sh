@@ -194,6 +194,11 @@ add_option "Afficher les logs du dernier run" "show_logs"
 add_option "Afficher l'aide" "show_help"
 add_option "Quitter" "exit_script"
 
+# --- option invisible : init config locale ---
+if [[ ! -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
+    MENU_ACTIONS+=("init_config_local")  # ajout à la liste des actions, pas d'affichage
+fi
+
 # --- Affichage du menu ---
 echo
 echo "======================================="
@@ -220,9 +225,9 @@ if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#MENU_OPTIONS[@]
             exit 0
             ;;
         show_logs)
-            tail -n 50 "$LOG_FILE_INFO" > /dev/tty    # Redirection vers stdout uniquement
+            tail -n 50 "$LOG_FILE_INFO" > /dev/tty
             exit 0
-            ;;
+            ;;    # Redirection vers stdout uniquement
         show_rclone_config)
             [[ -f "$RCLONE_CONF" ]] && cat "$RCLONE_CONF" || echo "⚠️ Fichier rclone introuvable ($RCLONE_CONF)"
             exit 0
@@ -251,6 +256,10 @@ if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#MENU_OPTIONS[@]
             echo "Bye 👋"
             exit 0
             ;;
+        init_config_local)
+            init_config_local;
+            exit 0
+            ;;     # option invisible
         *)
             echo "Choix invalide."
             exit 5

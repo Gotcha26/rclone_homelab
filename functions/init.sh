@@ -312,3 +312,43 @@ print_summary_table() {
     print_fancy --bg "yellow" --fg "black" "$MSG_END_REPORT"
     echo
 }
+
+
+###############################################################################
+# Fonction : initialisation config locale si absente [mode dec]
+###############################################################################
+init_config_local() {
+    local main_conf="$SCRIPT_DIR/config/config.main.sh"
+    local dev_conf="$SCRIPT_DIR/config/config.dev.sh"
+    local local_conf="$SCRIPT_DIR/config/config.local.sh"
+
+    # Si config.dev.sh existe déjà, rien à faire
+    [[ -f "$dev_conf" ]] && return 0
+
+    # Si config.local.sh existe déjà, rien à faire
+    if [[ -f "$local_conf" ]]; then
+        echo "⚠️  $local_conf existe déjà, pas de copie nécessaire."
+        return 0
+    fi
+
+    # Copier main → local
+    if cp "$main_conf" "$local_conf"; then
+        echo "✅ $main_conf copié vers $local_conf"
+    else
+        die 20 "Impossible de copier $main_conf vers $local_conf"
+    fi
+
+    # Demander si on veut transformer en config.dev.sh
+    read -rp "Voulez-vous transformer $local_conf en config.dev.sh ? [y/N] : " REPLY
+    REPLY=${REPLY,,}  # minuscule
+
+    if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
+        if mv "$local_conf" "$dev_conf"; then
+            echo "🎉 $local_conf renommé en $dev_conf"
+        else
+            die 21 "Impossible de renommer $local_conf"
+        fi
+    else
+        echo "⚠️  $local_conf reste en config.local.sh"
+    fi
+}

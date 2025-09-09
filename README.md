@@ -206,6 +206,8 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 | `RCLONE_CONFIG_FILE` Configuration rclone    | rclone non ou mal configuré                   | 12           | 
 | Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            | 13           |
 | Pb. de token pour Onedrive / Google Drive    | Token invalide, refaire la configuration      | 14           |
+| `init_config_local` Copie imp. > $local_conf | Droits, blocage...                            | 20           |
+| `init_config_local` Renommage imp.           | Droits, blocage...                            | 21           |
 | `check_msmtp_config` Configuration           | Configuration absente                         | 22           |
 
 
