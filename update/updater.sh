@@ -110,17 +110,35 @@ update_check() {
     fi
 
     # --- Branche dev ou expérimentale ---
-    echo "🕒  Commit distant : $remote_commit ($remote_date)"
+    echo
+    echo "📌  Branche réelle utilisée pour les mises à jour : $branch_real"
+    echo "📌  Commit local  : $head_commit ($head_date)"
+    echo "🕒  Commit distant: $remote_commit ($remote_date)"
 
     if [[ "$head_commit" == "$remote_commit" ]]; then
         echo "✅  Votre branche est à jour avec l'origine."
         return 0
     elif git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
+        # Local en retard
         print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$branch_real"
         return 1
-    else
-        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance ou diverge sur origin/$branch_real"
+    elif git merge-base --is-ancestor "$remote_commit" "$head_commit"; then
+        # Local en avance
+        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$branch_real"
         return 0
+    else
+        # Divergence : commits locaux et distants différents
+        local local_epoch remote_epoch
+        local_epoch=$(date -d "$head_date" +%s)
+        remote_epoch=$(date -d "$remote_date" +%s)
+
+        if (( local_epoch < remote_epoch )); then
+            print_fancy --bg "blue" --align "center" --highlight "⚡  Votre branche diverge, mais le remote est plus récent → MAJ recommandée"
+            return 1
+        else
+            print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche diverge, mais vous êtes plus récent → pas de MAJ nécessaire"
+            return 0
+        fi
     fi
 }
 
