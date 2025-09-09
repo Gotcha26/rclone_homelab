@@ -95,6 +95,9 @@ done
 # 3. Vérifications dépendantes des arguments
 ###############################################################################
 
+# Définition arbitraire pour le résultat des MAJ à faire ou non
+update_check_result=0
+
 # Gestion des mises à jour selon les options passées
 if [[ "$FORCE_UPDATE" == true ]]; then
     if update_force_branch; then
@@ -120,6 +123,8 @@ elif [[ "$UPDATE_TAG" == true ]]; then
 else
     update_check  # juste informer
 fi
+
+update_check_result=$?  # récupère le code de retour de update_check
 
 # Inscription de l'option dry-run (rclone) si demandée
 $DRY_RUN && RCLONE_OPTS+=(--dry-run)
@@ -155,7 +160,14 @@ if [[ "$INTERACTIVE_MODE" == true ]]; then
     echo "5) Afficher la configuration msmtp"
     echo "6) Afficher l'aide"
     echo "7) Installer les dépendances (rclone + msmtp)"
-    echo "8) Mettre à jour Rclone Homelab (si release disponible)"
+    # Option 8 uniquement si update_check détecte une MAJ pertinente
+    if [[ "$update_check_result" -eq 1 ]]; then
+        if [[ "$BRANCH" == "main" ]]; then
+            echo "8) Mettre à jour vers la dernière release (tag)"
+        else
+            echo "8) Mettre à jour la branche '$BRANCH' (force branch)"
+        fi
+    fi
     echo "9) "
     echo "0) Quitter"
     echo
@@ -245,10 +257,13 @@ if [[ "$INTERACTIVE_MODE" == true ]]; then
             ;;
         8)
             echo
-            echo ">> Mise à jour vers la dernière release"
+            echo ">> Mise à jour"
             echo
-            [[ "$UPDATE_TAG" == true ]]
-            update_to_latest_tag  # appel explicite
+            if [[ "$BRANCH" == "main" ]]; then
+                update_to_latest_tag
+            else
+                update_force_branch
+            fi
             exit 0
             ;;
         0)

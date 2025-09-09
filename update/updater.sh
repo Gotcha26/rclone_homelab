@@ -77,23 +77,26 @@ update_check() {
             return 1
         fi
 
-        # Déjà sur le dernier tag ou en avance sur celui-ci
-        if [[ "$head_commit" == "$(git rev-parse "$latest_tag")" ]] || git merge-base --is-ancestor "$latest_tag" "$head_commit"; then
-            echo "✅ Version actuelle ${current_tag:-dev} >> A jour"
+        local latest_tag_commit
+        latest_tag_commit=$(git rev-parse "$latest_tag")
+
+        # Déjà sur le dernier tag ou en avance
+        if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
+            echo "✅  Version actuelle ${current_tag:-dev} >> A jour"
             return 0
         fi
 
         # Sinon, nouvelle release dispo
         echo
-        echo "⚡ Nouvelle release disponible : $latest_tag"
-        echo "🕒 Dernier commit local  : $head_commit ($head_date)"
-        echo "🕒 Dernier commit distant: $remote_commit ($remote_date)"
-        echo "🕒 Dernière release      : $latest_tag"
-        echo "ℹ️ Pour mettre à jour : relancer le script en mode menu ou utiliser --forced_tag"
-        return 0
+        echo "⚡  Nouvelle release disponible : $latest_tag"
+        echo "🕒  Dernier commit local  : $head_commit ($head_date)"
+        echo "🕒  Dernier commit distant: $remote_commit ($remote_date)"
+        echo "🕒  Dernière release      : $latest_tag"
+        echo "ℹ️  Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
+        return 1
     fi
 
-    # --- Branche dev (ou autres expérimentales) ---
+    # --- Branche dev ou autres expérimentales ---
     echo
     echo "📌  Branche : $BRANCH"
     echo "🕒  Commit local  : $head_commit ($head_date)"
@@ -102,12 +105,16 @@ update_check() {
 
     if [[ "$head_commit" == "$remote_commit" ]]; then
         echo "✅  Votre branche est à jour avec l'origine."
+        return 0
     elif git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
         print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$BRANCH"
+        return 1
     else
         print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$BRANCH"
+        return 0
     fi
 }
+
 
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière release (tag)
