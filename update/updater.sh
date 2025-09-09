@@ -50,49 +50,44 @@ update_force_branch() {
 update_check() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
-    # Toujours afficher la branche active
-    echo
-    echo "📌  Vous êtes actuellement sur la branche : $BRANCH"
-
-    # Récupération des infos distantes et des tags
-    git fetch origin "$BRANCH" --tags --quiet
-
-    # Dernier tag disponible sur la branche
-    local latest_tag
-    latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
+    # Détecte la branche locale exacte
+    local local_branch
+    local_branch=$(git rev-parse --abbrev-ref HEAD)
 
     # Commit et date HEAD local
     local head_commit head_date
     head_commit=$(git rev-parse HEAD)
     head_date=$(git show -s --format=%ci "$head_commit")
 
+    echo
+    echo "📌  Vous êtes actuellement sur la branche : $local_branch"
+    echo "🕒  Commit HEAD : $head_commit ($head_date)"
+
+    # Récupération du remote pour cette branche
+    git fetch origin "$local_branch" --tags --quiet
+
     # Commit et date HEAD distant
     local remote_commit remote_date
-    remote_commit=$(git rev-parse "origin/$BRANCH")
+    remote_commit=$(git rev-parse "origin/$local_branch")
     remote_date=$(git show -s --format=%ci "$remote_commit")
 
-    # Commit du dernier tag
-    local latest_tag_commit
-    [[ -n "$latest_tag" ]] && latest_tag_commit=$(git rev-parse "$latest_tag")
+    # Dernier tag sur main (grand public) uniquement
+    local latest_tag latest_tag_commit
+    if [[ "$local_branch" == "main" ]]; then
+        latest_tag=$(git tag --merged "origin/main" | sort -V | tail -n1)
+        [[ -n "$latest_tag" ]] && latest_tag_commit=$(git rev-parse "$latest_tag")
+    fi
 
-    # Tag actuel si HEAD exactement sur un tag
-    local current_tag
-    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
-
-    # --- Branche main (grand public) ---
-    if [[ "$BRANCH" == "main" ]]; then
+    # --- Branche main ---
+    if [[ "$local_branch" == "main" ]]; then
         if [[ -z "$latest_tag" ]]; then
             print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
             return 1
         fi
-
-        # Déjà sur le dernier tag ou en avance
         if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-            echo "✅  Version actuelle ${current_tag:-dev} >> A jour"
+            echo "✅  Version actuelle ${latest_tag:-dev} >> A jour"
             return 0
         fi
-
-        # Sinon, nouvelle release dispo
         echo
         echo "⚡  Nouvelle release disponible : $latest_tag"
         echo "🕒  Dernier commit local  : $head_commit ($head_date)"
@@ -102,25 +97,22 @@ update_check() {
         return 1
     fi
 
-    # --- Branche dev ou autres expérimentales ---
+    # --- Autres branches expérimentales (dev, feature, ...) ---
     echo
-    echo "🕒  Commit local  : $head_commit ($head_date)"
-    echo "🕒  Commit distant: $remote_commit ($remote_date)"
-    echo "🕒  Dernier tag   : ${latest_tag:-Aucun tag trouvé}"
+    echo "🕒 Commit distant : $remote_commit ($remote_date)"
 
     if [[ "$head_commit" == "$remote_commit" ]]; then
         echo "✅  Votre branche est à jour avec l'origine."
         return 0
     elif git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
-        print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$BRANCH"
+        print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$local_branch"
         return 1
     else
-        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$BRANCH"
-        [[ -n "$latest_tag" ]] && echo "Dernier tag sur main : $latest_tag ($latest_tag_commit)"
+        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$local_branch"
+        [[ -n "$latest_tag_commit" ]] && echo "Dernier tag sur main : $latest_tag ($latest_tag_commit)"
         return 0
     fi
 }
-
 
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière release (tag)
