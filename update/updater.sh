@@ -45,51 +45,73 @@ update_force_branch() {
 
 ###############################################################################
 # Fonction : Vérifie s'il existe une nouvelle release (tag) sur la branche active
-# Affiche également les horodatages des commits et tags
+# Affiche minimal pour main si à jour ou en avance, sinon détails complets
 ###############################################################################
 update_check() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
     git fetch origin "$BRANCH" --tags --quiet
 
-    # Dernier tag atteignable depuis la branche
+    # Dernier tag disponible sur la branche
     local latest_tag
     latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
 
-    # Commit actuel et date
+    # Commit et date HEAD local
     local head_commit head_date
     head_commit=$(git rev-parse HEAD)
     head_date=$(git show -s --format=%ci "$head_commit")
 
-    # Commit correspondant au dernier tag et date
-    local latest_tag_commit latest_tag_date
-    latest_tag_commit=$(git rev-parse "$latest_tag")
-    latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
+    # Commit et date HEAD distant
+    local remote_commit remote_date
+    remote_commit=$(git rev-parse "origin/$BRANCH")
+    remote_date=$(git show -s --format=%ci "$remote_commit")
 
-    # Vérifier si on est sur un tag exact
+    # Tag actuel si HEAD exactement sur un tag
     local current_tag
     current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
 
-    echo
-    echo "📌 Branche : $BRANCH"
-    echo "🕒 Commit actuel : $head_commit (${head_date})"
-    echo "🕒 Dernier tag    : $latest_tag (${latest_tag_date})"
+    # --- Branche main (grand public) ---
+    if [[ "$BRANCH" == "main" ]]; then
+        if [[ -z "$latest_tag" ]]; then
+            print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
+            return 1
+        fi
 
-    if [[ "$head_commit" == "$latest_tag_commit" ]]; then
-        echo "✅ Vous êtes sur la dernière release : $latest_tag"
-    elif git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-        echo "⚠️ Vous êtes en avance sur la dernière release : ${current_tag:-dev}"
-        echo "👉 Dernière release stable : $latest_tag"
-    else
+        # Déjà sur le dernier tag ou en avance sur celui-ci
+        if [[ "$head_commit" == "$(git rev-parse "$latest_tag")" ]] || git merge-base --is-ancestor "$latest_tag" "$head_commit"; then
+            echo "✅ Version actuelle ${current_tag:-dev} >> A jour"
+            return 0
+        fi
+
+        # Sinon, nouvelle release dispo
+        echo
         echo "⚡ Nouvelle release disponible : $latest_tag"
-        echo "👉 Votre version actuelle : ${current_tag:-dev}"
+        echo "🕒 Dernier commit local  : $head_commit ($head_date)"
+        echo "🕒 Dernier commit distant: $remote_commit ($remote_date)"
+        echo "🕒 Dernière release      : $latest_tag"
+        echo "ℹ️ Pour mettre à jour : relancer le script en mode menu ou utiliser --forced_tag"
+        return 0
+    fi
+
+    # --- Branche dev (ou autres expérimentales) ---
+    echo
+    echo "📌  Branche : $BRANCH"
+    echo "🕒  Commit local  : $head_commit ($head_date)"
+    echo "🕒  Commit distant: $remote_commit ($remote_date)"
+    echo "🕒  Dernier tag   : ${latest_tag:-Aucun tag trouvé}"
+
+    if [[ "$head_commit" == "$remote_commit" ]]; then
+        echo "✅  Votre branche est à jour avec l'origine."
+    elif git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
+        print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$BRANCH"
+    else
+        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$BRANCH"
     fi
 }
 
-
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière release (tag)
-# Affiche les horodatages pour plus de clarté
+# Affiche horodatages pour plus de clarté
 ###############################################################################
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
@@ -102,7 +124,7 @@ update_to_latest_tag() {
     latest_tag=$(git tag --merged "origin/$branch" | sort -V | tail -n1)
 
     if [[ -z "$latest_tag" ]]; then
-        echo "❌ Aucun tag trouvé sur la branche $branch"
+        echo "❌  Aucun tag trouvé sur la branche $branch"
         return 1
     fi
 
@@ -118,29 +140,32 @@ update_to_latest_tag() {
     current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
 
     echo
-    echo "📌 Branche : $branch"
-    echo "🕒 Commit actuel : $head_commit (${head_date})"
-    echo "🕒 Dernier tag    : $latest_tag (${latest_tag_date})"
+    echo "📌  Branche : $branch"
+    echo "🕒  Commit actuel : $head_commit ($head_date)"
+    echo "🕒  Dernier tag    : $latest_tag ($latest_tag_date)"
 
+    # Déjà sur le dernier tag ?
     if [[ "$head_commit" == "$latest_tag_commit" ]]; then
-        echo "✅ Déjà sur la dernière release : $latest_tag"
+        echo "✅  Déjà sur la dernière release : $latest_tag"
         return 0
     fi
 
+    # En avance sur le dernier tag ?
     if git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-        echo "⚠️ Vous êtes en avance sur la dernière release : ${current_tag:-dev}"
-        echo "👉 Pas de mise à jour effectuée"
+        echo "⚠️  Vous êtes en avance sur la dernière release : ${current_tag:-dev}"
+        echo "👉  Pas de mise à jour effectuée"
         return 0
     fi
 
+    # Nouvelle release détectée
     echo "⚡ Nouvelle release détectée : $latest_tag (actuellement ${current_tag:-dev})"
     if git -c advice.detachedHead=false checkout "$latest_tag"; then
         chmod +x "$SCRIPT_DIR/main.sh"
-        echo "🎉 Mise à jour réussie vers $latest_tag"
+        echo "🎉  Mise à jour réussie vers $latest_tag"
+        echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
         return 0
     else
-        echo "❌ Échec lors du passage à $latest_tag"
+        echo "❌  Échec lors du passage à $latest_tag"
         return 1
     fi
 }
-
