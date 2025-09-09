@@ -84,44 +84,6 @@ EOF
 
 
 ###############################################################################
-# Fonction : Vérifie la présence de l'installation de msmtp
-# Propose de l'installer si besoin
-###############################################################################
-check_msmtp() {
-    local force_install=${1:-false}
-
-    if ! command -v msmtp >/dev/null 2>&1 || [[ "$force_install" == true ]]; then
-        echo
-        echo "⚠️  msmtp n'est pas installé ou installation forcée."
-
-        if [[ "$force_install" != true ]]; then
-            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-            REPLY=${REPLY,,}  # met en minuscules
-        else
-            REPLY="y"
-        fi
-
-        if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            echo "Installation de msmtp en cours..."
-            sudo apt update && sudo apt install msmtp msmtp-mta -y
-            if [[ $? -eq 0 ]]; then
-                echo "✅ msmtp a été installé avec succès !"
-            else
-                echo >&2 "❌ Une erreur est survenue lors de l'installation de msmtp."
-                ERROR_CODE=10
-                exit $ERROR_CODE
-            fi
-        else
-            echo >&2 "❌ msmtp n'est toujours pas installé. Le script va s'arrêter."
-            ERROR_CODE=10
-            exit $ERROR_CODE
-        fi
-    fi
-}
-
-
-
-###############################################################################
 # Fonction : Vérifie la présence de l'installation de rclone
 # Propose de l'installer si besoin
 ###############################################################################
@@ -193,12 +155,18 @@ check_rclone_config() {
 # Propose de l'installer si besoin
 ###############################################################################
 check_msmtp() {
-    if ! command -v msmtp >/dev/null 2>&1; then
+    local force_install=${1:-false}
+
+    if ! command -v msmtp >/dev/null 2>&1 || [[ "$force_install" == true ]]; then
         echo
-        echo "⚠️  msmtp n'est pas installé sur votre système Debian/Ubuntu."
-        
-        read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-        REPLY=${REPLY,,}
+        echo "⚠️  msmtp n'est pas installé ou installation forcée."
+
+        if [[ "$force_install" != true ]]; then
+            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+            REPLY=${REPLY,,}  # met en minuscules
+        else
+            REPLY="y"
+        fi
 
         if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
             echo "Installation de msmtp en cours..."
@@ -207,12 +175,12 @@ check_msmtp() {
                 echo "✅ msmtp a été installé avec succès !"
             else
                 echo >&2 "❌ Une erreur est survenue lors de l'installation de msmtp."
-                ERROR_CODE=21
+                ERROR_CODE=10
                 exit $ERROR_CODE
             fi
         else
             echo >&2 "❌ msmtp n'est toujours pas installé. Le script va s'arrêter."
-            ERROR_CODE=21
+            ERROR_CODE=10
             exit $ERROR_CODE
         fi
     fi
