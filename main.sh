@@ -147,136 +147,118 @@ fi
 ###############################################################################
 RUN_ALL_FROM_MENU=false
 
-if [[ "$INTERACTIVE_MODE" == true ]]; then
-    echo
-    echo "======================================="
-    echo "     🚀  Rclone Homelab Manager"
-    echo "======================================="
-    echo
-    echo "1) Lancer tous les jobs (sans plus attendre ni options)"
-    echo "2) Lister les jobs configurés"
-    echo "3) Afficher les logs du dernier run"
-    echo "4) Afficher la configuration rclone"
-    echo "5) Afficher la configuration msmtp"
-    echo "6) Afficher l'aide"
-    echo "7) Installer les dépendances (rclone + msmtp)"
-    # Option 8 uniquement si update_check détecte une MAJ pertinente
-    if [[ "$update_check_result" -eq 1 ]]; then
-        if [[ "$BRANCH" == "main" ]]; then
-            echo "8) Mettre à jour vers la dernière release (tag)"
-        else
-            echo "8) Mettre à jour la branche '$BRANCH' (force branch)"
-        fi
-    fi
-    echo "9) "
-    echo "0) Quitter"
-    echo
-    echo "A part le choix #1 toutes les autres options fermeront ce menu."
-    echo
-    read -rp "Votre choix [0-8] : " choice
+# --- Détection des dépendances ---
+MISSING_RCLONE=false
+MISSING_MSMTP=false
 
-    case "$choice" in
-        1)
-            echo
-            echo ">> Lancement de tous les jobs..."
+command -v rclone >/dev/null 2>&1 || MISSING_RCLONE=true
+command -v msmtp >/dev/null 2>&1 || MISSING_MSMTP=true
+
+# --- Construction dynamique du menu ---
+MENU_OPTIONS=()
+MENU_ACTIONS=()
+
+# Fonction pour ajouter des options
+add_option() {
+    MENU_OPTIONS+=("$1")
+    MENU_ACTIONS+=("$2")
+}
+
+if rclone_configured; then
+    add_option "Afficher la configuration rclone" "show_rclone_config"
+fi
+
+if msmtp_configured; then
+    add_option "Afficher la configuration msmtp" "show_msmtp_config"
+fi
+
+
+if jobs_configured; then
+    add_option "Lancer tous les jobs (sans plus attendre ni options)" "run_all_jobs"
+    add_option "Lister les jobs configurés" "list_jobs"
+fi
+
+if [[ "$MISSING_RCLONE" == true || "$MISSING_MSMTP" == true ]]; then
+    add_option "Installer les dépendances manquantes (rclone/msmtp)" "install_missing_deps"
+fi
+
+if [[ "$update_check_result" -eq 1 ]]; then
+    if [[ "$BRANCH" == "main" ]]; then
+        add_option "Mettre à jour vers la dernière release (tag)" "update_to_latest_tag"
+    else
+        add_option "Mettre à jour la branche '$BRANCH' (force branch)" "update_force_branch"
+    fi
+fi
+
+add_option "Afficher les logs du dernier run" "show_logs"
+add_option "Afficher l'aide" "show_help"
+add_option "Quitter" "exit_script"
+
+# --- Affichage du menu ---
+echo
+echo "======================================="
+echo "     🚀  Rclone Homelab Manager"
+echo "======================================="
+echo
+
+for i in "${!MENU_OPTIONS[@]}"; do
+    echo "$((i+1))) ${MENU_OPTIONS[$i]}"
+done
+
+echo
+read -rp "Votre choix [1-${#MENU_OPTIONS[@]}] : " choice
+
+# --- Validation et exécution ---
+if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#MENU_OPTIONS[@]} )); then
+    action="${MENU_ACTIONS[$((choice-1))]}"
+    case "$action" in
+        RUN_ALL_FROM_MENU=true)
             RUN_ALL_FROM_MENU=true
             ;;
-        2)
-            echo
-            echo ">> Liste des jobs :"
-            for idx in "${!JOBS_LIST[@]}"; do
-                job="${JOBS_LIST[$idx]}"
-                IFS='|' read -r src dst <<< "$job"
-                printf "  [%02d] %s → %s\n" "$((idx+1))" "$src" "$dst"
-            done
+        list_jobs)
+            list_jobs
             exit 0
             ;;
-        3)
-            echo
-            echo ">> Derniers logs :"
-            tail -n 50 "$LOG_FILE_INFO"
+        show_logs)
+            tail -n 50 "$LOG_FILE_INFO" > /dev/tty    # Redirection vers stdout uniquement
             exit 0
             ;;
-        4)
-            echo
-            echo ">> Configuration rclone :"
-            if [[ -f "$RCLONE_CONF" ]]; then
-                cat "$RCLONE_CONF"
-            else
-                echo "⚠️  Fichier de configuration rclone introuvable ($RCLONE_CONF)"
-            fi
+        show_rclone_config)
+            [[ -f "$RCLONE_CONF" ]] && cat "$RCLONE_CONF" || echo "⚠️ Fichier rclone introuvable ($RCLONE_CONF)"
             exit 0
             ;;
-        5)
-            echo
-            echo ">> Configuration msmtp :"
-            if [[ -f "$MSMTP_CONF" ]]; then
-                cat "$MSMTP_CONF"
-            else
-                echo "⚠️  Fichier de configuration msmtp introuvable ($MSMTP_CONF)"
-            fi
+        show_msmtp_config)
+            [[ -f "$MSMTP_CONF" ]] && cat "$MSMTP_CONF" || echo "⚠️ Fichier msmtp introuvable ($MSMTP_CONF)"
             exit 0
             ;;
-        6)
-            echo
+        show_help)
             show_help
             exit 0
             ;;
-        7)
-            echo
-            echo ">> Installation des dépendances..."
-            echo
-            echo
-            echo "Installation de rclone"
-            echo
-            if command -v rclone >/dev/null 2>&1; then
-                echo "✅ rclone est déjà installé ($(rclone version | head -n1))"
-            else
-                sudo apt-get update && sudo apt-get install -y rclone
-                if command -v rclone >/dev/null 2>&1; then
-                    echo "🎉 rclone installé avec succès ($(rclone version | head -n1))"
-                else
-                    echo "❌ Échec de l'installation de rclone"
-                fi
-            fi
-            echo
-            echo
-            echo "Installation de msmtp..."
-            if command -v msmtp >/dev/null 2>&1; then
-                echo "✅ msmtp est déjà installé ($(msmtp --version | head -n1))"
-            else
-                sudo apt-get update && sudo apt-get install -y msmtp msmtp-mta
-                if command -v msmtp >/dev/null 2>&1; then
-                    echo "🎉 msmtp installé avec succès ($(msmtp --version | head -n1))"
-                else
-                    echo "❌ Échec de l'installation de msmtp"
-                fi
-            fi
-            echo
+        install_missing_deps)
+            install_missing_deps
             exit 0
             ;;
-        8)
-            echo
-            echo ">> Mise à jour"
-            echo
-            if [[ "$BRANCH" == "main" ]]; then
-                update_to_latest_tag
-            else
-                update_force_branch
-            fi
+        update_to_latest_tag)
+            update_to_latest_tag
             exit 0
             ;;
-        0)
-            echo
+        update_force_branch)
+            update_force_branch
+            exit 0
+            ;;
+        exit_script)
             echo "Bye 👋"
             exit 0
             ;;
         *)
-            echo
             echo "Choix invalide."
-            exit 1
+            exit 5
             ;;
     esac
+else
+    echo "Choix invalide."
+    exit 5
 fi
 
 
@@ -296,41 +278,23 @@ check_rclone_config
 # Création des répertoires nécessaires
 if [[ ! -d "$TMP_RCLONE" ]]; then
     if ! mkdir -p "$TMP_RCLONE" 2>/dev/null; then
-        print_fancy --theme "error" "$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE" >&2
-        echo
-        ERROR_CODE=1
-        exit $ERROR_CODE
+        die 1 "$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE"
     fi
 fi
 
 #Vérification de la présence du répertoire temporaire
 if [[ ! -d "$LOG_DIR" ]]; then
     if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
-        print_fancy --theme "error" "$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR" >&2
-        echo
-        ERROR_CODE=2
-        exit $ERROR_CODE
+        die 2 "$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR"
     fi
 fi
 
 # Vérifications initiales
 if [[ ! -f "$JOBS_FILE" ]]; then
-    print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $JOBS_FILE" >&2
-    echo
-    ERROR_CODE=3
-    exit $ERROR_CODE
+    die 3 "$MSG_FILE_NOT_FOUND : $JOBS_FILE"
 fi
 if [[ ! -r "$JOBS_FILE" ]]; then
-    print_fancy --theme "error" "$MSG_FILE_NOT_READ : $JOBS_FILE" >&2
-    echo
-    ERROR_CODE=4
-    exit $ERROR_CODE
-fi
-if [[ ! -d "$TMP_RCLONE" ]]; then
-    print_fancy --theme "error" "$MSG_TMP_NOT_FOUND : $TMP_RCLONE" >&2
-    echo
-    ERROR_CODE=5
-    exit $ERROR_CODE
+    die 4 "$MSG_FILE_NOT_READ : $JOBS_FILE"
 fi
 
 

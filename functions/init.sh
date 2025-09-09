@@ -102,19 +102,15 @@ check_rclone() {
         fi
 
         if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            echo "Installation de rclone en cours..."
+            echo "📦  Installation de rclone en cours..."
             sudo apt update && sudo apt install rclone -y
             if [[ $? -eq 0 ]]; then
-                echo "✅ rclone a été installé avec succès !"
+                echo "✅  rclone a été installé avec succès !"
             else
-                echo >&2 "❌ Une erreur est survenue lors de l'installation de rclone."
-                ERROR_CODE=11
-                exit $ERROR_CODE
+                die 11 "Une erreur est survenue lors de l'installation de rclone."
             fi
         else
-            echo >&2 "❌ rclone n'est toujours pas installé. Le script va s'arrêter."
-            ERROR_CODE=11
-            exit $ERROR_CODE
+            die 11 "rclone n'est toujours pas installé. Le script va s'arrêter."
         fi
     fi
 }
@@ -143,9 +139,7 @@ check_rclone_config() {
         else
             echo "Le script va s'arrêter. Configurez rclone et relancez le script."
         fi
-
-        ERROR_CODE=12
-        exit $ERROR_CODE
+        die 12 "rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
     fi
 }
 
@@ -169,19 +163,15 @@ check_msmtp() {
         fi
 
         if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            echo "Installation de msmtp en cours..."
+            echo "📦  Installation de msmtp en cours..."
             sudo apt update && sudo apt install msmtp msmtp-mta -y
             if [[ $? -eq 0 ]]; then
-                echo "✅ msmtp a été installé avec succès !"
+                echo "✅  msmtp a été installé avec succès !"
             else
-                echo >&2 "❌ Une erreur est survenue lors de l'installation de msmtp."
-                ERROR_CODE=10
-                exit $ERROR_CODE
+                die 10 "Une erreur est survenue lors de l'installation de msmtp."
             fi
         else
-            echo >&2 "❌ msmtp n'est toujours pas installé. Le script va s'arrêter."
-            ERROR_CODE=10
-            exit $ERROR_CODE
+            die 10 "msmtp n'est toujours pas installé. Le script va s'arrêter."
         fi
     fi
 }
@@ -218,10 +208,46 @@ check_msmtp_config() {
         else
             echo "Le script va s'arrêter. Configurez msmtp et relancez le script."
         fi
-
-        ERROR_CODE=22
-        exit $ERROR_CODE
+        die 22 "msmtp est installé mais n'est pas configuré. Veuillez exécuter : msmtp --configure"
     fi
+}
+
+
+###############################################################################
+# Fonctions de détection des configs
+###############################################################################
+rclone_configured() {
+    [[ -f "$RCLONE_CONF" ]] && [[ -s "$RCLONE_CONF" ]]
+}
+
+msmtp_configured() {
+    [[ -f "$MSMTP_CONF" ]] && [[ -s "$MSMTP_CONF" ]]
+}
+
+
+###############################################################################
+# Fonction : Vérifier la présence de jobs configurés
+###############################################################################
+jobs_configured() {
+    [[ -f "$JOBS_CONF" ]] && [[ -s "$JOBS_CONF" ]]
+}
+
+
+###############################################################################
+# Fonction : Vérifier la présence de jobs configurés
+###############################################################################
+jobs_configured() {
+    [[ -f "$JOBS_CONF" ]] && [[ -s "$JOBS_CONF" ]]
+}
+
+
+###############################################################################
+# Fonction : Installer les dépendances manquantes (rclone / msmtp)
+###############################################################################
+install_missing_deps() {
+    check_rclone true
+    check_msmtp true
+    echo "🎉 Dépendances installées."
 }
 
 

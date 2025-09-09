@@ -8,38 +8,9 @@ email_check() {
     local email="$1"
     # Regex basique : texte@texte.domaine
     if [[ ! "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-        print_fancy --theme "error" "$MSG_MAIL_ERROR : $email" >&2
-        echo
-        ERROR_CODE=12
-        exit $ERROR_CODE
+        die 12 "$MSG_MAIL_ERROR : $email"
     fi
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ###############################################################################
