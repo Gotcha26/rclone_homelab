@@ -47,9 +47,6 @@ detect_branch
 # Sourcing pour les updates
 source "$SCRIPT_DIR/update/updater.sh"
 
-# Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
-[[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
-
 
 ###############################################################################
 # 2. Parsing complet des arguments
@@ -135,6 +132,10 @@ if [[ -n "$MAIL_TO" ]]; then
     check_msmtp
     check_msmtp_config
 fi
+
+# Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
+[[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
+
 
 ###############################################################################
 # Si aucun argument fourni → affichage d’un menu interactif
