@@ -7,5 +7,3 @@
 DISCORD_WEBHOOK_URL=""                     # URL du webhook salon Discord
 
 # --- Les variables ci-dessous viennent remplacer les variables par défaut.
-
-VERSION="v2.5.0"

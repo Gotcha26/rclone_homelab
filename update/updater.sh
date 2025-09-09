@@ -48,49 +48,52 @@ update_force_branch() {
 # présent sur la branche courante définie dans la config)
 ###############################################################################
 update_to_latest_tag() {
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
-    # Déterminer la branche active via config (ou fallback main)
+    # Déterminer la branche active
     local branch="${FORCE_BRANCH:-$BRANCH}"
 
-    # Récupérer les infos distantes
-    git fetch origin "$branch" --tags
+    echo
+    echo "⚡ Vérification de la dernière release sur la branche '$branch'..."
 
-    # Lister uniquement les tags atteignables depuis la branche
+    # Récupérer les infos distantes et tags
+    git fetch origin "$branch" --tags --quiet
+
+    # Dernier tag disponible sur la branche
     local latest_tag
     latest_tag=$(git tag --merged "origin/$branch" | sort -V | tail -n1)
 
     if [[ -z "$latest_tag" ]]; then
-        echo "Aucun tag trouvé sur la branche $branch" >&2
-        exit 1
+        echo "❌ Aucun tag trouvé sur la branche $branch"
+        return 1
     fi
 
-    # Hash du tag distant et hash local
-    local remote_hash
-    remote_hash=$(git rev-parse "$latest_tag")
-    local local_hash
-    local_hash=$(git rev-parse HEAD)
+    # Tag actuel (si HEAD est exactement sur un tag)
+    local current_tag
+    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
 
-    MSG_MAJ_UPDATE_RELEASE=$(printf "$MSG_MAJ_UPDATE_RELEASE_TEMPLATE" "$latest_tag")
-    echo
-    print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_RELEASE"
+    if [[ -z "$current_tag" ]]; then
+        echo "ℹ️ Vous n’êtes pas sur un tag (probablement en avance sur la branche)."
+        echo "👉 Dernière release stable publiée : $latest_tag"
+        echo "✅ Aucune action effectuée (vous restez sur votre commit actuel)."
+        return 0
+    fi
 
-    if [[ "$remote_hash" != "$local_hash" ]]; then
-        # Essayer le checkout sécurisé sans message detached HEAD
-        if git -c advice.detachedHead=false checkout "$latest_tag"; then
-            chmod +x "$SCRIPT_DIR/main.sh"
-            MSG_MAJ_UPDATE_TAG_SUCCESS=$(printf "$MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE" "$latest_tag")
-            print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_TAG_SUCCESS"
-            exit 0
-        else
-            MSG_MAJ_UPDATE_TAG_FAILED=$(printf "$MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE" "$latest_tag")
-            print_fancy --align "center" --theme "error" "$MSG_MAJ_UPDATE_TAG_FAILED"
-            exit 1
-        fi
+    if [[ "$current_tag" == "$latest_tag" ]]; then
+        echo "✅ Déjà sur la dernière release : $current_tag"
+        return 0
+    fi
+
+    echo "⚡ Nouvelle release détectée : $latest_tag (actuellement $current_tag)"
+
+    # Checkout sécurisé du tag
+    if git -c advice.detachedHead=false checkout "$latest_tag"; then
+        chmod +x "$SCRIPT_DIR/main.sh"
+        echo "🎉 Mise à jour réussie vers $latest_tag"
+        return 0
     else
-        MSG_MAJ_UPDATE_TAG_REJECTED=$(printf "$MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE" "$latest_tag")
-        print_fancy --align "center" --theme "info" "$MSG_MAJ_UPDATE_TAG_REJECTED"
-        exit 0
+        echo "❌ Échec lors du passage à $latest_tag"
+        return 1
     fi
 }
 
@@ -100,22 +103,26 @@ update_to_latest_tag() {
 # NE MODIFIE PAS le dépôt
 ###############################################################################
 update_check() {
-
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
     # Récupérer les infos distantes
     git fetch origin "$BRANCH" --tags --quiet
 
-    # Récupérer le dernier tag de la branche active
+    # Dernier tag disponible sur la branche
+    local latest_tag
     latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
+
+    # Tag actuel (si on est sur un tag exact)
+    local current_tag
+    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "dev")
 
     if [[ -z "$latest_tag" ]]; then
         print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
-        return
+        return 1
     fi
 
-    if [[ "$latest_tag" != "$VERSION" ]]; then
-        MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest_tag" "$VERSION")
+    if [[ "$current_tag" != "$latest_tag" ]]; then
+        MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest_tag" "$current_tag")
         echo
         print_fancy --align "left" --fg "green" --style "italic" "$MSG_MAJ_UPDATE1"
         print_fancy --align "right" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
