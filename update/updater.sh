@@ -44,71 +44,82 @@ update_force_branch() {
 
 
 ###############################################################################
-# Fonction : Vérifie s'il existe une nouvelle release (tag) sur le commit actuel
+# Fonction : Vérifie s'il existe une nouvelle release (tag) sur la branche active
 # Affiche minimal pour main si à jour ou en avance, sinon détails complets
+# Pour les branches dev ou autres expérimentales, affiche l'état local vs distant
 ###############################################################################
 update_check() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
-    git fetch origin --tags --quiet
+    git fetch --all --tags --quiet
 
+    # Commit et date HEAD local
     local head_commit head_date
     head_commit=$(git rev-parse HEAD)
     head_date=$(git show -s --format=%ci "$head_commit")
 
-    # Déterminer les branches distantes contenant ce commit
-    local branches_containing
-    branches_containing=$(git branch -r --contains "$head_commit" | sed 's/^[ *]*//')
-
-    # Priorité pour main
-    if echo "$branches_containing" | grep -q "origin/main"; then
-        local branch_real="main"
-    elif echo "$branches_containing" | grep -q "origin/dev"; then
-        local branch_real="dev"
-    else
-        # Si commit inconnu des branches classiques
-        local branch_real="$(git rev-parse --abbrev-ref HEAD)"
+    # Détecter la branche réelle (HEAD peut être détaché)
+    local branch_real
+    branch_real=$(git branch --show-current)
+    if [[ -z "$branch_real" ]]; then
+        # HEAD détaché : tenter de déterminer une branche distante contenant ce commit
+        branch_real=$(git branch -r --contains "$head_commit" | head -n1 | sed 's|origin/||')
     fi
-
-    echo "📌  Vous êtes actuellement sur le commit : $head_commit ($head_date)"
-    echo "📌  Branches contenant ce commit : $branches_containing"
-    echo "📌  Branch réelle utilisée pour les mises à jour : $branch_real"
+    [[ -z "$branch_real" ]] && branch_real="(détaché)"
 
     # Dernier tag disponible sur la branche réelle
-    local latest_tag latest_tag_commit latest_tag_date
+    local latest_tag
     latest_tag=$(git tag --merged "origin/$branch_real" | sort -V | tail -n1)
 
-    if [[ -n "$latest_tag" ]]; then
-        latest_tag_commit=$(git rev-parse "$latest_tag")
-        latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
-    fi
+    # Commit et date HEAD distant
+    local remote_commit remote_date
+    remote_commit=$(git rev-parse "origin/$branch_real")
+    remote_date=$(git show -s --format=%ci "$remote_commit")
 
+    # Tag actuel si HEAD exactement sur un tag
+    local current_tag
+    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+
+    # Affichage de la branche/commit réel
+    echo
+    echo "📌  Vous êtes actuellement sur le commit : $head_commit ($head_date)"
+    echo "📌  Branch réelle utilisée pour les mises à jour : $branch_real"
+
+    # --- Branche main (grand public) ---
     if [[ "$branch_real" == "main" ]]; then
-        # Déjà sur le dernier tag ou en avance ?
+        if [[ -z "$latest_tag" ]]; then
+            print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
+            return 1
+        fi
+
+        local latest_tag_commit
+        latest_tag_commit=$(git rev-parse "$latest_tag")
+
         if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
             echo "✅  Version actuelle ${current_tag:-dev} >> A jour"
             return 0
         else
             echo
             echo "⚡  Nouvelle release disponible : $latest_tag"
-            echo "🕒  Dernier commit distant main : $(git rev-parse origin/main) ($(git show -s --format=%ci origin/main))"
-            echo "🕒  Dernière release verson : $latest_tag ($latest_tag_date)"
+            echo "🕒  Dernier commit local  : $head_commit ($head_date)"
+            echo "🕒  Dernier commit distant: $remote_commit ($remote_date)"
+            echo "🕒  Dernière release      : $latest_tag"
             echo "ℹ️  Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
             return 1
         fi
     fi
 
-    # Pour dev ou autres expérimentales
-    echo
-    echo "🕒  Dernier commit distant dev : $(git rev-parse origin/dev) ($(git show -s --format=%ci origin/dev))"
-    if [[ "$head_commit" == "$(git rev-parse origin/$branch_real)" ]]; then
+    # --- Branche dev ou expérimentale ---
+    echo "🕒  Commit distant : $remote_commit ($remote_date)"
+
+    if [[ "$head_commit" == "$remote_commit" ]]; then
         echo "✅  Votre branche est à jour avec l'origine."
         return 0
-    elif git merge-base --is-ancestor "$head_commit" "$(git rev-parse origin/$branch_real)"; then
+    elif git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
         print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$branch_real"
         return 1
     else
-        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$branch_real"
+        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance ou diverge sur origin/$branch_real"
         return 0
     fi
 }
@@ -121,42 +132,40 @@ update_check() {
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
-    git fetch origin --tags --quiet
+    local branch="${FORCE_BRANCH:-$BRANCH}"
+
+    git fetch origin "$branch" --tags --quiet
+
+    local latest_tag
+    latest_tag=$(git tag --merged "origin/$branch" | sort -V | tail -n1)
+
+    if [[ -z "$latest_tag" ]]; then
+        echo "❌  Aucun tag trouvé sur la branche $branch"
+        return 1
+    fi
 
     local head_commit head_date
     head_commit=$(git rev-parse HEAD)
     head_date=$(git show -s --format=%ci "$head_commit")
 
-    # Déterminer la branche réelle
-    local branches_containing branch_real
-    branches_containing=$(git branch -r --contains "$head_commit" | sed 's/^[ *]*//')
-    if echo "$branches_containing" | grep -q "origin/main"; then
-        branch_real="main"
-    elif echo "$branches_containing" | grep -q "origin/dev"; then
-        branch_real="dev"
-    else
-        branch_real="$(git rev-parse --abbrev-ref HEAD)"
-    fi
-
-    local latest_tag latest_tag_commit latest_tag_date
-    latest_tag=$(git tag --merged "origin/$branch_real" | sort -V | tail -n1)
-    if [[ -z "$latest_tag" ]]; then
-        echo "❌  Aucun tag trouvé sur la branche $branch_real"
-        return 1
-    fi
-
+    local latest_tag_commit latest_tag_date
     latest_tag_commit=$(git rev-parse "$latest_tag")
     latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
 
+    local current_tag
+    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+
     echo
-    echo "📌  Branche utilisée pour la mise à jour : $branch_real"
+    echo "📌  Branche : $branch"
     echo "🕒  Commit actuel : $head_commit ($head_date)"
     echo "🕒  Dernier tag    : $latest_tag ($latest_tag_date)"
 
     if [[ "$head_commit" == "$latest_tag_commit" ]]; then
         echo "✅  Déjà sur la dernière release : $latest_tag"
         return 0
-    elif git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
+    fi
+
+    if git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
         echo "⚠️  Vous êtes en avance sur la dernière release : ${current_tag:-dev}"
         echo "👉  Pas de mise à jour effectuée"
         return 0
