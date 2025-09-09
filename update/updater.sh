@@ -62,63 +62,59 @@ update_check() {
     local branch_real
     branch_real=$(git branch --show-current)
     if [[ -z "$branch_real" ]]; then
-        # HEAD détaché : tenter de déterminer une branche distante contenant ce commit
         branch_real=$(git branch -r --contains "$head_commit" | head -n1 | sed 's|origin/||')
     fi
     [[ -z "$branch_real" ]] && branch_real="(détaché)"
-
-    # Dernier tag disponible sur la branche réelle
-    local latest_tag
-    latest_tag=$(git tag --merged "origin/$branch_real" | sort -V | tail -n1)
 
     # Commit et date HEAD distant
     local remote_commit remote_date
     remote_commit=$(git rev-parse "origin/$branch_real")
     remote_date=$(git show -s --format=%ci "$remote_commit")
 
+    # Dernier tag disponible sur la branche réelle
+    local latest_tag latest_tag_commit latest_tag_date
+    latest_tag=$(git tag --merged "origin/$branch_real" | sort -V | tail -n1)
+    [[ -n "$latest_tag" ]] && latest_tag_commit=$(git rev-parse "$latest_tag")
+    [[ -n "$latest_tag_commit" ]] && latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
+
     # Tag actuel si HEAD exactement sur un tag
     local current_tag
     current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
 
-    # Affichage de la branche/commit réel
+    # --- Affichage général ---
     echo
-    echo "📌  Vous êtes actuellement sur le commit : $head_commit ($head_date)"
     echo "📌  Branch réelle utilisée pour les mises à jour : $branch_real"
+    echo "📌  Commit local   : $head_commit ($head_date)"
+    echo "🕒  Commit distant : $remote_commit ($remote_date)"
+    [[ -n "$latest_tag" ]] && echo "🕒  Dernière release : $latest_tag ($latest_tag_date)"
 
-    # --- Branche main (grand public) ---
+    # --- Branche main ---
     if [[ "$BRANCH" == "main" ]]; then
         if [[ -z "$latest_tag" ]]; then
             print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
             return 1
         fi
 
-        local latest_tag_commit latest_tag_date
-        latest_tag_commit=$(git rev-parse "$latest_tag")
-        latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
-
-        # Déjà sur le dernier tag ou en avance sur celui-ci ?
+        # Déjà sur le dernier tag ou commit local plus récent ?
         if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
             echo "✅  Version actuelle ${current_tag:-dev} >> A jour"
             return 0
         fi
 
-        # Comparaison horodatage du tag vs commit local
+        # Comparaison horodatage
         local head_epoch tag_epoch
         head_epoch=$(date -d "$head_date" +%s)
         tag_epoch=$(date -d "$latest_tag_date" +%s)
 
         echo
         echo "⚡  Nouvelle release détectée : $latest_tag ($latest_tag_date)"
-        echo "🕒  Dernier commit local      : $head_commit ($head_date)"
 
         if (( tag_epoch < head_epoch )); then
-            # Le tag est plus ancien que le commit local
             print_fancy --bg "yellow" --align "center" --highlight \
                 "⚠️  Attention : votre commit local est plus récent que la dernière release !"
             echo "👉  Forcer la mise à jour pourrait écraser des changements locaux"
             return 0
         else
-            # Le tag est plus récent que le commit local → MAJ possible
             echo "🕒  Dernière release disponible : $latest_tag ($latest_tag_date)"
             echo "ℹ️  Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
             return 1
@@ -126,24 +122,17 @@ update_check() {
     fi
 
     # --- Branche dev ou expérimentale ---
-    echo
-    echo "📌  Branche réelle utilisée pour les mises à jour : $branch_real"
-    echo "📌  Commit local  : $head_commit ($head_date)"
-    echo "🕒  Commit distant: $remote_commit ($remote_date)"
 
     if [[ "$head_commit" == "$remote_commit" ]]; then
         echo "✅  Votre branche est à jour avec l'origine."
         return 0
     elif git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
-        # Local en retard
         print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$branch_real"
         return 1
     elif git merge-base --is-ancestor "$remote_commit" "$head_commit"; then
-        # Local en avance
         print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$branch_real"
         return 0
     else
-        # Divergence : commits locaux et distants différents
         local local_epoch remote_epoch
         local_epoch=$(date -d "$head_date" +%s)
         remote_epoch=$(date -d "$remote_date" +%s)

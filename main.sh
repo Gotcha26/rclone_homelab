@@ -230,16 +230,6 @@ echo "     🚀  Rclone Homelab Manager"
 echo "======================================="
 echo
 
-# Affichage de l’état courant
-echo "📌  Vous êtes actuellement sur le commit : $current_commit ($current_commit_date)"
-echo "📌  Branche réelle utilisée pour les mises à jour : $BRANCH"
-if [[ "$BRANCH" == "main" && -n "$latest_tag" ]]; then
-    echo "🕒  Dernière release : $latest_tag ($latest_tag_date)"
-elif [[ "$BRANCH" != "main" ]]; then
-    echo "🕒  Commit distant : $remote_commit ($remote_commit_date)"
-fi
-echo
-
 # Affichage des options
 for i in "${!MENU_OPTIONS[@]}"; do
     echo "$((i+1))) ${MENU_OPTIONS[$i]}"
