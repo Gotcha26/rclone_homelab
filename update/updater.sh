@@ -56,7 +56,7 @@ update_check() {
     # Commit et date HEAD local
     local head_commit head_date
     head_commit=$(git rev-parse HEAD)
-    head_date=$(git show -s --format=%ci "$head_commit")
+    head_date=$(git --no-pager show -s --format=%ci "$head_commit")
 
     # Détecter la branche réelle (HEAD peut être détaché)
     local branch_real
@@ -69,17 +69,17 @@ update_check() {
     # Commit et date HEAD distant
     local remote_commit remote_date
     remote_commit=$(git rev-parse "origin/$branch_real")
-    remote_date=$(git show -s --format=%ci "$remote_commit")
+    remote_date=$(git --no-pager show -s --format=%ci "$remote_commit")
 
     # Dernier tag disponible sur la branche réelle
     local latest_tag latest_tag_commit latest_tag_date
     latest_tag=$(git tag --merged "origin/$branch_real" | sort -V | tail -n1)
     [[ -n "$latest_tag" ]] && latest_tag_commit=$(git rev-parse "$latest_tag")
-    [[ -n "$latest_tag_commit" ]] && latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
+    [[ -n "$latest_tag_commit" ]] && latest_tag_date=$(git --no-pager show -s --format=%ci "$latest_tag_commit")
 
     # Tag actuel si HEAD exactement sur un tag
     local current_tag
-    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+    current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
 
     # --- Affichage général ---
     echo
@@ -169,14 +169,14 @@ update_to_latest_tag() {
 
     local head_commit head_date
     head_commit=$(git rev-parse HEAD)
-    head_date=$(git show -s --format=%ci "$head_commit")
+    head_date=$(git --no-pager show -s --format=%ci "$head_commit")
 
     local latest_tag_commit latest_tag_date
     latest_tag_commit=$(git rev-parse "$latest_tag")
     latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
 
     local current_tag
-    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+    current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
 
     echo
     echo "📌  Branche : $branch"

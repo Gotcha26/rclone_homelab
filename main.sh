@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
+export GIT_PAGER=cat
 
 
 # ###############################################################################
@@ -29,6 +30,7 @@ mkdir -p "$LOG_DIR"
 # --- DEBUG ---
 # TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
 # mkdir -p "$TMP_JOBS_DIR"
+echo "DEBUG: LOG_FILE_SCRIPT=$LOG_FILE_SCRIPT"
 # --- DEBUG ---
 
 # On créait un dossier temporaire de manière temporaire
@@ -166,22 +168,22 @@ add_option() {
 
 # --- Options de configuration ---
 if rclone_configured; then
-    add_option "Afficher la configuration rclone" "show_rclone_config"
+    add_option "Afficher la configuration rclone" "menu_show_rclone_config"
 fi
 
 if msmtp_configured; then
-    add_option "Afficher la configuration msmtp" "show_msmtp_config"
+    add_option "Afficher la configuration msmtp" "menu_show_msmtp_config"
 fi
 
 # --- Options jobs ---
 if jobs_configured; then
-    add_option "Lancer tous les jobs (sans plus attendre ni options)" "run_all_jobs"
-    add_option "Lister les jobs configurés" "list_jobs"
+    add_option "Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
+    add_option "Lister les jobs configurés" "menu_list_jobs"
 fi
 
 # --- Installation des dépendances manquantes ---
 if [[ "$MISSING_RCLONE" == true || "$MISSING_MSMTP" == true ]]; then
-    add_option "Installer les dépendances manquantes (rclone/msmtp)" "install_missing_deps"
+    add_option "Installer les dépendances manquantes (rclone/msmtp)" "menu_install_missing_deps"
 fi
 
 # --- Options mises à jour dynamiques ---
@@ -203,24 +205,24 @@ if [[ "$BRANCH" == "main" ]]; then
         head_epoch=$(date -d "$current_commit_date" +%s)
         tag_epoch=$(date -d "$latest_tag_date" +%s)
         if (( tag_epoch > head_epoch )); then
-            add_option "Mettre à jour vers la dernière release (tag)" "update_to_latest_tag"
+            add_option "Mettre à jour vers la dernière release (tag)" "menu_update_to_latest_tag"
         fi
     fi
 else
     # --- Branche dev ou expérimentale ---
     if [[ "$current_commit" != "$remote_commit" ]]; then
-        add_option "Mettre à jour la branche '$BRANCH' (force branch)" "update_force_branch"
+        add_option "Mettre à jour la branche '$BRANCH' (force branch)" "menu_update_force_branch"
     fi
 fi
 
 # --- Options classiques ---
-add_option "Afficher les logs du dernier run" "show_logs"
-add_option "Afficher l'aide" "show_help"
-add_option "Quitter" "exit_script"
+add_option "Afficher les logs du dernier run" "menu_show_logs"
+add_option "Afficher l'aide" "menu_show_help"
+add_option "Quitter" "menu_exit_script"
 
 # --- option invisible : init config locale ---
 if [[ ! -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
-    MENU_ACTIONS+=("init_config_local")  # ajout à la liste des actions, pas d'affichage
+    MENU_ACTIONS+=("menu_init_config_local")  # ajout à la liste des actions, pas d'affichage
 fi
 
 # --- Affichage du menu ---
@@ -236,52 +238,52 @@ for i in "${!MENU_OPTIONS[@]}"; do
 done
 
 echo
-read -rp "Votre choix [1-${#MENU_OPTIONS[@]}] : " choice
+read -e -rp "Votre choix [1-${#MENU_OPTIONS[@]}] : " choice </dev/tty
 
 # --- Validation et exécution ---
 if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#MENU_OPTIONS[@]} )); then
     action="${MENU_ACTIONS[$((choice-1))]}"
     case "$action" in
-        run_all_jobs)
+        menu_run_all_jobs)
             RUN_ALL_FROM_MENU=true
             ;;
-        list_jobs)
+        menu_list_jobs)
             list_jobs
             exit 0
             ;;
-        show_logs)
+        menu_show_logs)
             tail -n 50 "$LOG_FILE_INFO" > /dev/tty
             exit 0
             ;;
-        show_rclone_config)
+        menu_show_rclone_config)
             [[ -f "$RCLONE_CONF" ]] && cat "$RCLONE_CONF" || echo "⚠️ Fichier rclone introuvable ($RCLONE_CONF)"
             exit 0
             ;;
-        show_msmtp_config)
+        menu_show_msmtp_config)
             [[ -f "$MSMTP_CONF" ]] && cat "$MSMTP_CONF" || echo "⚠️ Fichier msmtp introuvable ($MSMTP_CONF)"
             exit 0
             ;;
-        show_help)
+        menu_show_help)
             show_help
             exit 0
             ;;
-        install_missing_deps)
+        menu_install_missing_deps)
             install_missing_deps
             exit 0
             ;;
-        update_to_latest_tag)
+        menu_update_to_latest_tag)
             update_to_latest_tag
             exit 0
             ;;
-        update_force_branch)
+        menu_update_force_branch)
             update_force_branch
             exit 0
             ;;
-        exit_script)
+        menu_exit_script)
             echo "Bye 👋"
             exit 0
             ;;
-        init_config_local)
+        menu_init_config_local)
             init_config_local
             exit 0
             ;;
