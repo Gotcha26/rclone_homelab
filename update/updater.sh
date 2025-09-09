@@ -44,8 +44,52 @@ update_force_branch() {
 
 
 ###############################################################################
-# Fonction : Met à jour automatique du script vers la dernière release
-# Informe de l'état de la mise à jour
+# Fonction : Vérifie s'il existe une nouvelle release (tag) sur la branche active
+# Affiche également les horodatages des commits et tags
+###############################################################################
+update_check() {
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
+
+    git fetch origin "$BRANCH" --tags --quiet
+
+    # Dernier tag atteignable depuis la branche
+    local latest_tag
+    latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
+
+    # Commit actuel et date
+    local head_commit head_date
+    head_commit=$(git rev-parse HEAD)
+    head_date=$(git show -s --format=%ci "$head_commit")
+
+    # Commit correspondant au dernier tag et date
+    local latest_tag_commit latest_tag_date
+    latest_tag_commit=$(git rev-parse "$latest_tag")
+    latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
+
+    # Vérifier si on est sur un tag exact
+    local current_tag
+    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+
+    echo
+    echo "📌 Branche : $BRANCH"
+    echo "🕒 Commit actuel : $head_commit (${head_date})"
+    echo "🕒 Dernier tag    : $latest_tag (${latest_tag_date})"
+
+    if [[ "$head_commit" == "$latest_tag_commit" ]]; then
+        echo "✅ Vous êtes sur la dernière release : $latest_tag"
+    elif git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
+        echo "⚠️ Vous êtes en avance sur la dernière release : ${current_tag:-dev}"
+        echo "👉 Dernière release stable : $latest_tag"
+    else
+        echo "⚡ Nouvelle release disponible : $latest_tag"
+        echo "👉 Votre version actuelle : ${current_tag:-dev}"
+    fi
+}
+
+
+###############################################################################
+# Fonction : Met à jour le script vers la dernière release (tag)
+# Affiche les horodatages pour plus de clarté
 ###############################################################################
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
@@ -62,68 +106,41 @@ update_to_latest_tag() {
         return 1
     fi
 
-    local latest_tag_hash head_hash
-    latest_tag_hash=$(git rev-parse "$latest_tag")
-    head_hash=$(git rev-parse HEAD)
+    local head_commit head_date
+    head_commit=$(git rev-parse HEAD)
+    head_date=$(git show -s --format=%ci "$head_commit")
 
-    # HEAD exactement sur un tag ?
+    local latest_tag_commit latest_tag_date
+    latest_tag_commit=$(git rev-parse "$latest_tag")
+    latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
+
     local current_tag
     current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
 
-    if [[ "$head_hash" == "$latest_tag_hash" ]]; then
+    echo
+    echo "📌 Branche : $branch"
+    echo "🕒 Commit actuel : $head_commit (${head_date})"
+    echo "🕒 Dernier tag    : $latest_tag (${latest_tag_date})"
+
+    if [[ "$head_commit" == "$latest_tag_commit" ]]; then
         echo "✅ Déjà sur la dernière release : $latest_tag"
         return 0
-    elif git merge-base --is-ancestor "$latest_tag_hash" "$head_hash"; then
-        echo "ℹ️ Vous êtes en avance sur la dernière release : $latest_tag"
-        echo "👉 HEAD actuel : $(git rev-parse --short HEAD)"
-        echo "✅ Aucune action effectuée pour éviter une régression"
+    fi
+
+    if git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
+        echo "⚠️ Vous êtes en avance sur la dernière release : ${current_tag:-dev}"
+        echo "👉 Pas de mise à jour effectuée"
+        return 0
+    fi
+
+    echo "⚡ Nouvelle release détectée : $latest_tag (actuellement ${current_tag:-dev})"
+    if git -c advice.detachedHead=false checkout "$latest_tag"; then
+        chmod +x "$SCRIPT_DIR/main.sh"
+        echo "🎉 Mise à jour réussie vers $latest_tag"
         return 0
     else
-        echo "⚡ Nouvelle release détectée : $latest_tag (HEAD actuel : $(git rev-parse --short HEAD))"
-        if git -c advice.detachedHead=false checkout "$latest_tag"; then
-            chmod +x "$SCRIPT_DIR/main.sh"
-            echo "🎉 Mise à jour réussie vers $latest_tag"
-            return 0
-        else
-            echo "❌ Échec lors du passage à $latest_tag"
-            return 1
-        fi
-    fi
-}
-
-
-###############################################################################
-# Fonction : Vérifie s'il existe une nouvelle release ou branche
-# NE MODIFIE PAS le dépôt
-###############################################################################
-update_check() {
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
-
-    local branch="${FORCE_BRANCH:-$BRANCH}"
-
-    git fetch origin "$branch" --tags --quiet
-
-    local latest_tag
-    latest_tag=$(git tag --merged "origin/$branch" | sort -V | tail -n1)
-
-    if [[ -z "$latest_tag" ]]; then
-        print_fancy --fg "red" --bg "white" --style "bold underline" "❌ Aucun tag trouvé sur la branche $branch"
+        echo "❌ Échec lors du passage à $latest_tag"
         return 1
     fi
-
-    local latest_tag_hash head_hash
-    latest_tag_hash=$(git rev-parse "$latest_tag")
-    head_hash=$(git rev-parse HEAD)
-
-    local current_tag
-    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
-
-    if [[ "$head_hash" == "$latest_tag_hash" ]]; then
-        print_fancy --align "center" --theme "info" "✅ Vous êtes sur la dernière release : $latest_tag"
-    elif git merge-base --is-ancestor "$latest_tag_hash" "$head_hash"; then
-        print_fancy --align "center" --theme "warning" "ℹ️ Vous êtes en avance sur la dernière release : $latest_tag"
-        print_fancy --align "center" --theme "warning" "👉 HEAD actuel : $(git rev-parse --short HEAD)"
-    else
-        print_fancy --align "center" --theme "info" "⚡ Nouvelle release disponible : $latest_tag (HEAD actuel : $(git rev-parse --short HEAD))"
-    fi
 }
+
