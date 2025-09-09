@@ -50,6 +50,11 @@ update_force_branch() {
 update_check() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
+    # Toujours afficher la branche active
+    echo
+    echo "📌  Vous êtes actuellement sur la branche : $BRANCH"
+
+    # Récupération des infos distantes et des tags
     git fetch origin "$BRANCH" --tags --quiet
 
     # Dernier tag disponible sur la branche
@@ -66,6 +71,10 @@ update_check() {
     remote_commit=$(git rev-parse "origin/$BRANCH")
     remote_date=$(git show -s --format=%ci "$remote_commit")
 
+    # Commit du dernier tag
+    local latest_tag_commit
+    [[ -n "$latest_tag" ]] && latest_tag_commit=$(git rev-parse "$latest_tag")
+
     # Tag actuel si HEAD exactement sur un tag
     local current_tag
     current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
@@ -76,9 +85,6 @@ update_check() {
             print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
             return 1
         fi
-
-        local latest_tag_commit
-        latest_tag_commit=$(git rev-parse "$latest_tag")
 
         # Déjà sur le dernier tag ou en avance
         if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
@@ -98,7 +104,6 @@ update_check() {
 
     # --- Branche dev ou autres expérimentales ---
     echo
-    echo "📌  Branche : $BRANCH"
     echo "🕒  Commit local  : $head_commit ($head_date)"
     echo "🕒  Commit distant: $remote_commit ($remote_date)"
     echo "🕒  Dernier tag   : ${latest_tag:-Aucun tag trouvé}"
@@ -111,6 +116,7 @@ update_check() {
         return 1
     else
         print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$BRANCH"
+        [[ -n "$latest_tag" ]] && echo "Dernier tag sur main : $latest_tag ($latest_tag_commit)"
         return 0
     fi
 }
