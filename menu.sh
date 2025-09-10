@@ -51,7 +51,6 @@ while true; do
     latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
     latest_tag_commit=$(git rev-parse "$latest_tag" 2>/dev/null || echo "")
     latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit" 2>/dev/null || echo "")
-
     remote_commit=$(git rev-parse "origin/$BRANCH")
     remote_commit_date=$(git show -s --format=%ci "$remote_commit")
 
@@ -73,7 +72,13 @@ while true; do
     fi
 
     # --- Options classiques ---
-    add_option "Afficher les logs du dernier run" "menu_show_logs"
+
+    # --- Nouveau : affichage du dernier log terminé ---
+    LAST_LOG_FILE=$(get_last_log)
+    if [[ -n "$LAST_LOG_FILE" ]]; then
+        add_option "Afficher les logs du dernier run" "menu_show_last_log"
+    fi
+
     add_option "Afficher l'aide" "menu_show_help"
     add_option "Quitter" "menu_exit_script"
 
@@ -106,8 +111,8 @@ while true; do
             menu_list_jobs)
                 list_jobs
                 ;;
-            menu_show_logs)
-                tail -n 50 "$LOG_FILE_INFO" > /dev/tty
+            menu_show_last_log)
+                tail -n 500 "$LAST_LOG_FILE" > /dev/tty
                 ;;
             menu_show_rclone_config)
                 [[ -f "$RCLONE_CONF" ]] && cat "$RCLONE_CONF" || echo "⚠️ Fichier rclone introuvable ($RCLONE_CONF)"

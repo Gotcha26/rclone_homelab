@@ -352,3 +352,18 @@ init_config_local() {
         echo "⚠️  $local_conf reste en config.local.sh"
     fi
 }
+
+
+###############################################################################
+# Fonction : Récupérer le log précédent afin de l'afficher via le menu
+###############################################################################
+get_last_log() {
+    local last_log
+
+    # On liste tous les fichiers de logs, sauf le log actuel, triés par date décroissante
+    last_log=$(ls -1t "$LOG_DIR"/*.log 2>/dev/null | grep -v -F "$LOG_FILE_INFO" | head -n 1)
+
+    # Si aucun log précédent n'existe, on renvoie vide
+    echo "$last_log"
+}
+
