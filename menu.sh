@@ -97,17 +97,15 @@ while true; do
         action="${MENU_ACTIONS[$((choice-1))]}"
         case "$action" in
             menu_jobs)
-                # Vérification / initialisation du fichier jobs.txt
                 if ! init_jobs_file; then
-                    echo "❌ Impossible de créer jobs.txt, édition annulée." >&3
+                    echo "❌ Impossible de créer jobs.txt, édition annulée."
                     continue
                 fi
 
                 echo "⚡ Ouverture de $JOBS_FILE..." >&3
 
-                # --- Désactivation temporaire de la redirection vers tee ---
-                # stdin depuis le terminal, stdout/stderr vers les descripteurs originaux
-                nano "$JOBS_FILE" </dev/tty >&3 2>&4
+                # Lancement de nano dans un shell indépendant
+                (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$JOBS_FILE")
 
                 echo "✅ Édition terminée, retour au menu..." >&3
                 ;;
