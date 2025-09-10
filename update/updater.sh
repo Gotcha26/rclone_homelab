@@ -1,44 +1,50 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# Fonction : Met à jour (forcée) du script sur la branche en cour ou sur une branche spécifiée si précisée
-# Appel explicite ou implicite si forcé via FORCE_UPDATE=true
+# Fonction : Met à jour (forcée) du script sur la branche en cours
+# ou sur une branche spécifiée via FORCE_BRANCH
 ###############################################################################
 update_force_branch() {
-    local branch="${FORCE_BRANCH:-$BRANCH}"
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+
+    # Déterminer la branche réelle
+    local branch_real
+    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
+
+    # Choix de la branche à utiliser
+    local branch="${FORCE_BRANCH:-$branch_real}"
+
+    # Si HEAD détaché ou branche vide → fallback sur main
+    if [[ -z "$branch" || "$branch" == "(détaché)" || "$branch" == "HEAD" ]]; then
+        echo "⚠️  HEAD détaché détecté → fallback automatique sur 'main'"
+        branch="main"
+    fi
+
     MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
     echo
     print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
 
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
-
-    # Récupération des dernières infos du remote
+    # Récupération des dernières infos
     git fetch --all --tags
 
-    # Vérifie si la branche locale est déjà à jour
+    # Vérifie si déjà à jour
     local local_hash remote_hash
     local_hash=$(git rev-parse "$branch")
     remote_hash=$(git rev-parse "origin/$branch")
 
     if [[ "$local_hash" == "$remote_hash" ]]; then
-        # Rien à mettre à jour → on retourne 1
         print_fancy --align "center" --theme "info" "Branche '$branch' déjà à jour"
         return 1
     fi
 
-    # Assure que l'on est bien sur la branche souhaitée
-    git checkout -f "$branch" || { echo "Erreur lors du checkout de $branch" >&2; exit 1; }
-
-    # Écrase toutes les modifications locales, y compris fichiers non suivis
+    # Passage forcé sur la branche cible
+    git checkout -f "$branch" || { echo "❌ Erreur lors du checkout de $branch" >&2; exit 1; }
     git reset --hard "origin/$branch"
     git clean -fd
 
-    # Rendre le script principal exécutable
     chmod +x "$SCRIPT_DIR/main.sh"
 
     print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
-
-    # Retourne 0 pour signaler qu’une MAJ a été effectuée
     return 0
 }
 
@@ -176,12 +182,22 @@ update_check() {
 
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière release (tag)
-# Affiche horodatages pour plus de clarté
 ###############################################################################
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
-    local branch="${FORCE_BRANCH:-$BRANCH}"
+    # Déterminer la branche réelle
+    local branch_real
+    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
+
+    # Choix de la branche à utiliser
+    local branch="${FORCE_BRANCH:-$branch_real}"
+
+    # Si HEAD détaché ou branche vide → fallback sur main
+    if [[ -z "$branch" || "$branch" == "(détaché)" || "$branch" == "HEAD" ]]; then
+        echo "⚠️  HEAD détaché détecté → fallback automatique sur 'main'"
+        branch="main"
+    fi
 
     git fetch origin "$branch" --tags --quiet
 
@@ -193,15 +209,11 @@ update_to_latest_tag() {
         return 1
     fi
 
-    local head_commit head_date
+    local head_commit head_date latest_tag_commit latest_tag_date current_tag
     head_commit=$(git rev-parse HEAD)
     head_date=$(git --no-pager show -s --format=%ci "$head_commit")
-
-    local latest_tag_commit latest_tag_date
     latest_tag_commit=$(git rev-parse "$latest_tag")
     latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
-
-    local current_tag
     current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
 
     echo
