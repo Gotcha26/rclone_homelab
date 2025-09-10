@@ -358,14 +358,23 @@ init_config_local() {
 # Fonction : Récupérer le log précédent afin de l'afficher via le menu
 ###############################################################################
 get_last_log() {
-    local last_log
+    # Tous les logs triés par date décroissante
+    local logs=("$LOG_DIR"/*.log)
 
-    # On liste tous les fichiers de logs, sauf le log actuel, triés par date décroissante
-    last_log=$(ls -1t "$LOG_DIR"/*.log 2>/dev/null | grep -v -F "$LOG_FILE_INFO" | head -n 1)
+    # Aucun log ?
+    [[ ${#logs[@]} -eq 0 ]] && echo "" && return
 
-    # Si aucun log précédent n'existe, on renvoie vide
-    echo "$last_log"
+    # Exclure le log actuel
+    local previous=""
+    for log in "${logs[@]}"; do
+        [[ "$log" == "$LOG_FILE_INFO" ]] && continue
+        previous="$log"
+        break
+    done
+
+    echo "$previous"
 }
+
 
 
 ###############################################################################
