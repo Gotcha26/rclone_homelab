@@ -130,32 +130,17 @@ update_check() {
         return 0
     fi
 
-    # Cas simple : local est ancêtre du remote → en retard
-    if git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
-        print_fancy --bg "blue" --align "center" --highlight \
-            "⚡  Mise à jour disponible : votre branche est en retard sur origin/$branch_real"
-        return 1
-    fi
-
-    # Cas simple : remote est ancêtre du local → en avance
-    if git merge-base --is-ancestor "$remote_commit" "$head_commit"; then
-        print_fancy --bg "green" --align "center" --highlight \
-            "⚠️  Votre branche est en avance sur origin/$branch_real"
-        return 0
-    fi
-
-    # Cas divergence (aucun ancêtre trouvé des deux côtés)
     local local_epoch remote_epoch
     local_epoch=$(date -d "$head_date" +%s)
     remote_epoch=$(date -d "$remote_date" +%s)
 
     if (( local_epoch < remote_epoch )); then
         print_fancy --bg "blue" --align "center" --highlight \
-            "⚡  Votre branche diverge, mais le remote est plus récent → MAJ recommandée"
+            "⚡  Mise à jour disponible : votre commit est plus ancien que origin/$branch_real"
         return 1
     else
         print_fancy --bg "green" --align "center" --highlight \
-            "⚠️  Votre branche diverge, mais votre commit est plus récent → pas de MAJ nécessaire"
+            "⚠️  Votre commit est plus récent que origin/$branch_real"
         return 0
     fi
 
