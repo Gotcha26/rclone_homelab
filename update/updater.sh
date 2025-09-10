@@ -1,51 +1,12 @@
 #!/usr/bin/env bash
 
+
 ###############################################################################
-# Fonction : Met à jour (forcée) du script sur la branche en cours
-# ou sur une branche spécifiée via FORCE_BRANCH
+# Fonction principale : update_check
 ###############################################################################
-update_force_branch() {
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
-
-    # Déterminer la branche réelle
-    local branch_real
-    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
-
-    # Choix de la branche à utiliser
-    local branch="${FORCE_BRANCH:-$branch_real}"
-
-    # Si HEAD détaché ou branche vide → fallback sur main
-    if [[ -z "$branch" || "$branch" == "(détaché)" || "$branch" == "HEAD" ]]; then
-        echo "⚠️  HEAD détaché détecté → fallback automatique sur 'main'"
-        branch="main"
-    fi
-
-    MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
-    echo
-    print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
-
-    # Récupération des dernières infos
-    git fetch --all --tags
-
-    # Vérifie si déjà à jour
-    local local_hash remote_hash
-    local_hash=$(git rev-parse "$branch")
-    remote_hash=$(git rev-parse "origin/$branch")
-
-    if [[ "$local_hash" == "$remote_hash" ]]; then
-        print_fancy --align "center" --theme "info" "Branche '$branch' déjà à jour"
-        return 1
-    fi
-
-    # Passage forcé sur la branche cible
-    git checkout -f "$branch" || { echo "❌ Erreur lors du checkout de $branch" >&2; exit 1; }
-    git reset --hard "origin/$branch"
-    git clean -fd
-
-    chmod +x "$SCRIPT_DIR/main.sh"
-
-    print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
-    return 0
+update_check() {
+    fetch_git_info || return 1
+    analyze_update_status
 }
 
 
@@ -172,16 +133,66 @@ analyze_update_status() {
 
 
 ###############################################################################
-# Fonction principale : update_check
+# Fonction : Met à jour (forcée) du script sur la branche en cours
+# ou sur une branche spécifiée via FORCE_BRANCH
+# → préserve les fichiers ignorés (.gitignore)
 ###############################################################################
-update_check() {
-    fetch_git_info || return 1
-    analyze_update_status
+update_force_branch() {
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+
+    # Déterminer la branche réelle
+    local branch_real
+    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
+
+    # Choix de la branche à utiliser
+    local branch="${FORCE_BRANCH:-$branch_real}"
+
+    # Si HEAD détaché ou branche vide → fallback sur main
+    if [[ -z "$branch" || "$branch" == "(détaché)" || "$branch" == "HEAD" ]]; then
+        echo "⚠️  HEAD détaché détecté → fallback automatique sur 'main'"
+        branch="main"
+    fi
+
+    MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
+    echo
+    print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
+
+    # Liste des fichiers ignorés (d'après .gitignore)
+    local ignored_files
+    ignored_files=$(git ls-files --ignored --exclude-standard)
+
+    # Sauvegarde temporaire si fichiers ignorés présents
+    if [[ -n "$ignored_files" ]]; then
+        echo "💾 Sauvegarde des fichiers ignorés..."
+        tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
+    fi
+
+    # Récupération des dernières infos
+    git fetch --all --tags
+
+    # Passage forcé sur la branche cible
+    git checkout -f "$branch" || { echo "❌ Erreur lors du checkout de $branch" >&2; exit 1; }
+    git reset --hard "origin/$branch"
+    git clean -fd
+
+    # Restauration éventuelle des fichiers ignorés
+    if [[ -f /tmp/ignored_backup.tar.gz ]]; then
+        echo "♻️  Restauration des fichiers ignorés..."
+        tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
+        rm -f /tmp/ignored_backup.tar.gz
+        echo "✅ Fichiers ignorés restaurés"
+    fi
+
+    chmod +x "$SCRIPT_DIR/main.sh"
+
+    print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
+    return 0
 }
 
 
 ###############################################################################
 # Fonction : Met à jour le script vers la dernière release (tag)
+# → préserve les fichiers ignorés (.gitignore)
 ###############################################################################
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
@@ -233,7 +244,25 @@ update_to_latest_tag() {
     fi
 
     echo "⚡ Nouvelle release détectée : $latest_tag (actuellement ${current_tag:-dev})"
+
+    # --- Sauvegarde des fichiers ignorés ---
+    local ignored_files
+    ignored_files=$(git ls-files --ignored --exclude-standard)
+    if [[ -n "$ignored_files" ]]; then
+        echo "💾 Sauvegarde des fichiers ignorés..."
+        tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
+    fi
+
+    # Checkout vers le tag
     if git -c advice.detachedHead=false checkout "$latest_tag"; then
+        # Restauration des fichiers ignorés
+        if [[ -f /tmp/ignored_backup.tar.gz ]]; then
+            echo "♻️  Restauration des fichiers ignorés..."
+            tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
+            rm -f /tmp/ignored_backup.tar.gz
+            echo "✅ Fichiers ignorés restaurés"
+        fi
+
         chmod +x "$SCRIPT_DIR/main.sh"
         echo "🎉  Mise à jour réussie vers $latest_tag"
         echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
