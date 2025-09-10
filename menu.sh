@@ -44,30 +44,20 @@ while true; do
     fi
 
     # --- Options mises à jour dynamiques ---
-    # On récupère les infos pertinentes pour le menu
-    current_commit=$(git rev-parse HEAD)
-    current_commit_date=$(git show -s --format=%ci "$current_commit")
-    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
-    latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
-    latest_tag_commit=$(git rev-parse "$latest_tag" 2>/dev/null || echo "")
-    latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit" 2>/dev/null || echo "")
-    remote_commit=$(git rev-parse "origin/$BRANCH")
-    remote_commit_date=$(git show -s --format=%ci "$remote_commit")
+    fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; continue; }
+
+    # Analyse si mise à jour nécessaire
+    update_status_code=$(analyze_update_status)
 
     # --- Branche main ---
-    if [[ "$BRANCH" == "main" ]]; then
-        if [[ -n "$latest_tag" ]]; then
-            # Comparaison horodatage pour savoir si MAJ pertinente
-            head_epoch=$(date -d "$current_commit_date" +%s)
-            tag_epoch=$(date -d "$latest_tag_date" +%s)
-            if (( tag_epoch > head_epoch )); then
-                add_option "Mettre à jour vers la dernière release (tag)" "menu_update_to_latest_tag"
-            fi
+    if [[ "$branch_real" == "main" ]]; then
+        if (( latest_tag_epoch > head_epoch )); then
+            add_option "Mettre à jour vers la dernière release (tag)" "menu_update_to_latest_tag"
         fi
     else
         # --- Branche dev ou expérimentale ---
-        if [[ "$current_commit" != "$remote_commit" ]]; then
-            add_option "Mettre à jour la branche '$BRANCH' (force branch)" "menu_update_force_branch"
+        if (( head_epoch < remote_epoch )); then
+            add_option "Mettre à jour la branche '$branch_real' (force branch)" "menu_update_force_branch"
         fi
     fi
 
