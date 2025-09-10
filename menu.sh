@@ -25,7 +25,7 @@ while true; do
 
     # --- Options de configuration ---
 
-    add_option "Ajouter des remotes" "menu_jos"
+    add_option "Ajouter des remotes" "menu_jobs"
 
 
     if rclone_configured; then
