@@ -367,3 +367,25 @@ get_last_log() {
     echo "$last_log"
 }
 
+
+###############################################################################
+# Fonction : Vérifie la présence de jobs.txt et initialise à partir de jobs.txt.exemple si absent
+###############################################################################
+init_jobs_file() {
+
+    # Si jobs.txt existe, rien à faire
+    if [[ -f "$JOBS_FILE" ]]; then
+        echo "✅  Fichier jobs.txt déjà présent"
+        return 0
+    fi
+
+    # Sinon, on tente de copier le fichier exemple
+    if [[ -f "$EXEMPLE_FILE" ]]; then
+        cp "$EXEMPLE_FILE" "$JOBS_FILE"
+        echo "⚡  jobs.txt absent → copie de jobs.txt.exemple réalisée"
+        return 0
+    else
+        echo "❌  Aucun fichier jobs.txt ni jobs.txt.exemple trouvé dans $SCRIPT_DIR"
+        return 1
+    fi
+}

@@ -24,6 +24,10 @@ while true; do
     }
 
     # --- Options de configuration ---
+
+    add_option "Ajouter des remotes" "menu_jos"
+
+
     if rclone_configured; then
         add_option "Afficher la configuration rclone" "menu_show_rclone_config"
     fi
@@ -61,21 +65,18 @@ while true; do
         fi
     fi
 
-    # --- Options classiques ---
-
-    # --- Nouveau : affichage du dernier log terminé ---
-    LAST_LOG_FILE=$(get_last_log)
+        LAST_LOG_FILE=$(get_last_log)
     if [[ -n "$LAST_LOG_FILE" ]]; then
         add_option "Afficher les logs du dernier run" "menu_show_last_log"
     fi
 
+    # --- Option de dev après une MAJ : init config locale ---
+    if [[ ! -f "$SCRIPT_DIR/config/config.dev.sh" && "$branch_real" == "dev" ]]; then
+        add_option "[DEV] Initialiser config locale" "menu_init_config_local"
+    fi
+
     add_option "Afficher l'aide" "menu_show_help"
     add_option "Quitter" "menu_exit_script"
-
-    # --- option invisible : init config locale ---
-    if [[ ! -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
-        MENU_ACTIONS+=("menu_init_config_local")  # ajout à la liste des actions, pas d'affichage
-    fi
 
     # --- Affichage du menu ---
     echo
@@ -95,6 +96,13 @@ while true; do
     if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#MENU_OPTIONS[@]} )); then
         action="${MENU_ACTIONS[$((choice-1))]}"
         case "$action" in
+            menu_jobs)
+                if ! init_jobs_file; then
+                    echo "❌ Impossible de créer jobs.txt, édition annulée."
+                    continue
+                fi
+                nano "$JOBS_FILE"
+                ;;
             menu_run_all_jobs)
                 RUN_ALL_FROM_MENU=true
                 ;;
@@ -127,6 +135,7 @@ while true; do
                 exit 0
                 ;;
             menu_init_config_local)
+                echo "⚡  [DEV] Initialiser config locale"
                 init_config_local
                 ;;
             *)

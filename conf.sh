@@ -73,6 +73,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TMP_RCLONE="$SCRIPT_DIR/tmp"        # Répertoire temporaire pour rclone
 LOG_DIR="$SCRIPT_DIR/logs"          # Répertoire de logs
 JOBS_FILE="$SCRIPT_DIR/jobs.txt"    # Fichier des jobs
+EXEMPLE_FILE="${JOBS_FILE}.exemple" # Fichier des jobs (exemple - vierge)
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 FILE_SCRIPT="main_${LOG_TIMESTAMP}.log"
 LOG_FILE_SCRIPT="$LOG_DIR/${FILE_SCRIPT}"
