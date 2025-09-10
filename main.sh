@@ -38,6 +38,9 @@ TMP_JOBS_DIR=$(mktemp -d)
 
 # ---- Journal log général (sauf rclone qui a un log dédié) ----
 
+# Sauvegarde stdout et stderr originaux
+exec 3>&1 4>&2
+
 # Redirige toute la sortie du script
 # - stdout vers tee (console + fichier) [standard]
 # - stderr aussi redirigé [sortie des erreurs]
