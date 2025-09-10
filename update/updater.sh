@@ -94,10 +94,17 @@ fetch_git_info() {
 analyze_update_status() {
 
     echo
-    echo "📌  Branch réelle utilisée pour les mises à jour : $branch_real"
+    # Affichage plus précis : si HEAD détaché ou commit non aligné avec la branche actuelle
+    if git describe --tags --exact-match >/dev/null 2>&1; then
+        branch_display="$branch_real"
+    else
+        # Détecte la branche principale du commit local via git for-each-ref
+        branch_display=$(git for-each-ref --format='%(refname:short)' --contains "$head_commit" | head -n1)
+    fi
+    echo "📌  Branche locale : ${branch_display:-(détaché)}"
     echo "📌  Commit local   : $head_commit ($(date -d "@$head_epoch"))"
     echo "🕒  Commit distant : $remote_commit ($(date -d "@$remote_epoch"))"
-    [[ -n "$latest_tag" ]] && echo "🕒  Dernière release : $latest_tag ($(date -d "@$latest_tag_epoch"))"
+    [[ -n "$latest_tag" ]] && echo "🕒  Dernière vers. : $latest_tag ($(date -d "@$latest_tag_epoch"))"
 
     # --- Branche main ---
     if [[ "$branch_real" == "main" ]]; then
@@ -108,7 +115,7 @@ analyze_update_status() {
 
         # Déjà sur le dernier tag ou commit local plus récent ?
         if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-            echo "✅  Version actuelle ${current_tag:-dev} >> A jour"
+            echo "✅  Bilan          : ${current_tag:-dev} >> A jour"
             return 0
         fi
 
