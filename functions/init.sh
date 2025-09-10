@@ -78,7 +78,6 @@ print_logo() {
 ::::::......::::::.......:::::::..:::::::......::::..:::::..:::..:::::..:::::::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 EOF
-    print_fancy --align "right" "$VERSION"
     echo
     echo
 }
@@ -89,27 +88,29 @@ EOF
 # Propose de l'installer si besoin
 ###############################################################################
 check_rclone() {
-    if ! command -v rclone >/dev/null 2>&1; then
+    local force_install=${1:-false}
+
+    if ! command -v rclone >/dev/null 2>&1 || [[ "$force_install" == true ]]; then
         echo
-        echo "⚠️  rclone n'est pas installé sur votre système Debian/Ubuntu."
-        
-        read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-        REPLY=${REPLY,,}
+        echo "⚠️  rclone n'est pas installé ou installation forcée."
+
+        if [[ "$force_install" != true ]]; then
+            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+            REPLY=${REPLY,,}  # met en minuscules
+        else
+            REPLY="y"
+        fi
 
         if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            echo "Installation de rclone en cours..."
+            echo "📦  Installation de rclone en cours..."
             sudo apt update && sudo apt install rclone -y
             if [[ $? -eq 0 ]]; then
-                echo "✅ rclone a été installé avec succès !"
+                echo "✅  rclone a été installé avec succès !"
             else
-                echo >&2 "❌ Une erreur est survenue lors de l'installation de rclone."
-                ERROR_CODE=11
-                exit $ERROR_CODE
+                die 11 "Une erreur est survenue lors de l'installation de rclone."
             fi
         else
-            echo >&2 "❌ rclone n'est toujours pas installé. Le script va s'arrêter."
-            ERROR_CODE=11
-            exit $ERROR_CODE
+            die 11 "rclone n'est toujours pas installé. Le script va s'arrêter."
         fi
     fi
 }
@@ -138,9 +139,7 @@ check_rclone_config() {
         else
             echo "Le script va s'arrêter. Configurez rclone et relancez le script."
         fi
-
-        ERROR_CODE=12
-        exit $ERROR_CODE
+        die 12 "rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
     fi
 }
 
@@ -150,27 +149,29 @@ check_rclone_config() {
 # Propose de l'installer si besoin
 ###############################################################################
 check_msmtp() {
-    if ! command -v msmtp >/dev/null 2>&1; then
+    local force_install=${1:-false}
+
+    if ! command -v msmtp >/dev/null 2>&1 || [[ "$force_install" == true ]]; then
         echo
-        echo "⚠️  msmtp n'est pas installé sur votre système Debian/Ubuntu."
-        
-        read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-        REPLY=${REPLY,,}
+        echo "⚠️  msmtp n'est pas installé ou installation forcée."
+
+        if [[ "$force_install" != true ]]; then
+            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+            REPLY=${REPLY,,}  # met en minuscules
+        else
+            REPLY="y"
+        fi
 
         if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            echo "Installation de msmtp en cours..."
+            echo "📦  Installation de msmtp en cours..."
             sudo apt update && sudo apt install msmtp msmtp-mta -y
             if [[ $? -eq 0 ]]; then
-                echo "✅ msmtp a été installé avec succès !"
+                echo "✅  msmtp a été installé avec succès !"
             else
-                echo >&2 "❌ Une erreur est survenue lors de l'installation de msmtp."
-                ERROR_CODE=21
-                exit $ERROR_CODE
+                die 10 "Une erreur est survenue lors de l'installation de msmtp."
             fi
         else
-            echo >&2 "❌ msmtp n'est toujours pas installé. Le script va s'arrêter."
-            ERROR_CODE=21
-            exit $ERROR_CODE
+            die 10 "msmtp n'est toujours pas installé. Le script va s'arrêter."
         fi
     fi
 }
@@ -207,10 +208,46 @@ check_msmtp_config() {
         else
             echo "Le script va s'arrêter. Configurez msmtp et relancez le script."
         fi
-
-        ERROR_CODE=22
-        exit $ERROR_CODE
+        die 22 "msmtp est installé mais n'est pas configuré. Veuillez exécuter : msmtp --configure"
     fi
+}
+
+
+###############################################################################
+# Fonctions de détection des configs
+###############################################################################
+rclone_configured() {
+    [[ -f "$RCLONE_CONF" ]] && [[ -s "$RCLONE_CONF" ]]
+}
+
+msmtp_configured() {
+    [[ -f "$MSMTP_CONF" ]] && [[ -s "$MSMTP_CONF" ]]
+}
+
+
+###############################################################################
+# Fonction : Vérifier la présence de jobs configurés
+###############################################################################
+jobs_configured() {
+    [[ -f "$JOBS_CONF" ]] && [[ -s "$JOBS_CONF" ]]
+}
+
+
+###############################################################################
+# Fonction : Vérifier la présence de jobs configurés
+###############################################################################
+jobs_configured() {
+    [[ -f "$JOBS_CONF" ]] && [[ -s "$JOBS_CONF" ]]
+}
+
+
+###############################################################################
+# Fonction : Installer les dépendances manquantes (rclone / msmtp)
+###############################################################################
+install_missing_deps() {
+    check_rclone true
+    check_msmtp true
+    echo "🎉 Dépendances installées."
 }
 
 
@@ -274,4 +311,44 @@ print_summary_table() {
     # Ligne finale avec couleur fond jaune foncé, texte noir, centrée
     print_fancy --bg "yellow" --fg "black" "$MSG_END_REPORT"
     echo
+}
+
+
+###############################################################################
+# Fonction : initialisation config locale si absente [mode dec]
+###############################################################################
+init_config_local() {
+    local main_conf="$SCRIPT_DIR/config/config.main.sh"
+    local dev_conf="$SCRIPT_DIR/config/config.dev.sh"
+    local local_conf="$SCRIPT_DIR/config/config.local.sh"
+
+    # Si config.dev.sh existe déjà, rien à faire
+    [[ -f "$dev_conf" ]] && return 0
+
+    # Si config.local.sh existe déjà, rien à faire
+    if [[ -f "$local_conf" ]]; then
+        echo "⚠️  $local_conf existe déjà, pas de copie nécessaire."
+        return 0
+    fi
+
+    # Copier main → local
+    if cp "$main_conf" "$local_conf"; then
+        echo "✅ $main_conf copié vers $local_conf"
+    else
+        die 20 "Impossible de copier $main_conf vers $local_conf"
+    fi
+
+    # Demander si on veut transformer en config.dev.sh
+    read -rp "Voulez-vous transformer $local_conf en config.dev.sh ? [y/N] : " REPLY
+    REPLY=${REPLY,,}  # minuscule
+
+    if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
+        if mv "$local_conf" "$dev_conf"; then
+            echo "🎉 $local_conf renommé en $dev_conf"
+        else
+            die 21 "Impossible de renommer $local_conf"
+        fi
+    else
+        echo "⚠️  $local_conf reste en config.local.sh"
+    fi
 }

@@ -198,3 +198,15 @@ print_fancy() {
         printf "%b\n" "${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
     fi
 }
+
+
+###############################################################################
+# Fonction Sortie avec code erreur
+###############################################################################
+die() {
+    local code=$1
+    shift
+    print_fancy --theme "error" "$*" >&2
+    echo
+    exit "$code"
+}

@@ -24,10 +24,7 @@ parse_jobs() {
 
         # Vérif source locale
         if [[ ! -d "$src" ]]; then
-            print_fancy --theme "error" "$MSG_SRC_NOT_FOUND : $src"
-            echo
-            ERROR_CODE=7
-            exit $ERROR_CODE
+            die 7 "$MSG_SRC_NOT_FOUND : $src"
         fi
 
         # Stocker la paire src|dst, sans statut

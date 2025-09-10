@@ -58,7 +58,7 @@ MSG_MAJ_ACCESS_ERROR="Erreur : impossible d'accéder au répertoire du script"
 MSG_MAJ_UPDATE_TEMPLATE="📥  Nouvelle version disponible : %s (vous utilisez la %s)"
 MSG_MAJ_UPDATE2="Utiliser l'argument --update-tag la prochaine fois."
 MSG_MAJ_UPDATE_RELEASE_TEMPLATE="⚡  Mise à jour vers la dernière release : %s"
-MSG_MAJ_UPDATE_BRANCH_TEMPLATE="⚡  Mise à jour forcée de la branche %s ..."
+MSG_MAJ_UPDATE_BRANCH_TEMPLATE="⚡  Mécanisme automatique de mise à jour forcée sur la branche %s."
 MSG_MAJ_UPDATE_BRANCH_SUCCESS="Script mis à jour !"
 MSG_MAJ_UPDATE_BRANCH_REJECTED="Git : Rien à mettre à jour, vous êtes déjà sur la dernière version."
 MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE="Script mis à jour vers le tag %s !"
@@ -87,6 +87,9 @@ END_TIME=""
 ERROR_CODE=0
 LAUNCH_MODE="manuel"
 EXECUTED_JOBS=0
+RCLONE_CONF="${RCLONE_CONFIG_DIR:-$HOME/.config/rclone/rclone.conf}"
+MSMTP_CONF="${MSMTP_CONFIG_DIR:-$HOME/.config/msmtp/config}"
+JOBS_CONF="${SCRIPT_DIR}/jobs.conf"
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
 ORANGE=$'\e[38;5;208m'              # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.

@@ -44,80 +44,164 @@ update_force_branch() {
 
 
 ###############################################################################
-# Fonction : Met à jour le script vers la dernière release (dernier tag
-# présent sur la branche courante définie dans la config)
+# Fonction : Vérifie s'il existe une nouvelle release (tag) sur la branche active
+# Affiche minimal pour main si à jour ou en avance, sinon détails complets
+# Pour les branches dev ou autres expérimentales, affiche l'état local vs distant
 ###############################################################################
-update_to_latest_tag() {
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+update_check() {
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
-    # Déterminer la branche active via config (ou fallback main)
-    local branch="${FORCE_BRANCH:-$BRANCH}"
+    git fetch --all --tags --quiet
 
-    # Récupérer les infos distantes
-    git fetch origin "$branch" --tags
+    # Commit et date HEAD local
+    local head_commit head_date
+    head_commit=$(git rev-parse HEAD)
+    head_date=$(git --no-pager show -s --format=%ci "$head_commit")
 
-    # Lister uniquement les tags atteignables depuis la branche
-    local latest_tag
-    latest_tag=$(git tag --merged "origin/$branch" | sort -V | tail -n1)
+    # Détecter la branche réelle (HEAD peut être détaché)
+    local branch_real
+    branch_real=$(git branch --show-current)
+    if [[ -z "$branch_real" ]]; then
+        branch_real=$(git branch -r --contains "$head_commit" | head -n1 | sed 's|origin/||')
+    fi
+    [[ -z "$branch_real" ]] && branch_real="(détaché)"
 
-    if [[ -z "$latest_tag" ]]; then
-        echo "Aucun tag trouvé sur la branche $branch" >&2
-        exit 1
+    # Commit et date HEAD distant
+    local remote_commit remote_date
+    remote_commit=$(git rev-parse "origin/$branch_real")
+    remote_date=$(git --no-pager show -s --format=%ci "$remote_commit")
+
+    # Dernier tag disponible sur la branche réelle
+    local latest_tag latest_tag_commit latest_tag_date
+    latest_tag=$(git tag --merged "origin/$branch_real" | sort -V | tail -n1)
+    [[ -n "$latest_tag" ]] && latest_tag_commit=$(git rev-parse "$latest_tag")
+    [[ -n "$latest_tag_commit" ]] && latest_tag_date=$(git --no-pager show -s --format=%ci "$latest_tag_commit")
+
+    # Tag actuel si HEAD exactement sur un tag
+    local current_tag
+    current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
+
+    # --- Affichage général ---
+    echo
+    echo "📌  Branch réelle utilisée pour les mises à jour : $branch_real"
+    echo "📌  Commit local   : $head_commit ($head_date)"
+    echo "🕒  Commit distant : $remote_commit ($remote_date)"
+    [[ -n "$latest_tag" ]] && echo "🕒  Dernière release : $latest_tag ($latest_tag_date)"
+
+    # --- Branche main ---
+    if [[ "$BRANCH" == "main" ]]; then
+        if [[ -z "$latest_tag" ]]; then
+            print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
+            return 1
+        fi
+
+        # Déjà sur le dernier tag ou commit local plus récent ?
+        if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
+            echo "✅  Version actuelle ${current_tag:-dev} >> A jour"
+            return 0
+        fi
+
+        # Comparaison horodatage
+        local head_epoch tag_epoch
+        head_epoch=$(date -d "$head_date" +%s)
+        tag_epoch=$(date -d "$latest_tag_date" +%s)
+
+        echo
+        echo "⚡  Nouvelle release détectée : $latest_tag ($latest_tag_date)"
+
+        if (( tag_epoch < head_epoch )); then
+            print_fancy --bg "yellow" --align "center" --highlight \
+                "⚠️  Attention : votre commit local est plus récent que la dernière release !"
+            echo "👉  Forcer la mise à jour pourrait écraser des changements locaux"
+            return 0
+        else
+            echo "🕒  Dernière release disponible : $latest_tag ($latest_tag_date)"
+            echo "ℹ️  Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
+            return 1
+        fi
     fi
 
-    # Hash du tag distant et hash local
-    local remote_hash
-    remote_hash=$(git rev-parse "$latest_tag")
-    local local_hash
-    local_hash=$(git rev-parse HEAD)
+    # --- Branche dev ou expérimentale ---
 
-    MSG_MAJ_UPDATE_RELEASE=$(printf "$MSG_MAJ_UPDATE_RELEASE_TEMPLATE" "$latest_tag")
-    echo
-    print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_RELEASE"
-
-    if [[ "$remote_hash" != "$local_hash" ]]; then
-        # Essayer le checkout sécurisé sans message detached HEAD
-        if git -c advice.detachedHead=false checkout "$latest_tag"; then
-            chmod +x "$SCRIPT_DIR/main.sh"
-            MSG_MAJ_UPDATE_TAG_SUCCESS=$(printf "$MSG_MAJ_UPDATE_TAG_SUCCESS_TEMPLATE" "$latest_tag")
-            print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_TAG_SUCCESS"
-            exit 0
-        else
-            MSG_MAJ_UPDATE_TAG_FAILED=$(printf "$MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE" "$latest_tag")
-            print_fancy --align "center" --theme "error" "$MSG_MAJ_UPDATE_TAG_FAILED"
-            exit 1
-        fi
+    if [[ "$head_commit" == "$remote_commit" ]]; then
+        echo "✅  Votre branche est à jour avec l'origine."
+        return 0
+    elif git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
+        print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$branch_real"
+        return 1
+    elif git merge-base --is-ancestor "$remote_commit" "$head_commit"; then
+        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$branch_real"
+        return 0
     else
-        MSG_MAJ_UPDATE_TAG_REJECTED=$(printf "$MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE" "$latest_tag")
-        print_fancy --align "center" --theme "info" "$MSG_MAJ_UPDATE_TAG_REJECTED"
-        exit 0
+        local local_epoch remote_epoch
+        local_epoch=$(date -d "$head_date" +%s)
+        remote_epoch=$(date -d "$remote_date" +%s)
+
+        if (( local_epoch < remote_epoch )); then
+            print_fancy --bg "blue" --align "center" --highlight "⚡  Votre branche diverge, mais le remote est plus récent → MAJ recommandée"
+            return 1
+        else
+            print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche diverge, mais vous êtes plus récent → pas de MAJ nécessaire"
+            return 0
+        fi
     fi
 }
 
 
 ###############################################################################
-# Fonction : Vérifie s'il existe une nouvelle release ou branche
-# NE MODIFIE PAS le dépôt
+# Fonction : Met à jour le script vers la dernière release (tag)
+# Affiche horodatages pour plus de clarté
 ###############################################################################
-update_check() {
+update_to_latest_tag() {
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+    local branch="${FORCE_BRANCH:-$BRANCH}"
 
-    # Récupérer les infos distantes
-    git fetch origin "$BRANCH" --tags --quiet
+    git fetch origin "$branch" --tags --quiet
 
-    # Récupérer le dernier tag de la branche active
-    latest_tag=$(git tag --merged "origin/$BRANCH" | sort -V | tail -n1)
+    local latest_tag
+    latest_tag=$(git tag --merged "origin/$branch" | sort -V | tail -n1)
 
     if [[ -z "$latest_tag" ]]; then
-        print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
-        return
+        echo "❌  Aucun tag trouvé sur la branche $branch"
+        return 1
     fi
 
-    if [[ "$latest_tag" != "$VERSION" ]]; then
-        MSG_MAJ_UPDATE1=$(printf "$MSG_MAJ_UPDATE_TEMPLATE" "$latest_tag" "$VERSION")
-        echo
-        print_fancy --align "left" --fg "green" --style "italic" "$MSG_MAJ_UPDATE1"
-        print_fancy --align "right" --fg "green" --style "italic" "$MSG_MAJ_UPDATE2"
+    local head_commit head_date
+    head_commit=$(git rev-parse HEAD)
+    head_date=$(git --no-pager show -s --format=%ci "$head_commit")
+
+    local latest_tag_commit latest_tag_date
+    latest_tag_commit=$(git rev-parse "$latest_tag")
+    latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
+
+    local current_tag
+    current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
+
+    echo
+    echo "📌  Branche : $branch"
+    echo "🕒  Commit actuel : $head_commit ($head_date)"
+    echo "🕒  Dernier tag    : $latest_tag ($latest_tag_date)"
+
+    if [[ "$head_commit" == "$latest_tag_commit" ]]; then
+        echo "✅  Déjà sur la dernière release : $latest_tag"
+        return 0
+    fi
+
+    if git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
+        echo "⚠️  Vous êtes en avance sur la dernière release : ${current_tag:-dev}"
+        echo "👉  Pas de mise à jour effectuée"
+        return 0
+    fi
+
+    echo "⚡ Nouvelle release détectée : $latest_tag (actuellement ${current_tag:-dev})"
+    if git -c advice.detachedHead=false checkout "$latest_tag"; then
+        chmod +x "$SCRIPT_DIR/main.sh"
+        echo "🎉  Mise à jour réussie vers $latest_tag"
+        echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
+        return 0
+    else
+        echo "❌  Échec lors du passage à $latest_tag"
+        return 1
     fi
 }
