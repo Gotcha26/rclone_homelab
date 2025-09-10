@@ -82,6 +82,7 @@ update_check() {
     current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
 
     # --- Affichage général ---
+
     echo
     echo "📌  Branch réelle utilisée pour les mises à jour : $branch_real"
     echo "📌  Commit local   : $head_commit ($head_date)"
@@ -89,6 +90,7 @@ update_check() {
     [[ -n "$latest_tag" ]] && echo "🕒  Dernière release : $latest_tag ($latest_tag_date)"
 
     # --- Branche main ---
+
     if [[ "$BRANCH" == "main" ]]; then
         if [[ -z "$latest_tag" ]]; then
             print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
@@ -126,25 +128,37 @@ update_check() {
     if [[ "$head_commit" == "$remote_commit" ]]; then
         echo "✅  Votre branche est à jour avec l'origine."
         return 0
-    elif git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
-        print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$branch_real"
-        return 1
-    elif git merge-base --is-ancestor "$remote_commit" "$head_commit"; then
-        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$branch_real"
-        return 0
-    else
-        local local_epoch remote_epoch
-        local_epoch=$(date -d "$head_date" +%s)
-        remote_epoch=$(date -d "$remote_date" +%s)
-
-        if (( local_epoch < remote_epoch )); then
-            print_fancy --bg "blue" --align "center" --highlight "⚡  Votre branche diverge, mais le remote est plus récent → MAJ recommandée"
-            return 1
-        else
-            print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche diverge, mais vous êtes plus récent → pas de MAJ nécessaire"
-            return 0
-        fi
     fi
+
+    # Cas simple : local est ancêtre du remote → en retard
+    if git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
+        print_fancy --bg "blue" --align "center" --highlight \
+            "⚡  Mise à jour disponible : votre branche est en retard sur origin/$branch_real"
+        return 1
+    fi
+
+    # Cas simple : remote est ancêtre du local → en avance
+    if git merge-base --is-ancestor "$remote_commit" "$head_commit"; then
+        print_fancy --bg "green" --align "center" --highlight \
+            "⚠️  Votre branche est en avance sur origin/$branch_real"
+        return 0
+    fi
+
+    # Cas divergence (aucun ancêtre trouvé des deux côtés)
+    local local_epoch remote_epoch
+    local_epoch=$(date -d "$head_date" +%s)
+    remote_epoch=$(date -d "$remote_date" +%s)
+
+    if (( local_epoch < remote_epoch )); then
+        print_fancy --bg "blue" --align "center" --highlight \
+            "⚡  Votre branche diverge, mais le remote est plus récent → MAJ recommandée"
+        return 1
+    else
+        print_fancy --bg "green" --align "center" --highlight \
+            "⚠️  Votre branche diverge, mais votre commit est plus récent → pas de MAJ nécessaire"
+        return 0
+    fi
+
 }
 
 
