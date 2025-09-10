@@ -101,8 +101,12 @@ while true; do
                     echo "❌ Impossible de créer jobs.txt, édition annulée."
                     continue
                 fi
+                echo "Ouverture de $JOBS_FILE..."
                 nano "$JOBS_FILE"
+                echo "✅ Édition terminée, retour au menu..."
+                exec "$0" "$@"   # Relance le script avec les mêmes arguments
                 ;;
+
             menu_run_all_jobs)
                 RUN_ALL_FROM_MENU=true
                 ;;
