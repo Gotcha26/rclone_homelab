@@ -44,22 +44,25 @@ update_force_branch() {
 
 
 ###############################################################################
-# Fonction : Vérifie s'il existe une nouvelle release (tag) sur la branche active
-# Affiche minimal pour main si à jour ou en avance, sinon détails complets
-# Pour les branches dev ou autres expérimentales, affiche l'état local vs distant
+# Fonction : Récupère toutes les informations nécessaires sur Git
+# Retourne les variables suivantes :
+# - head_commit / head_epoch
+# - remote_commit / remote_epoch
+# - latest_tag / latest_tag_epoch
+# - branch_real
+# - current_tag
 ###############################################################################
-update_check() {
+fetch_git_info() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
+    # Récupération des dernières infos du remote
     git fetch --all --tags --quiet
 
     # Commit et date HEAD local
-    local head_commit head_date
     head_commit=$(git rev-parse HEAD)
-    head_date=$(git --no-pager show -s --format=%ci "$head_commit")
+    head_epoch=$(git show -s --format=%ct "$head_commit")
 
-    # Détecter la branche réelle (HEAD peut être détaché)
-    local branch_real
+    # Détecter la branche réelle
     branch_real=$(git branch --show-current)
     if [[ -z "$branch_real" ]]; then
         branch_real=$(git branch -r --contains "$head_commit" | head -n1 | sed 's|origin/||')
@@ -67,31 +70,37 @@ update_check() {
     [[ -z "$branch_real" ]] && branch_real="(détaché)"
 
     # Commit et date HEAD distant
-    local remote_commit remote_date
     remote_commit=$(git rev-parse "origin/$branch_real")
-    remote_date=$(git --no-pager show -s --format=%ci "$remote_commit")
+    remote_epoch=$(git show -s --format=%ct "$remote_commit")
 
     # Dernier tag disponible sur la branche réelle
-    local latest_tag latest_tag_commit latest_tag_date
     latest_tag=$(git tag --merged "origin/$branch_real" | sort -V | tail -n1)
-    [[ -n "$latest_tag" ]] && latest_tag_commit=$(git rev-parse "$latest_tag")
-    [[ -n "$latest_tag_commit" ]] && latest_tag_date=$(git --no-pager show -s --format=%ci "$latest_tag_commit")
+    if [[ -n "$latest_tag" ]]; then
+        latest_tag_commit=$(git rev-parse "$latest_tag")
+        latest_tag_epoch=$(git show -s --format=%ct "$latest_tag_commit")
+    else
+        latest_tag_commit=""
+        latest_tag_epoch=0
+    fi
 
     # Tag actuel si HEAD exactement sur un tag
-    local current_tag
-    current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
+    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+}
 
-    # --- Affichage général ---
+###############################################################################
+# Fonction : Analyse les informations Git et décide de l’état de mise à jour
+# Utilise les variables remplies par fetch_git_info
+###############################################################################
+analyze_update_status() {
 
     echo
     echo "📌  Branch réelle utilisée pour les mises à jour : $branch_real"
-    echo "📌  Commit local   : $head_commit ($head_date)"
-    echo "🕒  Commit distant : $remote_commit ($remote_date)"
-    [[ -n "$latest_tag" ]] && echo "🕒  Dernière release : $latest_tag ($latest_tag_date)"
+    echo "📌  Commit local   : $head_commit ($(date -d "@$head_epoch"))"
+    echo "🕒  Commit distant : $remote_commit ($(date -d "@$remote_epoch"))"
+    [[ -n "$latest_tag" ]] && echo "🕒  Dernière release : $latest_tag ($(date -d "@$latest_tag_epoch"))"
 
     # --- Branche main ---
-
-    if [[ "$BRANCH" == "main" ]]; then
+    if [[ "$branch_real" == "main" ]]; then
         if [[ -z "$latest_tag" ]]; then
             print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
             return 1
@@ -104,37 +113,27 @@ update_check() {
         fi
 
         # Comparaison horodatage
-        local head_epoch tag_epoch
-        head_epoch=$(date -d "$head_date" +%s)
-        tag_epoch=$(date -d "$latest_tag_date" +%s)
-
         echo
-        echo "⚡  Nouvelle release détectée : $latest_tag ($latest_tag_date)"
-
-        if (( tag_epoch < head_epoch )); then
+        echo "⚡  Nouvelle release détectée : $latest_tag ($(date -d "@$latest_tag_epoch"))"
+        if (( latest_tag_epoch < head_epoch )); then
             print_fancy --bg "yellow" --align "center" --highlight \
                 "⚠️  Attention : votre commit local est plus récent que la dernière release !"
             echo "👉  Forcer la mise à jour pourrait écraser des changements locaux"
             return 0
         else
-            echo "🕒  Dernière release disponible : $latest_tag ($latest_tag_date)"
+            echo "🕒  Dernière release disponible : $latest_tag ($(date -d "@$latest_tag_epoch"))"
             echo "ℹ️  Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
             return 1
         fi
     fi
 
     # --- Branche dev ou expérimentale ---
-
     if [[ "$head_commit" == "$remote_commit" ]]; then
         echo "✅  Votre branche est à jour avec l'origine."
         return 0
     fi
 
-    local local_epoch remote_epoch
-    local_epoch=$(date -d "$head_date" +%s)
-    remote_epoch=$(date -d "$remote_date" +%s)
-
-    if (( local_epoch < remote_epoch )); then
+    if (( head_epoch < remote_epoch )); then
         print_fancy --bg "blue" --align "center" --highlight \
             "⚡  Mise à jour disponible : votre commit est plus ancien que origin/$branch_real"
         return 1
@@ -143,7 +142,14 @@ update_check() {
             "⚠️  Votre commit est plus récent que origin/$branch_real"
         return 0
     fi
+}
 
+###############################################################################
+# Fonction principale : update_check
+###############################################################################
+update_check() {
+    fetch_git_info || return 1
+    analyze_update_status
 }
 
 
