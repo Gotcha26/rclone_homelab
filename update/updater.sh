@@ -65,7 +65,7 @@ fetch_git_info() {
     fi
 
     # Récupération des dernières infos du remote
-    git fetch origin --all --tags --prune --quiet
+    git fetch origin --tags --prune --quiet
 
     # Commit et date HEAD local
     head_commit=$(git rev-parse HEAD)
