@@ -22,6 +22,18 @@ update_check() {
 ###############################################################################
 fetch_git_info() {
 
+    # La défintion des variables est rendue obligatoire à cause de set -u
+    # afin de passer d'une variable à une autre.
+    branch_real=""
+    head_commit=""
+    head_epoch=0
+    remote_commit=""
+    remote_epoch=0
+    latest_tag=""
+    latest_tag_commit=""
+    latest_tag_epoch=0
+    current_tag=""
+
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
     # Option : ignorer les modifications locales non commitées
