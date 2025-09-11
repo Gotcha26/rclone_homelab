@@ -96,7 +96,7 @@ analyze_update_status() {
     # Affichage uniquement si silent=false
     [[ "$silent" == false ]] && print_fancy --fill "#" ""
     [[ "$silent" == false ]] && print_fancy --align "center" --style "bold" "INFOS GIT"
-    [[ "$silent" == false ]] && print_fancy ""
+    [[ "$silent" == false ]] && print_fancy "" || true
     [[ "$silent" == false ]] && print_fancy "📌  Branche locale      :"
     [[ "$silent" == false ]] && print_fancy "$branch_real"
     [[ "$silent" == false ]] && print_fancy "📌  Commit local        :"
@@ -113,18 +113,18 @@ analyze_update_status() {
         fi
 
         if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-            [[ "$silent" == false ]] && print_fancy ""
+            [[ "$silent" == false ]] && print_fancy "" || true
             [[ "$silent" == false ]] && print_fancy --theme "success" "Version actuelle ${current_tag:-dev} >> A jour"
             return 0
         fi
 
         if (( latest_tag_epoch < head_epoch )); then
-            [[ "$silent" == false ]] && print_fancy ""
+            [[ "$silent" == false ]] && print_fancy "" || true
             [[ "$silent" == false ]] && print_fancy --theme "warning" --bg "yellow" --align "center" --highlight "Attention : votre commit local est plus récent que la dernière release !"
             [[ "$silent" == false ]] && print_fancy --theme "follow" "Forcer la mise à jour pourrait écraser des changements locaux"
             return 0
         else
-            [[ "$silent" == false ]] && print_fancy ""
+            [[ "$silent" == false ]] && print_fancy "" || true
             [[ "$silent" == false ]] && print_fancy --theme "flash" --bg "blue" --align "center" --highlight "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch"))"
             [[ "$silent" == false ]] && print_fancy --theme "info" "Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
             return 1
@@ -132,23 +132,23 @@ analyze_update_status() {
     else
         # Branche dev ou autre
         if [[ -z "$remote_commit" ]]; then
-            [[ "$silent" == false ]] && print_fancy ""
+            [[ "$silent" == false ]] && print_fancy "" || true
             [[ "$silent" == false ]] && print_fancy --theme "info" "Aucune branche distante détectée pour '$branch_real'"
             return 1
         fi
 
         if [[ "$head_commit" == "$remote_commit" ]]; then
-            [[ "$silent" == false ]] && print_fancy ""
+            [[ "$silent" == false ]] && print_fancy "" || true
             [[ "$silent" == false ]] && print_fancy --theme "success" "Votre branche est à jour avec l'origine."
             return 0
         fi
 
         if (( head_epoch < remote_epoch )); then
-            [[ "$silent" == false ]] && print_fancy ""
+            [[ "$silent" == false ]] && print_fancy "" || true
             [[ "$silent" == false ]] && print_fancy --theme "flash" --bg "blue" --align "center" --highlight "Mise à jour disponible : votre commit est plus ancien que origin/$branch_real"
             return 1
         else
-            [[ "$silent" == false ]] && print_fancy ""
+            [[ "$silent" == false ]] && print_fancy "" || true
             [[ "$silent" == false ]] && print_fancy --theme "warning" --bg "green" --align "center" --highlight "Votre commit est plus récent que origin/$branch_real"
             return 0
         fi

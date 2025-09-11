@@ -103,7 +103,7 @@ print_fancy() {
     local color=""
     local bg=""
     local fill=" "
-    local align="center"
+    local align=""
     local text=""
     local style=""
     local highlight=""

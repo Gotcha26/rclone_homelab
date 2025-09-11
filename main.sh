@@ -63,15 +63,14 @@ detect_branch
 source "$SCRIPT_DIR/update/updater.sh"
 
 # === Affichage du résultat de GIT (updater.sh) ===
-# Mode “test uniquement”, sans affichage fancy
-fetch_git_info || exit 1
+# Mode test → silent, pas d'affichage complet
 if analyze_update_status true; then
     print_fancy --theme "success" "Git → OK"
 else
     print_fancy --theme "warning" "Git → MAJ dispo / problème"
 fi
 
-# Mode DEBUG / affichage complet
+# Mode DEBUG → affichage complet seulement si DEBUG_INFOS=true
 [[ "${DEBUG_INFOS:-false}" == "true" ]] && analyze_update_status false
 
 
