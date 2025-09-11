@@ -91,7 +91,10 @@ fetch_git_info() {
 # Fonction : Affichage des informations Git issues de fetch_git_info()
 ###############################################################################
 analyze_update_status() {
-    echo "################################################################################"
+    local silent=${1:-false}
+
+    # Affichage uniquement si silent=false
+    [[ "$silent" == false ]] && print_fancy --fill "#" ""
     echo " INFOS GIT"
     echo
     echo "📌  Branche locale      : $branch_real"
@@ -152,7 +155,7 @@ analyze_update_status() {
             return 0
         fi
     fi
-    echo "################################################################################"
+    [[ "$silent" == false ]] && print_fancy --fill "#" ""
 }
 
 

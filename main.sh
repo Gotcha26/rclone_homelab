@@ -56,25 +56,23 @@ exec 3>&1 4>&2
 # - stderr aussi redirigé [sortie des erreurs]
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
-# Initialise et informe de la branch en cours utilisée
+# Initialise et informe de la branch en cours utilisée xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 detect_branch
 
 # Sourcing pour les updates
 source "$SCRIPT_DIR/update/updater.sh"
 
 # === Affichage du résultat de GIT (updater.sh) ===
-# Récupère toutes les infos Git avant d'afficher le status
-fetch_git_info || { echo "Erreur fetch_git_info"; exit 1; }
-
-# Puis on peut afficher/analyser le status
-if analyze_update_status; then
-    echo "Git → OK"
+# Mode “test uniquement”, sans affichage fancy
+fetch_git_info || exit 1
+if analyze_update_status true; then
+    print_fancy --theme "success" "Git → OK"
 else
-    echo "Git → MAJ dispo / problème"
+    print_fancy --theme "warning" "Git → MAJ dispo / problème"
 fi
 
-# Détails avec DEBUG_INFOS="true"
-[[ "${DEBUG_INFOS:-false}" == "true" ]] && fetch_git_info && analyze_update_status
+# Mode DEBUG / affichage complet
+[[ "${DEBUG_INFOS:-false}" == "true" ]] && analyze_update_status false
 
 
 ###############################################################################
