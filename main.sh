@@ -62,14 +62,19 @@ detect_branch
 # Sourcing pour les updates
 source "$SCRIPT_DIR/update/updater.sh"
 
-# Affichage du résultat de GIT (updater.sh)
+# === Affichage du résultat de GIT (updater.sh) ===
+# Récupère toutes les infos Git avant d'afficher le status
+fetch_git_info || { echo "Erreur fetch_git_info"; exit 1; }
+
+# Puis on peut afficher/analyser le status
 if analyze_update_status; then
     echo "Git → OK"
 else
     echo "Git → MAJ dispo / problème"
 fi
+
 # Détails avec DEBUG_INFOS="true"
-[[ "${DEBUG_INFOS:-false}" == "true" ]] && analyze_update_status
+[[ "${DEBUG_INFOS:-false}" == "true" ]] && fetch_git_info && analyze_update_status
 
 
 ###############################################################################
