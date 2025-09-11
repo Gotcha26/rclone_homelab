@@ -151,7 +151,6 @@ while true; do
                 ;;
             menu_config_msmtp)
                 echo "⚡ Lancement de la configuration msmtp..."
-                # Ouverture dans nano, comme pour jobs/rclone
                 local conf_file="${MSMTPRC:-$HOME/.msmtprc}"
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
                 echo "✅ Configuration terminée, retour au menu..." >&3
@@ -162,7 +161,7 @@ while true; do
                 [[ -n "$conf_file" && -f "$conf_file" ]] && cat "$conf_file" || echo "⚠️ Fichier msmtp introuvable"
                 ;;
             menu_show_last_log)
-                echo "⚡ Affichage des 500 dernières lignes de $LAST_LOG_FILE..."
+                echo "⚡ Affichage des 500 dernières lignes de $LAST_LOG_FILE... (touche q pour quitter !)" >&3
                 # Utilisation d'un pager pour ne pas polluer le log principal
                 (exec </dev/tty >/dev/tty 2>/dev/tty; tail -n 500 "$LAST_LOG_FILE" | less -R)
                 echo "✅ Fin de l'affichage, retour au menu..." >&3
