@@ -56,8 +56,7 @@ while true; do
         add_option "📦 Installer rclone" "menu_install_rclone"
     else
         # Cas 2 : rclone présent → vérifier la config
-        local conf_file="${RCLONE_CONFIG_DIR:-$HOME/.config/rclone/rclone.conf}"
-        if [[ ! -f "$conf_file" || ! -s "$conf_file" ]]; then
+        if ! check_rclone_configured >/dev/null 2>&1; then
             # Config absente ou vide
             add_option "⚙️ Configurer rclone" "menu_config_rclone"
         else
@@ -71,7 +70,6 @@ while true; do
         add_option "📦 Installer msmtp" "menu_install_msmtp"
     else
         # Cas 2 : msmtp présent → vérifier la config
-        local conf_file=""
         if conf_file=$(check_msmtp_configured 2>/dev/null); then
             # Config valide trouvée
             add_option "Afficher la configuration msmtp" "menu_show_msmtp_config"
