@@ -3,7 +3,6 @@
 ###############################################################################
 # Si aucun argument fourni → affichage d’un menu interactif
 ###############################################################################
-RUN_ALL_FROM_MENU=false
 
 while true; do
     
@@ -44,7 +43,7 @@ while true; do
     fi
 
     # 2) Jobs (lancement)
-    if jobs_configured; then
+    if check_jobs_configured; then
         add_option "Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
 
@@ -52,12 +51,34 @@ while true; do
     # Jobs
     add_option "Afficher/éditer des remotes" "menu_jobs"
     # rclone
-    if rclone_configured; then
-        add_option "Afficher/éditer la configuration rclone" "menu_show_rclone_config"
+    if ! command -v rclone >/dev/null 2>&1; then
+        # Cas 1 : rclone absent
+        add_option "📦 Installer rclone" "menu_install_rclone"
+    else
+        # Cas 2 : rclone présent → vérifier la config
+        local conf_file="${RCLONE_CONFIG_DIR:-$HOME/.config/rclone/rclone.conf}"
+        if [[ ! -f "$conf_file" || ! -s "$conf_file" ]]; then
+            # Config absente ou vide
+            add_option "⚙️ Configurer rclone" "menu_config_rclone"
+        else
+            # Config OK
+            add_option "Afficher/éditer la configuration rclone" "menu_show_rclone_config"
+        fi
     fi
-    #msmtp
-    if msmtp_configured; then
-        add_option "Afficher la configuration msmtp" "menu_show_msmtp_config"
+    # msmtp
+    if ! command -v msmtp >/dev/null 2>&1; then
+        # Cas 1 : msmtp absent
+        add_option "📦 Installer msmtp" "menu_install_msmtp"
+    else
+        # Cas 2 : msmtp présent → vérifier la config
+        local conf_file=""
+        if conf_file=$(check_msmtp_configured 2>/dev/null); then
+            # Config valide trouvée
+            add_option "Afficher la configuration msmtp" "menu_show_msmtp_config"
+        else
+            # Config absente ou invalide
+            add_option "⚙️ Configurer msmtp" "menu_config_msmtp"
+        fi
     fi
     # Affichage du log précédent
     LAST_LOG_FILE=$(get_last_log)
@@ -66,11 +87,6 @@ while true; do
     fi
 
     # 4) Actions
-    # Installation des dépendances manquantes
-    if [[ "$MISSING_RCLONE" == true || "$MISSING_MSMTP" == true ]]; then
-        add_option "Installer les dépendances manquantes (rclone/msmtp)" "menu_install_missing_deps"
-    fi
-
     # Option de dev après une MAJ : init config locale
     if [[ ! -f "$SCRIPT_DIR/config/config.dev.sh" && "$branch_real" == "dev" ]]; then
         add_option "[DEV] Initialiser config locale" "menu_init_config_local"
@@ -106,32 +122,52 @@ while true; do
                 update_force_branch
                 ;;
             menu_run_all_jobs)
-                RUN_ALL_FROM_MENU=true
+                # On quitte la boucle pour renir à l'exacution normale de main.sh
+                break
                 ;;
             menu_jobs)
                 if ! init_jobs_file; then
                     echo "❌ Impossible de créer jobs.txt, édition annulée."
-                    break  # ou return si dans une fonction, ou continue pour passer au menu suivant
+                    break
                 fi
                 echo "⚡ Ouverture de $JOBS_FILE..." >&3
                 # Lancement de nano dans un shell indépendant
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$JOBS_FILE")
                 echo "✅ Édition terminée, retour au menu..." >&3
                 ;;
+            menu_install_rclone)
+                install_rclone
+                ;;
+            menu_config_rclone)
+                echo "⚡ Lancement de la configuration rclone..."
+                (exec </dev/tty >/dev/tty 2>/dev/tty; rclone config)
+                echo "✅ Configuration terminée, retour au menu..." >&3
+                ;;
             menu_show_rclone_config)
                 echo "⚡ Ouverture de $RCLONE_CONF..." >&3
-                # Lancement de nano dans un shell indépendant
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$RCLONE_CONF")
                 echo "✅ Édition terminée, retour au menu..." >&3
                 ;;
-            menu_show_msmtp_config)
-                [[ -f "$MSMTP_CONF" ]] && cat "$MSMTP_CONF" || echo "⚠️ Fichier msmtp introuvable ($MSMTP_CONF)"
-                ;;            
-            menu_show_last_log)
-                tail -n 500 "$LAST_LOG_FILE" > /dev/tty
+                menu_install_msmtp)
+                install_msmtp
                 ;;
-            menu_install_missing_deps)
-                install_missing_deps
+            menu_config_msmtp)
+                echo "⚡ Lancement de la configuration msmtp..."
+                # Ouverture dans nano, comme pour jobs/rclone
+                local conf_file="${MSMTPRC:-$HOME/.msmtprc}"
+                (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
+                echo "✅ Configuration terminée, retour au menu..." >&3
+                ;;
+            menu_show_msmtp_config)
+                local conf_file=""
+                conf_file=$(check_msmtp_configured 2>/dev/null)
+                [[ -n "$conf_file" && -f "$conf_file" ]] && cat "$conf_file" || echo "⚠️ Fichier msmtp introuvable"
+                ;;
+            menu_show_last_log)
+                echo "⚡ Affichage des 500 dernières lignes de $LAST_LOG_FILE..."
+                # Utilisation d'un pager pour ne pas polluer le log principal
+                (exec </dev/tty >/dev/tty 2>/dev/tty; tail -n 500 "$LAST_LOG_FILE" | less -R)
+                echo "✅ Fin de l'affichage, retour au menu..." >&3
                 ;;
             menu_init_config_local)
                 echo "⚡  [DEV] Initialiser config locale"

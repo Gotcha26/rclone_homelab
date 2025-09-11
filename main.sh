@@ -139,8 +139,8 @@ $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 
 # Vérif msmtp (seulement si mail)
 if [[ -n "$MAIL_TO" ]]; then
-    check_msmtp
-    check_msmtp_config
+    check_msmtp_installed
+    check_msmtp_configured
 fi
 
 # Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
@@ -156,11 +156,6 @@ fi
 ###############################################################################
 # 4. Vérifications fonctionnelles
 ###############################################################################
-
-if [[ "$RUN_ALL_FROM_MENU" == true ]]; then
-    # Drapeau
-    echo ">> Mode interactif : exécution directe des jobs"
-fi
 
 # Vérif rclone
 check_rclone

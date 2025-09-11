@@ -88,9 +88,7 @@ END_TIME=""
 ERROR_CODE=0
 LAUNCH_MODE="manuel"
 EXECUTED_JOBS=0
-RCLONE_CONF="${RCLONE_CONFIG_DIR:-$HOME/.config/rclone/rclone.conf}"
-MSMTP_CONF="${MSMTP_CONFIG_DIR:-$HOME/.config/msmtp/config}"
-JOBS_CONF="${SCRIPT_DIR}/jobs.conf"
+JOBS_CONF="${SCRIPT_DIR}/jobs.txt"
 IGNORE_LOCAL_CHANGES=false
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel

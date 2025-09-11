@@ -194,9 +194,9 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 | -------------------------------------------- | --------------------------------------------- | ------------ |
 | Création de `$TMP_RCLONE` échouée            | Impossible de créer le dossier temporaire     | 1            |
 | Création de `$LOG_DIR` échouée               | Impossible de créer le dossier de logs        | 2            |
-| `$JOBS_FILE` introuvable                     | Fichier jobs absent                           | 3            |
-| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible           | 4            |
-| Menu - Choix invalide                        | Mauvais choix dans le Menu                    | 5            |
+| `$JOBS_FILE` introuvable                     | Fichier jobs absent (*)                       | 3            |
+| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible (*)       | 4            |
+|                                              |                                               | 5            |
 | Remote rclone invalide/mal configuré         | Remote mal écrit ou introuvalble              | 6            |
 | `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              | 7            |
 | Problème avec le processus PID rclone        | Sérieuse                                      | 8            |
@@ -208,7 +208,8 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 | Pb. de token pour Onedrive / Google Drive    | Token invalide, refaire la configuration      | 14           |
 | `init_config_local` Copie imp. > $local_conf | Droits, blocage...                            | 20           |
 | `init_config_local` Renommage imp.           | Droits, blocage...                            | 21           |
-| `check_msmtp_config` Configuration           | Configuration absente                         | 22           |
+| `check_msmtp_config` Configuration           | Configuration absente (*)                     | 22           |
+| `check_msmtp_config` Configuration           | Configuration absente (*)                     | 23           |
 
 
   

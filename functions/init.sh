@@ -84,33 +84,41 @@ EOF
 
 
 ###############################################################################
-# Fonction : Vérifie la présence de l'installation de rclone
-# Propose de l'installer si besoin
+# Fonction : Vérifier si rclone est installé
+# Renvoie 0 si installé, sinon die 11
 ###############################################################################
-check_rclone() {
-    local force_install=${1:-false}
+check_rclone_installed() {
+    if ! command -v rclone >/dev/null 2>&1; then
+        die 11 "❌  rclone n'est pas installé. Le script va s'arrêter."
+    fi
+}
 
-    if ! command -v rclone >/dev/null 2>&1 || [[ "$force_install" == true ]]; then
-        echo
-        echo "⚠️  rclone n'est pas installé ou installation forcée."
 
-        if [[ "$force_install" != true ]]; then
-            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-            REPLY=${REPLY,,}  # met en minuscules
-        else
-            REPLY="y"
-        fi
+###############################################################################
+# Fonction : Installer rclone (sans confirmation)
+###############################################################################
+install_rclone() {
+    echo "📦  Installation de rclone en cours..."
+    if sudo apt update && sudo apt install -y rclone; then
+        echo "✅  rclone a été installé avec succès !"
+    else
+        die 11 "❌  Une erreur bloquante est survenue lors de l'installation de rclone."
+    fi
+}
 
+
+###############################################################################
+# Fonction : Vérification interactive (si absent propose l'installation)
+###############################################################################
+prompt_install_rclone() {
+    if ! command -v rclone >/dev/null 2>&1; then
+        echo "⚠️  rclone n'est pas installé."
+        read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+        REPLY=${REPLY,,}
         if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            echo "📦  Installation de rclone en cours..."
-            sudo apt update && sudo apt install rclone -y
-            if [[ $? -eq 0 ]]; then
-                echo "✅  rclone a été installé avec succès !"
-            else
-                die 11 "Une erreur est survenue lors de l'installation de rclone."
-            fi
+            install_rclone
         else
-            die 11 "rclone n'est toujours pas installé. Le script va s'arrêter."
+            die 11 "❌  rclone est requis mais n'a pas été installé."
         fi
     fi
 }
@@ -118,112 +126,61 @@ check_rclone() {
 
 ###############################################################################
 # Fonction : Vérifie la configuration initiale de rclone
-# Propose de l'éditer si besoin
+# Renvoie die 12 si fichier manquant ou vide
 ###############################################################################
-check_rclone_config() {
+check_rclone_configured() {
     local conf_file="${RCLONE_CONFIG_DIR:-$HOME/.config/rclone/rclone.conf}"
 
     if [[ ! -f "$conf_file" || ! -s "$conf_file" ]]; then
-        echo
-        echo "⚠️  rclone est installé mais n'est pas configuré."
-        echo "Vous devez configurer rclone avant de poursuivre."
-        echo "Pour configurer, vous pouvez exécuter : rclone config"
-        echo
-
-        read -rp "Voulez-vous éditer directement le fichier de configuration rclone ? [y/N] : " EDIT_REPLY
-        EDIT_REPLY=${EDIT_REPLY,,}
-
-        if [[ "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
-            </dev/tty >/dev/tty 2>&1 ${EDITOR:-nano} "$conf_file"
-            echo "Fichier de configuration édité. Relancez le script après avoir sauvegardé."
-        else
-            echo "Le script va s'arrêter. Configurez rclone et relancez le script."
-        fi
-        die 12 "rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
+        die 12 "❌  rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
     fi
 }
 
 
 ###############################################################################
-# Fonction : Vérifie la présence de l'installation de msmtp
-# Propose de l'installer si besoin
+# Fonction : Vérifier si msmtp est installé
+# Renvoie 0 si installé, sinon die 10
 ###############################################################################
-check_msmtp() {
-    local force_install=${1:-false}
+check_msmtp_installed() {
+    if ! command -v msmtp >/dev/null 2>&1; then
+        die 10 "❌  msmtp n'est pas installé. Le script va s'arrêter."
+    fi
+}
 
-    if ! command -v msmtp >/dev/null 2>&1 || [[ "$force_install" == true ]]; then
-        echo
-        echo "⚠️  msmtp n'est pas installé ou installation forcée."
 
-        if [[ "$force_install" != true ]]; then
-            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-            REPLY=${REPLY,,}  # met en minuscules
-        else
-            REPLY="y"
-        fi
+###############################################################################
+# Fonction : Vérification interactive (si absent propose l'installation)
+###############################################################################
+prompt_install_msmtp() {
+    echo "⚠️  msmtp n'est pas installé."
+    read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+    REPLY=${REPLY,,}
+    if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
+        install_msmtp
+    else
+        die 10 "❌  msmtp est requis mais n'a pas été installé."
+    fi
+}
 
-        if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            echo "📦  Installation de msmtp en cours..."
-            sudo apt update && sudo apt install msmtp msmtp-mta -y
-            if [[ $? -eq 0 ]]; then
-                echo "✅  msmtp a été installé avec succès !"
-            else
-                die 10 "Une erreur est survenue lors de l'installation de msmtp."
-            fi
-        else
-            die 10 "msmtp n'est toujours pas installé. Le script va s'arrêter."
-        fi
+
+###############################################################################
+# Fonction : Installer msmtp (sans confirmation)
+###############################################################################
+install_msmtp() {
+    echo "📦  Installation de msmtp en cours..."
+    if sudo apt update && sudo apt install -y msmtp msmtp-mta; then
+        echo "✅  msmtp a été installé avec succès !"
+    else
+        die 10 "❌  Une erreur est survenue lors de l'installation de msmtp."
     fi
 }
 
 
 ###############################################################################
 # Fonction : Vérifie la configuration initiale de msmtp
-# Propose de l'éditer si besoin
 ###############################################################################
-check_msmtp_config() {
-    local conf_file=""
+check_msmtp_configured() {
 
-    if [[ -f "$HOME/.msmtprc" && -s "$HOME/.msmtprc" ]]; then
-        conf_file="$HOME/.msmtprc"
-    elif [[ -f "/etc/msmtprc" && -s "/etc/msmtprc" ]]; then
-        conf_file="/etc/msmtprc"
-    fi
-
-    if [[ -z "$conf_file" ]]; then
-        echo
-        echo "⚠️  msmtp est installé mais n'est pas configuré."
-        echo "Vous devez configurer msmtp avant de poursuivre."
-        echo "Pour configurer, vous pouvez exécuter : msmtp --configure"
-        echo "Ou éditer le fichier suivant :"
-        echo "    ~/.msmtprc (perso) ou /etc/msmtprc (global)"
-        echo
-
-        read -rp "Voulez-vous éditer directement le fichier de configuration msmtp ? [y/N] : " EDIT_REPLY
-        EDIT_REPLY=${EDIT_REPLY,,}
-
-        if [[ "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
-            </dev/tty >/dev/tty 2>&1 ${EDITOR:-nano} "$HOME/.msmtprc"
-            echo "Fichier de configuration édité. Relancez le script après avoir sauvegardé."
-        else
-            echo "Le script va s'arrêter. Configurez msmtp et relancez le script."
-        fi
-        die 22 "msmtp est installé mais n'est pas configuré. Veuillez exécuter : msmtp --configure"
-    fi
-}
-
-
-###############################################################################
-# Fonctions de détection des configs
-# Vérifie si le fichier existe et s'il est régulier (ni dossier, ni symlink).
-# Vérifie si le fichier est de poids suppéreieur à 0
-# Si les 2 conditions sont vraies, la fonction retournera 0
-###############################################################################
-rclone_configured() {
-    [[ -f "$RCLONE_CONF" ]] && [[ -s "$RCLONE_CONF" ]]
-}
-
-msmtp_configured() {
     # 1. Vérifie d'abord le fichier utilisateur (ex: /root/.msmtprc ou $MSMTPRC)
     local user_conf="${MSMTPRC:-$HOME/.msmtprc}"
     if [[ -f "$user_conf" ]] && [[ -s "$user_conf" ]]; then
@@ -239,7 +196,7 @@ msmtp_configured() {
     fi
 
     # Aucun fichier valide trouvé
-    echo "Aucun fichier de configuration msmtp valide trouvé." >&2
+    die 22 "Aucun fichier de configuration msmtp valide trouvé." >&2
     return 1
 }
 
@@ -247,26 +204,31 @@ msmtp_configured() {
 ###############################################################################
 # Fonction : Vérifier la présence de jobs configurés
 ###############################################################################
-jobs_configured() {
+check_jobs_configured() {
     [[ -f "$JOBS_CONF" ]] && [[ -s "$JOBS_CONF" ]]
 }
 
 
 ###############################################################################
-# Fonction : Vérifier la présence de jobs configurés
+# Fonction : Vérifie la présence de jobs.txt et initialise à partir de jobs.txt.exemple si absent
 ###############################################################################
-jobs_configured() {
-    [[ -f "$JOBS_CONF" ]] && [[ -s "$JOBS_CONF" ]]
-}
+init_jobs_file() {
 
+    # Si jobs.txt existe, rien à faire
+    if [[ -f "$JOBS_FILE" ]]; then
+        echo "✅  Fichier jobs.txt déjà présent"
+        return 0
+    fi
 
-###############################################################################
-# Fonction : Installer les dépendances manquantes (rclone / msmtp)
-###############################################################################
-install_missing_deps() {
-    check_rclone true
-    check_msmtp true
-    echo "🎉 Dépendances installées."
+    # Sinon, on tente de copier le fichier exemple
+    if [[ -f "$EXEMPLE_FILE" ]]; then
+        cp "$EXEMPLE_FILE" "$JOBS_FILE"
+        echo "⚡  jobs.txt absent → copie de jobs.txt.exemple réalisée"
+        return 0
+    else
+        echo "❌  Aucun fichier jobs.txt ni jobs.txt.exemple trouvé dans $SCRIPT_DIR"
+        return 1
+    fi
 }
 
 
@@ -396,24 +358,4 @@ get_last_log() {
 
 
 
-###############################################################################
-# Fonction : Vérifie la présence de jobs.txt et initialise à partir de jobs.txt.exemple si absent
-###############################################################################
-init_jobs_file() {
 
-    # Si jobs.txt existe, rien à faire
-    if [[ -f "$JOBS_FILE" ]]; then
-        echo "✅  Fichier jobs.txt déjà présent"
-        return 0
-    fi
-
-    # Sinon, on tente de copier le fichier exemple
-    if [[ -f "$EXEMPLE_FILE" ]]; then
-        cp "$EXEMPLE_FILE" "$JOBS_FILE"
-        echo "⚡  jobs.txt absent → copie de jobs.txt.exemple réalisée"
-        return 0
-    else
-        echo "❌  Aucun fichier jobs.txt ni jobs.txt.exemple trouvé dans $SCRIPT_DIR"
-        return 1
-    fi
-}
