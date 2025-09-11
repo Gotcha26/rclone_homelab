@@ -298,43 +298,62 @@ print_summary_table() {
 
 
 ###############################################################################
-# Fonction : initialisation config locale si absente [mode dec]
+# Fonction : initialisation config locale/dev si absente + option édition
 ###############################################################################
 init_config_local() {
     local main_conf="$SCRIPT_DIR/config/config.main.sh"
     local dev_conf="$SCRIPT_DIR/config/config.dev.sh"
     local local_conf="$SCRIPT_DIR/config/config.local.sh"
 
-    # Si config.dev.sh existe déjà, rien à faire
-    [[ -f "$dev_conf" ]] && return 0
-
-    # Si config.local.sh existe déjà, rien à faire
-    if [[ -f "$local_conf" ]]; then
-        echo "⚠️  $local_conf existe déjà, pas de copie nécessaire."
-        return 0
-    fi
-
-    # Copier main → local
-    if cp "$main_conf" "$local_conf"; then
-        echo "✅ $main_conf copié vers $local_conf"
-    else
-        die 20 "Impossible de copier $main_conf vers $local_conf"
-    fi
-
-    # Demander si on veut transformer en config.dev.sh
-    read -rp "Voulez-vous transformer $local_conf en config.dev.sh ? [y/N] : " REPLY
-    REPLY=${REPLY,,}  # minuscule
-
-    if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-        if mv "$local_conf" "$dev_conf"; then
-            echo "🎉 $local_conf renommé en $dev_conf"
+    # --- Création éventuelle de config.local.sh ---
+    if [[ ! -f "$local_conf" ]]; then
+        read -rp "Créer $local_conf à partir de $main_conf ? [y/N] : " REPLY
+        REPLY=${REPLY,,}    # minuscule
+        if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
+            if cp "$main_conf" "$local_conf"; then
+                echo "✅ $main_conf copié vers $local_conf"
+            else
+                die 20 "Impossible de copier $main_conf vers $local_conf"
+            fi
         else
-            die 21 "Impossible de renommer $local_conf"
+            echo "⚠️  $local_conf non créé"
         fi
     else
-        echo "⚠️  $local_conf reste en config.local.sh"
+        echo "⚠️  $local_conf existe déjà, pas de copie nécessaire."
     fi
+
+    # --- Création éventuelle de config.dev.sh ---
+    if [[ ! -f "$dev_conf" ]]; then
+        read -rp "Créer $dev_conf à partir de $local_conf ou $main_conf ? [l/m/N] : " REPLY
+        REPLY=${REPLY,,}
+        local source_file="$main_conf"
+        [[ "$REPLY" == "l" ]] && source_file="$local_conf"
+        if [[ "$REPLY" == "l" || "$REPLY" == "m" ]]; then
+            if cp "$source_file" "$dev_conf"; then
+                echo "✅ $source_file copié vers $dev_conf"
+            else
+                die 21 "Impossible de copier $source_file vers $dev_conf"
+            fi
+        else
+            echo "⚠️  $dev_conf non créé"
+        fi
+    else
+        echo "⚠️  $dev_conf existe déjà, pas de copie nécessaire."
+    fi
+
+    # --- Proposition d'édition pour chaque fichier existant ---
+    for conf_file in "$local_conf" "$dev_conf"; do
+        if [[ -f "$conf_file" ]]; then
+            read -rp "Voulez-vous éditer $conf_file avec nano ? [y/N] : " REPLY
+            REPLY=${REPLY,,}
+            if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
+                (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
+                echo "✅ Édition terminée : $conf_file"
+            fi
+        fi
+    done
 }
+
 
 
 ###############################################################################

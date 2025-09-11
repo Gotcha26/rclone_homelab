@@ -1,4 +1,5 @@
 # Ignorer le fichier de config perso
 Notes.txt
 config/config.dev.sh
+config/config.local.sh
 jobs.txt

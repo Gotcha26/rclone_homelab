@@ -81,13 +81,13 @@ while true; do
     # Affichage du log précédent
     LAST_LOG_FILE=$(get_last_log)
     if [[ -n "$LAST_LOG_FILE" && -f "$LAST_LOG_FILE" ]]; then
-        add_option "Afficher les logs du dernier run" "menu_show_last_log"
+        add_option "Afficher les logs du dernier run (touche q pour quitter !!!)" "menu_show_last_log"
     fi
 
     # 4) Actions
     # Option de dev après une MAJ : init config locale
     if [[ ! -f "$SCRIPT_DIR/config/config.dev.sh" && "$branch_real" == "dev" ]]; then
-        add_option "[DEV] Initialiser config locale" "menu_init_config_local"
+        add_option "[DEV] Initialiser config locale (vierge)" "menu_init_config_local"
     fi
 
     # Choix permanents
@@ -161,7 +161,7 @@ while true; do
                 [[ -n "$conf_file" && -f "$conf_file" ]] && cat "$conf_file" || echo "⚠️ Fichier msmtp introuvable"
                 ;;
             menu_show_last_log)
-                echo "⚡ Affichage des 500 dernières lignes de $LAST_LOG_FILE... (touche q pour quitter !)" >&3
+                echo "⚡ Affichage des 500 dernières lignes de $LAST_LOG_FILE..." >&3
                 # Utilisation d'un pager pour ne pas polluer le log principal
                 (exec </dev/tty >/dev/tty 2>/dev/tty; tail -n 500 "$LAST_LOG_FILE" | less -R)
                 echo "✅ Fin de l'affichage, retour au menu..." >&3
