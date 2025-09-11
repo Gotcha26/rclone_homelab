@@ -62,6 +62,15 @@ detect_branch
 # Sourcing pour les updates
 source "$SCRIPT_DIR/update/updater.sh"
 
+# Affichage du résultat de GIT (updater.sh)
+if analyze_update_status; then
+    echo "Git → OK"
+else
+    echo "Git → MAJ dispo / problème"
+fi
+# Détails avec DEBUG_INFOS="true"
+[[ "${DEBUG_INFOS:-false}" == "true" ]] && print_update_infos
+
 
 ###############################################################################
 # 2. Parsing complet des arguments
