@@ -91,71 +91,99 @@ fetch_git_info() {
 # Fonction : Affichage des informations Git issues de fetch_git_info()
 ###############################################################################
 analyze_update_status() {
-    local silent=${1:-false}
+# Détecte si on doit afficher ou non
+    local do_display=false
+    [[ "${DEBUG_INFOS:-true}" == "false" ]] || do_display=false
 
-    # Affichage uniquement si silent=false
-    [[ "$silent" == false ]] && print_fancy --fill "#" ""
-    [[ "$silent" == false ]] && print_fancy --align "center" --style "bold" "INFOS GIT"
-    [[ "$silent" == false ]] && print_fancy "" || true
-    [[ "$silent" == false ]] && print_fancy "📌  Branche locale      :"
-    [[ "$silent" == false ]] && print_fancy "$branch_real"
-    [[ "$silent" == false ]] && print_fancy "📌  Commit local        :"
-    [[ "$silent" == false ]] && print_fancy "$head_commit ($(date -d "@$head_epoch"))"
-    [[ -n "$remote_commit" && "$silent" == false ]] && print_fancy "🕒  Commit distant      :"
-    [[ "$silent" == false ]] && print_fancy "$remote_commit ($(date -d "@$remote_epoch"))"
-    [[ -n "$latest_tag" && "$silent" == false ]] && print_fancy "🕒  Dernière release    : $latest_tag ($(date -d "@$latest_tag_epoch"))"
+    $do_display && print_fancy --fill "#" ""
+    $do_display && print_fancy --align "center" --style "bold" "INFOS GIT"
+    $do_display && print_fancy "" || true
+    $do_display && print_fancy "📌  Branche locale      :"
+    $do_display && print_fancy "$branch_real"
+    $do_display && print_fancy "📌  Commit local        :"
+    $do_display && print_fancy "$head_commit ($(date -d "@$head_epoch"))"
+    [[ -n "$remote_commit" && "$do_display" == true ]] && print_fancy "🕒  Commit distant      :"
+    $do_display && print_fancy "$remote_commit ($(date -d "@$remote_epoch"))"
+    [[ -n "$latest_tag" && "$do_display" == true ]] && print_fancy "🕒  Dernière release    : $latest_tag ($(date -d "@$latest_tag_epoch"))"
 
     if [[ "$branch_real" == "main" ]]; then
         # Branche main : vérifier si on est à jour avec la dernière release
         if [[ -z "$latest_tag" ]]; then
-            [[ "$silent" == false ]] && print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
+            $do_display && print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
             return 1
         fi
 
         if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-            [[ "$silent" == false ]] && print_fancy "" || true
-            [[ "$silent" == false ]] && print_fancy --theme "success" "Version actuelle ${current_tag:-dev} >> A jour"
+            $do_display && print_fancy "" || true
+            $do_display && print_fancy --theme "success" "Version actuelle ${current_tag:-dev} >> A jour"
             return 0
         fi
 
         if (( latest_tag_epoch < head_epoch )); then
-            [[ "$silent" == false ]] && print_fancy "" || true
-            [[ "$silent" == false ]] && print_fancy --theme "warning" --bg "yellow" --align "center" --highlight "Attention : votre commit local est plus récent que la dernière release !"
-            [[ "$silent" == false ]] && print_fancy --theme "follow" "Forcer la mise à jour pourrait écraser des changements locaux"
+            $do_display && print_fancy "" || true
+            $do_display && print_fancy --theme "warning" --bg "yellow" --align "center" --highlight "Attention : votre commit local est plus récent que la dernière release !"
+            $do_display && print_fancy --theme "follow" "Forcer la mise à jour pourrait écraser des changements locaux"
             return 0
         else
-            [[ "$silent" == false ]] && print_fancy "" || true
-            [[ "$silent" == false ]] && print_fancy --theme "flash" --bg "blue" --align "center" --highlight "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch"))"
-            [[ "$silent" == false ]] && print_fancy --theme "info" "Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
+            $do_display && print_fancy "" || true
+            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --highlight "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch"))"
+            $do_display && print_fancy --theme "info" "Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
             return 1
         fi
     else
         # Branche dev ou autre
         if [[ -z "$remote_commit" ]]; then
-            [[ "$silent" == false ]] && print_fancy "" || true
-            [[ "$silent" == false ]] && print_fancy --theme "info" "Aucune branche distante détectée pour '$branch_real'"
+            $do_display && print_fancy "" || true
+            $do_display && print_fancy --theme "info" "Aucune branche distante détectée pour '$branch_real'"
             return 1
         fi
 
         if [[ "$head_commit" == "$remote_commit" ]]; then
-            [[ "$silent" == false ]] && print_fancy "" || true
-            [[ "$silent" == false ]] && print_fancy --theme "success" "Votre branche est à jour avec l'origine."
+            $do_display && print_fancy "" || true
+            $do_display && print_fancy --theme "success" "Votre branche est à jour avec l'origine."
             return 0
         fi
 
         if (( head_epoch < remote_epoch )); then
-            [[ "$silent" == false ]] && print_fancy "" || true
-            [[ "$silent" == false ]] && print_fancy --theme "flash" --bg "blue" --align "center" --highlight "Mise à jour disponible : votre commit est plus ancien que origin/$branch_real"
+            $do_display && print_fancy "" || true
+            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --highlight "Mise à jour disponible : votre commit est plus ancien que origin/$branch_real"
             return 1
         else
-            [[ "$silent" == false ]] && print_fancy "" || true
-            [[ "$silent" == false ]] && print_fancy --theme "warning" --bg "green" --align "center" --highlight "Votre commit est plus récent que origin/$branch_real"
+            $do_display && print_fancy "" || true
+            $do_display && print_fancy --theme "warning" --bg "green" --align "center" --highlight "Votre commit est plus récent que origin/$branch_real"
             return 0
         fi
     fi
-    [[ "$silent" == false ]] && print_fancy --fill "#" ""
+    $do_display && print_fancy --fill "#" ""
+
+    # Affichage résumé si DEBUG_INFOS=false
+    display_git_summary
 }
 
+
+###############################################################################
+# Fonction : Affichage synthétique résumé de la fonction analyze_update_status()
+###############################################################################
+display_git_summary() {
+    # Affichage minimal uniquement si DEBUG_INFOS=false
+    [[ "${DEBUG_INFOS:-true}" == "true" ]] && return 0
+
+    # Cas main
+    if [[ "$branch_real" == "main" ]]; then
+        if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
+            print_fancy --theme "success" "Git → OK"
+        else
+            print_fancy --theme "warning" "Git → MAJ dispo / problème"
+        fi
+    else
+        # Cas dev / autres
+        if [[ "$head_commit" == "$remote_commit" ]]; then
+            print_fancy --theme "success" "Git → OK"
+        else
+            print_fancy --theme "warning" "Git → MAJ dispo / problème"
+        fi
+    fi
+}
 
 ###############################################################################
 # Fonction : Met à jour (forcée) du script sur la branche en cours

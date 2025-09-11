@@ -62,17 +62,6 @@ detect_branch
 # Sourcing pour les updates
 source "$SCRIPT_DIR/update/updater.sh"
 
-# === Affichage du résultat de GIT (updater.sh) ===
-# Mode test → silent, pas d'affichage complet
-if analyze_update_status true; then
-    print_fancy --theme "success" "Git → OK"
-else
-    print_fancy --theme "warning" "Git → MAJ dispo / problème"
-fi
-
-# Mode DEBUG → affichage complet seulement si DEBUG_INFOS=true
-[[ "${DEBUG_INFOS:-false}" == "true" ]] && analyze_update_status false
-
 
 ###############################################################################
 # 2. Parsing complet des arguments
