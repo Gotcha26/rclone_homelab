@@ -39,7 +39,7 @@ if [[ "$DEBUG_MODE" == "true" ]]; then
 fi 
 
 if [[ "$DEBUG_INFOS" == "true" ]]; then 
-    echo "DEBUG: LOG_FILE_SCRIPT=$LOG_FILE_SCRIPT"
+    print_fancy --fg "black" --bg "white" "DEBUG: LOG_FILE_SCRIPT=$LOG_FILE_SCRIPT"
 fi 
 # --- DEBUG ---
 

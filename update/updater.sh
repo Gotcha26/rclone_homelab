@@ -93,7 +93,8 @@ fetch_git_info() {
 analyze_update_status() {
 # Détecte si on doit afficher ou non
     local do_display=false
-    [[ "${DEBUG_INFOS:-true}" == "false" ]] || do_display=false
+    [[ "${DEBUG_INFOS:-false}" == "true" ]] && do_display=true
+
 
     $do_display && print_fancy --fill "#" ""
     $do_display && print_fancy --align "center" --style "bold" "INFOS GIT"
