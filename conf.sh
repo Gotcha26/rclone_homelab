@@ -91,7 +91,7 @@ EXECUTED_JOBS=0
 JOBS_CONF="${SCRIPT_DIR}/jobs.txt"
 IGNORE_LOCAL_CHANGES=false
 DEBUG_MODE=false
-DEBUG_INFOS=false
+DEBUG_INFOS=true
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
 ORANGE=$'\e[38;5;208m'              # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.

@@ -139,6 +139,8 @@ print_fancy() {
         error)   [[ -z "$icon" ]] && icon="❌  " ; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
         warning) [[ -z "$icon" ]] && icon="⚠️  " ; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold" ;;
         info)    [[ -z "$icon" ]] && icon="ℹ️  " ; [[ -z "$color" ]] && color="light_blue"; [[ -z "$style" ]] && style="italic" ;;
+        flash)   [[ -z "$icon" ]] && icon="⚡  " ; [[ -z "$color" ]] ;;
+        follow)  [[ -z "$icon" ]] && icon="👉  " ; [[ -z "$color" ]] ;;
     esac
 
     # Ajout de l’icône si définie
