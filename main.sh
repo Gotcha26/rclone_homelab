@@ -69,7 +69,7 @@ else
     echo "Git → MAJ dispo / problème"
 fi
 # Détails avec DEBUG_INFOS="true"
-[[ "${DEBUG_INFOS:-false}" == "true" ]] && print_update_infos
+[[ "${DEBUG_INFOS:-false}" == "true" ]] && analyze_update_status
 
 
 ###############################################################################
