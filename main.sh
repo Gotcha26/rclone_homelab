@@ -150,7 +150,6 @@ fi
 # Si aucun argument → menu interactif
 if [[ $# -eq 0 ]]; then
     source "$SCRIPT_DIR/menu.sh"
-    exit 0
 fi
 
 
