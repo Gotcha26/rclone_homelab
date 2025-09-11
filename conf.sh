@@ -90,6 +90,7 @@ LAUNCH_MODE="manuel"
 EXECUTED_JOBS=0
 JOBS_CONF="${SCRIPT_DIR}/jobs.txt"
 IGNORE_LOCAL_CHANGES=false
+DEBUG_MODE=false
 DEBUG_INFOS=false
 
 # Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
