@@ -215,13 +215,32 @@ check_msmtp_config() {
 
 ###############################################################################
 # Fonctions de détection des configs
+# Vérifie si le fichier existe et s'il est régulier (ni dossier, ni symlink).
+# Vérifie si le fichier est de poids suppéreieur à 0
+# Si les 2 conditions sont vraies, la fonction retournera 0
 ###############################################################################
 rclone_configured() {
     [[ -f "$RCLONE_CONF" ]] && [[ -s "$RCLONE_CONF" ]]
 }
 
 msmtp_configured() {
-    [[ -f "$MSMTP_CONF" ]] && [[ -s "$MSMTP_CONF" ]]
+    # 1. Vérifie d'abord le fichier utilisateur (ex: /root/.msmtprc ou $MSMTPRC)
+    local user_conf="${MSMTPRC:-$HOME/.msmtprc}"
+    if [[ -f "$user_conf" ]] && [[ -s "$user_conf" ]]; then
+        echo "$user_conf"
+        return 0
+    fi
+
+    # 2. Sinon, vérifie le fichier système (/etc/msmtprc)
+    local system_conf="/etc/msmtprc"
+    if [[ -f "$system_conf" ]] && [[ -s "$system_conf" ]]; then
+        echo "$system_conf"
+        return 0
+    fi
+
+    # Aucun fichier valide trouvé
+    echo "Aucun fichier de configuration msmtp valide trouvé." >&2
+    return 1
 }
 
 

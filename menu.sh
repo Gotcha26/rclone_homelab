@@ -111,7 +111,7 @@ while true; do
             menu_jobs)
                 if ! init_jobs_file; then
                     echo "❌ Impossible de créer jobs.txt, édition annulée."
-                    continue
+                    break  # ou return si dans une fonction, ou continue pour passer au menu suivant
                 fi
                 echo "⚡ Ouverture de $JOBS_FILE..." >&3
                 # Lancement de nano dans un shell indépendant
