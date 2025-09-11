@@ -31,9 +31,13 @@ source "$SCRIPT_DIR/export/discord.sh"
 # Création du dossier logs si absent
 mkdir -p "$LOG_DIR"
 # --- DEBUG ---
-# TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
-# mkdir -p "$TMP_JOBS_DIR"
-# echo "DEBUG: LOG_FILE_SCRIPT=$LOG_FILE_SCRIPT"
+if [[ "${DEBUG_MODE:-false}" == "true" ]]; then 
+    TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
+    mkdir -p "$TMP_JOBS_DIR"
+fi 
+if [[ "${DEBUG_INFOS:-false}" == "true" ]]; then 
+    echo "DEBUG: LOG_FILE_SCRIPT=$LOG_FILE_SCRIPT"
+fi 
 # --- DEBUG ---
 
 # On créait un dossier temporaire de manière temporaire
