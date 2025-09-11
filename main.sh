@@ -25,12 +25,15 @@ source "$SCRIPT_DIR/functions/init.sh"
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"
 
+# Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
+[[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
+
 # Création du dossier logs si absent
 mkdir -p "$LOG_DIR"
 # --- DEBUG ---
 # TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
 # mkdir -p "$TMP_JOBS_DIR"
-echo "DEBUG: LOG_FILE_SCRIPT=$LOG_FILE_SCRIPT"
+# echo "DEBUG: LOG_FILE_SCRIPT=$LOG_FILE_SCRIPT"
 # --- DEBUG ---
 
 # On créait un dossier temporaire de manière temporaire
@@ -147,12 +150,6 @@ if [[ -n "$MAIL_TO" ]]; then
         die 22 "❌ msmtp est requis mais aucune configuration valide n'a été trouvée."
     fi
 fi
-
-
-
-# Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
-[[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
-
 
 # Si aucun argument → menu interactif
 if [[ $# -eq 0 ]]; then
