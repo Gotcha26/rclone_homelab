@@ -143,7 +143,9 @@ check_rclone_configured() {
 ###############################################################################
 check_msmtp_installed() {
     if ! command -v msmtp >/dev/null 2>&1; then
-        die 10 "❌  msmtp n'est pas installé. Le script va s'arrêter."
+        return 0
+    else
+        return 1
     fi
 }
 
@@ -196,7 +198,7 @@ check_msmtp_configured() {
     fi
 
     # Aucun fichier valide trouvé
-    die 22 "Aucun fichier de configuration msmtp valide trouvé." >&2
+    echo "❌  Aucun fichier de configuration msmtp valide trouvé." >&2
     return 1
 }
 

@@ -139,9 +139,16 @@ $DRY_RUN && RCLONE_OPTS+=(--dry-run)
 
 # Vérif msmtp (seulement si mail)
 if [[ -n "$MAIL_TO" ]]; then
-    check_msmtp_installed
-    check_msmtp_configured
+    if ! check_msmtp_installed; then
+        die 10 "❌ msmtp n'est pas installé."
+    fi
+
+    if ! check_msmtp_configured >/dev/null; then
+        die 22 "❌ msmtp est requis mais aucune configuration valide n'a été trouvée."
+    fi
 fi
+
+
 
 # Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
 [[ "$LAUNCH_MODE" != "automatique" ]] && print_logo

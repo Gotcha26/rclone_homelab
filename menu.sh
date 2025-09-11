@@ -148,7 +148,7 @@ while true; do
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$RCLONE_CONF")
                 echo "✅ Édition terminée, retour au menu..." >&3
                 ;;
-                menu_install_msmtp)
+            menu_install_msmtp)
                 install_msmtp
                 ;;
             menu_config_msmtp)
