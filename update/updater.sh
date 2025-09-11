@@ -157,34 +157,16 @@ analyze_update_status() {
     fi
     $do_display && print_fancy --fill "#" ""
 
-    # Affichage résumé si DEBUG_INFOS=false
-    display_git_summary
-}
-
-
-###############################################################################
-# Fonction : Affichage synthétique résumé de la fonction analyze_update_status()
-###############################################################################
-display_git_summary() {
-    # Affichage minimal uniquement si DEBUG_INFOS=false
-    [[ "${DEBUG_INFOS:-true}" == "true" ]] && return 0
-
-    # Cas main
-    if [[ "$branch_real" == "main" ]]; then
-        if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-            print_fancy --theme "success" "Git → OK"
-        else
-            print_fancy --theme "warning" "Git → MAJ dispo / problème"
-        fi
-    else
-        # Cas dev / autres
-        if [[ "$head_commit" == "$remote_commit" ]]; then
+    # --- affichage minimal si DEBUG_INFOS=false ---
+    if [[ "${DEBUG_INFOS:-true}" == "false" ]]; then
+        if [[ $return_code -eq 0 ]]; then
             print_fancy --theme "success" "Git → OK"
         else
             print_fancy --theme "warning" "Git → MAJ dispo / problème"
         fi
     fi
 }
+
 
 ###############################################################################
 # Fonction : Met à jour (forcée) du script sur la branche en cours
