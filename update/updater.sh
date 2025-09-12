@@ -174,9 +174,9 @@ analyze_update_status() {
 git_summary() {
     [[ "${DEBUG_INFOS:-true}" == "false" ]] || return
     if [[ $1 -eq 0 ]]; then
-        print_fancy --theme "success" "Git → OK"
+        print_fancy --theme "success" --align "right" "Git → OK"
     else
-        print_fancy --theme "warning" "Git → MAJ dispo / problème"
+        print_fancy --theme "warning" --align "right" "Git → MAJ dispo / problème"
     fi
 }
 

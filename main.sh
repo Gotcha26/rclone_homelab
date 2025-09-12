@@ -8,13 +8,10 @@ export GIT_PAGER=cat
 # 1. Initialisation par défaut
 # ###############################################################################
 
-# Initialisation de variables. Elles sont écrasé par la configuration personnalisée si présente.
-FORCE_UPDATE="false"
-UPDATE_TAG="false"
-DRY_RUN=false
-LAUNCH_MODE=""
-DEBUG_MODE=${DEBUG_MODE:-false}
-DEBUG_INFOS=${DEBUG_INFOS:-false}
+# Initialisation de variables.
+# Elles peuvent être écrasées par la configuration personnalisée, si présente.
+ERROR_CODE=0
+EXECUTED_JOBS=0
 
 # Résoudre le chemin réel du script (suivi des symlinks)
 SCRIPT_PATH="$(readlink -f "$0")"
@@ -27,26 +24,28 @@ source "$SCRIPT_DIR/functions/init.sh"
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"
 
+# Initialise et informe de la branch en cours utilisée
+# (basé sur la seule présence du fichier config/config.dev.sh)
+detect_branch
+
 # Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
 [[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
 
 # Création du dossier logs si absent
 mkdir -p "$LOG_DIR"
-# --- DEBUG ---
+
+# --- ↓ DEBUG ↓ ---
 if [[ "$DEBUG_MODE" == "true" ]]; then 
     TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
     mkdir -p "$TMP_JOBS_DIR"
 fi 
 
 if [[ "$DEBUG_INFOS" == "true" ]]; then 
-    print_fancy --fg "black" --bg "white" "DEBUG: LOG_FILE_SCRIPT=$LOG_FILE_SCRIPT"
+    print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: LOG_FILE_SCRIPT = $LOG_FILE_SCRIPT"
 fi 
-# --- DEBUG ---
+# --- ↑ DEBUG ↑ ---
 
-# On créait un dossier temporaire de manière temporaire
-TMP_JOBS_DIR=$(mktemp -d)
-
-# ---- Journal log général (sauf rclone qui a un log dédié) ----
+# --- Journal log général (sauf rclone qui a un log dédié par job - temporaires) ---
 
 # Sauvegarde stdout et stderr originaux
 exec 3>&1 4>&2
@@ -56,8 +55,7 @@ exec 3>&1 4>&2
 # - stderr aussi redirigé [sortie des erreurs]
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
-# Initialise et informe de la branch en cours utilisée xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-detect_branch
+# ---
 
 # Sourcing pour les updates
 source "$SCRIPT_DIR/update/updater.sh"
@@ -67,9 +65,6 @@ source "$SCRIPT_DIR/update/updater.sh"
 # 2. Parsing complet des arguments
 # Lecture des options du script
 ###############################################################################
-# Drpeau
-INTERACTIVE_MODE=false
-[[ $# -eq 0 ]] && INTERACTIVE_MODE=true
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -83,6 +78,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --dry-run)
             DRY_RUN=true
+            RCLONE_OPTS+=(--dry-run)
             shift
             ;;
         --update-forced)
@@ -107,11 +103,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 ###############################################################################
-# 3. Vérifications dépendantes des arguments
+# 3. Actions dépendantes des arguments
 ###############################################################################
-
-# Définition arbitraire pour le résultat des MAJ à faire ou non
-update_check_result=0
 
 # Gestion des mises à jour selon les options passées
 if [[ "$FORCE_UPDATE" == true ]]; then
@@ -135,19 +128,12 @@ if [[ "$FORCE_UPDATE" == true ]]; then
     fi
 elif [[ "$UPDATE_TAG" == true ]]; then
     update_to_latest_tag  # appel explicite
-else
-    update_check  # juste informer
 fi
-
-update_check_result=$?  # récupère le code de retour de update_check
-
-# Inscription de l'option dry-run (rclone) si demandée
-$DRY_RUN && RCLONE_OPTS+=(--dry-run)
 
 # Vérifie l’email seulement si l’option --mailto est fournie
 [[ -n "$MAIL_TO" ]] && email_check "$MAIL_TO"
 
-# Vérif msmtp (seulement si mail)
+# Vérif msmtp (seulement si mail_to est défini)
 if [[ -n "$MAIL_TO" ]]; then
     if ! check_msmtp_installed; then
         die 10 "❌ msmtp n'est pas installé."
@@ -171,6 +157,9 @@ fi
 # Vérif rclone
 check_rclone
 check_rclone_config
+
+# On créait un dossier temporaire de manière temporaire
+TMP_JOBS_DIR=$(mktemp -d)
 
 # Création des répertoires nécessaires
 if [[ ! -d "$TMP_RCLONE" ]]; then

@@ -9,10 +9,12 @@ show_help() {
 Usage: $(basename "$0") [OPTIONS]
 
 Options :
-  --auto             Lance le script en mode automatique (pas d'affichage du logo)
-  --mailto=ADRESSE   Envoie un rapport par e-mail à l'adresse fournie
-  --dry-run          Simule la synchronisation sans transférer ni supprimer de fichiers
-  -h, --help         Affiche cette aide et quitte
+  --auto             Lance le script en mode automatique (A DEFINIR).
+  --mailto=ADRESSE   Envoie un rapport par e-mail à l'adresse fournie.
+  --dry-run          Simule la synchronisation sans transférer ni supprimer de fichiers.
+  -h, --help         Affiche cette aide et quitte.
+  --update-forced    Mettre à jour automatiquement sur la branche en cours. Accèpte l'argument "branche"
+  --update-tag       Mettre à jour automatiquement sur la release (version) disponnible.
 
 Description :
   Ce script lit la liste des jobs à exécuter depuis le fichier :
@@ -52,34 +54,6 @@ detect_branch() {
         BRANCH="main"
         source "$SCRIPT_DIR/config/config.main.sh"
     fi
-}
-
-
-###############################################################################
-# Fonction : Affiche le logo ASCII GOTCHA (uniquement en mode manuel)
-###############################################################################
-
-print_logo() {
-    echo
-    echo
-    local RED="$(get_fg_color red)"
-    local RESET="$(get_fg_color reset)"
-
-    # Règle "tout sauf #"
-    sed -E "s/([^#])/${RED}\1${RESET}/g" <<'EOF'
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-::::::'######:::::'#######:::'########:::'######:::'##::::'##:::::'###:::::::::
-:::::'##... ##:::'##.... ##::... ##..:::'##... ##:: ##:::: ##::::'## ##::::::::
-::::: ##:::..:::: ##:::: ##::::: ##::::: ##:::..::: ##:::: ##:::'##:. ##:::::::
-::::: ##::'####:: ##:::: ##::::: ##::::: ##:::::::: #########::'##:::. ##::::::
-::::: ##::: ##::: ##:::: ##::::: ##::::: ##:::::::: ##.... ##:: #########::::::
-::::: ##::: ##::: ##:::: ##::::: ##::::: ##::: ##:: ##:::: ##:: ##.... ##::::::
-:::::. ######::::. #######:::::: ##:::::. ######::: ##:::: ##:: ##:::: ##::::::
-::::::......::::::.......:::::::..:::::::......::::..:::::..:::..:::::..:::::::
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-EOF
-    echo
-    echo
 }
 
 
@@ -207,7 +181,7 @@ check_msmtp_configured() {
 # Fonction : Vérifier la présence de jobs configurés
 ###############################################################################
 check_jobs_configured() {
-    [[ -f "$JOBS_CONF" ]] && [[ -s "$JOBS_CONF" ]]
+    [[ -f "$JOBS_FILE" ]] && [[ -s "$JOBS_FILE" ]]
 }
 
 
@@ -262,6 +236,7 @@ print_aligned_table() {
 ###############################################################################
 print_summary_table() {
     END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
+    START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
     echo
     echo "INFOS"
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='

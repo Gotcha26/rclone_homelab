@@ -1,21 +1,18 @@
 ###############################################################################
 # Variables de configuration
+# Toutes les variables peuvent être suplantées via un fichier config/config.local.sh
 ###############################################################################
 
-LOG_LINE_MAX=1000                          # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
-TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
-LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
+: "${DISCORD_WEBHOOK_URL:=}"
+: "${FORCE_BRANCH:=}"
+FORCE_UPDATE=${FORCE_UPDATE:-false}
+UPDATE_TAG=${UPDATE_TAG:-false}
+DRY_RUN=${DRY_RUN:-false}
+LAUNCH_MODE=${DRY_RUN:-manual}
+DEBUG_MODE=${DEBUG_MODE:-false}
+DEBUG_INFOS=${DEBUG_INFOS:-false}
+: "${MAIL_TO:=}"
 
-DISCORD_WEBHOOK_URL=""
-
-VERSION=""
-REPO="Gotcha26/rclone_homelab"
-BRANCH="main"
-latest=""
-CHECK_UPDATES=true
-FORCE_UPDATE=false
-FORCE_BRANCH=""
-UPDATE_TAG=""
 
 # === Messages (centralisés pour affichage et email) ===
 
@@ -66,33 +63,32 @@ MSG_MAJ_UPDATE_TAG_REJECTED_TEMPLATE="Git : Rien à mettre à jour, vous êtes d
 MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE="Impossible de mettre à jour vers %s : modifications locales non sauvegardées."
 
 
-# === Variables techniques ===
+###############################################################################
+# Variables techniques
+###############################################################################
+
+LOG_LINE_MAX=1000                          # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
+TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
+LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
 
 # Ne pas toucher
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMP_RCLONE="$SCRIPT_DIR/tmp"        # Répertoire temporaire pour rclone
-LOG_DIR="$SCRIPT_DIR/logs"          # Répertoire de logs
-JOBS_FILE="$SCRIPT_DIR/jobs.txt"    # Fichier des jobs
-EXEMPLE_FILE="${JOBS_FILE}.exemple" # Fichier des jobs (exemple - vierge)
-LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
-FILE_SCRIPT="main_${LOG_TIMESTAMP}.log"
-LOG_FILE_SCRIPT="$LOG_DIR/${FILE_SCRIPT}"
-FILE_INFO="rclone_${LOG_TIMESTAMP}.log"
-LOG_FILE_INFO="$LOG_DIR/${FILE_INFO}"
-FILE_MAIL="msmtp_${LOG_TIMESTAMP}.log"
-LOG_FILE_MAIL="$LOG_DIR/${FILE_MAIL}"
-NOW="$(date '+%Y/%m/%d %H:%M:%S')"
-MAIL_TO=""                          # valeur par défaut vide
-START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
-END_TIME=""
-ERROR_CODE=0
-LAUNCH_MODE="manuel"
-EXECUTED_JOBS=0
-JOBS_CONF="${SCRIPT_DIR}/jobs.txt"
-DEBUG_MODE=false
-DEBUG_INFOS=false
+TMP_RCLONE=     "$SCRIPT_DIR/tmp"           # Répertoire temporaire pour rclone
+LOG_DIR=        "$SCRIPT_DIR/logs"          # Répertoire de logs
+JOBS_FILE=      "$SCRIPT_DIR/jobs.txt"      # Fichier des jobs
+EXEMPLE_FILE=   "${JOBS_FILE}.exemple"      # Fichier des jobs (exemple - vierge)
 
-# Couleurs ANSI : on utilise $'...' pour insérer le caractère ESC réel
+FILE_SCRIPT=    "main_${LOG_TIMESTAMP}.log"
+LOG_FILE_SCRIPT="$LOG_DIR/${FILE_SCRIPT}"
+FILE_INFO=      "rclone_${LOG_TIMESTAMP}.log"
+LOG_FILE_INFO=  "$LOG_DIR/${FILE_INFO}"
+FILE_MAIL=      "msmtp_${LOG_TIMESTAMP}.log"
+LOG_FILE_MAIL=  "$LOG_DIR/${FILE_MAIL}"
+
+LOG_TIMESTAMP=  "$(date '+%Y%m%d_%H%M%S')"
+NOW=            "$(date '+%Y/%m/%d %H:%M:%S')"
+
+
+# Couleurs ANSI : on utilise $<couleur> pour insérer le caractère ESC réel
 ORANGE=$'\e[38;5;208m'              # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
 
 # === Options rclone ===
