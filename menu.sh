@@ -74,7 +74,7 @@ while true; do
         # Cas 2 : msmtp présent → vérifier la config
         if conf_file=$(check_msmtp_configured 2>/dev/null); then
             # Config valide trouvée
-            add_option "📄  Afficher la configuration msmtp" "menu_show_msmtp_config"
+            add_option "📄  Afficher/éditer la configuration msmtp" "menu_show_msmtp_config"
         else
             # Config absente ou invalide
             add_option "⚙️ Configurer msmtp" "menu_config_msmtp"
