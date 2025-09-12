@@ -78,7 +78,7 @@ fetch_git_info() {
 ###############################################################################
 # Fonction : Affichage des informations Git issues de fetch_git_info()
 ###############################################################################
-analyze_update_status() {
+analyze_update_status0() {
 # Détecte si on doit afficher ou non
     local do_display=false
     [[ "${DEBUG_INFOS:-false}" == "true" ]] && do_display=true
@@ -168,6 +168,83 @@ analyze_update_status() {
 }
 
 
+analyze_update_status() {
+    # Déterminer le mode d'affichage
+    local display_mode="${DISPLAY_MODE:-simplified}"  # verbose / simplified / none
+    local result_code=0
+
+    # Mode verbose : affichage complet
+    if [[ "$display_mode" == "verbose" ]]; then
+        print_fancy --fill "#" ""
+        print_fancy --align "center" --style "bold" "INFOS GIT"
+        print_fancy ""
+        print_fancy "📌  Branche locale      : $branch_real"
+        print_fancy "📌  Commit local        : $head_commit ($(date -d "@$head_epoch"))"
+        [[ -n "$remote_commit" ]] && print_fancy "🕒  Commit distant      : $remote_commit ($(date -d "@$remote_epoch"))"
+        [[ -n "$latest_tag" ]] && print_fancy "🏷️  Dernière release    : $latest_tag ($(date -d "@$latest_tag_epoch"))"
+    fi
+
+    # --- Analyse des commits / branches ---
+    if [[ "$branch_real" == "main" ]]; then
+        # --- Branche main : vérifier si on est à jour avec la dernière release ---
+        if [[ -z "$latest_tag" ]]; then
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy "" || true
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --fg "red" --bg "white" --style "bold underline" "Impossible de vérifier les mises à jour (API GitHub muette)."
+            result_code=1
+
+        elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
+            [[ "$display_mode" == "verbose" ]] && print_fancy "" || true
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "success" "Version actuelle ${current_tag:-dev} >> A jour"
+            [[ "$display_mode" == "simplified" ]] && print_fancy --theme "success" --align "right" "Votre version est à jour."
+            result_code=0
+        elif (( latest_tag_epoch < head_epoch )); then
+            [[ "$display_mode" == "verbose" ]] && print_fancy "" || true
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" "Des nouveautés existent mais ne sont pas encore officialisées."
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "follow" --bg "yellow" --align "center" --style "bold underline" "La mise à jour automatisée n'est pas proposée pour garantir la stabilité."
+            [[ "$display_mode" == "verbose" ]] && print_fancy print_fancy --bg "yellow" --align "center" --style "italic" "Forcer la mise à jour (possible) pourrait avoir des effets indésirables."
+            [[ "$display_mode" == "verbose" ]] && print_fancy --bg "yellow" --align "center" --style "italic" "Vous êtes bien sur la dernière release stable : ${current_tag:-dev}"
+            [[ "$display_mode" == "simplified" ]] && print_fancy --theme "success" --align "right" "Votre version est à jour."
+            # [[ "$display_mode" == "simplified" ]] && print_fancy --theme "info" "Des commits locaux plus récents que la dernière release."
+            result_code=0
+        else
+            [[ "$display_mode" == "verbose" ]] && print_fancy "" || true
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch"))"
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" --bg "blue" --align "center" --highlight "Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
+            [[ "$display_mode" == "simplified" ]] print_fancy --theme "warning" "Nouvelle release disponible : $latest_tag"
+            result_code=1
+        fi
+
+    else
+        # Branche dev ou autre
+        if [[ -z "$remote_commit" ]]; then
+            [[ "$display_mode" == "verbose" ]] && print_fancy "" || true
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" "Aucune branche distante détectée pour '$branch_real'"
+            # [[ "$display_mode" == "simplified" ]] && print_fancy --theme "info" "Pas de remote pour $branch_real"
+            result_code=1
+
+        elif [[ "$head_commit" == "$remote_commit" ]]; then
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy "" || true
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "success" --style "bold" "Votre branche '$branch_real' est à jour avec le dépôt."
+            result_code=0
+        elif (( head_epoch < remote_epoch )); then
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy "" || true
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --bg "blue" --align "center" --bg "blue" "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "hand" --bg "blue" --align "center" --style "underline" "Les modifications (hors .gitignore) seront écrasées/perdues"
+            result_code=1
+        else
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy "" || true
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --bg "green" --align "center" --style "bold" --highlight "Votre commit est plus récent que origin/$branch_real"
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight "Pas de mise à jour à faire sous peine de régressions/pertes."
+            result_code=0
+        fi
+    fi
+
+    [[ "$display_mode" == "verbose" ]] && print_fancy --fill "#" ""
+    return $result_code
+}
+
+
 ###############################################################################
 # Fonction : Affichage un résumé conditionnel de analyze_update_status()
 ###############################################################################
@@ -176,7 +253,7 @@ git_summary() {
     if [[ $1 -eq 0 ]]; then
         print_fancy --theme "success" --align "right" "Git → OK"
     else
-        print_fancy --theme "warning" --align "right" "Git → MAJ dispo / problème"
+        print_fancy --theme "warning" --align "center" "Git → Une information sur une éventuelle MAJ est disponnible."
     fi
 }
 
