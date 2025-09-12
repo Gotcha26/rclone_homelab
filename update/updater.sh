@@ -199,10 +199,10 @@ analyze_update_status() {
             result_code=0
         elif (( latest_tag_epoch < head_epoch )); then
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && echo "" || true
-            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" "Des nouveautés existent mais ne sont pas encore officialisées."
-            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "follow" --bg "yellow" --align "center" --style "bold underline" "La mise à jour automatisée n'est pas proposée pour garantir la stabilité."
-            [[ "$display_mode" == "verbose" ]] && print_fancy --bg "yellow" --align "center" --style "italic" "Forcer la mise à jour (possible) pourrait avoir des effets indésirables."
-            [[ "$display_mode" == "verbose" ]] && print_fancy --bg "yellow" --align "center" --style "italic" "Vous êtes bien sur la dernière release stable : ${current_tag:-dev}"
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" --highlight "Des nouveautés existent mais ne sont pas encore officialisées."
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "follow" --bg "yellow" --align "center" --style "bold underline" --highlight "La mise à jour automatisée n'est pas proposée pour garantir la stabilité."
+            [[ "$display_mode" == "verbose" ]] && print_fancy --bg "yellow" --align "center" --style "italic" --highlight "Forcer la mise à jour (possible) pourrait avoir des effets indésirables."
+            [[ "$display_mode" == "verbose" ]] && print_fancy --bg "yellow" --align "center" --style "italic" --highlight "Vous êtes bien sur la dernière release stable : ${current_tag:-dev}"
             [[ "$display_mode" == "simplified" ]] && print_fancy --theme "success" --fg "yellow" --align "right" "Votre version est à jour."
             # [[ "$display_mode" == "simplified" ]] && print_fancy --theme "info" "Des commits locaux plus récents que la dernière release."
             result_code=0
@@ -227,9 +227,9 @@ analyze_update_status() {
             result_code=0
         elif (( head_epoch < remote_epoch )); then
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && echo "" || true
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "flash" --bg "yellow" --align "center" --style "bold" --highlight "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --bg "yellow" --align "center" "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "follow" --bg "yellow" --align "center" --style "underline" "Les modifications (hors .gitignore) seront écrasées/perdues"
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --bg "blue" --align "center" --highlight "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "follow" --bg "blue" --align "center" --style "underline" --highlight "Les modifications (hors .gitignore) seront écrasées/perdues"
             result_code=1
         else
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && echo "" || true
