@@ -18,7 +18,6 @@ update_check() {
 # - latest_tag / latest_tag_epoch
 # - branch_real
 # - current_tag
-# Paramètre de sécurité : IGNORE_LOCAL_CHANGES=true pour écraser temporairement tout
 ###############################################################################
 fetch_git_info() {
 
@@ -35,13 +34,6 @@ fetch_git_info() {
     current_tag=""
 
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
-
-    # Option : ignorer les modifications locales non commitées
-    if [[ "${IGNORE_LOCAL_CHANGES:-false}" == true ]]; then
-        # stash temporaire de tout l'état local
-        STASH_NAME="tmp_stash_$(date +%s)"
-        git stash push -u -m "$STASH_NAME" >/dev/null 2>&1 || true
-    fi
 
     # Récupération des dernières infos du remote
     git fetch origin --tags --prune --quiet
@@ -80,10 +72,6 @@ fetch_git_info() {
     # Tag actuel si HEAD exactement sur un tag
     current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
 
-    # Re-appliquer les modifications locales si on a stashed
-    if [[ "${IGNORE_LOCAL_CHANGES:-false}" == true ]]; then
-        git stash pop >/dev/null 2>&1 || true
-    fi
 }
 
 
@@ -108,9 +96,9 @@ analyze_update_status() {
     [[ -n "$latest_tag" && "$do_display" == true ]] && print_fancy "🕒  Dernière release    : $latest_tag ($(date -d "@$latest_tag_epoch"))"
 
     if [[ "$branch_real" == "main" ]]; then
-        # Branche main : vérifier si on est à jour avec la dernière release
+        # --- Branche main : vérifier si on est à jour avec la dernière release ---
         if [[ -z "$latest_tag" ]]; then
-            $do_display && print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
+            $do_display && print_fancy --fg "red" --bg "white" --style "bold underline" "Impossible de vérifier les mises à jour (API GitHub muette)."
             result_code=1
             git_summary $result_code
             return $result_code
@@ -126,15 +114,16 @@ analyze_update_status() {
 
         if (( latest_tag_epoch < head_epoch )); then
             $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "warning" --bg "yellow" --align "center" --highlight "Attention : votre commit local est plus récent que la dernière release !"
-            $do_display && print_fancy --theme "follow" "Forcer la mise à jour pourrait écraser des changements locaux"
+            $do_display && print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" --highlight "Attention : votre commit local est plus récent que la dernière release !"
+            $do_display && print_fancy --theme "follow" --bg "yellow" --align "center" "La mise à jour automatisée n'est pas proposée pour préserver vos adaptations locales."
+            $do_display && print_fancy --bg "yellow" --align "center" --style "italic" "Forcer la mise à jour pourrait écraser vos adaptations locales."
             result_code=0
             git_summary $result_code
             return $result_code
         else
             $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --highlight "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch"))"
-            $do_display && print_fancy --theme "info" "Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
+            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch"))"
+            $do_display && print_fancy --theme "info" --bg "blue" --align "center" --highlight "Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
             result_code=1
             git_summary $result_code
             return $result_code
@@ -151,7 +140,7 @@ analyze_update_status() {
 
         if [[ "$head_commit" == "$remote_commit" ]]; then
             $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "success" "Votre branche est à jour avec l'origine."
+            $do_display && print_fancy --theme "success" --style "bold" "Votre branche est à jour avec l'origine."
             result_code=0
             git_summary $result_code
             return $result_code
@@ -159,13 +148,13 @@ analyze_update_status() {
 
         if (( head_epoch < remote_epoch )); then
             $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --highlight "Mise à jour disponible : votre commit est plus ancien que origin/$branch_real"
+            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Mise à jour disponible : votre commit est plus ancien que origin/$branch_real"
             result_code=1
             git_summary $result_code
             return $result_code
         else
             $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "warning" --bg "green" --align "center" --highlight "Votre commit est plus récent que origin/$branch_real"
+            $do_display && print_fancy --theme "warning" --bg "green" --align "center" --style "bold" --highlight "Votre commit est plus récent que origin/$branch_real"
             result_code=0
             git_summary $result_code
             return $result_code
