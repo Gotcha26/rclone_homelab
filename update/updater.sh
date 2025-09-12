@@ -114,9 +114,10 @@ analyze_update_status() {
 
         if (( latest_tag_epoch < head_epoch )); then
             $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" --highlight "Attention : votre commit local est plus récent que la dernière release !"
-            $do_display && print_fancy --theme "follow" --bg "yellow" --align "center" "La mise à jour automatisée n'est pas proposée pour préserver vos adaptations locales."
-            $do_display && print_fancy --bg "yellow" --align "center" --style "italic" "Forcer la mise à jour pourrait écraser vos adaptations locales."
+            $do_display && print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" --highlight "Des nouveautés sont apparues sur le dépôt mais ne sont pas encore officialisées."
+            $do_display && print_fancy --theme "follow" --bg "yellow" --align "center" --style "bold underline" "La mise à jour automatisée n'est pas proposée pour garantir la stabilité."
+            $do_display && print_fancy --bg "yellow" --align "center" --style "italic" "Forcer la mise à jour (possible) pourrait avoir des effets indésirables."
+            $do_display && print_fancy --bg "yellow" --align "center" --style "italic" "Vous êtes bien sur la dernière release stable : ${current_tag:-dev}"
             result_code=0
             git_summary $result_code
             return $result_code
@@ -140,7 +141,7 @@ analyze_update_status() {
 
         if [[ "$head_commit" == "$remote_commit" ]]; then
             $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "success" --style "bold" "Votre branche est à jour avec l'origine."
+            $do_display && print_fancy --theme "success" --style "bold" "Votre branche '$branch_real' est à jour avec le dépôt."
             result_code=0
             git_summary $result_code
             return $result_code
@@ -148,13 +149,16 @@ analyze_update_status() {
 
         if (( head_epoch < remote_epoch )); then
             $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Mise à jour disponible : votre commit est plus ancien que origin/$branch_real"
+            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
+            $do_display && print_fancy --bg "blue" --align "center" --bg "blue" "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
+            $do_display && print_fancy --theme "hand" --bg "blue" --align "center" --style "underline" "Les modifications (hors .gitignore) seront écrasées/perdues"
             result_code=1
             git_summary $result_code
             return $result_code
         else
             $do_display && print_fancy "" || true
             $do_display && print_fancy --theme "warning" --bg "green" --align "center" --style "bold" --highlight "Votre commit est plus récent que origin/$branch_real"
+            $do_display && print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight "Pas de mise à jour à faire sous peine de régressions/pertes."
             result_code=0
             git_summary $result_code
             return $result_code
