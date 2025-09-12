@@ -115,9 +115,13 @@ while true; do
         case "$action" in
             menu_update_to_latest_tag)
                 update_to_latest_tag
+                print_fancy --theme "follow" --bg "white" -- fg "red" --style "bold italic underline" --align "center" --highlight "RELANCER LE SCRIPT POUR TERMINER LA MAJ !"
+                exit 0
                 ;;
             menu_update_force_branch)
                 update_force_branch
+                print_fancy --theme "follow" --bg "white" -- fg "red" --style "bold italic underline" --align "center" --highlight "RELANCER LE SCRIPT POUR TERMINER LA MAJ !"
+                exit 0
                 ;;
             menu_run_all_jobs)
                 # On quitte la boucle pour renir à l'exacution normale de main.sh
