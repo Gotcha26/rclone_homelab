@@ -189,7 +189,7 @@ analyze_update_status() {
         # --- Branche main : vérifier si on est à jour avec la dernière release ---
         if [[ -z "$latest_tag" ]]; then
             [[ "$display_mode" == "verbose" ]] && echo "" || true
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --fg "red" --bg "white" --style "bold underline" "Impossible de vérifier les mises à jour (API GitHub muette)."
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" "Impossible de vérifier les mises à jour (API GitHub muette)."
             result_code=1
 
         elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
@@ -216,13 +216,13 @@ analyze_update_status() {
         # Branche dev ou autre
         if [[ -z "$remote_commit" ]]; then
             [[ "$display_mode" == "verbose" ]] && echo "" || true
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "info" "Aucune branche distante détectée pour '$branch_real'"
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" "Aucune branche distante détectée pour '$branch_real'"
             # [[ "$display_mode" == "simplified" ]] && print_fancy --theme "info" "Pas de remote pour $branch_real"
             result_code=1
 
         elif [[ "$head_commit" == "$remote_commit" ]]; then
             [[ "$display_mode" == "verbose" ]] && echo "" || true
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "success" --fg "blue" --style "bold" --align "right" "Votre branche '$branch_real' est à jour avec le dépôt."
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "success" --fg "blue" --style "bold" --align "right" "Votre branche '$branch_real' est à jour avec le dépôt."
             [[ "$display_mode" == "simplified" ]] && print_fancy --theme "success" --fg "blue" --align "right" "À jour."
             result_code=0
         elif (( head_epoch < remote_epoch )); then
