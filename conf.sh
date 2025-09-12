@@ -12,6 +12,7 @@ LAUNCH_MODE=${DRY_RUN:-manual}
 DEBUG_MODE=${DEBUG_MODE:-false}
 DEBUG_INFOS=${DEBUG_INFOS:-false}
 : "${MAIL_TO:=}"
+DISPLAY_MODE=${DISPLAY_MODE:-simplified}
 
 
 # === Messages (centralisés pour affichage et email) ===

@@ -175,7 +175,7 @@ analyze_update_status() {
 
     # Mode verbose : affichage complet
     if [[ "$display_mode" == "verbose" ]]; then
-        print_fancy --fill "#" ""
+        print_fancy --fill "#" "#"
         print_fancy --align "center" --style "bold" "INFOS GIT"
         echo "" || true
         print_fancy "📌  Branche locale      : $branch_real"
@@ -240,7 +240,7 @@ analyze_update_status() {
         fi
     fi
 
-    [[ "$display_mode" == "verbose" ]] && print_fancy --fill "#" ""
+    [[ "$display_mode" == "verbose" ]] && print_fancy --fill "#" "#"
     return $result_code
 }
 

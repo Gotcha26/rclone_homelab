@@ -55,11 +55,14 @@ exec 3>&1 4>&2
 # - stderr aussi redirigé [sortie des erreurs]
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
-# ---
+# --- Mises à jour ---
 
 # Sourcing pour les updates
 source "$SCRIPT_DIR/update/updater.sh"
 
+# Exécuter directement l’analyse (affichage immédiat au lancement)
+fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; }
+analyze_update_status
 
 ###############################################################################
 # 2. Parsing complet des arguments
