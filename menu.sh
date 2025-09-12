@@ -21,7 +21,7 @@ while true; do
         MENU_OPTIONS+=("$1")
         MENU_ACTIONS+=("$2")
     }
-    # Construction nécessaire pour l'affichage des MAJ (bracnhe / release)
+    # Construction nécessaire pour l'affichage des MAJ (branche / release)
     fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; continue; }
     update_status_code=$(analyze_update_status)
 

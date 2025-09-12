@@ -210,7 +210,7 @@ analyze_update_status() {
             [[ "$display_mode" == "verbose" ]] && print_fancy "" || true
             [[ "$display_mode" == "verbose" ]] && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch"))"
             [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" --bg "blue" --align "center" --highlight "Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
-            [[ "$display_mode" == "simplified" ]] print_fancy --theme "warning" "Nouvelle release disponible : $latest_tag"
+            [[ "$display_mode" == "simplified" ]] && print_fancy --theme "warning" "Nouvelle release disponible : $latest_tag"
             result_code=1
         fi
 
