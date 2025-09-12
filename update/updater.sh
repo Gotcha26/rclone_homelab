@@ -169,7 +169,6 @@ analyze_update_status0() {
 
 
 analyze_update_status() {
-    set -x
     # Déterminer le mode d'affichage
     local display_mode="${DISPLAY_MODE:-simplified}"  # verbose / simplified / none
     local result_code=0
@@ -178,7 +177,7 @@ analyze_update_status() {
     if [[ "$display_mode" == "verbose" ]]; then
         print_fancy --fill "#" ""
         print_fancy --align "center" --style "bold" "INFOS GIT"
-        print_fancy ""
+        print_fancy "" || true
         print_fancy "📌  Branche locale      : $branch_real"
         print_fancy "📌  Commit local        : $head_commit ($(date -d "@$head_epoch"))"
         [[ -n "$remote_commit" ]] && print_fancy "🕒  Commit distant      : $remote_commit ($(date -d "@$remote_epoch"))"
@@ -243,7 +242,6 @@ analyze_update_status() {
 
     [[ "$display_mode" == "verbose" ]] && print_fancy --fill "#" ""
     return $result_code
-    set +x
 }
 
 
