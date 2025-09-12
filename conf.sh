@@ -77,15 +77,15 @@ LOG_DIR="$SCRIPT_DIR/logs"          # Répertoire de logs
 JOBS_FILE="$SCRIPT_DIR/jobs.txt"      # Fichier des jobs
 EXEMPLE_FILE="${JOBS_FILE}.exemple"      # Fichier des jobs (exemple - vierge)
 
+LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
+NOW="$(date '+%Y/%m/%d %H:%M:%S')"
+
 FILE_SCRIPT="main_${LOG_TIMESTAMP}.log"
 LOG_FILE_SCRIPT="$LOG_DIR/${FILE_SCRIPT}"
 FILE_INFO="rclone_${LOG_TIMESTAMP}.log"
 LOG_FILE_INFO="$LOG_DIR/${FILE_INFO}"
 FILE_MAIL="msmtp_${LOG_TIMESTAMP}.log"
 LOG_FILE_MAIL="$LOG_DIR/${FILE_MAIL}"
-
-LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
-NOW="$(date '+%Y/%m/%d %H:%M:%S')"
 
 
 # Couleurs ANSI : on utilise $<couleur> pour insérer le caractère ESC réel
