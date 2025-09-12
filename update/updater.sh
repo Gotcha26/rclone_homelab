@@ -78,96 +78,6 @@ fetch_git_info() {
 ###############################################################################
 # Fonction : Affichage des informations Git issues de fetch_git_info()
 ###############################################################################
-analyze_update_status0() {
-# Détecte si on doit afficher ou non
-    local do_display=false
-    [[ "${DEBUG_INFOS:-false}" == "true" ]] && do_display=true
-
-
-    $do_display && print_fancy --fill "#" ""
-    $do_display && print_fancy --align "center" --style "bold" "INFOS GIT"
-    $do_display && print_fancy "" || true
-    $do_display && print_fancy "📌  Branche locale      :"
-    $do_display && print_fancy "$branch_real"
-    $do_display && print_fancy "📌  Commit local        :"
-    $do_display && print_fancy "$head_commit ($(date -d "@$head_epoch"))"
-    [[ -n "$remote_commit" && "$do_display" == true ]] && print_fancy "🕒  Commit distant      :"
-    $do_display && print_fancy "$remote_commit ($(date -d "@$remote_epoch"))"
-    [[ -n "$latest_tag" && "$do_display" == true ]] && print_fancy "🕒  Dernière release    : $latest_tag ($(date -d "@$latest_tag_epoch"))"
-
-    if [[ "$branch_real" == "main" ]]; then
-        # --- Branche main : vérifier si on est à jour avec la dernière release ---
-        if [[ -z "$latest_tag" ]]; then
-            $do_display && print_fancy --fg "red" --bg "white" --style "bold underline" "Impossible de vérifier les mises à jour (API GitHub muette)."
-            result_code=1
-            git_summary $result_code
-            return $result_code
-        fi
-
-        if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-            $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "success" "Version actuelle ${current_tag:-dev} >> A jour"
-            result_code=0
-            git_summary $result_code
-            return $result_code
-        fi
-
-        if (( latest_tag_epoch < head_epoch )); then
-            $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" --highlight "Des nouveautés sont apparues sur le dépôt mais ne sont pas encore officialisées."
-            $do_display && print_fancy --theme "follow" --bg "yellow" --align "center" --style "bold underline" "La mise à jour automatisée n'est pas proposée pour garantir la stabilité."
-            $do_display && print_fancy --bg "yellow" --align "center" --style "italic" "Forcer la mise à jour (possible) pourrait avoir des effets indésirables."
-            $do_display && print_fancy --bg "yellow" --align "center" --style "italic" "Vous êtes bien sur la dernière release stable : ${current_tag:-dev}"
-            result_code=0
-            git_summary $result_code
-            return $result_code
-        else
-            $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch"))"
-            $do_display && print_fancy --theme "info" --bg "blue" --align "center" --highlight "Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
-            result_code=1
-            git_summary $result_code
-            return $result_code
-        fi
-    else
-        # Branche dev ou autre
-        if [[ -z "$remote_commit" ]]; then
-            $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "info" "Aucune branche distante détectée pour '$branch_real'"
-            result_code=1
-            git_summary $result_code
-            return $result_code
-        fi
-
-        if [[ "$head_commit" == "$remote_commit" ]]; then
-            $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "success" --style "bold" "Votre branche '$branch_real' est à jour avec le dépôt."
-            result_code=0
-            git_summary $result_code
-            return $result_code
-        fi
-
-        if (( head_epoch < remote_epoch )); then
-            $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
-            $do_display && print_fancy --bg "blue" --align "center" "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
-            $do_display && print_fancy --theme "follow" --bg "blue" --align "center" --style "underline" "Les modifications (hors .gitignore) seront écrasées/perdues"
-            result_code=1
-            git_summary $result_code
-            return $result_code
-        else
-            $do_display && print_fancy "" || true
-            $do_display && print_fancy --theme "warning" --bg "green" --align "center" --style "bold" --highlight "Votre commit est plus récent que origin/$branch_real"
-            $do_display && print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight "Pas de mise à jour à faire sous peine de régressions/pertes."
-            result_code=0
-            git_summary $result_code
-            return $result_code
-        fi
-    fi
-    $do_display && print_fancy --fill "#" ""
-}
-
-
 analyze_update_status() {
     # Déterminer le mode d'affichage
     local display_mode="${DISPLAY_MODE:-simplified}"  # verbose / simplified / none
@@ -284,7 +194,7 @@ update_force_branch() {
 
     # Liste des fichiers ignorés (d'après .gitignore)
     local ignored_files
-    ignored_files=$(git ls-files --ignored --exclude-standard)
+    ignored_files=$(git ls-files --ignored --other --exclude-standard)
 
     # Sauvegarde temporaire si fichiers ignorés présents
     if [[ -n "$ignored_files" ]]; then
@@ -372,7 +282,7 @@ update_to_latest_tag() {
 
     # --- Sauvegarde des fichiers ignorés ---
     local ignored_files
-    ignored_files=$(git ls-files --ignored --exclude-standard)
+    ignored_files=$(git ls-files --ignored --other --exclude-standard)
     if [[ -n "$ignored_files" ]]; then
         echo "💾 Sauvegarde des fichiers ignorés..."
         tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
