@@ -201,7 +201,7 @@ analyze_update_status() {
             [[ "$display_mode" == "verbose" ]] && print_fancy "" || true
             [[ "$display_mode" == "verbose" ]] && print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" "Des nouveautés existent mais ne sont pas encore officialisées."
             [[ "$display_mode" == "verbose" ]] && print_fancy --theme "follow" --bg "yellow" --align "center" --style "bold underline" "La mise à jour automatisée n'est pas proposée pour garantir la stabilité."
-            [[ "$display_mode" == "verbose" ]] && print_fancy print_fancy --bg "yellow" --align "center" --style "italic" "Forcer la mise à jour (possible) pourrait avoir des effets indésirables."
+            [[ "$display_mode" == "verbose" ]] && print_fancy --bg "yellow" --align "center" --style "italic" "Forcer la mise à jour (possible) pourrait avoir des effets indésirables."
             [[ "$display_mode" == "verbose" ]] && print_fancy --bg "yellow" --align "center" --style "italic" "Vous êtes bien sur la dernière release stable : ${current_tag:-dev}"
             [[ "$display_mode" == "simplified" ]] && print_fancy --theme "success" --align "right" "Votre version est à jour."
             # [[ "$display_mode" == "simplified" ]] && print_fancy --theme "info" "Des commits locaux plus récents que la dernière release."
