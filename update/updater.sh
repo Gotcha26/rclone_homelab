@@ -150,8 +150,8 @@ analyze_update_status0() {
         if (( head_epoch < remote_epoch )); then
             $do_display && print_fancy "" || true
             $do_display && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
-            $do_display && print_fancy --bg "blue" --align "center" --bg "blue" "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
-            $do_display && print_fancy --theme "hand" --bg "blue" --align "center" --style "underline" "Les modifications (hors .gitignore) seront écrasées/perdues"
+            $do_display && print_fancy --bg "blue" --align "center" "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
+            $do_display && print_fancy --theme "follow" --bg "blue" --align "center" --style "underline" "Les modifications (hors .gitignore) seront écrasées/perdues"
             result_code=1
             git_summary $result_code
             return $result_code
@@ -228,8 +228,8 @@ analyze_update_status() {
         elif (( head_epoch < remote_epoch )); then
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && echo "" || true
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "flash" --bg "yellow" --align "center" --style "bold" --highlight "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --bg "green" --align "yellow" --bg "blue" "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "hand" --bg "yellow" --align "center" --style "underline" "Les modifications (hors .gitignore) seront écrasées/perdues"
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --bg "yellow" --align "center" "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "follow" --bg "yellow" --align "center" --style "underline" "Les modifications (hors .gitignore) seront écrasées/perdues"
             result_code=1
         else
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && echo "" || true

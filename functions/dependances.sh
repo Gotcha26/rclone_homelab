@@ -101,22 +101,31 @@ get_bg_color() {
 # Fonction alignement - décoration sur 1 ligne
 ###############################################################################
 # ----
-# print_fancy : Affiche du texte formaté avec couleurs, styles et alignement
+# print_fancy : Génère ou affiche du texte formaté avec couleurs, styles et
+#               alignement. Sert autant pour de l’affichage direct que pour
+#               construire des chaînes réutilisables (ex: menu, logs).
+#
+# Modes de fonctionnement :
+#   - Par défaut : affiche directement le texte formaté avec un retour à la ligne
+#   - Avec --raw : retourne uniquement la chaîne formatée (sans saut de ligne),
+#                  utile pour injecter dans d’autres fonctions/variables
 #
 # Options :
-#   --theme <success|error|warning|info>
-#                          : Thème appliqué avec mise en page + emoji
-#   --fg <code|var>     : Couleur du texte (ex: "red" ou "31")
-#   --bg <code|var>        : Couleur de fond (ex: "blue" ou "44")
+#   --theme <success|error|warning|info|flash|follow>
+#                          : Thème appliqué avec couleurs + emoji par défaut
+#   --fg <code|var>        : Couleur du texte (ex: "red", "31", ou séquence ANSI)
+#   --bg <code|var>        : Couleur de fond (ex: "blue", "44", ou séquence ANSI)
 #   --fill <char>          : Caractère de remplissage (défaut: espace)
-#   --align <center|left|right>  : Alignement du texte (défaut: center)
+#   --align <center|left|right>
+#                          : Alignement du texte (défaut: center si highlight)
 #   --style <bold|italic|underline|combinaison>
-#                          : Style(s) appliqués au texte
-#   --highlight            : Active un surlignage complet (ligne entière)
-#   --icon                 : Ajoute une icone (emoji) en debut de texte.
+#                          : Styles combinables appliqués au texte
+#   --highlight            : Remplissage de la ligne entière avec `fill` + couleurs
+#   --icon <votre_emoji>   : Ajoute une icône personnalisée en début de texte
+#   --raw                  : Retourne la chaîne sans affichage (utile pour menus)
 #   texte ... [OBLIGATOIRE]: Le texte à afficher (peut contenir des espaces)
 #
-# Exemple :
+# Exemples :
 #   print_fancy --fg red --bg white --style "bold underline" "Alerte"
 #   print_fancy --fg 42 --style italic "Succès en vert"
 #   print_fancy --theme success "Backup terminé avec succès"
@@ -124,6 +133,7 @@ get_bg_color() {
 #   print_fancy --theme warning --highlight "Attention : espace disque faible"
 #   print_fancy --theme info "Démarrage du service..."
 #   print_fancy --theme info --icon "🚀" "Lancement en cours..."
+#   msg=$(print_fancy --theme success --raw "Option colorisée")
 # ----
 
 print_fancy() {
@@ -136,6 +146,7 @@ print_fancy() {
     local highlight=""
     local theme=""
     local icon=""
+    local raw_mode=""
 
     local BOLD="\033[1m"
     local ITALIC="\033[3m"
@@ -145,35 +156,36 @@ print_fancy() {
     # Lecture des arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --fg)     color="$2"; shift 2 ;;
-            --bg)        bg="$2"; shift 2 ;;
-            --fill)      fill="$2"; shift 2 ;;
-            --align)     align="$2"; shift 2 ;;
-            --style)     style="$2"; shift 2 ;;
+            --fg)       color="$2"; shift 2 ;;
+            --bg)       bg="$2"; shift 2 ;;
+            --fill)     fill="$2"; shift 2 ;;
+            --align)    align="$2"; shift 2 ;;
+            --style)    style="$2"; shift 2 ;;
             --highlight) highlight="1"; shift ;;
-            --theme)     theme="$2"; shift 2 ;;
-            --icon)      icon="$2 "; shift 2 ;;
-            *) text="$1"; shift; break ;;
+            --theme)    theme="$2"; shift 2 ;;
+            --icon)     icon="$2 "; shift 2 ;;
+            --raw)      raw_mode="1"; shift ;;
+            *)          text="$1"; shift; break ;;
         esac
     done
 
     while [[ $# -gt 0 ]]; do text+=" $1"; shift; done
     [[ -z "$text" ]] && { echo "$MSG_PRINT_FANCY_EMPTY" >&2; return 1; }
 
-    # Application du thème (valeurs par défaut)
+    # Application du thème (icône / couleur / style par défaut)
     case "$theme" in
         success) [[ -z "$icon" ]] && icon="✅  " ; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
         error)   [[ -z "$icon" ]] && icon="❌  " ; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
         warning) [[ -z "$icon" ]] && icon="⚠️  " ; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold" ;;
         info)    [[ -z "$icon" ]] && icon="ℹ️  " ; [[ -z "$color" ]] && color="light_blue"; [[ -z "$style" ]] && style="italic" ;;
-        flash)   [[ -z "$icon" ]] && icon="⚡  " ; [[ -z "$color" ]] ;;
-        follow)  [[ -z "$icon" ]] && icon="👉  " ; [[ -z "$color" ]] ;;
+        flash)   [[ -z "$icon" ]] && icon="⚡  " ;;
+        follow)  [[ -z "$icon" ]] && icon="👉  " ;;
     esac
 
     # Ajout de l’icône si définie
     text="$icon$text"
 
-    # --- Traduction des couleurs sûres même si valeurs inconnues ou vides ---
+    # --- Traduction des couleurs (sauf si séquence ANSI déjà fournie) ---
 
     # Couleur du texte
     if [[ "$color" =~ ^\\e ]]; then
@@ -189,8 +201,8 @@ print_fancy() {
     fi
 
     local style_seq=""
-    [[ "$style" =~ bold ]] && style_seq+="$BOLD"
-    [[ "$style" =~ italic ]] && style_seq+="$ITALIC"
+    [[ "$style" =~ bold ]]      && style_seq+="$BOLD"
+    [[ "$style" =~ italic ]]    && style_seq+="$ITALIC"
     [[ "$style" =~ underline ]] && style_seq+="$UNDERLINE"
 
     local visible_len=${#text}
@@ -212,6 +224,7 @@ print_fancy() {
             ;;
     esac
 
+    local output=""
     if [[ -n "$highlight" ]]; then
         # Ligne complète remplie avec le fill
         local full_line
@@ -219,12 +232,19 @@ print_fancy() {
         # Insérer le texte avec style et couleur
         full_line="${full_line:0:pad_left}${color}${bg}${style_seq}${text}${RESET}${bg}${full_line:$((pad_left + visible_len))}"
         # Appliquer la couleur de fond sur toute la ligne
-        printf "%b\n" "${bg}${full_line}${RESET}"
+        output="${bg}${full_line}${RESET}"
     else
         # Version classique sans highlight
         local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
         local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
-        printf "%b\n" "${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
+        output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
+    fi
+
+    # Affichage ou retour brut
+    if [[ -n "$raw_mode" ]]; then
+        printf "%s" "$output"
+    else
+        printf "%b\n" "$output"
     fi
 }
 

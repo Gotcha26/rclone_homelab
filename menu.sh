@@ -33,23 +33,25 @@ while true; do
     # Branche main
     if [[ "$branch_real" == "main" ]]; then
         if (( latest_tag_epoch > head_epoch )); then
-            add_option "Mettre à jour vers la dernière release (tag)" "menu_update_to_latest_tag"
+            label=$(print_fancy --fg "blue" "↗️  Mettre à jour vers la dernière release (tag)")
+            add_option "$label" "menu_update_to_latest_tag"
         fi
     else
         # Branche dev ou expérimentale
         if (( head_epoch < remote_epoch )); then
-            add_option "Mettre à jour la branche '$branch_real' (force branch)" "menu_update_force_branch"
+            label=$(print_fancy --fg "blue" "↗️  Mettre à jour la branche '$branch_real' (force branch)")
+            add_option "$label" "menu_update_force_branch"
         fi
     fi
 
     # 2) Jobs (lancement)
     if check_jobs_configured; then
-        add_option "Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
+        add_option "🔂  Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
 
     # 3) Configurations
     # Jobs
-    add_option "Afficher/éditer des remotes" "menu_jobs"
+    add_option "⌨️  Afficher/éditer des remotes" "menu_jobs"
     # rclone
     if ! command -v rclone >/dev/null 2>&1; then
         # Cas 1 : rclone absent
@@ -58,10 +60,10 @@ while true; do
         # Cas 2 : rclone présent → vérifier la config
         if ! check_rclone_configured >/dev/null 2>&1; then
             # Config absente ou vide
-            add_option "⚙️ Configurer rclone" "menu_config_rclone"
+            add_option "🤖 Configurer rclone" "menu_config_rclone"
         else
             # Config OK
-            add_option "Afficher/éditer la configuration rclone" "menu_show_rclone_config"
+            add_option "📄  Afficher/éditer la configuration rclone" "menu_show_rclone_config"
         fi
     fi
     # msmtp
@@ -72,7 +74,7 @@ while true; do
         # Cas 2 : msmtp présent → vérifier la config
         if conf_file=$(check_msmtp_configured 2>/dev/null); then
             # Config valide trouvée
-            add_option "Afficher la configuration msmtp" "menu_show_msmtp_config"
+            add_option "📄  Afficher la configuration msmtp" "menu_show_msmtp_config"
         else
             # Config absente ou invalide
             add_option "⚙️ Configurer msmtp" "menu_config_msmtp"
@@ -81,25 +83,25 @@ while true; do
     # Affichage du log précédent
     LAST_LOG_FILE=$(get_last_log)
     if [[ -n "$LAST_LOG_FILE" && -f "$LAST_LOG_FILE" ]]; then
-        add_option "Afficher les logs du dernier run (touche q pour quitter !!!)" "menu_show_last_log"
+        add_option "💾  Afficher les logs du dernier run (touche q pour quitter !!!)" "menu_show_last_log"
     fi
 
     # 4) Actions
     # Option de dev après une MAJ : init config locale
     if [[ ! -f "$SCRIPT_DIR/config/config.dev.sh" && "$branch_real" == "dev" ]]; then
-        add_option "[DEV] Initialiser config locale (vierge)" "menu_init_config_local"
+        add_option "💻  [DEV] Initialiser config locale (vierge)" "menu_init_config_local"
     fi
 
     # Choix permanents
-    add_option "Afficher l'aide" "menu_show_help"
-    add_option "Quitter" "menu_exit_script"
+    add_option "📖  Afficher l'aide" "menu_show_help"
+    add_option "👋  Quitter" "menu_exit_script"
 
     # === Affichage du menu ===
 
     echo
-    echo "======================================="
-    echo "     🚀  Rclone Homelab Manager"
-    echo "======================================="
+    print_fancy --align "center" "======================================="
+    print_fancy --align "center" "🚀  Rclone Homelab Manager"
+    print_fancy --align "center" "======================================="
     echo
 
     # --- Affichage des options ---
