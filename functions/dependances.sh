@@ -295,6 +295,11 @@ print_fancy() {
         output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
     fi
 
+     # Mode debug : afficher symboles début/fin ligne
+    if [[ "$DEBUG_MODE" == true ]]; then
+        output="|${output}|"
+    fi
+
     # Affichage ou retour brut, ligne contnue ou pas
     if [[ -n "$raw_mode" ]]; then
         printf "%s" "$output"
