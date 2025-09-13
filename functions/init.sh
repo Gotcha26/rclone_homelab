@@ -189,7 +189,9 @@ check_msmtp_configured() {
 # Fonction : Vérifier la présence de jobs configurés
 ###############################################################################
 check_jobs_configured() {
-    [[ -f "$JOBS_FILE" ]] && [[ -s "$JOBS_FILE" ]]
+    [[ -f "$JOBS_FILE" ]] || return 1
+    # Vérifie qu’il existe au moins une ligne non vide qui ne commence pas par "#"
+    grep -qE '^[[:space:]]*[^#[:space:]]' "$JOBS_FILE"
 }
 
 
