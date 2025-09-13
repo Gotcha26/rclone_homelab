@@ -245,11 +245,15 @@ print_fancy() {
         output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
     fi
 
-    # Affichage ou retour brut
+    # Affichage ou retour brut, ligne contnue ou pas
     if [[ -n "$raw_mode" ]]; then
         printf "%s" "$output"
     else
-        printf "%b\n" "$output"
+        if $newline; then
+            printf "%b\n" "$output"
+        else
+            printf "%b" "$output"
+        fi
     fi
 }
 
