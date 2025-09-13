@@ -270,8 +270,7 @@ print_fancy() {
     # --- Longueur visible (sans ANSI ni balises) avec prise en compte emojis ---
     local clean_text
     clean_text=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g; s/<[^>]+>//g")
-
-    local visible_len=0
+    local visible_len=$(echo -n "$clean_text" | wc -m)
     local char
     while IFS= read -r -n1 char; do
         case "$char" in
