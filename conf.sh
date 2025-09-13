@@ -89,8 +89,21 @@ FILE_MAIL="msmtp_${LOG_TIMESTAMP}.log"
 LOG_FILE_MAIL="$LOG_DIR/${FILE_MAIL}"
 
 
-# Couleurs ANSI : on utilise $<couleur> pour insérer le caractère ESC réel
-ORANGE=$'\e[38;5;208m'              # orange (256-color). Si ton terminal ne supporte pas, ce sera équivalent à une couleur proche.
+# Ajouter des couleurs personnalisées pour print_fancy()
+# Déclaration dans config.local.sh
+# MY_FG_COLOR=$'\e[38;5;208m'   # orange par exemple pour le texte
+# MY_BG_COLOR=$'\e[48;5;236m'   # fond gris foncé
+#
+# Explications :
+# 38;5;<n> → couleur de texte en mode 256 couleurs
+# 48;5;<n> → couleur de fond en mode 256 couleurs
+# <n> est l’indice de la couleur dans la palette 256
+#
+# Utilisation
+# print_fancy --fg "$MY_ORANGE" "Texte orange"
+# print_fancy --bg "$MY_BG_GRAY" "Texte sur fond gris"
+# print_fancy --fg "$MY_ORANGE" --bg "$MY_BG_GRAY" "Texte orange sur fond gris"
+
 
 # === Options rclone ===
 
