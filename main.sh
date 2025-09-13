@@ -23,10 +23,11 @@ source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/init.sh"
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"
+source "$SCRIPT_DIR/update/updater.sh"
 
-# Initialise et informe de la branch en cours utilisée
-# (basé sur la seule présence du fichier config/config.dev.sh)
-detect_branch
+# Initialise (sourcing) et informe de la branch en cours utilisée
+# (basé sur la seule présence du fichier config/config.xxx.sh)
+detect_config
 
 # Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
 [[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
@@ -56,9 +57,6 @@ exec 3>&1 4>&2
 exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 
 # --- Mises à jour ---
-
-# Sourcing pour les updates
-source "$SCRIPT_DIR/update/updater.sh"
 
 # Exécuter directement l’analyse (affichage immédiat au lancement)
 fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; }

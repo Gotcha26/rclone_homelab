@@ -37,22 +37,30 @@ EOF
 
 
 ###############################################################################
-# Fonction qui corrige la branch de travail en cours
+# Fonction charge dans l'ordre main > local > dev
 ###############################################################################
-detect_branch() {
+detect_config() {
+    local display_mode="${DISPLAY_MODE:-simplified}"  # verbose / simplified / none
+
+    CONFIGURATION="config.main.sh"
+    source "$SCRIPT_DIR/config/config.main.sh"
+    if [[ "$display_mode" == "verbose" ]]; then
+        print_fancy theme "info" --align "center" --bg "green" --fg "black" --highlight \
+        "CONFIGURATION STANDARD – Fichier de configuration = $CONFIGURATION ℹ️ "
+    fi
+
     if [[ -f "$SCRIPT_DIR/config/config.local.sh" ]]; then
-        BRANCH="local"
+        CONFIGURATION="config.local.sh"
         source "$SCRIPT_DIR/config/config.local.sh"
-        print_fancy --align "center" --bg "yellow" --fg "black" --highlight \
-        "⚠️  MODE LOCAL ACTIVÉ – Branche = $BRANCH ⚠️ "
-    elif [[ -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
-        BRANCH="dev"
+        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "black" --highlight \
+        "MODE LOCAL ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
+    fi
+
+    if [[ -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
+        CONFIGURATION="config.dev.sh"
         source "$SCRIPT_DIR/config/config.dev.sh"
-        print_fancy --align "center" --bg "yellow" --fg "black" --highlight \
-        "⚠️  MODE DEV ACTIVÉ – Branche = $BRANCH ⚠️ "
-    else
-        BRANCH="main"
-        source "$SCRIPT_DIR/config/config.main.sh"
+        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy theme "warning" --align "center" --bg "red" --fg "black" --highlight \
+        "MODE DEV ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 }
 
