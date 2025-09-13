@@ -182,6 +182,11 @@ get_bg_color() {
 #   msg=$(print_fancy --theme success --raw "Option colorisée")
 #      print_fancy --fg cyan --style bold -n "Fichier d'origine :"
 #      print_fancy --fg yellow "$main_conf"
+#   text=""
+#   text+="${BOLD}Important:${RESET} "
+#   text+="Voici un message ${UNDERLINE}souligné${RESET} et un emoji ⚡"
+#   print_fancy --theme info "$text"
+
 # ----
 
 print_fancy() {
@@ -197,10 +202,10 @@ print_fancy() {
     local newline=true
     local raw_mode=""
 
-    local BOLD=$(printf '\033[1m')
-    local ITALIC=$(printf '\033[3m')
-    local UNDERLINE=$(printf '\033[4m')
-    local RESET=$(printf '\033[0m')
+    local BOLD="\033[1m"
+    local ITALIC="\033[3m"
+    local UNDERLINE="\033[4m"
+    local RESET="\033[0m"
 
     # Lecture des arguments
     while [[ $# -gt 0 ]]; do
@@ -255,19 +260,7 @@ print_fancy() {
     [[ "$style" =~ italic ]]    && style_seq+="$ITALIC"
     [[ "$style" =~ underline ]] && style_seq+="$UNDERLINE"
 
-    # --- Parsing des balises internes ---
-    # <b>..</b>, <i>..</i>, <u>..</u>
-    local parsed_text="$text"
-    parsed_text=$(sed -E \
-        -e "s|<b>|${BOLD}|g; s|</b>|${RESET}${color}${bg}${style_seq}|g" \
-        -e "s|<i>|${ITALIC}|g; s|</i>|${RESET}${color}${bg}${style_seq}|g" \
-        -e "s|<u>|${UNDERLINE}|g; s|</u>|${RESET}${color}${bg}${style_seq}|g" \
-        <<< "$parsed_text")
-
-    # On remplace text par parsed_text
-    text="$parsed_text"
-
-    local visible_len=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g" | wc -m)
+    local visible_len=${#text}
     local pad_left=0
     local pad_right=0
 
@@ -300,11 +293,6 @@ print_fancy() {
         local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
         local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
         output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
-    fi
-
-     # Mode debug : afficher symboles début/fin ligne
-    if [[ "$DEBUG_MODE" == true ]]; then
-        output="|${output}|"
     fi
 
     # Affichage ou retour brut, ligne contnue ou pas
