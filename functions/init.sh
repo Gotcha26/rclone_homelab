@@ -45,7 +45,7 @@ detect_config() {
     CONFIGURATION="config.main.sh"
     source "$SCRIPT_DIR/config/config.main.sh"
     if [[ "$display_mode" == "verbose" ]]; then
-        print_fancy theme "info" --align "center" --bg "green" --fg "black" --highlight \
+        print_fancy --theme "info" --align "center" --bg "green" --fg "black" --highlight \
         "CONFIGURATION STANDARD – Fichier de configuration = $CONFIGURATION ℹ️ "
     fi
 
@@ -59,7 +59,7 @@ detect_config() {
     if [[ -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
         CONFIGURATION="config.dev.sh"
         source "$SCRIPT_DIR/config/config.dev.sh"
-        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy theme "warning" --align "center" --bg "red" --fg "black" --highlight \
+        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "red" --fg "black" --highlight \
         "MODE DEV ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 }
@@ -293,8 +293,9 @@ init_config_local() {
         local label
         [[ "$conf_file" == "$local_conf" ]] && label="local" || label="dev"
 
-        # --- Création si absent ---
+        # --- Cas où le fichier est absent → proposer la création ---
         if [[ ! -f "$conf_file" ]]; then
+            echo
             echo
             print_fancy --style "underline" "⚙️  Création de config.$label.sh"
             print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
@@ -307,28 +308,28 @@ init_config_local() {
             REPLY=${REPLY,,}
             if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
                 if cp "$main_conf" "$conf_file"; then
-                    echo "✅  $main_conf copié vers $conf_file"
+                    echo "✅  Fichier installé : $conf_file"
                 else
                     die 20 "Impossible de copier $main_conf vers $conf_file"
                 fi
             else
-                echo "⚠️  $conf_file non créé"
+                echo "ℹ️  Création ignorée pour : $conf_file"
                 continue
             fi
         else
-            echo "⚠️  $conf_file existe déjà, pas de copie nécessaire."
+            echo
+            echo
+            echo "ℹ️  $conf_file existe déjà, pas de copie nécessaire."
         fi
 
-        # --- Proposition d’édition immédiate ---
-        if [[ -f "$conf_file" ]]; then
-            echo
-            prompt="❓  Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
-            read -rp "$prompt" REPLY
-            REPLY=${REPLY,,}
-            if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-                (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
-                echo "✅  Édition terminée : $conf_file"
-            fi
+        # --- Proposition d’édition immédiate (créé ou déjà présent) ---
+        echo
+        prompt="❓  Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
+        read -rp "$prompt" REPLY
+        REPLY=${REPLY,,}
+        if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
+            (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
+            echo "✅  Édition terminée : $conf_file"
         fi
     done
 }
