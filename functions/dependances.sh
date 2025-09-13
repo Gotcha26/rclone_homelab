@@ -268,7 +268,7 @@ print_fancy() {
     text="$parsed_text"
 
     # local visible_len=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g" | wc -m)
-    
+
     local clean_text
     clean_text=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g; s/<[^>]+>//g")
     local visible_len=0
@@ -276,7 +276,7 @@ print_fancy() {
     while IFS= read -r -n1 char; do
         case "$char" in
             [⚡✅❌🚀👉]) ((visible_len+=1)) ;;
-            ⚠️|ℹ️) ((visible_len+=2)) ;;  # ceux avec variation selector
+            ⚠️|ℹ️) ((visible_len+=3)) ;;  # ceux avec variation selector
             *) ((visible_len+=1)) ;;
         esac
     done <<< "$clean_text"
