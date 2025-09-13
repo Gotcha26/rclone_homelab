@@ -199,6 +199,7 @@ update_to_latest_branch() {
     # Sauvegarde temporaire si fichiers ignorés présents
     if [[ -n "$ignored_files" ]]; then
         echo "💾  Prendre soin des fichiers personnalisables..."
+        echo
         tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
     fi
 
@@ -212,6 +213,7 @@ update_to_latest_branch() {
 
     # Restauration éventuelle des fichiers ignorés
     if [[ -f /tmp/ignored_backup.tar.gz ]]; then
+        echo
         echo "♻️  ... Retour des fichiers personnalisables."
         tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
         rm -f /tmp/ignored_backup.tar.gz
@@ -290,6 +292,7 @@ update_to_latest_tag() {
     ignored_files=$(git ls-files --ignored --other --exclude-standard)
     if [[ -n "$ignored_files" ]]; then
         echo "💾  Prendre soin des fichiers personnalisables..."
+        echo
         tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
     fi
 
@@ -297,6 +300,7 @@ update_to_latest_tag() {
     if git -c advice.detachedHead=false checkout "$latest_tag"; then
         # Restauration des fichiers ignorés
         if [[ -f /tmp/ignored_backup.tar.gz ]]; then
+            echo
             echo "♻️  ... Retour des fichiers personnalisables."
             tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
             rm -f /tmp/ignored_backup.tar.gz
