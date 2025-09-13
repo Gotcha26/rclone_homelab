@@ -104,7 +104,7 @@ analyze_update_status() {
 
         elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
             [[ "$display_mode" == "verbose" ]] && echo "" || true
-            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "success" --fg "blue" --align "right" "Version actuelle ${current_tag:-dev} >> À jour"
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "success" --fg "blue" --align "right" "Version actuelle ${current_tag:-dev} >> <u>À jour</u>"
             [[ "$display_mode" == "simplified" ]] && print_fancy --theme "success" --fg "blue" --align "right" "À jour."
             result_code=0
         elif (( latest_tag_epoch < head_epoch )); then
@@ -132,19 +132,19 @@ analyze_update_status() {
 
         elif [[ "$head_commit" == "$remote_commit" ]]; then
             [[ "$display_mode" == "verbose" ]] && echo "" || true
-            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "success" --fg "blue" --style "bold" --align "right" "Votre branche '$branch_real' est à jour avec le dépôt."
+            [[ "$display_mode" == "verbose" ]] && print_fancy --theme "success" --fg "blue" --style "bold" --align "right" "Votre branche '$branch_real' est <u>à jour</u> avec le dépôt."
             [[ "$display_mode" == "simplified" ]] && print_fancy --theme "success" --fg "blue" --align "right" "À jour."
             result_code=0
         elif (( head_epoch < remote_epoch )); then
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && echo "" || true
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --bg "blue" --align "center" --highlight "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "follow" --bg "blue" --align "center" --style "underline" --highlight "Les modifications (hors .gitignore) seront écrasées/perdues"
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --bg "blue" --align "center" --style "underline" "Les modifications <i>(hors .gitignore)</i> seront <b>écrasées/perdues</b>"
             result_code=1
         else
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && echo "" || true
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --bg "blue" --align "center" --style "bold" --highlight "Votre commit local est plus récent que origin/$branch_real"
-            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight "Pas de mise à jour à faire sous peine de régressions/pertes."
+            [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight "Pas de mise à jour à faire sous peine de <b>régressions/pertes</b>."
             result_code=0
         fi
     fi
@@ -190,7 +190,7 @@ update_to_latest_branch() {
 
     MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
     echo
-    print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
+    print_fancy --align "center" --bg "green" --style "italic" --highlight "$MSG_MAJ_UPDATE_BRANCH"
 
     # Liste des fichiers ignorés (d'après .gitignore)
     local ignored_files
@@ -198,7 +198,7 @@ update_to_latest_branch() {
 
     # Sauvegarde temporaire si fichiers ignorés présents
     if [[ -n "$ignored_files" ]]; then
-        echo "💾 Sauvegarde des fichiers ignorés..."
+        echo "💾  Prendre soin des fichiers personnalisables..."
         tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
     fi
 
@@ -212,10 +212,10 @@ update_to_latest_branch() {
 
     # Restauration éventuelle des fichiers ignorés
     if [[ -f /tmp/ignored_backup.tar.gz ]]; then
-        echo "♻️  Restauration des fichiers ignorés..."
+        echo "♻️  ... Retour des fichiers personnalisables."
         tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
         rm -f /tmp/ignored_backup.tar.gz
-        echo "✅ Fichiers ignorés restaurés"
+        echo "✅  Les fichiers personnalisables sont heureux de faire leur retour !"
     fi
 
     chmod +x "$SCRIPT_DIR/main.sh"
@@ -284,7 +284,7 @@ update_to_latest_tag() {
     local ignored_files
     ignored_files=$(git ls-files --ignored --other --exclude-standard)
     if [[ -n "$ignored_files" ]]; then
-        echo "💾 Sauvegarde des fichiers ignorés..."
+        echo "💾  Prendre soin des fichiers personnalisables..."
         tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
     fi
 
@@ -292,10 +292,10 @@ update_to_latest_tag() {
     if git -c advice.detachedHead=false checkout "$latest_tag"; then
         # Restauration des fichiers ignorés
         if [[ -f /tmp/ignored_backup.tar.gz ]]; then
-            echo "♻️  Restauration des fichiers ignorés..."
+            echo "♻️  ... Retour des fichiers personnalisables."
             tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
             rm -f /tmp/ignored_backup.tar.gz
-            echo "✅ Fichiers ignorés restaurés"
+            echo "✅  Les fichiers personnalisables sont heureux de faire leur retour !"
         fi
 
         chmod +x "$SCRIPT_DIR/main.sh"

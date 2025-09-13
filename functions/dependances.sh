@@ -255,7 +255,19 @@ print_fancy() {
     [[ "$style" =~ italic ]]    && style_seq+="$ITALIC"
     [[ "$style" =~ underline ]] && style_seq+="$UNDERLINE"
 
-    local visible_len=${#text}
+    # --- Parsing des balises internes ---
+    # <b>..</b>, <i>..</i>, <u>..</u>
+    local parsed_text="$text"
+    parsed_text=$(sed -E \
+        -e "s|<b>|${BOLD}|g; s|</b>|${RESET}${color}${bg}${style_seq}|g" \
+        -e "s|<i>|${ITALIC}|g; s|</i>|${RESET}${color}${bg}${style_seq}|g" \
+        -e "s|<u>|${UNDERLINE}|g; s|</u>|${RESET}${color}${bg}${style_seq}|g" \
+        <<< "$parsed_text")
+
+    # On remplace text par parsed_text
+    text="$parsed_text"
+
+    local visible_len=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g" | wc -m)
     local pad_left=0
     local pad_right=0
 
