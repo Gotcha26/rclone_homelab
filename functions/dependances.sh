@@ -268,6 +268,7 @@ print_fancy() {
     text="$parsed_text"
 
     # local visible_len=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g" | wc -m)
+    
     local clean_text
     clean_text=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g; s/<[^>]+>//g")
     local visible_len=0
