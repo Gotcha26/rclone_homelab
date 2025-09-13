@@ -197,10 +197,10 @@ print_fancy() {
     local newline=true
     local raw_mode=""
 
-    local BOLD="\033[1m"
-    local ITALIC="\033[3m"
-    local UNDERLINE="\033[4m"
-    local RESET="\033[0m"
+    local BOLD=$(printf '\033[1m')
+    local ITALIC=$(printf '\033[3m')
+    local UNDERLINE=$(printf '\033[4m')
+    local RESET=$(printf '\033[0m')
 
     # Lecture des arguments
     while [[ $# -gt 0 ]]; do
