@@ -89,20 +89,28 @@ FILE_MAIL="msmtp_${LOG_TIMESTAMP}.log"
 LOG_FILE_MAIL="$LOG_DIR/${FILE_MAIL}"
 
 
-# Ajouter des couleurs personnalisées pour print_fancy()
+###############################################################################
+# Couleurs personnalisées pour print_fancy()
+#
 # Déclaration dans config.local.sh
-# MY_FG_COLOR=$'\e[38;5;208m'   # orange par exemple pour le texte
-# MY_BG_COLOR=$'\e[48;5;236m'   # fond gris foncé
+# Syntaxe simple : définir une couleur pour le texte et/ou le fond
 #
-# Explications :
-# 38;5;<n> → couleur de texte en mode 256 couleurs
-# 48;5;<n> → couleur de fond en mode 256 couleurs
-# <n> est l’indice de la couleur dans la palette 256
+# EXEMPLES :
+# MY_ORANGE="256:208"        # Couleur texte 256 couleurs, indice 208
+# MY_BG_GRAY="256:236"       # Couleur fond 256 couleurs, indice 236
+# MY_RED="ansi:31"           # Couleur texte ANSI classique (rouge)
+# MY_BG_BLUE="rgb:255;200;0" # Couleur fond RGB 24-bit (rouge=255, vert=200, bleu=0)
 #
-# Utilisation
+# UTILISATION DANS print_fancy :
 # print_fancy --fg "$MY_ORANGE" "Texte orange"
 # print_fancy --bg "$MY_BG_GRAY" "Texte sur fond gris"
 # print_fancy --fg "$MY_ORANGE" --bg "$MY_BG_GRAY" "Texte orange sur fond gris"
+#
+# FORMAT ATTENDU :
+# "ansi:<code>"      -> séquence ANSI classique (30-37,90-97 pour le texte ; 40-47,100-107 pour le fond)
+# "256:<n>"          -> palette 256 couleurs (0-255)
+# "rgb:<r>;<g>;<b>"  -> palette 24-bit RGB (0-255 chacun)
+###############################################################################
 
 
 # === Options rclone ===

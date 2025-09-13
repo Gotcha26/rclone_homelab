@@ -58,59 +58,87 @@ spinner() {
 
 
 ###############################################################################
-# Fonctions additionnels pour print_fancy()
+# Couleurs personnalisées pour print_fancy()
 #
-# Ajouter des couleurs personnalisées pour print_fancy()
 # Déclaration dans config.local.sh
-# MY_FG_COLOR=$'\e[38;5;208m'   # orange par exemple pour le texte
-# MY_BG_COLOR=$'\e[48;5;236m'   # fond gris foncé
+# Syntaxe simple : définir une couleur pour le texte et/ou le fond
 #
-# Explications :
-# 38;5;<n> → couleur de texte en mode 256 couleurs
-# 48;5;<n> → couleur de fond en mode 256 couleurs
-# <n> est l’indice de la couleur dans la palette 256
+# EXEMPLES :
+# MY_ORANGE="256:208"        # Couleur texte 256 couleurs, indice 208
+# MY_BG_GRAY="256:236"       # Couleur fond 256 couleurs, indice 236
+# MY_RED="ansi:31"           # Couleur texte ANSI classique (rouge)
+# MY_BG_BLUE="rgb:255;200;0" # Couleur fond RGB 24-bit (rouge=255, vert=200, bleu=0)
 #
-# Utilisation
+# UTILISATION DANS print_fancy :
 # print_fancy --fg "$MY_ORANGE" "Texte orange"
 # print_fancy --bg "$MY_BG_GRAY" "Texte sur fond gris"
 # print_fancy --fg "$MY_ORANGE" --bg "$MY_BG_GRAY" "Texte orange sur fond gris"
+#
+# FORMAT ATTENDU :
+# "ansi:<code>"      -> séquence ANSI classique (30-37,90-97 pour le texte ; 40-47,100-107 pour le fond)
+# "256:<n>"          -> palette 256 couleurs (0-255)
+# "rgb:<r>;<g>;<b>"  -> palette 24-bit RGB (0-255 chacun)
 ###############################################################################
 
-# --- Déclarations globales pour print_fancy ---
-# + ajoute 'reset' (et 'default' si tu veux) aux maps
+# === Déclarations globales pour print_fancy() === 
+# Couleurs texte (FG) et fond (BG) intégrées et personnalisables
+
+# --- Couleurs texte par défaut ---
 declare -A FG_COLORS=(
   [reset]=0 [default]=39
-  [black]=30 [black_pure]=$'\e[38;5;0m' [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36 [white]=37
-  [gray]=90 [light_red]=91 [light_green]=92 [light_yellow]=93 [light_blue]=94 [light_magenta]=95 [light_cyan]=96 [bright_white]=97
-  [orange]=$'\e[38;5;208m'
-)
-declare -A BG_COLORS=(
-  [reset]=49 [default]=49
-  [black]=40 [black_pure]=$'\e[48;5;0m' [red]=41 [green]=42 [yellow]=43 [blue]=44 [magenta]=45 [cyan]=46 [white]=47
-  [gray]=100 [light_red]=101 [light_green]=102 [light_yellow]=103 [light_blue]=104 [light_magenta]=105 [light_cyan]=106 [bright_white]=107
-  [orange]=$'\e[48;5;208m'
+  [black]=30 [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36
+  [white]=37 [gray]=90 [light_red]=91 [light_green]=92 [light_yellow]=93
+  [light_blue]=94 [light_magenta]=95 [light_cyan]=96 [bright_white]=97
+  [black_pure]="256:0" [orange]="256:208"
 )
 
+# --- Couleurs fond par défaut ---
+declare -A BG_COLORS=(
+  [reset]=49 [default]=49
+  [black]=40 [red]=41 [green]=42 [yellow]=43 [blue]=44 [magenta]=45 [cyan]=46
+  [white]=47 [gray]=100 [light_red]=101 [light_green]=102 [light_yellow]=103
+  [light_blue]=104 [light_magenta]=105 [light_cyan]=106 [bright_white]=107
+  [black_pure]="256:0" [orange]="256:208"
+)
+
+# ===
+
+###############################################################################
+# Fonctions pour interpréter les couleurs (support ANSI / 256 / RGB)
+###############################################################################
+
 get_fg_color() {
-  local c="$1"
-  [[ -z "$c" ]] && return 0
-  if [[ -n "${FG_COLORS[$c]+_}" ]]; then
-    # reset=0 -> \033[0m ; default=39 -> \033[39m ; etc.
-    printf "\033[%sm" "${FG_COLORS[$c]}"
-  else
-    # codes bruts (ex: $'\e[38;5;208m')
-    printf "%s" "$c"
-  fi
+    local c="$1"
+    [[ -z "$c" ]] && return 0
+
+    if [[ "$c" =~ ^ansi: ]]; then
+        printf "\033[%sm" "${c#ansi:}"
+    elif [[ "$c" =~ ^256: ]]; then
+        printf "\033[38;5;%sm" "${c#256:}"
+    elif [[ "$c" =~ ^rgb: ]]; then
+        IFS=';' read -r r g b <<< "${c#rgb:}"
+        printf "\033[38;2;%s;%s;%sm" "$r" "$g" "$b"
+    else
+        # fallback : nom de couleur classique
+        printf "\033[%sm" "${FG_COLORS[$c]:-39}"
+    fi
 }
 
 get_bg_color() {
-  local c="$1"
-  [[ -z "$c" || "$c" == "none" || "$c" == "transparent" ]] && return 0
-  if [[ -n "${BG_COLORS[$c]+_}" ]]; then
-    printf "\033[%sm" "${BG_COLORS[$c]}"
-  else
-    printf "%s" "$c"
-  fi
+    local c="$1"
+    [[ -z "$c" || "$c" == "none" || "$c" == "transparent" ]] && return 0
+
+    if [[ "$c" =~ ^ansi: ]]; then
+        printf "\033[%sm" "${c#ansi:}"
+    elif [[ "$c" =~ ^256: ]]; then
+        printf "\033[48;5;%sm" "${c#256:}"
+    elif [[ "$c" =~ ^rgb: ]]; then
+        IFS=';' read -r r g b <<< "${c#rgb:}"
+        printf "\033[48;2;%s;%s;%sm" "$r" "$g" "$b"
+    else
+        # fallback : nom de couleur classique
+        printf "\033[%sm" "${BG_COLORS[$c]:-49}"
+    fi
 }
 
 
