@@ -275,7 +275,7 @@ print_fancy() {
     local char
     while IFS= read -r -n1 char; do
         case "$char" in
-            [⚡✅❌🚀👉]) ((visible_len+=1)) ;;
+            [⚡✅❌🚀👉]) ((visible_len+=2)) ;;
             ⚠️|ℹ️) ((visible_len+=3)) ;;  # ceux avec variation selector
             *) ((visible_len+=1)) ;;
         esac
