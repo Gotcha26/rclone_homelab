@@ -267,7 +267,11 @@ print_fancy() {
     # On remplace text par parsed_text
     text="$parsed_text"
 
-    local visible_len=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g" | wc -m)
+    # --- Longueur visible (sans ANSI ni balises HTML) ---
+    local visible_len=$(echo -n "$text" \
+        | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g" \
+        | sed -E "s/<[^>]+>//g" \
+        | wc -m)
     local pad_left=0
     local pad_right=0
 

@@ -198,7 +198,7 @@ while true; do
                 show_help
                 ;;
             menu_exit_script)
-                echo "Bye 👋"
+                echo "👋  Merci d'être passé, bonne journée à vous. 👋"
                 echo
                 exit 0
                 ;;
