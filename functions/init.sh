@@ -295,6 +295,7 @@ init_config_local() {
 
         # --- Création si absent ---
         if [[ ! -f "$conf_file" ]]; then
+            echo
             print_fancy --style "underline" "⚙️  Création de config.$label.sh"
             print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
             print_fancy --fg "blue" "Fichier d'origine : " -n
@@ -319,6 +320,7 @@ init_config_local() {
 
         # --- Proposition d’édition immédiate ---
         if [[ -f "$conf_file" ]]; then
+            echo
             prompt="Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
             read -rp "$prompt" REPLY
             REPLY=${REPLY,,}
