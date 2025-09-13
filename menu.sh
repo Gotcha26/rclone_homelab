@@ -89,12 +89,12 @@ while true; do
     # 4) Actions
     # Options de configuration locale
     if [[ ! -f "$SCRIPT_DIR/config/config.local.sh" || ! -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
-        add_option "💻  Installer la configuration locale" "menu_init_config_local"
+        add_option "💻  Installer une configuration locale" "menu_init_config_local"
     fi
 
     #Option d'édition direct du fichier de configuration local/dev
     if [[ -f "$SCRIPT_DIR/config/config.local.sh" || -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
-        add_option "✏️  Éditer la/les configurations locales existantes" "menu_edit_config_local"
+        add_option "✏️  Éditer la configuration locale" "menu_edit_config_local"
     fi
 
     # Choix permanents
