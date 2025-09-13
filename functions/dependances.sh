@@ -197,10 +197,10 @@ print_fancy() {
     local newline=true
     local raw_mode=""
 
-    local BOLD=$(printf '\033[1m')
-    local ITALIC=$(printf '\033[3m')
-    local UNDERLINE=$(printf '\033[4m')
-    local RESET=$(printf '\033[0m')
+    local BOLD="\033[1m"
+    local ITALIC="\033[3m"
+    local UNDERLINE="\033[4m"
+    local RESET="\033[0m"
 
     # Lecture des arguments
     while [[ $# -gt 0 ]]; do
@@ -232,12 +232,23 @@ print_fancy() {
         follow)  [[ -z "$icon" ]] && icon="👉  " ;;
     esac
 
-    # Ajout icône au texte
+    # Ajout de l’icône si définie
     text="$icon$text"
 
-    # Traduction des couleurs
-    [[ ! "$color" =~ ^\\e ]] && color=$(get_fg_color "${color:-white}")
-    [[ ! "$bg" =~ ^\\e ]] && bg=$(get_bg_color "$bg")
+    # --- Traduction des couleurs (sauf si séquence ANSI déjà fournie) ---
+
+    # Couleur du texte
+    if [[ "$color" =~ ^\\e ]]; then
+        :  # laisse la séquence telle quelle
+    else
+        color=$(get_fg_color "${color:-white}")
+    fi
+    # Couleur du fond
+    if [[ "$bg" =~ ^\\e ]]; then
+        :  # rien à faire, la séquence est déjà complète
+    else
+        bg=$(get_bg_color "$bg")
+    fi
 
     local style_seq=""
     [[ "$style" =~ bold ]]      && style_seq+="$BOLD"
@@ -252,21 +263,14 @@ print_fancy() {
         -e "s|<i>|${ITALIC}|g; s|</i>|${RESET}${color}${bg}${style_seq}|g" \
         -e "s|<u>|${UNDERLINE}|g; s|</u>|${RESET}${color}${bg}${style_seq}|g" \
         <<< "$parsed_text")
+
+    # On remplace text par parsed_text
     text="$parsed_text"
 
-    # --- Calcul longueur visible pour padding ---
-    local clean_text="${text}"
-    # retirer séquences ANSI et balises
-    clean_text=$(echo -n "$clean_text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g; s/<[^>]+>//g")
-    # longueur UTF-8 en caractères réels (approximation emoji simple)
-    local visible_len=0
-    local char
-    while IFS= read -r -n1 char; do
-        ((visible_len++))
-    done <<< "$clean_text"
-
+    local visible_len=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g" | wc -m)
     local pad_left=0
     local pad_right=0
+
     case "$align" in
         center)
             local total_pad=$((TERM_WIDTH_DEFAULT - visible_len))
@@ -274,16 +278,14 @@ print_fancy() {
             pad_right=$(( total_pad - pad_left ))
             ;;
         right)
-            pad_left=$((TERM_WIDTH_DEFAULT - visible_len))
+            pad_left=$((TERM_WIDTH_DEFAULT - visible_len - 1))
+            (( pad_left < 0 )) && pad_left=0
             ;;
         left)
             pad_right=$((TERM_WIDTH_DEFAULT - visible_len))
             ;;
     esac
 
-    # --- Construction ligne ---
-    local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
-    local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
     local output=""
     if [[ -n "$highlight" ]]; then
         # Ligne complète remplie avec le fill
@@ -294,10 +296,13 @@ print_fancy() {
         # Appliquer la couleur de fond sur toute la ligne
         output="${bg}${full_line}${RESET}"
     else
+        # Version classique sans highlight
+        local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
+        local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
         output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
     fi
 
-    # Mode debug : afficher symboles début/fin ligne
+     # Mode debug : afficher symboles début/fin ligne
     if [[ "$DEBUG_MODE" == true ]]; then
         output="|${output}|"
     fi
