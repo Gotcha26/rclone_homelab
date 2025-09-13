@@ -176,8 +176,8 @@ update_to_latest_branch() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
 
     # Déterminer la branche réelle
-    local branch_real
-    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
+    # Appel obligatoire à fetch_git_info si pas déjà fait
+    [[ -z "${branch_real:-}" ]] && fetch_git_info
 
     # Choix de la branche à utiliser
     local branch="${FORCE_BRANCH:-$branch_real}"
@@ -233,11 +233,16 @@ update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
     # Déterminer la branche réelle
-    local branch_real
-    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
+    # Récupérer infos Git si nécessaire
+    [[ -z "${branch_real:-}" ]] && fetch_git_info
 
-    # Choix de la branche à utiliser
-    local branch="${FORCE_BRANCH:-$branch_real}"
+    # Choix de la branche : priorité à FORCE_BRANCH
+    local branch
+    if [[ -n "${FORCE_BRANCH:-}" ]]; then
+        branch="$FORCE_BRANCH"
+    else
+        branch="$branch_real"
+    fi
 
     # Si HEAD détaché ou branche vide → fallback sur main
     if [[ -z "$branch" || "$branch" == "(détaché)" || "$branch" == "HEAD" ]]; then
