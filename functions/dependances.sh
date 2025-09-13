@@ -267,11 +267,19 @@ print_fancy() {
     # On remplace text par parsed_text
     text="$parsed_text"
 
-    # --- Longueur visible (sans ANSI ni balises HTML) ---
-    local visible_len=$(echo -n "$text" \
-        | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g" \
-        | sed -E "s/<[^>]+>//g" \
-        | wc -m)
+    # --- Longueur visible (sans ANSI ni balises) avec prise en compte emojis ---
+    local clean_text
+    clean_text=$(echo -n "$text" | sed -E "s/\x1B\[[0-9;]*[A-Za-z]//g; s/<[^>]+>//g")
+
+    local visible_len=0
+    local char
+    while IFS= read -r -n1 char; do
+        case "$char" in
+            [⚡⚠️🚀✅❌ℹ️👉]) ((visible_len+=2)) ;;  # emojis connus
+            *) ((visible_len+=1)) ;;
+        esac
+    done <<< "$clean_text"
+
     local pad_left=0
     local pad_right=0
 
