@@ -20,7 +20,7 @@ SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 # Sourcing global
 source "$SCRIPT_DIR/conf.sh"
 source "$SCRIPT_DIR/functions/dependances.sh"
-source "$SCRIPT_DIR/functions/init.sh"
+source "$SCRIPT_DIR/functions/core.sh"
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"
 source "$SCRIPT_DIR/update/updater.sh"
