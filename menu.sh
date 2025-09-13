@@ -87,10 +87,8 @@ while true; do
     fi
 
     # 4) Actions
-    # Option de dev après une MAJ : init config locale
-    if [[ ! -f "$SCRIPT_DIR/config/config.dev.sh" && "$branch_real" == "dev" ]]; then
-        add_option "💻  [DEV] Initialiser config locale (vierge)" "menu_init_config_local"
-    fi
+    # Options de configuration locale
+    add_option "💻  Éditer la configuration locale" "menu_init_config_local"
 
     # Choix permanents
     add_option "📖  Afficher l'aide" "menu_show_help"
