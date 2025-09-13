@@ -172,7 +172,7 @@ git_summary() {
 # ou sur une branche spécifiée via FORCE_BRANCH
 # → préserve les fichiers ignorés (.gitignore)
 ###############################################################################
-update_force_branch() {
+update_to_latest_branch() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
 
     # Déterminer la branche réelle
@@ -305,5 +305,51 @@ update_to_latest_tag() {
     else
         echo "❌  Échec lors du passage à $latest_tag"
         return 1
+    fi
+}
+
+
+###############################################################################
+# Fonction : Mise à jour forcée avec possibilité de switch de branche
+###############################################################################
+update_forced() {
+    # 1. Si FORCE_BRANCH défini → passer dessus
+    if [[ -n "${FORCE_BRANCH:-}" ]]; then
+        echo "🔀 Switch forcé vers la branche : $FORCE_BRANCH"
+        cd "$SCRIPT_DIR" || { echo "❌ Impossible d'accéder au dossier du script"; return 1; }
+        git fetch origin --quiet
+        if ! git checkout -f "$FORCE_BRANCH"; then
+            echo "❌ Échec du switch vers $FORCE_BRANCH"
+            return 1
+        fi
+    fi
+
+    # 2. Récupérer infos git
+    fetch_git_info || { echo "❌ Impossible de récupérer les infos Git."; return 1; }
+
+    # 3. Afficher résumé
+    git_summary $?  
+
+    # 4. Déterminer si mise à jour nécessaire
+    local need_update=0
+    if [[ "$branch_real" == "main" ]]; then
+        [[ "$head_commit" != "$latest_tag_commit" ]] && ! git merge-base --is-ancestor "$latest_tag_commit" "$head_commit" && need_update=1
+    else
+        [[ "$head_commit" != "$remote_commit" ]] && need_update=1
+    fi
+
+    if [[ $need_update -eq 0 ]]; then
+        print_fancy --theme "success" "✅ Aucune mise à jour nécessaire pour la branche '$branch_real'."
+        return 0
+    fi
+
+    echo
+    print_fancy --theme "info" --align "center" "⚡ Mise à jour détectée sur la branche '$branch_real'"
+
+    # 5. Appliquer la mise à jour appropriée
+    if [[ "$branch_real" == "main" ]]; then
+        update_to_latest_tag
+    else
+        update_to_latest_branch
     fi
 }

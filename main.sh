@@ -29,8 +29,8 @@ source "$SCRIPT_DIR/update/updater.sh"
 # (basé sur la seule présence du fichier config/config.xxx.sh)
 detect_config
 
-# Affiche le logo/bannière uniquement si on n'est pas en mode "automatique"
-[[ "$LAUNCH_MODE" != "automatique" ]] && print_logo
+# Affichage du logo/bannière
+print_logo
 
 # Création du dossier logs si absent
 mkdir -p "$LOG_DIR"
@@ -85,12 +85,8 @@ while [[ $# -gt 0 ]]; do
         --update-forced)
             FORCE_UPDATE=true
             shift
-            # Si une branche est fournie juste après, on la prend
+            # Si une branche est fournie juste après, on la prend (switch)
             [[ $# -gt 0 && ! "$1" =~ ^-- ]] && FORCE_BRANCH="$1" && shift
-            ;;
-        --update-tag)
-            UPDATE_TAG=true
-            shift
             ;;
         -h|--help)
             show_help
@@ -109,7 +105,7 @@ done
 
 # Gestion des mises à jour selon les options passées
 if [[ "$FORCE_UPDATE" == true ]]; then
-    if update_force_branch; then
+    if update_to_latest_branch; then
         # --- Une mise à jour a été effectuée → relance du script ---
         # On reconstruit les arguments pour s'assurer que --mailto est conservé
         NEW_ARGS=()
@@ -127,8 +123,6 @@ if [[ "$FORCE_UPDATE" == true ]]; then
         # Relance propre du script avec tous les arguments reconstruits
         exec "$0" "${NEW_ARGS[@]}"
     fi
-elif [[ "$UPDATE_TAG" == true ]]; then
-    update_to_latest_tag  # appel explicite
 fi
 
 # Vérifie l’email seulement si l’option --mailto est fournie

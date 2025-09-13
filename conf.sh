@@ -4,14 +4,19 @@
 ###############################################################################
 
 : "${DISCORD_WEBHOOK_URL:=}"
-: "${FORCE_BRANCH:=}"
+: "${MAIL_TO:=}"
+
+LOG_LINE_MAX=1000
+TERM_WIDTH_DEFAULT=80
+LOG_RETENTION_DAYS=15
+
 FORCE_UPDATE=${FORCE_UPDATE:-false}
-UPDATE_TAG=${UPDATE_TAG:-false}
+: "${FORCE_BRANCH:=}"
 DRY_RUN=${DRY_RUN:-false}
-LAUNCH_MODE=${DRY_RUN:-manual}
+
+LAUNCH_MODE=${LAUNCH_MODE:-manual}
 DEBUG_MODE=${DEBUG_MODE:-false}
 DEBUG_INFOS=${DEBUG_INFOS:-false}
-: "${MAIL_TO:=}"
 DISPLAY_MODE=${DISPLAY_MODE:-simplified}
 
 
@@ -68,10 +73,6 @@ MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE="Impossible de mettre à jour vers %s : modif
 # Variables techniques
 ###############################################################################
 
-LOG_LINE_MAX=1000                          # Nombre de lignes maximales (en partant du bas) à afficher dans le rapport par email
-TERM_WIDTH_DEFAULT=80                      # Largeur par défaut pour les affichages fixes
-LOG_RETENTION_DAYS=15                      # Durée de conservation des logs
-
 # Ne pas toucher
 TMP_RCLONE="$SCRIPT_DIR/tmp"           # Répertoire temporaire pour rclone
 LOG_DIR="$SCRIPT_DIR/logs"          # Répertoire de logs
@@ -87,48 +88,3 @@ FILE_INFO="rclone_${LOG_TIMESTAMP}.log"
 LOG_FILE_INFO="$LOG_DIR/${FILE_INFO}"
 FILE_MAIL="msmtp_${LOG_TIMESTAMP}.log"
 LOG_FILE_MAIL="$LOG_DIR/${FILE_MAIL}"
-
-
-###############################################################################
-# Couleurs personnalisées pour print_fancy()
-#
-# Déclaration dans config.local.sh
-# Syntaxe simple : définir une couleur pour le texte et/ou le fond
-#
-# EXEMPLES :
-# MY_ORANGE="256:208"        # Couleur texte 256 couleurs, indice 208
-# MY_BG_GRAY="256:236"       # Couleur fond 256 couleurs, indice 236
-# MY_RED="ansi:31"           # Couleur texte ANSI classique (rouge)
-# MY_BG_BLUE="rgb:255;200;0" # Couleur fond RGB 24-bit (rouge=255, vert=200, bleu=0)
-#
-# UTILISATION DANS print_fancy :
-# print_fancy --fg "$MY_ORANGE" "Texte orange"
-# print_fancy --bg "$MY_BG_GRAY" "Texte sur fond gris"
-# print_fancy --fg "$MY_ORANGE" --bg "$MY_BG_GRAY" "Texte orange sur fond gris"
-#
-# FORMAT ATTENDU :
-# "ansi:<code>"      -> séquence ANSI classique (30-37,90-97 pour le texte ; 40-47,100-107 pour le fond)
-# "256:<n>"          -> palette 256 couleurs (0-255)
-# "rgb:<r>;<g>;<b>"  -> palette 24-bit RGB (0-255 chacun)
-###############################################################################
-
-
-# === Options rclone ===
-
-# 1 par ligne
-# Plus de commandes sur https://rclone.org/commands/rclone/
-RCLONE_OPTS=(
-    --temp-dir "$TMP_RCLONE"
-    --exclude '*<*'
-    --exclude '*>*'
-    --exclude '*:*'
-    --exclude '*"*'
-    --exclude '*\\*'
-    --exclude '*\|*'
-    --exclude '*\?*'
-    --exclude '.*'
-    --exclude 'Thumbs.db'
-    --log-level INFO
-    --stats-log-level NOTICE
-    --stats=0
-)

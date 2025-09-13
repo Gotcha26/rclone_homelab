@@ -40,7 +40,7 @@ while true; do
         # Branche dev ou expérimentale
         if (( head_epoch < remote_epoch )); then
             label=$(print_fancy --fg "blue" "↗️  Mettre à jour la branche '$branch_real' (force branch)")
-            add_option "$label" "menu_update_force_branch"
+            add_option "$label" "menu_update_to_latest_branch"
         fi
     fi
 
@@ -129,8 +129,8 @@ while true; do
                 echo
                 exit 0
                 ;;
-            menu_update_force_branch)
-                update_force_branch
+            menu_update_to_latest_branch)
+                update_to_latest_branch
                 label=$(print_fancy --theme "follow" --bg "white" --fg "red" \
                     --style "bold italic underline" --align "center" --highlight \
                     --raw "Vous devez RELANCER LE SCRIPT pour terminer appliquer la mise à jour !")
