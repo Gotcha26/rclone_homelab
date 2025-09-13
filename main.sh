@@ -62,6 +62,7 @@ exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
 fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; }
 analyze_update_status
 
+
 ###############################################################################
 # 2. Parsing complet des arguments
 # Lecture des options du script
