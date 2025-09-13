@@ -124,6 +124,7 @@ get_bg_color() {
 #   --icon <votre_emoji>   : Ajoute une icône personnalisée en début de texte
 #   --raw                  : Retourne la chaîne sans affichage (utile pour menus)
 #   texte ... [OBLIGATOIRE]: Le texte à afficher (peut contenir des espaces)
+#   -n                     : Supprime le retour à la ligne
 #
 # Exemples :
 #   print_fancy --fg red --bg white --style "bold underline" "Alerte"
@@ -134,6 +135,8 @@ get_bg_color() {
 #   print_fancy --theme info "Démarrage du service..."
 #   print_fancy --theme info --icon "🚀" "Lancement en cours..."
 #   msg=$(print_fancy --theme success --raw "Option colorisée")
+#      print_fancy --fg cyan --style bold "Fichier d'origine :" -n
+#      print_fancy --fg yellow "$main_conf"
 # ----
 
 print_fancy() {
@@ -147,6 +150,7 @@ print_fancy() {
     local theme=""
     local icon=""
     local raw_mode=""
+    local newline=true
 
     local BOLD="\033[1m"
     local ITALIC="\033[3m"
@@ -165,6 +169,7 @@ print_fancy() {
             --theme)    theme="$2"; shift 2 ;;
             --icon)     icon="$2 "; shift 2 ;;
             --raw)      raw_mode="1"; shift ;;
+            -n)         newline=false; shift ;;
             *)          text="$1"; shift; break ;;
         esac
     done
