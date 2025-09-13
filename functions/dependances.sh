@@ -59,19 +59,36 @@ spinner() {
 
 ###############################################################################
 # Fonctions additionnels pour print_fancy()
+#
+# Ajouter des couleurs personnalisées pour print_fancy()
+# Déclaration dans config.local.sh
+# MY_FG_COLOR=$'\e[38;5;208m'   # orange par exemple pour le texte
+# MY_BG_COLOR=$'\e[48;5;236m'   # fond gris foncé
+#
+# Explications :
+# 38;5;<n> → couleur de texte en mode 256 couleurs
+# 48;5;<n> → couleur de fond en mode 256 couleurs
+# <n> est l’indice de la couleur dans la palette 256
+#
+# Utilisation
+# print_fancy --fg "$MY_ORANGE" "Texte orange"
+# print_fancy --bg "$MY_BG_GRAY" "Texte sur fond gris"
+# print_fancy --fg "$MY_ORANGE" --bg "$MY_BG_GRAY" "Texte orange sur fond gris"
 ###############################################################################
 
 # --- Déclarations globales pour print_fancy ---
 # + ajoute 'reset' (et 'default' si tu veux) aux maps
 declare -A FG_COLORS=(
   [reset]=0 [default]=39
-  [black]=30 [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36 [white]=37
+  [black]=30 [black_pure]=$'\e[38;5;0m' [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36 [white]=37
   [gray]=90 [light_red]=91 [light_green]=92 [light_yellow]=93 [light_blue]=94 [light_magenta]=95 [light_cyan]=96 [bright_white]=97
+  [orange]=$'\e[38;5;208m'
 )
 declare -A BG_COLORS=(
   [reset]=49 [default]=49
-  [black]=40 [red]=41 [green]=42 [yellow]=43 [blue]=44 [magenta]=45 [cyan]=46 [white]=47
+  [black]=40 [black_pure]=$'\e[48;5;0m' [red]=41 [green]=42 [yellow]=43 [blue]=44 [magenta]=45 [cyan]=46 [white]=47
   [gray]=100 [light_red]=101 [light_green]=102 [light_yellow]=103 [light_blue]=104 [light_magenta]=105 [light_cyan]=106 [bright_white]=107
+  [orange]=$'\e[48;5;208m'
 )
 
 get_fg_color() {
