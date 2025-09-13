@@ -295,15 +295,17 @@ init_config_local() {
 
         # --- Création si absent ---
         if [[ ! -f "$conf_file" ]]; then
-            print_fancy "⚙️ Création de config.$label.sh"
+            print_fancy --style "underline" "⚙️  Création de config.$label.sh"
             print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
-            print_fancy "Fichier d'origine : $main_conf"
-            print_fancy "Fichier à créer   : $conf_file"
+            print_fancy --fg "blue" "Fichier d'origine : " -n
+              print_fancy "$main_conf"
+            print_fancy --fg "blue" "Fichier à créer   : "
+              print_fancy "$conf_file"
             read -rp "  Voulez-vous créer ce fichier ? [y/N] : " REPLY
             REPLY=${REPLY,,}
             if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
                 if cp "$main_conf" "$conf_file"; then
-                    echo "✅ $main_conf copié vers $conf_file"
+                    echo "✅  $main_conf copié vers $conf_file"
                 else
                     die 20 "Impossible de copier $main_conf vers $conf_file"
                 fi
@@ -317,11 +319,12 @@ init_config_local() {
 
         # --- Proposition d’édition immédiate ---
         if [[ -f "$conf_file" ]]; then
-            read -rp "Voulez-vous éditer $conf_file avec nano ? [y/N] : " REPLY
+            prompt="Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
+            read -rp "$prompt" REPLY
             REPLY=${REPLY,,}
             if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
-                echo "✅ Édition terminée : $conf_file"
+                echo "✅  Édition terminée : $conf_file"
             fi
         fi
     done

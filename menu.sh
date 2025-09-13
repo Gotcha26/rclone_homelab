@@ -119,16 +119,18 @@ while true; do
                 update_to_latest_tag
                 label=$(print_fancy --theme "follow" --bg "white" --fg "red" \
                     --style "bold italic underline" --align "center" --highlight \
-                    --raw "RELANCER LE SCRIPT POUR TERMINER LA MAJ !")
+                    --raw "Vous devez RELANCER LE SCRIPT pour terminer appliquer la mise à jour !")
                 printf "%b\n" "$label"
+                echo
                 exit 0
                 ;;
             menu_update_force_branch)
                 update_force_branch
                 label=$(print_fancy --theme "follow" --bg "white" --fg "red" \
                     --style "bold italic underline" --align "center" --highlight \
-                    --raw "RELANCER LE SCRIPT POUR TERMINER LA MAJ !")
+                    --raw "Vous devez RELANCER LE SCRIPT pour terminer appliquer la mise à jour !")
                 printf "%b\n" "$label"
+                echo
                 exit 0
                 ;;
             menu_run_all_jobs)
@@ -140,7 +142,7 @@ while true; do
                     echo "❌ Impossible de créer jobs.txt, édition annulée."
                     break
                 fi
-                echo "⚡ Ouverture de $JOBS_FILE..." >&3
+                echo "▶️ Ouverture de $JOBS_FILE..." >&3
                 # Lancement de nano dans un shell indépendant
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$JOBS_FILE")
                 echo "✅ Édition terminée, retour au menu..." >&3
@@ -149,12 +151,12 @@ while true; do
                 install_rclone
                 ;;
             menu_config_rclone)
-                echo "⚡ Lancement de la configuration rclone..."
+                echo "▶️ Lancement de la configuration rclone..."
                 (exec </dev/tty >/dev/tty 2>/dev/tty; rclone config)
                 echo "✅ Configuration terminée, retour au menu..." >&3
                 ;;
             menu_show_rclone_config)
-                echo "⚡ Ouverture de $RCLONE_CONF..." >&3
+                echo "▶️ Ouverture de $RCLONE_CONF..." >&3
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$RCLONE_CONF")
                 echo "✅ Édition terminée, retour au menu..." >&3
                 ;;
@@ -162,7 +164,7 @@ while true; do
                 install_msmtp
                 ;;
             menu_config_msmtp)
-                echo "⚡ Lancement de la configuration msmtp..."
+                echo "▶️ Lancement de la configuration msmtp..."
                 local conf_file="${MSMTPRC:-$HOME/.msmtprc}"
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
                 echo "✅ Configuration terminée, retour au menu..." >&3
@@ -173,13 +175,13 @@ while true; do
                 [[ -n "$conf_file" && -f "$conf_file" ]] && cat "$conf_file" || echo "⚠️ Fichier msmtp introuvable"
                 ;;
             menu_show_last_log)
-                echo "⚡ Affichage des 500 dernières lignes de $LAST_LOG_FILE..." >&3
+                echo "▶️ Affichage des 500 dernières lignes de $LAST_LOG_FILE..." >&3
                 # Utilisation d'un pager pour ne pas polluer le log principal
                 (exec </dev/tty >/dev/tty 2>/dev/tty; tail -n 500 "$LAST_LOG_FILE" | less -R)
                 echo "✅ Fin de l'affichage, retour au menu..." >&3
                 ;;
             menu_init_config_local)
-                echo "⚡  [DEV] Initialiser config locale"
+                echo "▶️  [DEV] Initialiser config locale"
                 init_config_local
                 ;;    
             menu_show_help)
@@ -187,6 +189,7 @@ while true; do
                 ;;
             menu_exit_script)
                 echo "Bye 👋"
+                echo
                 exit 0
                 ;;
             *)
