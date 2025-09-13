@@ -302,7 +302,8 @@ init_config_local() {
               print_fancy "$main_conf"
             print_fancy --fg "blue" -n "Fichier à créer   : "
               print_fancy "$conf_file"
-            read -rp "  Voulez-vous créer ce fichier ? [y/N] : " REPLY
+            echo
+            read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
             REPLY=${REPLY,,}
             if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
                 if cp "$main_conf" "$conf_file"; then
@@ -321,7 +322,7 @@ init_config_local() {
         # --- Proposition d’édition immédiate ---
         if [[ -f "$conf_file" ]]; then
             echo
-            prompt="Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
+            prompt="❓  Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
             read -rp "$prompt" REPLY
             REPLY=${REPLY,,}
             if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
