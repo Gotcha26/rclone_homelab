@@ -298,9 +298,9 @@ init_config_local() {
             echo
             print_fancy --style "underline" "⚙️  Création de config.$label.sh"
             print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
-            print_fancy --fg "blue" "Fichier d'origine : " -n
+            print_fancy --fg "blue" -n "Fichier d'origine : "
               print_fancy "$main_conf"
-            print_fancy --fg "blue" "Fichier à créer   : "
+            print_fancy --fg "blue" -n "Fichier à créer   : "
               print_fancy "$conf_file"
             read -rp "  Voulez-vous créer ce fichier ? [y/N] : " REPLY
             REPLY=${REPLY,,}
