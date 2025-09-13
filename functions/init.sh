@@ -45,21 +45,21 @@ detect_config() {
     CONFIGURATION="config.main.sh"
     source "$SCRIPT_DIR/config/config.main.sh"
     if [[ "$display_mode" == "verbose" ]]; then
-        print_fancy --theme "info" --align "center" --bg "green" --fg "black_pure" --highlight \
+        print_fancy --theme "info" --align "center" --bg "green" --fg "rgb:0;0;0" --highlight \
         "CONFIGURATION STANDARD – Fichier de configuration = $CONFIGURATION ℹ️ "
     fi
 
     if [[ -f "$SCRIPT_DIR/config/config.local.sh" ]]; then
         CONFIGURATION="config.local.sh"
         source "$SCRIPT_DIR/config/config.local.sh"
-        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "black_pure" --highlight \
+        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
         "MODE LOCAL ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 
     if [[ -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
         CONFIGURATION="config.dev.sh"
         source "$SCRIPT_DIR/config/config.dev.sh"
-        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "red" --fg "black_pure" --highlight \
+        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
         "MODE DEV ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 }
@@ -330,6 +330,38 @@ init_config_local() {
         if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
             (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
             echo "✅  Édition terminée : $conf_file"
+        fi
+    done
+}
+
+
+###############################################################################
+# Fonction : éditer les fichiers de config locaux/dev existants
+###############################################################################
+edit_config_local() {
+    local local_conf="$SCRIPT_DIR/config/config.local.sh"
+    local dev_conf="$SCRIPT_DIR/config/config.dev.sh"
+
+    # --- Vérifier qu'au moins un fichier existe ---
+    if [[ ! -f "$local_conf" && ! -f "$dev_conf" ]]; then
+        echo "⚠️  Aucun fichier de configuration local ou dev existant à éditer."
+        return 1
+    fi
+
+    # --- Parcours des fichiers existants pour édition ---
+    for conf_file in "$dev_conf" "$local_conf"; do
+        if [[ -f "$conf_file" ]]; then
+            echo
+            echo "ℹ️  Fichier existant : $conf_file"
+            prompt="❓  Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
+            read -rp "$prompt" REPLY
+            REPLY=${REPLY,,}
+            if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
+                (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
+                echo "✅  Édition terminée : $conf_file"
+            else
+                echo "ℹ️  Édition ignorée pour : $conf_file"
+            fi
         fi
     done
 }

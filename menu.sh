@@ -88,7 +88,14 @@ while true; do
 
     # 4) Actions
     # Options de configuration locale
-    add_option "💻  Éditer la configuration locale" "menu_init_config_local"
+    if [[ ! -f "$SCRIPT_DIR/config/config.local.sh" || ! -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
+        add_option "💻  Installer la configuration locale" "menu_init_config_local"
+    fi
+
+    #Option d'édition direct du fichier de configuration local/dev
+    if [[ -f "$SCRIPT_DIR/config/config.local.sh" || -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
+        add_option "✏️  Éditer la/les configurations locales existantes" "menu_edit_config_local"
+    fi
 
     # Choix permanents
     add_option "📖  Afficher l'aide" "menu_show_help"
@@ -179,9 +186,14 @@ while true; do
                 echo "✅ Fin de l'affichage, retour au menu..." >&3
                 ;;
             menu_init_config_local)
-                echo "▶️  [DEV] Initialiser config locale"
+                echo "▶️  Installation de la configuration locale."
+                echo "Ces fichiers sont préservés lors des mises à jours automatiques."
                 init_config_local
-                ;;    
+                ;;
+            menu_edit_config_local)
+                echo "▶️  Édition des fichiers de configuration locaux/dev existants"
+                edit_config_local
+                ;;
             menu_show_help)
                 show_help
                 ;;
