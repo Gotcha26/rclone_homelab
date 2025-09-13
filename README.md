@@ -121,6 +121,7 @@ Argument | Explication
   --mailto=<mon_adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp.
   --update-forced <branch> | Oblige le script à se mettre à jour dans la branche désignée sinon, ce sera la branche en cours par défaut.
   --update-tag <tag> | Va se mettre à jour vers le tag désigné, sinon ce sera la dernière release de la branche en cours par défaut.
+  --rclone_opts | Toutes autres arguments seront concidérés comme étant des options pour rclone !
 
 
 ### Envoi d'emails
