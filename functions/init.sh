@@ -45,21 +45,21 @@ detect_config() {
     CONFIGURATION="config.main.sh"
     source "$SCRIPT_DIR/config/config.main.sh"
     if [[ "$display_mode" == "verbose" ]]; then
-        print_fancy --theme "info" --align "center" --bg "green" --fg "black" --highlight \
+        print_fancy --theme "info" --align "center" --bg "green" --fg "black_pure" --highlight \
         "CONFIGURATION STANDARD – Fichier de configuration = $CONFIGURATION ℹ️ "
     fi
 
     if [[ -f "$SCRIPT_DIR/config/config.local.sh" ]]; then
         CONFIGURATION="config.local.sh"
         source "$SCRIPT_DIR/config/config.local.sh"
-        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "black" --highlight \
+        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "black_pure" --highlight \
         "MODE LOCAL ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 
     if [[ -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
         CONFIGURATION="config.dev.sh"
         source "$SCRIPT_DIR/config/config.dev.sh"
-        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "red" --fg "black" --highlight \
+        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "red" --fg "black_pure" --highlight \
         "MODE DEV ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 }

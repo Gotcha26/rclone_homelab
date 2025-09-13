@@ -304,7 +304,7 @@ colorize() {
     local BLUE=$(get_fg_color "blue")
     local RED=$(get_fg_color "red")
     local RED_BOLD=$'\033[1;31m'   # rouge gras
-    local ORANGE=$(get_fg_color "yellow")
+    local ORANGE=$(get_fg_color "orange")
     local RESET=$'\033[0m'
 
     cat "$TMP_JOB_LOG_RAW" | sed -r 's/\x1B\[[0-9;]*[mK]//g' | awk -v BLUE="$BLUE" -v RED="$RED" -v RED_BOLD="$RED_BOLD" -v ORANGE="$ORANGE" -v RESET="$RESET" '
