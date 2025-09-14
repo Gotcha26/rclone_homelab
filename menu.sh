@@ -170,14 +170,17 @@ while true; do
                 ;;
             menu_config_msmtp)
                 echo "▶️ Lancement de la configuration msmtp..."
-                local conf_file="${MSMTPRC:-$HOME/.msmtprc}"
+                conf_file="${MSMTPRC:-$HOME/.msmtprc}"
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
                 echo "✅ Configuration terminée, retour au menu..." >&3
                 ;;
             menu_show_msmtp_config)
-                local conf_file=""
-                conf_file=$(check_msmtp_configured 2>/dev/null)
-                [[ -n "$conf_file" && -f "$conf_file" ]] && cat "$conf_file" || echo "⚠️ Fichier msmtp introuvable"
+                echo "▶️ Edition de la configuration msmtp..."
+                if conf_file=$(check_msmtp_configured 2>/dev/null); then
+                    (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
+                else
+                    echo "⚠️ Fichier msmtp introuvable ou invalide"
+                fi
                 ;;
             menu_show_last_log)
                 echo "▶️ Affichage des 500 dernières lignes de $LAST_LOG_FILE..." >&3
