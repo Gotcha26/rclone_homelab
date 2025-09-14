@@ -18,7 +18,7 @@ Options :
 
 Description :
   Ce script lit la liste des jobs à exécuter depuis le fichier :
-      $JOBS_FILE
+      $DIR_JOBS_FILE
   Chaque ligne doit contenir :
       chemin_source|remote:chemin_destination
   Les lignes vides ou commençant par '#' sont ignorées.
@@ -30,7 +30,7 @@ Fonctionnement :
   - Vérifie et teste les pré-requis au bon déroulement des opérations.
   - Lance 'rclone sync' pour chaque job avec les options par défaut
   - Affiche la sortie colorisée dans le terminal
-  - Génère un fichier log INFO dans : $LOG_DIR
+  - Génère un fichier log INFO dans : $DIR_LOG
   - Si --mailto est fourni et msmtp est configuré, envoie un rapport HTML
 EOF
 }
@@ -49,16 +49,16 @@ detect_config() {
         "CONFIGURATION STANDARD – Fichier de configuration = $CONFIGURATION ℹ️ "
     fi
 
-    if [[ -f "$SCRIPT_DIR/local/config.local.conf" ]]; then
-        CONFIGURATION="config.local.conf"
-        source "$SCRIPT_DIR/local/config.local.conf"
+    if [[ -f "$DIR_FILE_CONF_LOCAL" ]]; then
+        CONFIGURATION="$FILE_CONF_LOCAL"
+        source "$DIR_FILE_CONF_LOCAL"
         [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
         "MODE LOCAL ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 
-    if [[ -f "$SCRIPT_DIR/local/config.dev.conf" ]]; then
-        CONFIGURATION="config.dev.conf"
-        source "$SCRIPT_DIR/local/config.dev.conf"
+    if [[ -f "$DIR_FILE_CONF_DEV" ]]; then
+        CONFIGURATION="$FILE_CONF_DEV"
+        source "$DIR_FILE_CONF_DEV"
         [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
         "MODE DEV ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
@@ -190,9 +190,9 @@ check_msmtp_configured() {
 # Fonction : Vérifier la présence de jobs configurés
 ###############################################################################
 check_jobs_configured() {
-    [[ -f "$JOBS_FILE" ]] || return 1
+    [[ -f "$DIR_JOBS_FILE" ]] || return 1
     # Vérifie qu’il existe au moins une ligne non vide qui ne commence pas par "#"
-    grep -qE '^[[:space:]]*[^#[:space:]]' "$JOBS_FILE"
+    grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"
 }
 
 
@@ -202,18 +202,19 @@ check_jobs_configured() {
 init_jobs_file() {
 
     # Si jobs.conf existe, rien à faire
-    if [[ -f "$JOBS_FILE" ]]; then
-        print_fancy --theme "info" "Fichier jobs.conf déjà présent"
+    if [[ -f "$DIR_JOBS_FILE" ]]; then
+        print_fancy --theme "info" "Fichier $JOBS_FILE déjà présent"
         return 0
     fi
 
     # Sinon, on tente de copier le fichier exemple
-    if [[ -f "$EXEMPLE_FILE" ]]; then
-        cp "$EXEMPLE_FILE" "$JOBS_FILE"
-        print_fancy --theme "success" "Copie de jobs.exemple → /local/jobs.conf réalisée"
+    if [[ -f "$DIR_EXEMPLE_JOBS_FILE" ]]; then
+        mkdir -p "$(dirname "$DIR_JOBS_FILE")"
+        cp "$DIR_EXEMPLE_JOBS_FILE" "$DIR_JOBS_FILE"
+        print_fancy --theme "success" "Copie de $EXEMPLE_JOBS_FILE → $JOBS_FILE réalisée"
         return 0
     else
-        print_fancy --theme "error" "Erreur dans la copie de jobs.exemple → /local/jobs.conf"
+        print_fancy --theme "error" "Erreur dans la copie de $EXEMPLE_JOBS_FILE → $JOBS_FILE"
         return 1
     fi
 }
@@ -257,9 +258,9 @@ print_summary_table() {
     print_aligned_table "Mode de lancement" "$LAUNCH_MODE"
     print_aligned_table "Nb. de jobs traités" "${EXECUTED_JOBS} / ${#JOBS_LIST[@]}"
     print_aligned_table "Code erreur" "$ERROR_CODE"
-    print_aligned_table "Dossier" "${LOG_DIR}/"
-    print_aligned_table "Log script" "$FILE_SCRIPT"
-    print_aligned_table "Log mail" "$FILE_MAIL"
+    print_aligned_table "Dossier" "${DIR_LOG}/"
+    print_aligned_table "Log script" "$LOG_FILE_SCRIPT"
+    print_aligned_table "Log mail" "$LOG_FILE_MAIL"
     print_aligned_table "Log rclone" "$FILE_INFO"
 
     if [[ -n "$MAIL_TO" ]]; then
@@ -288,13 +289,11 @@ print_summary_table() {
 ###############################################################################
 init_config_local() {
     local main_conf="$SCRIPT_DIR/config/config.main.conf"
-    local local_conf="$SCRIPT_DIR/local/config.local.conf"
-    local dev_conf="$SCRIPT_DIR/local/config.dev.conf"
 
-    for conf_file in "$local_conf" "$dev_conf"; do
+    for conf_file in "$DIR_FILE_CONF_LOCAL" "$DIR_FILE_CONF_DEV"; do
         # Déterminer un label lisible
         local label
-        [[ "$conf_file" == "$local_conf" ]] && label="local" || label="dev"
+        [[ "$conf_file" == "$DIR_FILE_CONF_LOCAL" ]] && label="local" || label="dev"
 
         # --- Cas où le fichier est absent → proposer la création ---
         if [[ ! -f "$conf_file" ]]; then
@@ -310,6 +309,7 @@ init_config_local() {
             read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
             REPLY=${REPLY,,}
             if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
+                mkdir -p "$(dirname "$conf_file")"
                 if cp "$main_conf" "$conf_file"; then
                     echo "✅  Fichier installé : $conf_file"
                 else
@@ -342,17 +342,14 @@ init_config_local() {
 # Fonction : éditer les fichiers de config locaux/dev existants
 ###############################################################################
 edit_config_local() {
-    local local_conf="$SCRIPT_DIR/local/config.local.conf"
-    local dev_conf="$SCRIPT_DIR/local/config.dev.conf"
-
     # --- Vérifier qu'au moins un fichier existe ---
-    if [[ ! -f "$local_conf" && ! -f "$dev_conf" ]]; then
+    if [[ ! -f "$DIR_FILE_CONF_LOCAL" && ! -f "$dev_conf" ]]; then
         echo "⚠️  Aucun fichier de configuration local ou dev existant à éditer."
         return 1
     fi
 
     # --- Parcours des fichiers existants pour édition ---
-    for conf_file in "$dev_conf" "$local_conf"; do
+    for conf_file in "$DIR_FILE_CONF_DEV" "$DIR_FILE_CONF_LOCAL"; do
         if [[ -f "$conf_file" ]]; then
             echo
             echo "ℹ️  Fichier existant : $conf_file"
@@ -375,7 +372,7 @@ edit_config_local() {
 ###############################################################################
 get_last_log() {
     # Tous les logs triés par date décroissante
-    local logs=("$LOG_DIR"/*.log)
+    local logs=("$DIR_LOG"/*.log)
 
     # Aucun log ?
     [[ ${#logs[@]} -eq 0 ]] && echo "" && return

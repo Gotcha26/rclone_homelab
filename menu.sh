@@ -88,12 +88,12 @@ while true; do
 
     # 4) Actions
     # Options de configuration locale
-    if [[ ! -f "$SCRIPT_DIR/local/config.local.conf" || ! -f "$SCRIPT_DIR/local/config.dev.conf" ]]; then
+    if [[ ! -f "$DIR_FILE_CONF_LOCAL" || ! -f "$DIR_FILE_CONF_DEV" ]]; then
         add_option "💻  Installer une configuration locale" "menu_init_config_local"
     fi
 
     #Option d'édition direct du fichier de configuration local/dev
-    if [[ -f "$SCRIPT_DIR/local/config.local.conf" || -f "$SCRIPT_DIR/local/config.dev.conf" ]]; then
+    if [[ -f "$DIR_FILE_CONF_LOCAL" || -f "$DIR_FILE_CONF_DEV" ]]; then
         add_option "✏️  Éditer la configuration locale" "menu_edit_config_local"
     fi
 
@@ -149,7 +149,7 @@ while true; do
                 fi
                 echo "▶️  Ouverture de $JOBS_FILE..." >&3
                 # Lancement de nano dans un shell indépendant
-                (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$JOBS_FILE")
+                (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$DIR_JOBS_FILE")
                 echo "✅  Édition terminée, retour au menu..." >&3
                 ;;
             menu_install_rclone)

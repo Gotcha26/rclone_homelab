@@ -111,7 +111,7 @@ encode_subject_for_email() {
 assemble_and_send_mail() {
     local log_file="$1"        # Fichier log utilisé pour calcul du résumé global (copied/updated/deleted)
     local html_block="$2"      # Bloc HTML global déjà préparé (tous les jobs), facultatif
-    local MAIL="${TMP_RCLONE}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
+    local MAIL="${DIR_TMP}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
 
     # Récupération de l'adresse expéditeur depuis msmtp
     FROM_ADDRESS="$(grep '^from' /etc/msmtprc | awk '{print $2}')"
@@ -200,7 +200,7 @@ HTML
     echo "--MIXED_BOUNDARY--" >> "$MAIL"
 
     # --- Envoi du mail ---
-    msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
+    msmtp --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$DIR_LOG_FILE_MAIL"
     print_fancy --align "center" "$MSG_EMAIL_SENT"
 
     # --- Nettoyage optionnel ---

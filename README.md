@@ -129,7 +129,7 @@ Le script rclone dispose d'énormément d'options !
 📖 Lisez la [documentation](https://rclone.org/commands/rclone/) !  
 Pour adapter selon vos besoins, il est possible de :
 * [Ponctuel] Simplement ajouter l'argument rclone dans vos arguments de lancement.
-* [Durable] Modifier `nano /opt/rclone_homelab/conf.sh` pour trouver la section `# === Options rclone ===`  
+* [Durable] Modifier `nano /opt/rclone_homelab/config/global.conf` pour trouver la section `# === Options rclone ===`  
 Là vous pourrez mettre/enlever vos propores options.
 
 

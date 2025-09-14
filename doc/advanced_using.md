@@ -107,8 +107,8 @@ Si --force-update n’est pas présent, le script continue à vérifier le derni
 ## Debogage (ERROR_CODE)
 | E | Ligne / Bloc                                 | Cause                                         |
 | - | -------------------------------------------- | --------------------------------------------- |
-|  1| Création de `$TMP_RCLONE` échouée            | Impossible de créer le dossier temporaire     |
-|  2| Création de `$LOG_DIR` échouée               | Impossible de créer le dossier de logs        |
+|  1| Création de `$DIR_TMP` échouée               | Impossible de créer le dossier temporaire     |
+|  2| Création de `$DIR_LOG` échouée               | Impossible de créer le dossier de logs        |
 |  3| `$JOBS_FILE` introuvable                     | Fichier jobs absent (*)                       |
 |  4| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible (*)       |
 |  5|                                              |                                               |

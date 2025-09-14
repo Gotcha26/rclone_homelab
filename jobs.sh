@@ -20,7 +20,7 @@ mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 # 1. Parser les jobs et initialiser les statuts
 # ---------------------------------------------------------------------------
 
-parse_jobs "$JOBS_FILE"
+parse_jobs "$DIR_JOBS_FILE"
 
 
 # ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ for idx in "${!JOBS_LIST[@]}"; do
 
     # === Affichage colorisé à l'écran et génération logs ===
     colorize "$TMP_JOB_LOG_RAW" | tail -n +4
-    cat "$TMP_JOB_LOG_RAW" >> "$LOG_FILE_INFO"
+    cat "$TMP_JOB_LOG_RAW" >> "$DIR_LOG_FILE_INFO"
 
     # Génération des logs HTML / PLAIN
     generate_logs "$TMP_JOB_LOG_RAW" "$TMP_JOB_LOG_HTML" "$TMP_JOB_LOG_PLAIN"

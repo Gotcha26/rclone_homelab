@@ -18,7 +18,7 @@ SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 
 # Sourcing global
-source "$SCRIPT_DIR/conf.sh"
+source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"
 source "$SCRIPT_DIR/export/mail.sh"
@@ -33,7 +33,7 @@ detect_config
 print_logo
 
 # Création du dossier logs si absent
-mkdir -p "$LOG_DIR"
+mkdir -p "$DIR_LOG"
 
 # --- ↓ DEBUG ↓ ---
 if [[ "$DEBUG_MODE" == "true" ]]; then 
@@ -42,7 +42,7 @@ if [[ "$DEBUG_MODE" == "true" ]]; then
 fi 
 
 if [[ "$DEBUG_INFOS" == "true" ]]; then 
-    print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: LOG_FILE_SCRIPT = $LOG_FILE_SCRIPT"
+    print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
 fi 
 # --- ↑ DEBUG ↑ ---
 
@@ -54,7 +54,7 @@ exec 3>&1 4>&2
 # Redirige toute la sortie du script
 # - stdout vers tee (console + fichier) [standard]
 # - stderr aussi redirigé [sortie des erreurs]
-exec > >(tee -a "$LOG_FILE_SCRIPT") 2>&1
+exec > >(tee -a "$DIR_LOG_FILE_SCRIPT") 2>&1
 
 # --- Mises à jour ---
 
@@ -159,24 +159,24 @@ check_rclone_config
 TMP_JOBS_DIR=$(mktemp -d)
 
 # Création des répertoires nécessaires
-if [[ ! -d "$TMP_RCLONE" ]]; then
-    if ! mkdir -p "$TMP_RCLONE" 2>/dev/null; then
-        die 1 "$MSG_TMP_RCLONE_CREATE_FAIL : $TMP_RCLONE"
+if [[ ! -d "$DIR_TMP" ]]; then
+    if ! mkdir -p "$DIR_TMP" 2>/dev/null; then
+        die 1 "$MSG_DIR_TMP_CREATE_FAIL : $DIR_TMP"
     fi
 fi
 
 #Vérification de la présence du répertoire temporaire
-if [[ ! -d "$LOG_DIR" ]]; then
-    if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
-        die 2 "$MSG_LOG_DIR_CREATE_FAIL : $LOG_DIR"
+if [[ ! -d "$DIR_LOG" ]]; then
+    if ! mkdir -p "$DIR_LOG" 2>/dev/null; then
+        die 2 "$MSG_DIR_LOG_CREATE_FAIL : $DIR_LOG"
     fi
 fi
 
 # Vérifications initiales
-if [[ ! -f "$JOBS_FILE" ]]; then
+if [[ ! -f "$DIR_JOBS_FILE" ]]; then
     die 3 "$MSG_FILE_NOT_FOUND : $JOBS_FILE"
 fi
-if [[ ! -r "$JOBS_FILE" ]]; then
+if [[ ! -r "$DIR_JOBS_FILE" ]]; then
     die 4 "$MSG_FILE_NOT_READ : $JOBS_FILE"
 fi
 
@@ -204,7 +204,7 @@ fi
 ###############################################################################
 
 # Purge inconditionnel des fichiers anciens (sous-dossiers inclus)
-find "$TMP_RCLONE" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
+find "$DIR_TMP" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
 # Affichage récapitulatif à la sortie
 trap 'print_summary_table' EXIT
