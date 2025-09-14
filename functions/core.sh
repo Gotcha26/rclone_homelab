@@ -389,5 +389,38 @@ get_last_log() {
 }
 
 
+###############################################################################
+# Fonction : Création des répertoires temporaires nécessaires
+###############################################################################
+create_temp_dirs() {
+    # DIR_TMP
+    if [[ ! -d "$DIR_TMP" ]]; then
+        mkdir -p "$DIR_TMP" 2>/dev/null || die 1 "$MSG_DIR_TMP_CREATE_FAIL : $DIR_TMP"
+    fi
+
+    # DIR_LOG
+    if [[ ! -d "$DIR_LOG" ]]; then
+        mkdir -p "$DIR_LOG" 2>/dev/null || die 2 "$MSG_DIR_LOG_CREATE_FAIL : $DIR_LOG"
+    fi
+}
+
+###############################################################################
+# Fonction : Vérification de l'existence des fichiers critiques
+###############################################################################
+check_required_files() {
+    # Jobs file
+    [[ -f "$DIR_JOBS_FILE" ]] || die 3 "$MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE"
+    [[ -r "$DIR_JOBS_FILE" ]] || die 4 "$MSG_FILE_NOT_READ : $DIR_JOBS_FILE"
+
+    # (Ajouter d'autres fichiers critiques ici si nécessaire)
+}
+
+###############################################################################
+# Fonction : Vérifications générales post-initialisation
+###############################################################################
+post_init_checks() {
+    create_temp_dirs
+    check_required_files
+}
 
 

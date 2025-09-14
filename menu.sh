@@ -4,7 +4,6 @@ DISPLAY_MODE=none
 
 # === Initialisation minimale ===
 
-# Elles peuvent être écrasées par la configuration personnalisée, si présente.
 ERROR_CODE=0
 EXECUTED_JOBS=0
 
@@ -174,7 +173,7 @@ while true; do
                 echo "▶️  Ouverture de $JOBS_FILE..."
                 # Lancement de nano dans un shell indépendant
                 nano "$DIR_JOBS_FILE"
-                echo "✅  Édition terminée, retour au menu..."
+                echo "✅  ... Édition terminée : retour au menu."
                 ;;
             menu_install_rclone)
                 install_rclone
@@ -182,17 +181,17 @@ while true; do
             menu_config_rclone)
                 echo "▶️  Lancement de la configuration rclone..."
                 rclone config
-                echo "✅  Configuration terminée, retour au menu..."
+                echo "✅  ... Configuration terminée : retour au menu."
                 ;;
             menu_show_rclone_config)
                 echo "▶️  Ouverture de $RCLONE_CONF..."
                 nano "$RCLONE_CONF"
-                echo "✅  Édition terminée, retour au menu..."
+                echo "✅  ... Édition terminée : retour au menu."
                 ;;
             menu_install_msmtp)
                 echo "▶️  Installation de msmtp..."
                 install_msmtp
-                echo "✅  Installation terminée, retour au menu..."
+                echo "✅  ... Installation terminée : retour au menu."
                 ;;
             menu_show_msmtp_config)
                 # Détecte le fichier configuré
@@ -200,7 +199,7 @@ while true; do
                     echo "▶️ Affichage du fichier de configuration msmtp : $conf_file"
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
                     nano "$conf_file"
-                    echo "✅  Fin de l'affichage, retour au menu..."
+                    echo "✅  ... Fin de l'affichage : retour au menu."
                 else
                     echo "⚠️  Aucun fichier de configuration msmtp trouvé."
                 fi
@@ -211,13 +210,13 @@ while true; do
                 conf_file="${MSMTPRC:-$HOME/.msmtprc}"
                 # Ouverture dans nano directement, sans polluer le log
                 nano "$conf_file"
-                echo "✅ Configuration terminée, retour au menu..."
+                echo "✅ ... Configuration terminée : retour au menu."
                 ;;
             menu_show_last_log)
                 echo "▶️  Affichage des 500 dernières lignes de $LAST_LOG_FILE..."
                 # Utilisation d'un pager pour ne pas polluer le log principal
                 tail -n 500 "$LAST_LOG_FILE" | less -R
-                echo "✅ Fin de l'affichage, retour au menu..."
+                echo "✅ ... Fin de l'affichage : retour au menu."
                 ;;
             menu_init_config_local)
                 echo "▶️  Installation de la configuration locale."
@@ -232,7 +231,7 @@ while true; do
                 show_help
                 ;;
             menu_exit_script)
-                echo "👋  Merci d'être passé, bonne journée à vous. 👋"
+                echo "👋  Bonne journée à vous. 👋"
                 echo
                 exit 0
                 ;;

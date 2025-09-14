@@ -10,7 +10,6 @@ export GIT_PAGER=cat
 
 # === Initialisation minimale ===
 
-# Elles peuvent être écrasées par la configuration personnalisée, si présente.
 ERROR_CODE=0
 EXECUTED_JOBS=0
 
@@ -42,6 +41,9 @@ source "$SCRIPT_DIR/export/discord.sh"
 # Affichage du logo/bannière
 print_logo
 
+# On créait un dossier temporaire de manière temporaire. Il est supprimé à la fermeture.
+TMP_JOBS_DIR=$(mktemp -d)
+
 # --- ↓ DEBUG ↓ ---
 if [[ "$DEBUG_MODE" == "true" ]]; then 
     TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
@@ -53,7 +55,7 @@ if [[ "$DEBUG_INFOS" == "true" ]]; then
 fi 
 # --- ↑ DEBUG ↑ ---
 
-# --- Mises à jour ---
+# === Mises à jour ===
 
 # Exécuter directement l’analyse (affichage immédiat au lancement)
 fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; }
@@ -152,30 +154,10 @@ fi
 check_rclone_installed
 check_rclone_configured
 
-# On créait un dossier temporaire de manière temporaire
-TMP_JOBS_DIR=$(mktemp -d)
-
 # Création des répertoires nécessaires
-if [[ ! -d "$DIR_TMP" ]]; then
-    if ! mkdir -p "$DIR_TMP" 2>/dev/null; then
-        die 1 "$MSG_DIR_TMP_CREATE_FAIL : $DIR_TMP"
-    fi
-fi
-
 #Vérification de la présence du répertoire temporaire
-if [[ ! -d "$DIR_LOG" ]]; then
-    if ! mkdir -p "$DIR_LOG" 2>/dev/null; then
-        die 2 "$MSG_DIR_LOG_CREATE_FAIL : $DIR_LOG"
-    fi
-fi
-
 # Vérifications initiales
-if [[ ! -f "$DIR_JOBS_FILE" ]]; then
-    die 3 "$MSG_FILE_NOT_FOUND : $JOBS_FILE"
-fi
-if [[ ! -r "$DIR_JOBS_FILE" ]]; then
-    die 4 "$MSG_FILE_NOT_READ : $JOBS_FILE"
-fi
+post_init_checks
 
 
 ###############################################################################
