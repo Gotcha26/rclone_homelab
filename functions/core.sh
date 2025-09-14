@@ -357,7 +357,7 @@ edit_config_local() {
             read -rp "$prompt" REPLY
             REPLY=${REPLY,,}
             if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-                (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
+                nano "$conf_file"
                 echo "✅  Édition terminée : $conf_file"
             else
                 echo "ℹ️  Édition ignorée pour : $conf_file"
