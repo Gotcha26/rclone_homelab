@@ -159,8 +159,8 @@ fi
 ###############################################################################
 
 # Vérif rclone
-check_rclone
-check_rclone_config
+check_rclone_installed
+check_rclone_configured
 
 # On créait un dossier temporaire de manière temporaire
 TMP_JOBS_DIR=$(mktemp -d)
