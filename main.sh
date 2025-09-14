@@ -83,7 +83,7 @@ while [[ $# -gt 0 ]]; do
             RCLONE_OPTS+=(--dry-run)
             shift
             ;;
-        --update-forced)
+        --force-update)
             FORCE_UPDATE=true
             shift
             # Si une branche est fournie juste après, on la prend (switch)

@@ -1,6 +1,6 @@
 ###############################################################################
 # Variables de configuration
-# Toutes les variables peuvent être suplantées via un fichier config/config.local.sh
+# Toutes les variables peuvent être suplantées via un fichier local/config.local.conf
 ###############################################################################
 
 : "${DISCORD_WEBHOOK_URL:=}"
@@ -74,17 +74,20 @@ MSG_MAJ_UPDATE_TAG_FAILED_TEMPLATE="Impossible de mettre à jour vers %s : modif
 ###############################################################################
 
 # Ne pas toucher
-TMP_RCLONE="$SCRIPT_DIR/tmp"           # Répertoire temporaire pour rclone
-LOG_DIR="$SCRIPT_DIR/logs"          # Répertoire de logs
-JOBS_FILE="$SCRIPT_DIR/jobs.txt"      # Fichier des jobs
-EXEMPLE_FILE="${JOBS_FILE}.exemple"      # Fichier des jobs (exemple - vierge)
+TMP_RCLONE="$SCRIPT_DIR/tmp"                # Répertoire temporaire pour rclone
+LOG_DIR="$SCRIPT_DIR/logs"                  # Répertoire de logs
+
+JOBS_FILE="$SCRIPT_DIR/local/jobs.conf"     # Fichier des jobs
+EXEMPLE_FILE="${SCRIPT_DIR}/jobs.exemple"   # Fichier des jobs (exemple - vierge)
 
 LOG_TIMESTAMP="$(date '+%Y%m%d_%H%M%S')"
 NOW="$(date '+%Y/%m/%d %H:%M:%S')"
 
 FILE_SCRIPT="main_${LOG_TIMESTAMP}.log"
 LOG_FILE_SCRIPT="$LOG_DIR/${FILE_SCRIPT}"
+
 FILE_INFO="rclone_${LOG_TIMESTAMP}.log"
 LOG_FILE_INFO="$LOG_DIR/${FILE_INFO}"
+
 FILE_MAIL="msmtp_${LOG_TIMESTAMP}.log"
 LOG_FILE_MAIL="$LOG_DIR/${FILE_MAIL}"

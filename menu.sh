@@ -88,12 +88,12 @@ while true; do
 
     # 4) Actions
     # Options de configuration locale
-    if [[ ! -f "$SCRIPT_DIR/config/config.local.sh" || ! -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
+    if [[ ! -f "$SCRIPT_DIR/local/config.local.conf" || ! -f "$SCRIPT_DIR/local/config.dev.conf" ]]; then
         add_option "💻  Installer une configuration locale" "menu_init_config_local"
     fi
 
     #Option d'édition direct du fichier de configuration local/dev
-    if [[ -f "$SCRIPT_DIR/config/config.local.sh" || -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
+    if [[ -f "$SCRIPT_DIR/local/config.local.conf" || -f "$SCRIPT_DIR/local/config.dev.conf" ]]; then
         add_option "✏️  Éditer la configuration locale" "menu_edit_config_local"
     fi
 
@@ -144,7 +144,7 @@ while true; do
                 ;;
             menu_jobs)
                 if ! init_jobs_file; then
-                    echo "❌ Impossible de créer jobs.txt, édition annulée."
+                    echo "❌ Impossible de créer /local/jobs.conf, édition annulée."
                     break
                 fi
                 echo "▶️ Ouverture de $JOBS_FILE..." >&3

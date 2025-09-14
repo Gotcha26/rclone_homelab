@@ -13,7 +13,7 @@ Options :
   --mailto=ADRESSE   Envoie un rapport par e-mail à l'adresse fournie.
   --dry-run          Simule la synchronisation sans transférer ni supprimer de fichiers.
   -h, --help         Affiche cette aide et quitte.
-  --update-forced    Mettre à jour automatiquement sur la branche en cours. Accèpte l'argument "branche"
+  --force-update     Mettre à jour automatiquement sur la branche en cours. Accèpte l'argument "branche"
   --update-tag       Mettre à jour automatiquement sur la release (version) disponnible.
 
 Description :
@@ -42,23 +42,23 @@ EOF
 detect_config() {
     local display_mode="${DISPLAY_MODE:-simplified}"  # verbose / simplified / none
 
-    CONFIGURATION="config.main.sh"
-    source "$SCRIPT_DIR/config/config.main.sh"
+    CONFIGURATION="config.main.conf"
+    source "$SCRIPT_DIR/config/config.main.conf"
     if [[ "$display_mode" == "verbose" ]]; then
         print_fancy --theme "info" --align "center" --bg "green" --fg "rgb:0;0;0" --highlight \
         "CONFIGURATION STANDARD – Fichier de configuration = $CONFIGURATION ℹ️ "
     fi
 
-    if [[ -f "$SCRIPT_DIR/config/config.local.sh" ]]; then
-        CONFIGURATION="config.local.sh"
-        source "$SCRIPT_DIR/config/config.local.sh"
+    if [[ -f "$SCRIPT_DIR/local/config.local.conf" ]]; then
+        CONFIGURATION="config.local.conf"
+        source "$SCRIPT_DIR/local/config.local.conf"
         [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
         "MODE LOCAL ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 
-    if [[ -f "$SCRIPT_DIR/config/config.dev.sh" ]]; then
-        CONFIGURATION="config.dev.sh"
-        source "$SCRIPT_DIR/config/config.dev.sh"
+    if [[ -f "$SCRIPT_DIR/local/config.dev.conf" ]]; then
+        CONFIGURATION="config.dev.conf"
+        source "$SCRIPT_DIR/local/config.dev.conf"
         [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
         "MODE DEV ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
@@ -201,19 +201,19 @@ check_jobs_configured() {
 ###############################################################################
 init_jobs_file() {
 
-    # Si jobs.txt existe, rien à faire
+    # Si jobs.conf existe, rien à faire
     if [[ -f "$JOBS_FILE" ]]; then
-        echo "✅  Fichier jobs.txt déjà présent"
+        print_fancy --theme "info" "Fichier jobs.conf déjà présent"
         return 0
     fi
 
     # Sinon, on tente de copier le fichier exemple
     if [[ -f "$EXEMPLE_FILE" ]]; then
         cp "$EXEMPLE_FILE" "$JOBS_FILE"
-        echo "⚡  jobs.txt absent → copie de jobs.txt.exemple réalisée"
+        print_fancy --theme "success" "Copie de jobs.exemple → /local/jobs.conf réalisée"
         return 0
     else
-        echo "❌  Aucun fichier jobs.txt ni jobs.txt.exemple trouvé dans $SCRIPT_DIR"
+        print_fancy --theme "error" "Erreur dans la copie de jobs.exemple → /local/jobs.conf"
         return 1
     fi
 }
@@ -287,9 +287,9 @@ print_summary_table() {
 # Fonction : initialisation config locale/dev si absente + option édition
 ###############################################################################
 init_config_local() {
-    local main_conf="$SCRIPT_DIR/config/config.main.sh"
-    local dev_conf="$SCRIPT_DIR/config/config.dev.sh"
-    local local_conf="$SCRIPT_DIR/config/config.local.sh"
+    local main_conf="$SCRIPT_DIR/config/config.main.conf"
+    local local_conf="$SCRIPT_DIR/local/config.local.conf"
+    local dev_conf="$SCRIPT_DIR/local/config.dev.conf"
 
     for conf_file in "$local_conf" "$dev_conf"; do
         # Déterminer un label lisible
@@ -342,8 +342,8 @@ init_config_local() {
 # Fonction : éditer les fichiers de config locaux/dev existants
 ###############################################################################
 edit_config_local() {
-    local local_conf="$SCRIPT_DIR/config/config.local.sh"
-    local dev_conf="$SCRIPT_DIR/config/config.dev.sh"
+    local local_conf="$SCRIPT_DIR/local/config.local.conf"
+    local dev_conf="$SCRIPT_DIR/local/config.dev.conf"
 
     # --- Vérifier qu'au moins un fichier existe ---
     if [[ ! -f "$local_conf" && ! -f "$dev_conf" ]]; then
