@@ -1,6 +1,5 @@
 # Ignorer le fichier de config perso
 local/*
-jobs.exemple
 Notes.txt
 UPDATES.md
 README_old.md

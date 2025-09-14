@@ -36,8 +36,8 @@ source "$SCRIPT_DIR/export/discord.sh"
 
 # Logger uniquement les erreurs stderr
 # Création du dossier logs si absent
-mkdir -p "$DIR_LOG"
-exec 2>>"$DIR_LOG_FILE_SCRIPT"
+# mkdir -p "$DIR_LOG"
+# exec 2> >(tee -a "$DIR_LOG_FILE_SCRIPT" >&2)
 
 # Affichage du logo/bannière
 print_logo
@@ -140,7 +140,7 @@ fi
 
 # Si aucun argument → menu interactif
 if [[ $# -eq 0 ]]; then
-    source "$SCRIPT_DIR/menu.sh"
+    bash "$SCRIPT_DIR/menu.sh"
 fi
 
 
