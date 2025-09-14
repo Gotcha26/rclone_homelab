@@ -22,7 +22,7 @@ while true; do
         MENU_ACTIONS+=("$2")
     }
     # Construction nécessaire pour l'affichage des MAJ (branche / release)
-    fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; continue; }
+    fetch_git_info || { echo "⚠️  Impossible de récupérer l'état Git"; continue; }
     update_status_code=$(analyze_update_status)
 
     # === Options transmises à la fonciton précédente pour une mises à jour dynamiques ===
@@ -55,12 +55,12 @@ while true; do
     # rclone
     if ! command -v rclone >/dev/null 2>&1; then
         # Cas 1 : rclone absent
-        add_option "📦 Installer rclone" "menu_install_rclone"
+        add_option "📦  Installer rclone" "menu_install_rclone"
     else
         # Cas 2 : rclone présent → vérifier la config
         if ! check_rclone_configured >/dev/null 2>&1; then
             # Config absente ou vide
-            add_option "🤖 Configurer rclone" "menu_config_rclone"
+            add_option "🤖  Configurer rclone" "menu_config_rclone"
         else
             # Config OK
             add_option "📄  Afficher/éditer la configuration rclone" "menu_show_rclone_config"
@@ -69,15 +69,15 @@ while true; do
     # msmtp
     if ! command -v msmtp >/dev/null 2>&1; then
         # Cas 1 : msmtp absent → proposer l'installation
-        add_option "📦 Installer msmtp" "menu_install_msmtp"
+        add_option "📦  Installer msmtp" "menu_install_msmtp"
     else
         # Cas 2 : msmtp présent → vérifier la configuration
         if conf_file=$(check_msmtp_configured 2>/dev/null); then
             # Fichier valide trouvé → afficher/éditer
-            add_option "📄 Afficher/éditer la configuration msmtp" "menu_show_msmtp_config"
+            add_option "📄  Afficher/éditer la configuration msmtp" "menu_show_msmtp_config"
         else
             # Aucun fichier valide → configurer
-            add_option "⚙️ Configurer msmtp" "menu_config_msmtp"
+            add_option "⚙️  Configurer msmtp" "menu_config_msmtp"
         fi
     fi
     # Affichage du log précédent
@@ -144,31 +144,31 @@ while true; do
                 ;;
             menu_jobs)
                 if ! init_jobs_file; then
-                    echo "❌ Impossible de créer /local/jobs.conf, édition annulée."
+                    echo "❌  Impossible de créer /local/jobs.conf, édition annulée."
                     break
                 fi
-                echo "▶️ Ouverture de $JOBS_FILE..." >&3
+                echo "▶️  Ouverture de $JOBS_FILE..." >&3
                 # Lancement de nano dans un shell indépendant
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$JOBS_FILE")
-                echo "✅ Édition terminée, retour au menu..." >&3
+                echo "✅  Édition terminée, retour au menu..." >&3
                 ;;
             menu_install_rclone)
                 install_rclone
                 ;;
             menu_config_rclone)
-                echo "▶️ Lancement de la configuration rclone..."
+                echo "▶️  Lancement de la configuration rclone..."
                 (exec </dev/tty >/dev/tty 2>/dev/tty; rclone config)
-                echo "✅ Configuration terminée, retour au menu..." >&3
+                echo "✅  Configuration terminée, retour au menu..." >&3
                 ;;
             menu_show_rclone_config)
-                echo "▶️ Ouverture de $RCLONE_CONF..." >&3
+                echo "▶️  Ouverture de $RCLONE_CONF..." >&3
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$RCLONE_CONF")
-                echo "✅ Édition terminée, retour au menu..." >&3
+                echo "✅  Édition terminée, retour au menu..." >&3
                 ;;
             menu_install_msmtp)
-                echo "▶️ Installation de msmtp..."
+                echo "▶️  Installation de msmtp..."
                 install_msmtp
-                echo "✅ Installation terminée, retour au menu..." >&3
+                echo "✅  Installation terminée, retour au menu..." >&3
                 ;;
             menu_show_msmtp_config)
                 # Détecte le fichier configuré
@@ -176,13 +176,13 @@ while true; do
                     echo "▶️ Affichage du fichier de configuration msmtp : $conf_file"
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
                     (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
-                    echo "✅ Fin de l'affichage, retour au menu..." >&3
+                    echo "✅  Fin de l'affichage, retour au menu..." >&3
                 else
-                    echo "⚠️ Aucun fichier de configuration msmtp trouvé."
+                    echo "⚠️  Aucun fichier de configuration msmtp trouvé."
                 fi
                 ;;
             menu_config_msmtp)
-                echo "▶️ Lancement de la configuration msmtp..."
+                echo "▶️  Lancement de la configuration msmtp..."
                 # Utilise la variable MSMTPRC si définie, sinon ~/msmtprc
                 conf_file="${MSMTPRC:-$HOME/.msmtprc}"
                 # Ouverture dans nano directement, sans polluer le log
@@ -190,7 +190,7 @@ while true; do
                 echo "✅ Configuration terminée, retour au menu..." >&3
                 ;;
             menu_show_last_log)
-                echo "▶️ Affichage des 500 dernières lignes de $LAST_LOG_FILE..." >&3
+                echo "▶️  Affichage des 500 dernières lignes de $LAST_LOG_FILE..." >&3
                 # Utilisation d'un pager pour ne pas polluer le log principal
                 (exec </dev/tty >/dev/tty 2>/dev/tty; tail -n 500 "$LAST_LOG_FILE" | less -R)
                 echo "✅ Fin de l'affichage, retour au menu..." >&3
