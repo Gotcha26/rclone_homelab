@@ -68,15 +68,15 @@ while true; do
     fi
     # msmtp
     if ! command -v msmtp >/dev/null 2>&1; then
-        # Cas 1 : msmtp absent
+        # Cas 1 : msmtp absent → proposer l'installation
         add_option "📦 Installer msmtp" "menu_install_msmtp"
     else
-        # Cas 2 : msmtp présent → vérifier la config
+        # Cas 2 : msmtp présent → vérifier la configuration
         if conf_file=$(check_msmtp_configured 2>/dev/null); then
-            # Config valide trouvée
-            add_option "📄  Afficher/éditer la configuration msmtp" "menu_show_msmtp_config"
+            # Fichier valide trouvé → afficher/éditer
+            add_option "📄 Afficher/éditer la configuration msmtp" "menu_show_msmtp_config"
         else
-            # Config absente ou invalide
+            # Aucun fichier valide → configurer
             add_option "⚙️ Configurer msmtp" "menu_config_msmtp"
         fi
     fi
@@ -166,21 +166,28 @@ while true; do
                 echo "✅ Édition terminée, retour au menu..." >&3
                 ;;
             menu_install_msmtp)
+                echo "▶️ Installation de msmtp..."
                 install_msmtp
+                echo "✅ Installation terminée, retour au menu..." >&3
+                ;;
+            menu_show_msmtp_config)
+                # Détecte le fichier configuré
+                if conf_file=$(check_msmtp_configured 2>/dev/null); then
+                    echo "▶️ Affichage du fichier de configuration msmtp : $conf_file"
+                    # Utilisation de nano pour visualiser/éditer sans polluer le log
+                    (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
+                    echo "✅ Fin de l'affichage, retour au menu..." >&3
+                else
+                    echo "⚠️ Aucun fichier de configuration msmtp trouvé."
+                fi
                 ;;
             menu_config_msmtp)
                 echo "▶️ Lancement de la configuration msmtp..."
+                # Utilise la variable MSMTPRC si définie, sinon ~/msmtprc
                 conf_file="${MSMTPRC:-$HOME/.msmtprc}"
+                # Ouverture dans nano directement, sans polluer le log
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
                 echo "✅ Configuration terminée, retour au menu..." >&3
-                ;;
-            menu_show_msmtp_config)
-                echo "▶️ Edition de la configuration msmtp..."
-                if conf_file=$(check_msmtp_configured 2>/dev/null); then
-                    (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
-                else
-                    echo "⚠️ Fichier msmtp introuvable ou invalide"
-                fi
                 ;;
             menu_show_last_log)
                 echo "▶️ Affichage des 500 dernières lignes de $LAST_LOG_FILE..." >&3

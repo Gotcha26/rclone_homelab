@@ -164,18 +164,19 @@ install_msmtp() {
 # Fonction : Vérifie la configuration initiale de msmtp
 ###############################################################################
 check_msmtp_configured() {
+    local conf_file=""
 
     # 1. Vérifie d'abord le fichier utilisateur (ex: /root/.msmtprc ou $MSMTPRC)
-    local user_conf="${MSMTPRC:-$HOME/.msmtprc}"
-    if [[ -f "$user_conf" ]] && [[ -s "$user_conf" ]]; then
-        echo "$user_conf"
+    conf_file="${MSMTPRC:-$HOME/.msmtprc}"
+    if [[ -f "$conf_file" && -s "$conf_file" && -r "$conf_file" ]]; then
+        echo "$conf_file"
         return 0
     fi
 
     # 2. Sinon, vérifie le fichier système (/etc/msmtprc)
-    local system_conf="/etc/msmtprc"
-    if [[ -f "$system_conf" ]] && [[ -s "$system_conf" ]]; then
-        echo "$system_conf"
+    conf_file="/etc/msmtprc"
+    if [[ -f "$conf_file" && -s "$conf_file" && -r "$conf_file" ]]; then
+        echo "$conf_file"
         return 0
     fi
 
