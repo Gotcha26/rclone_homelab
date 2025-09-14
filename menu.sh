@@ -147,10 +147,10 @@ while true; do
                     echo "❌  Impossible de créer /local/jobs.conf, édition annulée."
                     break
                 fi
-                echo "▶️  Ouverture de $JOBS_FILE..." >&3
+                echo "▶️  Ouverture de $JOBS_FILE..."
                 # Lancement de nano dans un shell indépendant
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$DIR_JOBS_FILE")
-                echo "✅  Édition terminée, retour au menu..." >&3
+                echo "✅  Édition terminée, retour au menu..."
                 ;;
             menu_install_rclone)
                 install_rclone
@@ -158,17 +158,17 @@ while true; do
             menu_config_rclone)
                 echo "▶️  Lancement de la configuration rclone..."
                 (exec </dev/tty >/dev/tty 2>/dev/tty; rclone config)
-                echo "✅  Configuration terminée, retour au menu..." >&3
+                echo "✅  Configuration terminée, retour au menu..."
                 ;;
             menu_show_rclone_config)
-                echo "▶️  Ouverture de $RCLONE_CONF..." >&3
+                echo "▶️  Ouverture de $RCLONE_CONF..."
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$RCLONE_CONF")
-                echo "✅  Édition terminée, retour au menu..." >&3
+                echo "✅  Édition terminée, retour au menu..."
                 ;;
             menu_install_msmtp)
                 echo "▶️  Installation de msmtp..."
                 install_msmtp
-                echo "✅  Installation terminée, retour au menu..." >&3
+                echo "✅  Installation terminée, retour au menu..."
                 ;;
             menu_show_msmtp_config)
                 # Détecte le fichier configuré
@@ -176,7 +176,7 @@ while true; do
                     echo "▶️ Affichage du fichier de configuration msmtp : $conf_file"
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
                     (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
-                    echo "✅  Fin de l'affichage, retour au menu..." >&3
+                    echo "✅  Fin de l'affichage, retour au menu..."
                 else
                     echo "⚠️  Aucun fichier de configuration msmtp trouvé."
                 fi
@@ -187,13 +187,13 @@ while true; do
                 conf_file="${MSMTPRC:-$HOME/.msmtprc}"
                 # Ouverture dans nano directement, sans polluer le log
                 (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
-                echo "✅ Configuration terminée, retour au menu..." >&3
+                echo "✅ Configuration terminée, retour au menu..."
                 ;;
             menu_show_last_log)
-                echo "▶️  Affichage des 500 dernières lignes de $LAST_LOG_FILE..." >&3
+                echo "▶️  Affichage des 500 dernières lignes de $LAST_LOG_FILE..."
                 # Utilisation d'un pager pour ne pas polluer le log principal
                 (exec </dev/tty >/dev/tty 2>/dev/tty; tail -n 500 "$LAST_LOG_FILE" | less -R)
-                echo "✅ Fin de l'affichage, retour au menu..." >&3
+                echo "✅ Fin de l'affichage, retour au menu..."
                 ;;
             menu_init_config_local)
                 echo "▶️  Installation de la configuration locale."

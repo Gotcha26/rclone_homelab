@@ -53,6 +53,16 @@ if [[ "$DEBUG_INFOS" == "true" ]]; then
 fi 
 # --- ↑ DEBUG ↑ ---
 
+# --- Journal log général (sauf rclone qui a un log dédié par job - temporaires) ---
+
+# Sauvegarde stdout et stderr originaux
+exec 3>&1 4>&2
+
+# Redirige toute la sortie du script
+# - stdout vers tee (console + fichier) [standard]
+# - stderr aussi redirigé [sortie des erreurs]
+exec > >(tee -a "$DIR_LOG_FILE_SCRIPT") 2>&1
+
 # --- Mises à jour ---
 
 # Exécuter directement l’analyse (affichage immédiat au lancement)
