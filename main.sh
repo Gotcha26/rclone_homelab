@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
 set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
-export GIT_PAGER=cat
 
+export GIT_PAGER=cat
 
 # ###############################################################################
 # 1. Initialisation par défaut
 # ###############################################################################
 
-# Initialisation de variables.
+# === Initialisation minimale ===
+
 # Elles peuvent être écrasées par la configuration personnalisée, si présente.
 ERROR_CODE=0
 EXECUTED_JOBS=0
@@ -21,19 +22,25 @@ SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"
-source "$SCRIPT_DIR/export/mail.sh"
-source "$SCRIPT_DIR/export/discord.sh"
 source "$SCRIPT_DIR/update/updater.sh"
 
 # Initialise (sourcing) et informe de la branch en cours utilisée
 # (basé sur la seule présence du fichier config/config.xxx.sh)
 detect_config
 
-# Affichage du logo/bannière
-print_logo
+# ===
 
+# Sourcing intermédiaire
+source "$SCRIPT_DIR/export/mail.sh"
+source "$SCRIPT_DIR/export/discord.sh"
+
+# Logger uniquement les erreurs stderr
 # Création du dossier logs si absent
 mkdir -p "$DIR_LOG"
+exec 2>>"$DIR_LOG_FILE_SCRIPT"
+
+# Affichage du logo/bannière
+print_logo
 
 # --- ↓ DEBUG ↓ ---
 if [[ "$DEBUG_MODE" == "true" ]]; then 
