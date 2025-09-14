@@ -1,28 +1,5 @@
 #!/usr/bin/env bash
 
-# === Initialisation minimale ===
-
-# Elles peuvent être écrasées par la configuration personnalisée, si présente.
-ERROR_CODE=0
-EXECUTED_JOBS=0
-
-# Résoudre le chemin réel du script (suivi des symlinks)
-SCRIPT_PATH="$(readlink -f "$0")"
-SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-
-# Sourcing global
-source "$SCRIPT_DIR/config/global.conf"
-source "$SCRIPT_DIR/functions/dependances.sh"
-source "$SCRIPT_DIR/functions/core.sh"
-source "$SCRIPT_DIR/update/updater.sh"
-
-# Initialise (sourcing) et informe de la branch en cours utilisée
-# (basé sur la seule présence du fichier config/config.xxx.sh)
-DISPLAY_MODE=""
-detect_config
-
-# ===
-
 ###############################################################################
 # Si aucun argument fourni → affichage d’un menu interactif
 ###############################################################################
