@@ -52,15 +52,15 @@ detect_config() {
     if [[ -f "$DIR_FILE_CONF_LOCAL" ]]; then
         CONFIGURATION="$FILE_CONF_LOCAL"
         source "$DIR_FILE_CONF_LOCAL"
-        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
-        "MODE LOCAL ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
+        [[ "$display_mode" == "verbose" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
+        "CONFIGURATION LOCALE ACTIVÉE – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 
     if [[ -f "$DIR_FILE_CONF_DEV" ]]; then
         CONFIGURATION="$FILE_CONF_DEV"
         source "$DIR_FILE_CONF_DEV"
-        [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && print_fancy --theme "warning" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
-        "MODE DEV ACTIVÉ – Fichier de configuration = $CONFIGURATION ⚠️ "
+        print_fancy --theme "warning" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
+        "CONFIGURATION DEV ACTIVÉE – Fichier de configuration = $CONFIGURATION ⚠️ "
     fi
 }
 
