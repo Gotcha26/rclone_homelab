@@ -111,12 +111,12 @@ while true; do
 
     # 4) Actions
     # Options de configuration locale
-    if [[ ! -f "$DIR_FILE_CONF_LOCAL" || ! -f "$DIR_FILE_CONF_DEV" ]]; then
+    if [[ ! -f "$DIR_FILE_CONF_LOCAL" ]]; then
         add_option "💻  Installer une configuration locale" "menu_init_config_local"
     fi
 
     #Option d'édition direct du fichier de configuration local/dev
-    if [[ -f "$DIR_FILE_CONF_LOCAL" || -f "$DIR_FILE_CONF_DEV" ]]; then
+    if [[ -f "$DIR_FILE_CONF_LOCAL" ]]; then
         add_option "✏️  Éditer la configuration locale" "menu_edit_config_local"
     fi
 
