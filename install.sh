@@ -159,6 +159,20 @@ create_symlink() {
     echo -e "${GREEN}✅ Symlink créé : $SYMLINK → $INSTALL_DIR/main.sh${RESET}"
 }
 
+create_updater_symlink() {
+    UPDATER_SCRIPT="$INSTALL_DIR/update/standalone_updater.sh"
+    UPDATER_SYMLINK="/usr/local/bin/rclone_homelab-updater"
+
+    if [ -f "$UPDATER_SCRIPT" ]; then
+        chmod +x "$UPDATER_SCRIPT"
+        sudo ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
+        echo -e "${GREEN}✅ Updater exécutable et symlink créé : $UPDATER_SYMLINK → $UPDATER_SCRIPT${RESET}"
+    else
+        echo -e "${YELLOW}⚠️  Fichier $UPDATER_SCRIPT introuvable, impossible de créer le symlink.${RESET}"
+    fi
+}
+
+
 
 # Execution
 check_dependencies
@@ -168,6 +182,8 @@ get_latest_release
 handle_existing_dir
 install
 create_symlink
+create_updater_symlink
+
 
 exit
 
@@ -181,6 +197,8 @@ exit
 # Installation toujours basée sur le dernier tag (release).
 # Prise en compte du root.
 
+# Fichier /update/standalone_updater.sh est rendu exécutable avec son symlink
+# rclone_homelab-updater <--force>
 
 # Lien à communiquer pour l'installation :
 bash <(curl -s https://raw.githubusercontent.com/Gotcha26/rclone_homelab/main/install.sh)
