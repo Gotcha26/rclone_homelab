@@ -168,7 +168,8 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 - [] Revoir l'installation de rclone depuis mon main.sh
 - [] Lors d'une MAJ en ligne de commande, faire cette dernière à la fin du processus normal pour ne rien bloquer.
 - [] En cas de MAJ détectée, prévenir via le rapport d'exécution qu'un MAJ est disponnible (mail/discord)
-- [] Metre en varaibles les fichiers locaux conf + dir
+- [x] Metre en varaibles les fichiers locaux conf + dir
+- [] Ne plus parler de "configuration locale" mais ed paramètres personnalisés
 
 ### Petites infos
 *Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).  

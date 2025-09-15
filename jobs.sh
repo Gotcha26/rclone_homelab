@@ -4,7 +4,7 @@
 # jobs.sh - Exécution des jobs rclone
 # ---------------------------------------------------------------------------
 
-# Charger les fonctions
+# re-charger les fonctions
 source "$SCRIPT_DIR/functions/core.sh"
 
 # Déclarer les tableaux globaux
@@ -14,6 +14,9 @@ declare -A REMOTE_STATUS   # remote_name -> OK / PROBLEM
 
 # Charger les remotes rclone configurés
 mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
+
+# Annoncer/prévenir de l'exécution effective du batch
+batch_executing
 
 
 # ---------------------------------------------------------------------------

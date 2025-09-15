@@ -9,18 +9,21 @@ SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 
 # Sourcing global
+source "$SCRIPT_DIR/config/config.main.conf"
 source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"
 source "$SCRIPT_DIR/update/updater.sh"
 
-# Initialise (sourcing) et informe de la branch en cours utilisée
-# (basé sur la seule présence du fichier config/config.xxx.sh)
-detect_config
+# Surchage la configuration local
+load_optional_configs
 
 # ===
 
-# sourcing particulier
+# Informe de la surchage locale prise en compte
+show_optional_configs
+
+# sourcing spécifique pour le menu
 source "$SCRIPT_DIR/functions/menu_f.sh"
 
 ###############################################################################

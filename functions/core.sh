@@ -37,30 +37,35 @@ EOF
 
 
 ###############################################################################
+# Fonction : Charger config.local puis config.dev (si présents)
+###############################################################################
+load_optional_configs() {
+    # -- config.local --
+    if [[ -f "$DIR_FILE_CONF_LOCAL" && -r "$DIR_FILE_CONF_LOCAL" ]]; then
+        source "$DIR_FILE_CONF_LOCAL"
+    fi
+
+    # -- config.dev (prioritaire, chargé en dernier) --
+    if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
+        source "$DIR_FILE_CONF_DEV"
+    fi
+}
+
+
+###############################################################################
 # Fonction charge dans l'ordre main > local > dev
 ###############################################################################
-detect_config() {
+show_optional_configs() {
     local display_mode="${DISPLAY_MODE:-simplified}"  # verbose / simplified / none
 
-    CONFIGURATION="config.main.conf"
-    source "$SCRIPT_DIR/config/config.main.conf"
-    if [[ "$display_mode" == "verbose" ]]; then
-        print_fancy --theme "info" --align "center" --bg "green" --fg "rgb:0;0;0" --highlight \
-        "CONFIGURATION STANDARD – Fichier de configuration = $CONFIGURATION ℹ️ "
+    if [[ -f "$DIR_FILE_CONF_LOCAL" && -r "$DIR_FILE_CONF_LOCAL" ]]; then
+        [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
+        "CONFIGURATION LOCALE ACTIVÉE ℹ️ "
     fi
 
-    if [[ -f "$DIR_FILE_CONF_LOCAL" ]]; then
-        CONFIGURATION="$FILE_CONF_LOCAL"
-        source "$DIR_FILE_CONF_LOCAL"
-        [[ "$display_mode" == "verbose" ]] && print_fancy --theme "warning" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
-        "CONFIGURATION LOCALE ACTIVÉE – Fichier de configuration = $CONFIGURATION ⚠️ "
-    fi
-
-    if [[ -f "$DIR_FILE_CONF_DEV" ]]; then
-        CONFIGURATION="$FILE_CONF_DEV"
-        source "$DIR_FILE_CONF_DEV"
-        print_fancy --theme "warning" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
-        "CONFIGURATION DEV ACTIVÉE – Fichier de configuration = $CONFIGURATION ⚠️ "
+    if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
+        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
+        "CONFIGURATION DEV ACTIVÉE  ℹ️ "
     fi
 }
 
@@ -403,7 +408,7 @@ create_temp_dirs() {
 ###############################################################################
 post_init_checks() {
     create_temp_dirs
-    chech_jobs_file
+    check_jobs_file
 }
 
 

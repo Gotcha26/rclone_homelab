@@ -15,16 +15,19 @@ SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 
 # Sourcing global
+source "$SCRIPT_DIR/config/config.main.conf"
 source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"
 source "$SCRIPT_DIR/update/updater.sh"
 
-# Initialise (sourcing) et informe de la branch en cours utilisée
-# (basé sur la seule présence du fichier config/config.xxx.sh)
-detect_config
+# Surchage la configuration local
+load_optional_configs
 
 # ===
+
+# Informe de la surchage locale prise en compte
+show_optional_configs
 
 # Sourcing intermédiaire
 source "$SCRIPT_DIR/export/mail.sh"
@@ -133,8 +136,6 @@ fi
 # 4. Vérifications fonctionnelles
 ###############################################################################
 
-BATCH_EXEC=true     # Permet de savoir si le traitement à débuté (pour print_summary_table)
-
 # Vérifie l’email seulement si l’option --mailto est fournie
 [[ -n "$MAIL_TO" ]] && email_check "$MAIL_TO"
 
@@ -185,8 +186,8 @@ fi
 find "$DIR_TMP" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
 # Affichage récapitulatif à la sortie seulement si exécution éffective
-if [[ "$BATCH_EXEC" == true ]]; then
-    'print_summary_table' EXIT
+if [[ "${BATCH_EXEC:-false}" == true ]]; then
+    print_summary_table
 fi
 
 exit $ERROR_CODE
