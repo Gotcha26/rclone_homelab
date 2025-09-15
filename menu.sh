@@ -158,7 +158,7 @@ while true; do
                     --raw "Vous devez RELANCER LE SCRIPT pour terminer appliquer la mise à jour !")
                 printf "%b\n" "$label"
                 echo
-                exit 0
+                exit 99
                 ;;
             menu_update_to_latest_branch)
                 update_to_latest_branch
@@ -167,7 +167,7 @@ while true; do
                     --raw "Vous devez RELANCER LE SCRIPT pour terminer appliquer la mise à jour !")
                 printf "%b\n" "$label"
                 echo
-                exit 0
+                exit 99
                 ;;
             menu_run_all_jobs)
                 # On quitte la boucle pour renir à l'exécution normale de main.sh
