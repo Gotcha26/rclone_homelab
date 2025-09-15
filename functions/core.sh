@@ -95,23 +95,13 @@ show_optional_configs() {
 #        hard    = die si absent
 ###############################################################################
 check_rclone_installed() {
-    local LAUNCH_MODE="$1:${LAUNCH_MODE:-hard}"  # argument : variable:<defaut> (l'argument prime sur la variable)
+    local mode="$1:${LAUNCH_MODE:-hard}"  # argument : variable:<defaut> (l'argument prime sur la variable)
 
     if ! command -v rclone >/dev/null 2>&1; then
         case "$mode" in
-            soft)
-                return 1
-                ;;
-            verbose)
-                install_rclone verbose
-                ;;
-            hard)
-                die 11 "❌  rclone n'est pas installé. Le script va s'arrêter."
-                ;;
-            *)
-                echo "❌  Mode inconnu '$mode' dans check_rclone_installed"
-                return 2
-                ;;
+            soft) return 1 ;;
+            verbose) install_rclone verbose ;;
+            hard) die 11 "rclone n'est pas installé. Le script va s'arrêter." ;;
         esac
     fi
 
@@ -120,37 +110,41 @@ check_rclone_installed() {
 
 
 ###############################################################################
-# Fonction : Installer rclone
-# Mode : verbose = interactif + die si échec/refus
-#        soft    = tentative silencieuse, retour 0-1, pas de die
+# Fonction : Installer rclone selon le mode choisi
+# Usage    : install_rclone [soft|verbose|hard]
 ###############################################################################
 install_rclone() {
-    local mode="${1:-hard}"  # verbose / soft
+    local mode="${1:-${LAUNCH_MODE:-hard}}"  # soft / verbose / hard
 
-    # Mode hard = interactif
-    if [[ "$mode" == "verbose" ]]; then
-        echo "⚠️  rclone n'est pas installé."
-        read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-        REPLY=${REPLY,,}
+    case "$mode" in
+        soft)
+            echo "📦  Installation de rclone en mode silencieux..."
+            ;;
+        verbose)
+            echo "⚠️  rclone n'est pas installé."
+            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+            REPLY=${REPLY,,}
+            if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+                die 11 "rclone est requis mais n'a pas été installé."
+            fi
+            ;;
+        hard)
+            die 11 "rclone est requis mais n'est pas installé."
+            ;;
+    esac
 
-        if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
-            die 11 "❌  rclone est requis mais n'a pas été installé."
-        fi
-    fi
-
-    # Commande d'installation centralisée
+    # Tentative d’installation
     echo "📦  Installation de rclone en cours..."
     if sudo apt update && sudo apt install -y rclone; then
         return 0
     else
-        # Mode soft → retourne 1, mode hard → die
-        if [[ "$mode" == "soft" ]]; then
-            return 1
-        else
-            die 11 "❌  Une erreur bloquante est survenue lors de l'installation de rclone."
-        fi
+        case "$mode" in
+            verbose) die 11 "Une erreur est survenue lors de l'installation de rclone." ;;
+            soft)    return 1 ;;
+        esac
     fi
 }
+
 
 
 ###############################################################################
@@ -175,46 +169,40 @@ check_rclone_configured() {
 
 ###############################################################################
 # Fonction : Vérifier l’existence, la lisibilité et le contenu du fichier jobs
+# Usage    : check_jobs_file [soft|verbose|hard]
 ###############################################################################
 check_jobs_file() {
+    local mode="${1:-${LAUNCH_MODE:-hard}}"
+
     # Vérifier existence
     if [[ ! -f "$DIR_JOBS_FILE" ]]; then
-        return 1
+        case "$mode" in
+            soft)    return 1 ;;
+            verbose) echo "❌ $MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE" >&2; return 1 ;;
+            hard)    die 3 "$MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE" ;;
+        esac
     fi
 
     # Vérifier lisibilité
     if [[ ! -r "$DIR_JOBS_FILE" ]]; then
-        return 1
+        case "$mode" in
+            soft)    return 1 ;;
+            verbose) echo "❌ $MSG_FILE_NOT_READ : $DIR_JOBS_FILE" >&2; return 1 ;;
+            hard)    die 4 "$MSG_FILE_NOT_READ : $DIR_JOBS_FILE" ;;
+        esac
     fi
 
-    # Vérifier qu’il contient au moins une ligne valide
+    # Vérifier contenu
     if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
-        return 1
+        case "$mode" in
+            soft)    return 1 ;;
+            verbose) echo "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE" >&2; return 1 ;;
+            hard)    die 31 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE" ;;
+        esac
     fi
 
-    # Si tout va bien
+    # Si tout est bon
     return 0
-}
-
-
-###############################################################################
-# Fonction : Vérifier l’existence, la lisibilité et le contenu du fichier jobs
-###############################################################################
-post_check_jobs_file() {
-    # Vérifier existence
-    if [[ ! -f "$DIR_JOBS_FILE" ]]; then
-            die 3 "$MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE"
-    fi
-
-    # Vérifier lisibilité
-    if [[ ! -r "$DIR_JOBS_FILE" ]]; then
-        die 4 "$MSG_FILE_NOT_READ : $DIR_JOBS_FILE"
-    fi
-
-    # Vérifier qu’il contient au moins une ligne valide
-    if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
-        die 31 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE"
-    fi
 }
 
 
@@ -433,13 +421,4 @@ create_temp_dirs() {
     if [[ ! -d "$DIR_LOG" ]]; then
         mkdir -p "$DIR_LOG" 2>/dev/null || die 2 "$MSG_DIR_LOG_CREATE_FAIL : $DIR_LOG"
     fi
-}
-
-
-###############################################################################
-# Fonction : Vérifications générales post-initialisation
-###############################################################################
-post_init_checks() {
-    create_temp_dirs
-    post_check_jobs_file
 }

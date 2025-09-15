@@ -166,7 +166,8 @@ check_rclone_configured
 # Création des répertoires nécessaires
 # Vérification de la présence du répertoire temporaire
 # Vérifications initiales
-post_init_checks
+create_temp_dirs
+check_jobs_file hard
 
 
 ###############################################################################

@@ -71,7 +71,7 @@ while true; do
     fi
 
     # 2) Jobs (lancement)
-    if check_jobs_file; then
+    if check_jobs_file soft; then
         add_option "🔂  Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
 
@@ -184,9 +184,9 @@ while true; do
                 ;;
             menu_install_rclone)
                 if install_rclone soft; then
-                    echo "✅  rclone a été installé avec succès !"
+                    echo "✅  ... rclone a été installé avec succès !"
                 else
-                    echo "⚠️  Échec de l'installation de rclone (mode soft)."
+                    echo "⚠️  ... Échec de l'installation de rclone (mode soft)."
                 fi
             menu_config_rclone)
                 echo "▶️  Lancement de la configuration rclone..."
