@@ -227,8 +227,9 @@ while true; do
                 init_config_local
                 ;;
             menu_edit_config_local)
-                echo "▶️  Édition des fichiers de configuration locaux/dev existants"
-                edit_config_local
+                echo "▶️  Édition du fichiers de configuration local."
+                nano "$DIR_FILE_CONF_LOCAL"
+                echo "✅  ... Édition terminée : retour au menu."
                 ;;
             menu_show_help)
                 show_help

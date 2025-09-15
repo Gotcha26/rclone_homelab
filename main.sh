@@ -137,31 +137,19 @@ if [[ $# -eq 0 ]]; then
 fi
 
 
-
 ###############################################################################
 # 4. Vérifications fonctionnelles
 ###############################################################################
 
-# Vérifie l’email seulement si l’option --mailto est fournie
-[[ -n "$MAIL_TO" ]] && email_check "$MAIL_TO"
-
-# Vérif msmtp (seulement si mail_to est défini)
-if [[ -n "$MAIL_TO" ]]; then
-    if ! check_msmtp_installed; then
-        die 10 "❌ msmtp n'est pas installé."
-    fi
-
-    if ! check_msmtp_configured >/dev/null; then
-        die 22 "❌ msmtp est requis mais aucune configuration valide n'a été trouvée."
-    fi
-fi
+# Vérification du mail fourni + msmtp dans ce cas.
+check_mail_necessary
 
 # Vérif rclone
 check_rclone_installed
 check_rclone_configured
 
 # Création des répertoires nécessaires
-#Vérification de la présence du répertoire temporaire
+# Vérification de la présence du répertoire temporaire
 # Vérifications initiales
 post_init_checks
 

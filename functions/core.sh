@@ -76,30 +76,44 @@ show_optional_configs() {
 check_jobs_file() {
     # Vérifier existence
     if [[ ! -f "$DIR_JOBS_FILE" ]]; then
-        if [[ "${BATCH_EXEC:-false}" == "true" ]]; then
-            die 3 "$MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE"
-        fi
         return 1
     fi
 
     # Vérifier lisibilité
     if [[ ! -r "$DIR_JOBS_FILE" ]]; then
-        if [[ "${BATCH_EXEC:-false}" == "true" ]]; then
-            die 4 "$MSG_FILE_NOT_READ : $DIR_JOBS_FILE"
-        fi
         return 1
     fi
 
     # Vérifier qu’il contient au moins une ligne valide
     if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
-        if [[ "${BATCH_EXEC:-false}" == "true" ]]; then
-            die 31 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE"
-        fi
         return 1
     fi
 
+    # Si tout va bien
     return 0
 }
+
+
+###############################################################################
+# Fonction : Vérifier l’existence, la lisibilité et le contenu du fichier jobs
+###############################################################################
+post_check_jobs_file() {
+    # Vérifier existence
+    if [[ ! -f "$DIR_JOBS_FILE" ]]; then
+            die 3 "$MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE"
+    fi
+
+    # Vérifier lisibilité
+    if [[ ! -r "$DIR_JOBS_FILE" ]]; then
+        die 4 "$MSG_FILE_NOT_READ : $DIR_JOBS_FILE"
+    fi
+
+    # Vérifier qu’il contient au moins une ligne valide
+    if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
+        die 31 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE"
+    fi
+}
+
 
 
 ###############################################################################
@@ -152,19 +166,6 @@ check_rclone_configured() {
 
     if [[ ! -f "$conf_file" || ! -s "$conf_file" ]]; then
         die 12 "❌  rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
-    fi
-}
-
-
-###############################################################################
-# Fonction : Vérifier si msmtp est installé
-# Renvoie 0 si installé, sinon die 10
-###############################################################################
-check_msmtp_installed() {
-    if ! command -v msmtp >/dev/null 2>&1; then
-        return 0
-    else
-        return 1
     fi
 }
 
@@ -350,31 +351,6 @@ init_config_local() {
 
 
 ###############################################################################
-# Fonction : éditer le fichier de config local
-###############################################################################
-edit_config_local() {
-    # Vérifier l'existence du fichier
-    if [[ ! -f "$DIR_FILE_CONF_LOCAL" ]]; then
-        echo "⚠️  Aucun fichier de configuration local trouvé : $DIR_FILE_CONF_LOCAL"
-        return 1
-    fi
-
-    echo
-    echo "ℹ️  Fichier existant : $DIR_FILE_CONF_LOCAL"
-    prompt="❓  Voulez-vous éditer $(print_fancy --style bold "$DIR_FILE_CONF_LOCAL") avec nano ? [y/N] : "
-    read -rp "$prompt" REPLY
-    REPLY=${REPLY,,}
-
-    if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-        nano "$DIR_FILE_CONF_LOCAL"
-        echo "✅  Édition terminée : $DIR_FILE_CONF_LOCAL"
-    else
-        echo "ℹ️  Édition ignorée pour : $DIR_FILE_CONF_LOCAL"
-    fi
-}
-
-
-###############################################################################
 # Fonction : Récupérer le log précédent afin de l'afficher via le menu
 ###############################################################################
 get_last_log() {
@@ -417,7 +393,5 @@ create_temp_dirs() {
 ###############################################################################
 post_init_checks() {
     create_temp_dirs
-    check_jobs_file
+    post_check_jobs_file
 }
-
-

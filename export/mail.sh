@@ -1,16 +1,28 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# Fonctions de vérification de l'email (forme)
+# Fonctions de vérification de l'email (forme + installation + configuration msmtp)
 ###############################################################################
 
-email_check() {
-    local email="$1"
-    # Regex basique : texte@texte.domaine
-    if [[ ! "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-        die 12 "$MSG_MAIL_ERROR : $email"
+check_mail_necessary() {
+    if [[ -n "$MAIL_TO" ]]; then
+        # Vérifie la syntaxe de l'email
+        if ! [[ "$MAIL_TO" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+            die 12 "$MSG_MAIL_ERROR : $MAIL_TO"
+        fi
+
+        # Vérifie si msmtp est installé
+        if ! command -v msmtp >/dev/null 2>&1; then
+            die 10 "❌ msmtp n'est pas installé."
+        fi
+
+        # Vérifie la configuration msmtp via la fonction existante
+        if ! check_msmtp_configured >/dev/null; then
+            die 22 "❌ msmtp est requis mais aucune configuration valide n'a été trouvée."
+        fi
     fi
 }
+
 
 
 ###############################################################################
