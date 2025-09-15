@@ -188,6 +188,7 @@ while true; do
                 else
                     echo "⚠️  ... Échec de l'installation de rclone (mode soft)."
                 fi
+                ;;
             menu_config_rclone)
                 echo "▶️  Lancement de la configuration rclone..."
                 rclone config
