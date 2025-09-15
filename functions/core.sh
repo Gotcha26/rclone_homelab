@@ -76,7 +76,7 @@ show_optional_configs() {
 check_jobs_file() {
     # Vérifier existence
     if [[ ! -f "$DIR_JOBS_FILE" ]]; then
-        if [[ "${BATCH_EXEC:-false}" == "false" ]]; then
+        if [[ "${BATCH_EXEC:-false}" == "true" ]]; then
             die 3 "$MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE"
         fi
         return 1
@@ -84,7 +84,7 @@ check_jobs_file() {
 
     # Vérifier lisibilité
     if [[ ! -r "$DIR_JOBS_FILE" ]]; then
-        if [[ "${BATCH_EXEC:-false}" == "false" ]]; then
+        if [[ "${BATCH_EXEC:-false}" == "true" ]]; then
             die 4 "$MSG_FILE_NOT_READ : $DIR_JOBS_FILE"
         fi
         return 1
@@ -92,7 +92,7 @@ check_jobs_file() {
 
     # Vérifier qu’il contient au moins une ligne valide
     if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
-        if [[ "${BATCH_EXEC:-false}" == "false" ]]; then
+        if [[ "${BATCH_EXEC:-false}" == "true" ]]; then
             die 31 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE"
         fi
         return 1
