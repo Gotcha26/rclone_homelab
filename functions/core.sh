@@ -95,7 +95,12 @@ show_optional_configs() {
 #        hard    = die si absent
 ###############################################################################
 check_rclone_installed() {
-    local mode="$1:${LAUNCH_MODE:-hard}"  # argument : variable:<defaut> (l'argument prime sur la variable)
+    local mode    # argument : variable:<defaut> (l'argument prime sur la variable)
+    if [ $# -ge 1 ]; then
+        mode="$1"
+    else
+        mode="${LAUNCH_MODE:-hard}"
+    fi
 
     if ! command -v rclone >/dev/null 2>&1; then
         case "$mode" in
@@ -114,7 +119,12 @@ check_rclone_installed() {
 # Usage    : install_rclone [soft|verbose|hard]
 ###############################################################################
 install_rclone() {
-    local mode="${1:-${LAUNCH_MODE:-hard}}"  # soft / verbose / hard
+    local mode    # argument : variable:<defaut> (l'argument prime sur la variable)
+    if [ $# -ge 1 ]; then
+        mode="$1"
+    else
+        mode="${LAUNCH_MODE:-hard}"
+    fi
 
     case "$mode" in
         soft)
@@ -152,7 +162,12 @@ install_rclone() {
 # Paramètre optionnel : "soft" -> ne pas die, juste retourner 1 si non configuré
 ###############################################################################
 check_rclone_configured() {
-    local mode="${1:-verbose}"  # verbose = die si pas configuré, soft = juste retour 1
+    local mode    # argument : variable:<defaut> (l'argument prime sur la variable)
+    if [ $# -ge 1 ]; then
+        mode="$1"
+    else
+        mode="${LAUNCH_MODE:-hard}"
+    fi
     local conf_file="${RCLONE_CONFIG:-$HOME/.config/rclone/rclone.conf}"
 
     if [[ ! -f "$conf_file" || ! -r "$conf_file" || ! -s "$conf_file" ]]; then
@@ -172,7 +187,12 @@ check_rclone_configured() {
 # Usage    : check_jobs_file [soft|verbose|hard]
 ###############################################################################
 check_jobs_file() {
-    local mode="${1:-${LAUNCH_MODE:-hard}}"
+    local mode    # argument : variable:<defaut> (l'argument prime sur la variable)
+    if [ $# -ge 1 ]; then
+        mode="$1"
+    else
+        mode="${LAUNCH_MODE:-hard}"
+    fi
 
     # Vérifier existence
     if [[ ! -f "$DIR_JOBS_FILE" ]]; then
