@@ -307,135 +307,31 @@ print_summary_table() {
 
 
 ###############################################################################
-# Fonction : initialisation config locale/dev si absente + option édition
-###############################################################################
-init_config_local2() {
-    local main_conf="$SCRIPT_DIR/config/config.main.conf"
-
-    for conf_file in "$DIR_FILE_CONF_LOCAL" "$DIR_FILE_CONF_DEV"; do
-        # Déterminer un label lisible
-        local label
-        [[ "$conf_file" == "$DIR_FILE_CONF_LOCAL" ]] && label="local" || label="dev"
-
-        # --- Cas où le fichier est absent → proposer la création ---
-        if [[ ! -f "$conf_file" ]]; then
-            echo
-            echo
-            print_fancy --style "underline" "⚙️  Création de config.$label.sh"
-            print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
-            print_fancy --fg "blue" -n "Fichier d'origine : "
-              print_fancy "$main_conf"
-            print_fancy --fg "blue" -n "Fichier à créer   : "
-              print_fancy "$conf_file"
-            echo
-            read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
-            REPLY=${REPLY,,}
-            if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-                mkdir -p "$(dirname "$conf_file")"
-                if cp "$main_conf" "$conf_file"; then
-                    echo "✅  Fichier installé : $conf_file"
-                else
-                    die 20 "Impossible de copier $main_conf vers $conf_file"
-                fi
-            else
-                echo "ℹ️  Création ignorée pour : $conf_file"
-                continue
-            fi
-        else
-            echo
-            echo
-            echo "ℹ️  $conf_file existe déjà, pas de copie nécessaire."
-        fi
-
-        # --- Proposition d’édition immédiate (créé ou déjà présent) ---
-        echo
-        prompt="❓  Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
-        read -rp "$prompt" REPLY
-        REPLY=${REPLY,,}
-        if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
-            echo "✅  Édition terminée : $conf_file"
-        fi
-    done
-}
-
-
-###############################################################################
-# Fonction : initialisation config locale si absente + option édition
+# Fonction : Initialiser config.local.sh si absent
 ###############################################################################
 init_config_local() {
     local main_conf="$SCRIPT_DIR/config/config.main.conf"
     local conf_file="$DIR_FILE_CONF_LOCAL"
 
-    # --- Cas où le fichier est absent → proposer la création ---
-    if [[ ! -f "$conf_file" ]]; then
-        echo
-        echo
-        print_fancy --style "underline" "⚙️  Création de config.local.sh"
-        print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
-        print_fancy --fg "blue" -n "Fichier d'origine : "
-          print_fancy "$main_conf"
-        print_fancy --fg "blue" -n "Fichier à créer   : "
-          print_fancy "$conf_file"
-        echo
-        read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
-        REPLY=${REPLY,,}
-        if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            mkdir -p "$(dirname "$conf_file")"
-            if cp "$main_conf" "$conf_file"; then
-                echo "✅  Fichier installé : $conf_file"
-            else
-                die 20 "Impossible de copier $main_conf vers $conf_file"
-            fi
-        else
-            echo "ℹ️  Création ignorée pour : $conf_file"
-            return 1
-        fi
-    else
-        echo
-        echo
-        echo "ℹ️  $conf_file existe déjà, pas de copie nécessaire."
-    fi
-
-    # --- Proposition d’édition immédiate (créé ou déjà présent) ---
     echo
-    prompt="❓  Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
-    read -rp "$prompt" REPLY
+    echo
+    print_fancy --style "underline" "⚙️  Création de config.local.sh"
+    print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
+    print_fancy --fg "blue" -n "Fichier d'origine : ";
+     print_fancy "$main_conf"
+    print_fancy --fg "blue" -n "Fichier à créer   : ";
+     print_fancy "$conf_file"
+    echo
+    read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
     REPLY=${REPLY,,}
-    if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-        (exec </dev/tty >/dev/tty 2>/dev/tty; nano "$conf_file")
-        echo "✅  Édition terminée : $conf_file"
-    fi
-}
-
-
-
-###############################################################################
-# Fonction : éditer les fichiers de config locaux/dev existants
-###############################################################################
-edit_config_local2() {
-    # --- Vérifier qu'au moins un fichier existe ---
-    if [[ ! -f "$DIR_FILE_CONF_LOCAL" && ! -f "$dev_conf" ]]; then
-        echo "⚠️  Aucun fichier de configuration local ou dev existant à éditer."
+    if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+        echo "ℹ️  Création ignorée pour : $conf_file"
         return 1
     fi
 
-    # --- Parcours des fichiers existants pour édition ---
-    for conf_file in "$DIR_FILE_CONF_DEV" "$DIR_FILE_CONF_LOCAL"; do
-        if [[ -f "$conf_file" ]]; then
-            echo
-            echo "ℹ️  Fichier existant : $conf_file"
-            prompt="❓  Voulez-vous éditer $(print_fancy --style bold "$conf_file") avec nano ? [y/N] : "
-            read -rp "$prompt" REPLY
-            REPLY=${REPLY,,}
-            if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-                nano "$conf_file"
-                echo "✅  Édition terminée : $conf_file"
-            else
-                echo "ℹ️  Édition ignorée pour : $conf_file"
-            fi
-        fi
-    done
+    mkdir -p "$(dirname "$conf_file")" || die 21 "Impossible de créer le dossier cible $(dirname "$conf_file")"
+    cp "$main_conf" "$conf_file"       || die 20 "Impossible de copier $main_conf vers $conf_file"
+    echo "✅  Fichier installé : $conf_file"
 }
 
 

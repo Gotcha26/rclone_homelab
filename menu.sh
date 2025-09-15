@@ -219,8 +219,8 @@ while true; do
                 echo "✅ ... Fin de l'affichage : retour au menu."
                 ;;
             menu_init_config_local)
-                echo "▶️  Installation de la configuration locale."
-                echo "Ces fichiers sont préservés lors des mises à jours automatiques."
+                echo "▶️  Installation la configuration locale."
+                echo "Le fichier est préservé lors des mises à jours automatiques."
                 init_config_local
                 ;;
             menu_edit_config_local)
