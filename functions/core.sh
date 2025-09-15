@@ -66,6 +66,38 @@ detect_config() {
 
 
 ###############################################################################
+# Fonction : Vérifier l’existence, la lisibilité et le contenu du fichier jobs
+###############################################################################
+check_jobs_file() {
+    # Vérifier existence
+    if [[ ! -f "$DIR_JOBS_FILE" ]]; then
+        if [[ "${BATCH_EXEC:-false}" == "false" ]]; then
+            die 3 "$MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE"
+        fi
+        return 1
+    fi
+
+    # Vérifier lisibilité
+    if [[ ! -r "$DIR_JOBS_FILE" ]]; then
+        if [[ "${BATCH_EXEC:-false}" == "false" ]]; then
+            die 4 "$MSG_FILE_NOT_READ : $DIR_JOBS_FILE"
+        fi
+        return 1
+    fi
+
+    # Vérifier qu’il contient au moins une ligne valide
+    if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
+        if [[ "${BATCH_EXEC:-false}" == "false" ]]; then
+            die 31 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE"
+        fi
+        return 1
+    fi
+
+    return 0
+}
+
+
+###############################################################################
 # Fonction : Vérifier si rclone est installé
 # Renvoie 0 si installé, sinon die 11
 ###############################################################################
@@ -183,16 +215,6 @@ check_msmtp_configured() {
     # Aucun fichier valide trouvé
     echo "❌  Aucun fichier de configuration msmtp valide trouvé." >&2
     return 1
-}
-
-
-###############################################################################
-# Fonction : Vérifier la présence de jobs configurés
-###############################################################################
-check_jobs_configured() {
-    [[ -f "$DIR_JOBS_FILE" ]] || return 1
-    # Vérifie qu’il existe au moins une ligne non vide qui ne commence pas par "#"
-    grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"
 }
 
 
@@ -479,23 +501,13 @@ create_temp_dirs() {
     fi
 }
 
-###############################################################################
-# Fonction : Vérification de l'existence des fichiers critiques
-###############################################################################
-check_required_files() {
-    # Jobs file
-    [[ -f "$DIR_JOBS_FILE" ]] || die 3 "$MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE"
-    [[ -r "$DIR_JOBS_FILE" ]] || die 4 "$MSG_FILE_NOT_READ : $DIR_JOBS_FILE"
-
-    # (Ajouter d'autres fichiers critiques ici si nécessaire)
-}
 
 ###############################################################################
 # Fonction : Vérifications générales post-initialisation
 ###############################################################################
 post_init_checks() {
     create_temp_dirs
-    check_required_files
+    chech_jobs_file
 }
 
 

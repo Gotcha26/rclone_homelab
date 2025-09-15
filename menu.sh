@@ -20,6 +20,9 @@ detect_config
 
 # ===
 
+# sourcing particulier
+source "$SCRIPT_DIR/functions/menu_f.sh"
+
 ###############################################################################
 # Si aucun argument fourni → affichage d’un menu interactif
 ###############################################################################
@@ -65,7 +68,7 @@ while true; do
     fi
 
     # 2) Jobs (lancement)
-    if check_jobs_configured; then
+    if check_jobs_file; then
         add_option "🔂  Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
 
