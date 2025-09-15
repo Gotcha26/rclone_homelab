@@ -236,7 +236,7 @@ while true; do
             menu_exit_script)
                 echo "👋  Bonne journée à vous. 👋"
                 echo
-                exit 0
+                exit 99
                 ;;
             *)
                 echo "Choix invalide."

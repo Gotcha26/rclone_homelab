@@ -129,7 +129,13 @@ fi
 # Si aucun argument → menu interactif
 if [[ $# -eq 0 ]]; then
     bash "$SCRIPT_DIR/menu.sh"
+    MENU_RESULT=$?
+    if [[ $MENU_RESULT -eq 99 ]]; then
+        echo "💡  Menu demande la sortie totale."
+        exit 0
+    fi
 fi
+
 
 
 ###############################################################################
@@ -185,9 +191,6 @@ fi
 # Purge inconditionnel des fichiers anciens (sous-dossiers inclus)
 find "$DIR_TMP" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
-# Affichage récapitulatif à la sortie seulement si exécution éffective
-if [[ "${BATCH_EXEC:-false}" == true ]]; then
-    print_summary_table
-fi
+trap print_summary_table
 
 exit $ERROR_CODE

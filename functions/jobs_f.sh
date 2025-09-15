@@ -1,14 +1,6 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# Fonction qui initialise le travail (batch) = rentrée effective dans le fichier
-###############################################################################
-batch_executing() {
-    BATCH_EXEC=true
-}
-
-
-###############################################################################
 # Fonction pour parser et vérifier les jobs
 ###############################################################################
 # Déclarer le tableau global pour stocker les jobs

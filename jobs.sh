@@ -15,9 +15,6 @@ declare -A REMOTE_STATUS   # remote_name -> OK / PROBLEM
 # Charger les remotes rclone configurés
 mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 
-# Annoncer/prévenir de l'exécution effective du batch
-batch_executing
-
 
 # ---------------------------------------------------------------------------
 # 1. Parser les jobs et initialiser les statuts
