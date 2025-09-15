@@ -165,36 +165,40 @@ while true; do
                 exit 0
                 ;;
             menu_run_all_jobs)
-                # On quitte la boucle pour renir à l'exacution normale de main.sh
+                # On quitte la boucle pour renir à l'exécution normale de main.sh
                 break
                 ;;
             menu_jobs)
                 if ! init_jobs_file; then
-                    echo "❌  Impossible de créer "$DIR_JOBS_FILE", édition annulée."
-                    break
+                    echo "❌ Impossible de créer $DIR_JOBS_FILE, édition annulée."
+                    continue
                 fi
-                echo "▶️  Ouverture de $JOBS_FILE..."
-                # Lancement de nano dans un shell indépendant
+                echo "▶️ Ouverture de $JOBS_FILE..."
                 nano "$DIR_JOBS_FILE"
-                echo "✅  ... Édition terminée : retour au menu."
+                echo "✅ ... Édition terminée > retour au menu."
                 ;;
             menu_install_rclone)
-                install_rclone
+                echo "📦  Installation de rclone en cours..."
+                if sudo apt update && sudo apt install -y rclone; then
+                    echo "✅  rclone a été installé avec succès !"
+                else
+                    echo "❌  Une erreur bloquante est survenue lors de l'installation de rclone."
+                fi
                 ;;
             menu_config_rclone)
                 echo "▶️  Lancement de la configuration rclone..."
                 rclone config
-                echo "✅  ... Configuration terminée : retour au menu."
+                echo "✅  ... Configuration terminée > retour au menu."
                 ;;
             menu_show_rclone_config)
                 echo "▶️  Ouverture de $RCLONE_CONF..."
                 nano "$RCLONE_CONF"
-                echo "✅  ... Édition terminée : retour au menu."
+                echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_install_msmtp)
                 echo "▶️  Installation de msmtp..."
                 install_msmtp
-                echo "✅  ... Installation terminée : retour au menu."
+                echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_show_msmtp_config)
                 # Détecte le fichier configuré
@@ -202,7 +206,7 @@ while true; do
                     echo "▶️ Affichage du fichier de configuration msmtp : $conf_file"
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
                     nano "$conf_file"
-                    echo "✅  ... Fin de l'affichage : retour au menu."
+                    echo "✅  ... Édition terminée > retour au menu."
                 else
                     echo "⚠️  Aucun fichier de configuration msmtp trouvé."
                 fi
@@ -213,13 +217,13 @@ while true; do
                 conf_file="${MSMTPRC:-$HOME/.msmtprc}"
                 # Ouverture dans nano directement, sans polluer le log
                 nano "$conf_file"
-                echo "✅ ... Configuration terminée : retour au menu."
+                echo "✅ ... Édition terminée > retour au menu."
                 ;;
             menu_show_last_log)
                 echo "▶️  Affichage des 500 dernières lignes de $LAST_LOG_FILE..."
                 # Utilisation d'un pager pour ne pas polluer le log principal
                 tail -n 500 "$LAST_LOG_FILE" | less -R
-                echo "✅ ... Fin de l'affichage : retour au menu."
+                echo "✅ ... Fin de l'affichage > retour au menu."
                 ;;
             menu_init_config_local)
                 echo "▶️  Installation la configuration locale."
@@ -229,14 +233,12 @@ while true; do
             menu_edit_config_local)
                 echo "▶️  Édition du fichiers de configuration local."
                 nano "$DIR_FILE_CONF_LOCAL"
-                echo "✅  ... Édition terminée : retour au menu."
+                echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_show_help)
                 show_help
                 ;;
             menu_exit_script)
-                echo "👋  Bonne journée à vous. 👋"
-                echo
                 exit 99
                 ;;
             *)

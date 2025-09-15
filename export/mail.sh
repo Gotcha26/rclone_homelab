@@ -4,7 +4,7 @@
 # Fonctions de vérification de l'email (forme + installation + configuration msmtp)
 ###############################################################################
 
-check_mail_necessary() {
+check_mail_bundle() {
     if [[ -n "$MAIL_TO" ]]; then
         # Vérifie la syntaxe de l'email
         if ! [[ "$MAIL_TO" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then

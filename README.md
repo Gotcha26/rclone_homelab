@@ -170,6 +170,8 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 - [] En cas de MAJ détectée, prévenir via le rapport d'exécution qu'un MAJ est disponnible (mail/discord)
 - [x] Metre en varaibles les fichiers locaux conf + dir
 - [] Ne plus parler de "configuration locale" mais ed paramètres personnalisés
+- [] Intégrer micro (choix avec nano lors de l'installation)
+- [] Réafecter correctement les codes DIE
 
 ### Petites infos
 *Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).  

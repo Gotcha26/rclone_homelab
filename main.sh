@@ -2,7 +2,6 @@
 
 set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
 
-export GIT_PAGER=cat
 
 # ###############################################################################
 # 1. Initialisation par défaut
@@ -131,7 +130,9 @@ if [[ $# -eq 0 ]]; then
     bash "$SCRIPT_DIR/menu.sh"
     MENU_RESULT=$?
     if [[ $MENU_RESULT -eq 99 ]]; then
-        echo "💡  Menu demande la sortie totale."
+        echo
+        echo "👋  Bonne journée à vous. 👋"
+        echo
         exit 0
     fi
 fi
@@ -142,7 +143,7 @@ fi
 ###############################################################################
 
 # Vérification du mail fourni + msmtp dans ce cas.
-check_mail_necessary
+check_mail_bundle
 
 # Vérif rclone
 check_rclone_installed
@@ -179,6 +180,6 @@ fi
 # Purge inconditionnel des fichiers anciens (sous-dossiers inclus)
 find "$DIR_TMP" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
-trap print_summary_table
+print_summary_table
 
 exit $ERROR_CODE
