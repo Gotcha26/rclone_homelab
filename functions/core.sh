@@ -37,6 +37,24 @@ EOF
 
 
 ###############################################################################
+# Fonction : Tableau - S'assure des valeurs prises par les varaibles locales utilisateur
+###############################################################################
+set_validation_vars() {
+    VARS_TO_VALIDATE=(
+        "LOG_LINE_MAX:100-10000:1000"
+        "TERM_WIDTH_DEFAULT:80-120:80"
+        "LOG_RETENTION_DAYS:1-15:14"
+        "FORCE_UPDATE:bool:false"
+        "DRY_RUN:bool:false"
+        "LAUNCH_MODE:hard|verbose:hard"
+        "DEBUG_MODE:bool:false"
+        "DEBUG_INFOS:bool:false"
+        "DISPLAY_MODE:none|simplified|verbose:simplified"
+    )
+}
+
+
+###############################################################################
 # Fonction : Charger config.local puis config.dev (si présents)
 ###############################################################################
 load_optional_configs() {
@@ -67,6 +85,91 @@ show_optional_configs() {
         print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
         "CONFIGURATION DEV ACTIVÉE  ℹ️ "
     fi
+}
+
+
+###############################################################################
+# Fonction : Vérifier si rclone est installé
+# Mode : soft    = retour 1 si absent
+#        verbose = interactif, propose l'installation
+#        hard    = die si absent
+###############################################################################
+check_rclone_installed() {
+    local LAUNCH_MODE="$1:${LAUNCH_MODE:-hard}"  # argument : variable:<defaut> (l'argument prime sur la variable)
+
+    if ! command -v rclone >/dev/null 2>&1; then
+        case "$mode" in
+            soft)
+                return 1
+                ;;
+            verbose)
+                install_rclone verbose
+                ;;
+            hard)
+                die 11 "❌  rclone n'est pas installé. Le script va s'arrêter."
+                ;;
+            *)
+                echo "❌  Mode inconnu '$mode' dans check_rclone_installed"
+                return 2
+                ;;
+        esac
+    fi
+
+    return 0
+}
+
+
+###############################################################################
+# Fonction : Installer rclone
+# Mode : verbose = interactif + die si échec/refus
+#        soft    = tentative silencieuse, retour 0-1, pas de die
+###############################################################################
+install_rclone() {
+    local mode="${1:-hard}"  # verbose / soft
+
+    # Mode hard = interactif
+    if [[ "$mode" == "verbose" ]]; then
+        echo "⚠️  rclone n'est pas installé."
+        read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+        REPLY=${REPLY,,}
+
+        if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+            die 11 "❌  rclone est requis mais n'a pas été installé."
+        fi
+    fi
+
+    # Commande d'installation centralisée
+    echo "📦  Installation de rclone en cours..."
+    if sudo apt update && sudo apt install -y rclone; then
+        return 0
+    else
+        # Mode soft → retourne 1, mode hard → die
+        if [[ "$mode" == "soft" ]]; then
+            return 1
+        else
+            die 11 "❌  Une erreur bloquante est survenue lors de l'installation de rclone."
+        fi
+    fi
+}
+
+
+###############################################################################
+# Vérifie si rclone est configuré
+# Paramètre optionnel : "soft" -> ne pas die, juste retourner 1 si non configuré
+###############################################################################
+check_rclone_configured() {
+    local mode="${1:-verbose}"  # verbose = die si pas configuré, soft = juste retour 1
+    local conf_file="${RCLONE_CONFIG:-$HOME/.config/rclone/rclone.conf}"
+
+    if [[ ! -f "$conf_file" || ! -r "$conf_file" || ! -s "$conf_file" ]]; then
+        if [[ "$mode" == "verbose" ]]; then
+            die 12 "❌  rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
+        else
+            return 1  # soft fail
+        fi
+    fi
+
+    return 0
 }
 
 
@@ -111,61 +214,6 @@ post_check_jobs_file() {
     # Vérifier qu’il contient au moins une ligne valide
     if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
         die 31 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE"
-    fi
-}
-
-
-
-###############################################################################
-# Fonction : Vérifier si rclone est installé
-# Renvoie 0 si installé, sinon die 11
-###############################################################################
-check_rclone_installed() {
-    if ! command -v rclone >/dev/null 2>&1; then
-        die 11 "❌  rclone n'est pas installé. Le script va s'arrêter."
-    fi
-}
-
-
-###############################################################################
-# Fonction : Installer rclone (sans confirmation)
-###############################################################################
-install_rclone() {
-    echo "📦  Installation de rclone en cours..."
-    if sudo apt update && sudo apt install -y rclone; then
-        echo "✅  rclone a été installé avec succès !"
-    else
-        die 11 "❌  Une erreur bloquante est survenue lors de l'installation de rclone."
-    fi
-}
-
-
-###############################################################################
-# Fonction : Vérification interactive (si absent propose l'installation)
-###############################################################################
-prompt_install_rclone() {
-    if ! command -v rclone >/dev/null 2>&1; then
-        echo "⚠️  rclone n'est pas installé."
-        read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-        REPLY=${REPLY,,}
-        if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-            install_rclone
-        else
-            die 11 "❌  rclone est requis mais n'a pas été installé."
-        fi
-    fi
-}
-
-
-###############################################################################
-# Fonction : Vérifie la configuration initiale de rclone
-# Renvoie die 12 si fichier manquant ou vide
-###############################################################################
-check_rclone_configured() {
-    local conf_file="${RCLONE_CONFIG_DIR:-$HOME/.config/rclone/rclone.conf}"
-
-    if [[ ! -f "$conf_file" || ! -s "$conf_file" ]]; then
-        die 12 "❌  rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
     fi
 }
 

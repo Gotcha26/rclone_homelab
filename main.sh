@@ -43,7 +43,15 @@ print_logo
 # On créait un dossier temporaire de manière temporaire. Il est supprimé à la fermeture.
 TMP_JOBS_DIR=$(mktemp -d)
 
+# Correction des varaibles utilisateurs (locales) par défaut
+set_validation_vars
+
 # --- ↓ DEBUG ↓ ---
+if [[ "$DEBUG_MODE" == "true" ]]; then 
+    validate_vars VARS_TO_VALIDATE[@]
+    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+fi
+
 if [[ "$DEBUG_MODE" == "true" ]]; then 
     TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
     mkdir -p "$TMP_JOBS_DIR"
@@ -60,6 +68,12 @@ fi
 fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; }
 analyze_update_status
 
+# --- ↓
+
+# L'ARGUMENT dans le code d'appel de la fonciton PRIME sur la variable global
+
+# --- ↑
+
 
 ###############################################################################
 # 2. Parsing complet des arguments
@@ -68,8 +82,8 @@ analyze_update_status
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --auto)
-            LAUNCH_MODE="automatique"
+        --verbose)
+            LAUNCH_MODE="verbose"
             shift
             ;;
         --mailto=*)

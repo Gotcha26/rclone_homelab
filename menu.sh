@@ -79,16 +79,16 @@ while true; do
     # Jobs
     add_option "⌨️  Afficher/éditer des remotes" "menu_jobs"
     # rclone
-    if ! command -v rclone >/dev/null 2>&1; then
+    if ! check_rclone_installed soft >/dev/null 2>&1; then
         # Cas 1 : rclone absent
         add_option "📦  Installer rclone" "menu_install_rclone"
     else
-        # Cas 2 : rclone présent → vérifier la config
-        if ! check_rclone_configured >/dev/null 2>&1; then
-            # Config absente ou vide
+        # Mode "soft" pour le menu : pas de die
+        if ! check_rclone_configured soft >/dev/null 2>&1; then
+            # Cas 2 : rclone présent → vérifier la config
             add_option "🤖  Configurer rclone" "menu_config_rclone"
         else
-            # Config OK
+            # Config OK ou vide
             add_option "📄  Afficher/éditer la configuration rclone" "menu_show_rclone_config"
         fi
     fi
@@ -183,13 +183,11 @@ while true; do
                 echo "✅ ... Édition terminée > retour au menu."
                 ;;
             menu_install_rclone)
-                echo "📦  Installation de rclone en cours..."
-                if sudo apt update && sudo apt install -y rclone; then
+                if install_rclone soft; then
                     echo "✅  rclone a été installé avec succès !"
                 else
-                    echo "❌  Une erreur bloquante est survenue lors de l'installation de rclone."
+                    echo "⚠️  Échec de l'installation de rclone (mode soft)."
                 fi
-                ;;
             menu_config_rclone)
                 echo "▶️  Lancement de la configuration rclone..."
                 rclone config
