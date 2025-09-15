@@ -59,12 +59,13 @@ for bin in git curl rsync; do
     if ! command -v "$bin" >/dev/null 2>&1; then
         echo "⚠️  $bin n'est pas installé."
         if command -v apt >/dev/null 2>&1; then
-            sudo apt update && sudo apt install -y "$bin" || {
-                echo "❌  Impossible d'installer $bin, mise à jour annulée."
-                exit 2
-            }
+            if [ "$(id -u)" -eq 0 ]; then
+                apt update && apt install -y "$bin" || { echo "❌ Impossible d'installer $bin"; exit 2; }
+            else
+                sudo apt update && sudo apt install -y "$bin" || { echo "❌ Impossible d'installer $bin"; exit 2; }
+            fi
         else
-            echo "❌  Installez $bin manuellement."
+            echo "❌ Installez $bin manuellement."
             exit 3
         fi
     fi
@@ -97,18 +98,19 @@ if [[ "$FORCE_MODE" == true ]]; then
         exit 5
     }
 
-    # Copie intégrale avec suppression des fichiers obsolètes
-    rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
-    rm -rf "$TMP_DIR"
+    # Copier tout en respectant les permissions
+    if [ "$(id -u)" -eq 0 ] || [ -w "$SCRIPT_DIR" ]; then
+        rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
+    else
+        sudo rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
+    fi
 
+    rm -rf "$TMP_DIR"
     echo "✅  Projet réinstallé en mode FORCÉ."
     exit 0
 else
     echo "🔄  Vérification des mises à jour Git..."
-    git fetch --all --tags || {
-        echo "❌  Impossible d'accéder au dépôt Git."
-        exit 6
-    }
+    git fetch --all --tags || { echo "❌ Impossible d'accéder au dépôt Git."; exit 6; }
 
     LOCAL_HASH=$(git rev-parse HEAD)
     REMOTE_HASH=$(git rev-parse "origin/$CURRENT_BRANCH")
