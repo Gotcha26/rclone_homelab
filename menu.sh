@@ -4,9 +4,6 @@ DISPLAY_MODE=none
 
 # === Initialisation minimale ===
 
-ERROR_CODE=0
-EXECUTED_JOBS=0
-
 # Résoudre le chemin réel du script (suivi des symlinks)
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"

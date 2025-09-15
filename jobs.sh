@@ -41,7 +41,6 @@ check_remotes
 # ---------------------------------------------------------------------------
 GLOBAL_HTML_BLOCK=""          # Initialisation du HTML global
 JOB_COUNTER=1                 # Compteur de jobs pour le label [JOBxx]
-NO_CHANGES_ALL=true
 
 
 # ---------------------------------------------------------------------------

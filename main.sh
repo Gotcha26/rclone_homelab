@@ -10,9 +10,6 @@ export GIT_PAGER=cat
 
 # === Initialisation minimale ===
 
-ERROR_CODE=0
-EXECUTED_JOBS=0
-
 # Résoudre le chemin réel du script (suivi des symlinks)
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
@@ -126,6 +123,18 @@ if [[ "$FORCE_UPDATE" == true ]]; then
     fi
 fi
 
+# Si aucun argument → menu interactif
+if [[ $# -eq 0 ]]; then
+    bash "$SCRIPT_DIR/menu.sh"
+fi
+
+
+###############################################################################
+# 4. Vérifications fonctionnelles
+###############################################################################
+
+BATCH_EXEC=true     # Permet de savoir si le traitement à débuté (pour print_summary_table)
+
 # Vérifie l’email seulement si l’option --mailto est fournie
 [[ -n "$MAIL_TO" ]] && email_check "$MAIL_TO"
 
@@ -139,16 +148,6 @@ if [[ -n "$MAIL_TO" ]]; then
         die 22 "❌ msmtp est requis mais aucune configuration valide n'a été trouvée."
     fi
 fi
-
-# Si aucun argument → menu interactif
-if [[ $# -eq 0 ]]; then
-    bash "$SCRIPT_DIR/menu.sh"
-fi
-
-
-###############################################################################
-# 4. Vérifications fonctionnelles
-###############################################################################
 
 # Vérif rclone
 check_rclone_installed
@@ -185,7 +184,9 @@ fi
 # Purge inconditionnel des fichiers anciens (sous-dossiers inclus)
 find "$DIR_TMP" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
 
-# Affichage récapitulatif à la sortie
-trap 'print_summary_table' EXIT
+# Affichage récapitulatif à la sortie seulement si exécution éffective
+if [[ "$BATCH_EXEC" == true ]]; then
+    'print_summary_table' EXIT
+fi
 
 exit $ERROR_CODE
