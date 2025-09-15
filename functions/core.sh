@@ -198,27 +198,36 @@ install_msmtp() {
 
 
 ###############################################################################
-# Fonction : Vérifie la configuration initiale de msmtp
+# Fonction : Détecter le fichier de configuration msmtp réellement utilisé
 ###############################################################################
 check_msmtp_configured() {
-    local conf_file=""
+    local candidates=()
 
-    # 1. Vérifie d'abord le fichier utilisateur (ex: /root/.msmtprc ou $MSMTPRC)
-    conf_file="${MSMTPRC:-$HOME/.msmtprc}"
-    if [[ -f "$conf_file" && -s "$conf_file" && -r "$conf_file" ]]; then
-        echo "$conf_file"
-        return 0
-    fi
+    # 1. Variable d'environnement MSMTPRC si définie
+    [[ -n "${MSMTPRC:-}" ]] && candidates+=("$MSMTPRC")
 
-    # 2. Sinon, vérifie le fichier système (/etc/msmtprc)
-    conf_file="/etc/msmtprc"
-    if [[ -f "$conf_file" && -s "$conf_file" && -r "$conf_file" ]]; then
-        echo "$conf_file"
-        return 0
-    fi
+    # 2. Fichier utilisateur
+    [[ -n "$HOME" ]] && candidates+=("$HOME/.msmtprc")
+
+    # 3. Fichier système
+    candidates+=("/etc/msmtprc")
+
+    # Parcours des candidats
+    for conf_file in "${candidates[@]}"; do
+        if [[ -f "$conf_file" && -r "$conf_file" ]]; then
+            local filesize
+            filesize=$(stat -c %s "$conf_file" 2>/dev/null || echo 0)
+            if (( filesize > 0 )); then
+                echo "$conf_file"
+                return 0
+            else
+                echo "⚠️  Fichier msmtp trouvé mais vide : $conf_file" >&2
+            fi
+        fi
+    done
 
     # Aucun fichier valide trouvé
-    echo "❌  Aucun fichier de configuration msmtp valide trouvé." >&2
+    echo "❌  Aucun fichier msmtp valide trouvé." >&2
     return 1
 }
 
