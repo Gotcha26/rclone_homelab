@@ -118,9 +118,14 @@ while true; do
         add_option "💻  Installer une configuration locale" "menu_init_config_local"
     fi
 
-    #Option d'édition direct du fichier de configuration local/dev
+    #Option d'édition direct du fichier de configuration local/dconfig.local.conf
     if [[ -f "$DIR_FILE_CONF_LOCAL" ]]; then
         add_option "✏️  Éditer la configuration locale" "menu_edit_config_local"
+    fi
+
+    #Option d'édition direct du fichier de configuration local/config.dev.conf
+    if [[ -f "$DIR_FILE_CONF_DEV" ]]; then
+        add_option "✏️  Éditer la configuration locale" "menu_edit_config_dev"
     fi
 
     # Choix permanents
@@ -231,8 +236,13 @@ while true; do
                 init_config_local
                 ;;
             menu_edit_config_local)
-                echo "▶️  Édition du fichiers de configuration local."
+                echo "▶️  Édition du fichiers $FILE_CONF_LOCAL"
                 nano "$DIR_FILE_CONF_LOCAL"
+                echo "✅  ... Édition terminée > retour au menu."
+                ;;
+            menu_edit_config_dev)
+                echo "▶️  Édition du fichiers $FILE_CONF_DEV"
+                nano "$DIR_FILE_CONF_DEV"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_show_help)
