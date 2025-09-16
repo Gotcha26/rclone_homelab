@@ -162,18 +162,48 @@ install_rclone() {
 # Paramètre optionnel : "soft" -> ne pas die, juste retourner 1 si non configuré
 ###############################################################################
 check_rclone_configured() {
-    local mode="${1:-${LAUNCH_MODE:-hard}}" # argument : variable:<defaut> (l'argument prime sur la variable)
-    local conf_file="${RCLONE_CONFIG:-$HOME/.config/rclone/rclone.conf}"
+    local candidates=()
+    local mode="${1:-${LAUNCH_MODE:-hard}}"   # ordre de priorité : arg > var globale > défaut hard
+    local found=0
 
-    if [[ ! -f "$conf_file" || ! -r "$conf_file" || ! -s "$conf_file" ]]; then
-        if [[ "$mode" == "verbose" ]]; then
-            die 12 "rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
-        else
-            return 1  # soft fail
+    # 1. Variable d'environnement RCLONE_CONFIG si définie
+    [[ -n "${RCLONE_CONFIG:-}" ]] && candidates+=("$RCLONE_CONFIG")
+
+    # 2. Fichier utilisateur standard (~/.config/rclone/rclone.conf)
+    [[ -n "$HOME" ]] && candidates+=("$HOME/.config/rclone/rclone.conf")
+
+    # 3. Fichier global système
+    candidates+=("/etc/rclone.conf")
+
+    for conf_file in "${candidates[@]}"; do
+        if [[ -f "$conf_file" && -r "$conf_file" ]]; then
+            local filesize
+            filesize=$(stat -c %s "$conf_file" 2>/dev/null || echo 0)
+            if (( filesize > 0 )); then
+                [[ "$mode" == "verbose" ]] && print_fancy --theme "sucess" "Fichier rclone valide trouvé : $conf_file" >&2
+                echo "$conf_file"
+                return 0
+            else
+                [[ "$mode" == "verbose" ]] && print_fancy --theme "warning" "Fichier rclone trouvé mais vide : $conf_file" >&2
+                found=1
+            fi
         fi
+    done
+
+    if (( found == 1 )); then
+        case "$mode" in
+            soft)   return 1 ;;
+            verbose) print_fancy --theme "error" "Fichier rclone détecté mais inutilisable." >&2; return 1 ;;
+            hard)   die 30 "Fichier rclone détecté mais inutilisable." >&2; exit 1 ;;
+        esac
     fi
 
-    return 0
+    # Aucun fichier trouvé
+    case "$mode" in
+        soft)   return 2 ;;
+        verbose) print_fancy --theme "info" "Aucun fichier rclone.conf trouvé." >&2; return 2 ;;
+        hard)   die 30 "Aucun fichier rclone.conf trouvé — arrêt immédiat." >&2; exit 2 ;;
+    esac
 }
 
 
@@ -277,6 +307,23 @@ check_msmtp_configured() {
     echo "❌  Aucun fichier msmtp valide trouvé." >&2
     return 1
 }
+
+
+###############################################################################
+# Fonction : Edit ele bon fichier de configuration de msmtp (si installation atypique)
+###############################################################################
+edit_msmtp_config() {
+    local conf_file
+    conf_file="$(check_msmtp_configured)" || {
+        conf_file="${MSMTPRC:-$HOME/.msmtprc}"
+        print_fancy --theme "warning" "Aucun fichier msmtp valide trouvé, création de : $conf_file"
+        touch "$conf_file" && chmod 600 "$conf_file"
+    }
+
+    print_fancy --theme "info" "Édition du fichier msmtp : $conf_file"
+    nano "$conf_file"
+}
+
 
 
 ###############################################################################

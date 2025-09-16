@@ -181,11 +181,26 @@ while true; do
                 nano "$DIR_JOBS_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
+
+
+
             menu_install_rclone)
+                echo "▶️  Installation de rclone..."
                 if install_rclone soft; then
                     echo "✅  ... rclone a été installé avec succès !"
                 else
                     echo "⚠️  ... Échec de l'installation de rclone (mode soft)."
+                fi
+                ;;
+            menu_show_rclone_config)
+                # Détecte le fichier configuré
+                if conf_file=$(check_rclone_configured 2>/dev/null); then
+                    echo "▶️  Affichage du fichier de configuration rclone : $conf_file"
+                    # Utilisation de nano pour visualiser/éditer sans polluer le log
+                    nano "$conf_file"
+                    echo "✅  ... Édition terminée > retour au menu."
+                else
+                    echo "⚠️  Aucun fichier de configuration rclone trouvé."
                 fi
                 ;;
             menu_config_rclone)
@@ -193,15 +208,20 @@ while true; do
                 rclone config
                 echo "✅  ... Configuration terminée > retour au menu."
                 ;;
-            menu_show_rclone_config)
-                echo "▶️  Ouverture de $RCLONE_CONF..."
-                nano "$RCLONE_CONF"
-                echo "✅  ... Édition terminée > retour au menu."
-                ;;
+
+
+
+
+
+
+
             menu_install_msmtp)
                 echo "▶️  Installation de msmtp..."
-                install_msmtp
-                echo "✅  ... Installation terminée > retour au menu."
+                if install_msntp soft; then
+                    echo "✅  ... msmtp a été installé avec succès !"
+                else
+                    echo "⚠️  ... Échec de l'installation de msmtp (mode soft)."
+                fi
                 ;;
             menu_show_msmtp_config)
                 # Détecte le fichier configuré
@@ -216,12 +236,13 @@ while true; do
                 ;;
             menu_config_msmtp)
                 echo "▶️  Lancement de la configuration msmtp..."
-                # Utilise la variable MSMTPRC si définie, sinon ~/msmtprc
-                conf_file="${MSMTPRC:-$HOME/.msmtprc}"
-                # Ouverture dans nano directement, sans polluer le log
-                nano "$conf_file"
+                edit_msmtp_config
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
+
+
+
+
             menu_show_last_log)
                 echo "▶️  Affichage des 500 dernières lignes de $LAST_LOG_FILE..."
                 # Utilisation d'un pager pour ne pas polluer le log principal
