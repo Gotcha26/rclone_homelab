@@ -14,6 +14,15 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RESET='\033[0m'
 
+# ---------------------------------------------------------------------------- #
+# Détection sudo
+# ---------------------------------------------------------------------------- #
+if [[ $(id -u) -ne 0 ]]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
+
 # --------------------------------------------------------------------------- #
 # Vérification des dépendances
 # --------------------------------------------------------------------------- #
@@ -60,7 +69,7 @@ install_rclone() {
     if [ -w "/usr/local/bin" ]; then
         cp rclone-*-linux-amd64/rclone /usr/local/bin/
     else
-        sudo cp rclone-*-linux-amd64/rclone /usr/local/bin/
+        $SUDO cp rclone-*-linux-amd64/rclone /usr/local/bin/
     fi
     chmod +x /usr/local/bin/rclone
     rm -rf rclone-*-linux-amd64*
@@ -77,7 +86,7 @@ check_msmtp() {
         case "$yn" in
             [Yy]*)
                 echo "Installation de msmtp..."
-                if [ "$(id -u)" -eq 0 ] || sudo apt update && sudo apt install -y msmtp; then
+                if [ "$(id -u)" -eq 0 ] || $SUDO apt update && $SUDO apt install -y msmtp; then
                     echo -e "${GREEN}✅  msmtp installé.${RESET}"
                 else
                     echo -e "${YELLOW}⚠️  Échec installation msmtp, ce n'est pas bloquant.${RESET}"
@@ -169,13 +178,13 @@ install() {
         if mkdir -p "$INSTALL_DIR" 2>/dev/null; then
             echo "📂  Dossier $INSTALL_DIR créé."
         else
-            sudo mkdir -p "$INSTALL_DIR" || { echo "❌  Impossible de créer $INSTALL_DIR"; exit 1; }
+            $SUDO mkdir -p "$INSTALL_DIR" || { echo "❌  Impossible de créer $INSTALL_DIR"; exit 1; }
         fi
     fi
 
     # Vérifier droits écriture
     if [ ! -w "$INSTALL_DIR" ]; then
-        sudo chown "$(whoami)" "$INSTALL_DIR" || { echo "❌  Impossible de prendre possession de $INSTALL_DIR"; exit 1; }
+        $SUDO chown "$(whoami)" "$INSTALL_DIR" || { echo "❌  Impossible de prendre possession de $INSTALL_DIR"; exit 1; }
     fi
 
     cd "$INSTALL_DIR" || exit 1
@@ -193,7 +202,7 @@ create_symlink() {
     if [ -w "$(dirname "$SYMLINK")" ]; then
         ln -sf "$INSTALL_DIR/main.sh" "$SYMLINK"
     else
-        sudo ln -sf "$INSTALL_DIR/main.sh" "$SYMLINK"
+        $SUDO ln -sf "$INSTALL_DIR/main.sh" "$SYMLINK"
     fi
     chmod +x "$INSTALL_DIR/main.sh"
     echo -e "${GREEN}✅  Symlink créé : $SYMLINK → $INSTALL_DIR/main.sh${RESET}"
@@ -211,7 +220,7 @@ create_updater_symlink() {
         if [ -w "$(dirname "$UPDATER_SYMLINK")" ]; then
             ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
         else
-            sudo ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
+            $SUDO ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
         fi
         echo -e "${GREEN}✅  Updater exécutable et symlink créé : $UPDATER_SYMLINK → $UPDATER_SCRIPT${RESET}"
     else
