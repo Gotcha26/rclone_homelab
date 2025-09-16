@@ -207,6 +207,12 @@ update_to_latest_branch() {
         branch="main"
     fi
 
+    # Alerte spéciale si mise à jour sur main
+    if [[ "$branch" == "main" ]]; then
+        print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold underline" \
+            "⚠️  Mise à jour forcée sur HEAD de main ! Les commits locaux peuvent être écrasés."
+    fi
+
     MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
     echo
     print_fancy --align "center" --bg "green" --style "italic" --highlight "$MSG_MAJ_UPDATE_BRANCH"
@@ -379,8 +385,15 @@ update_forced() {
     print_fancy --theme "info" --align "center" "⚡ Mise à jour détectée sur la branche '$branch_real'"
 
     # 5. Appliquer la mise à jour appropriée
-    if [[ "$branch_real" == "main" ]]; then
-        update_to_latest_tag
+    # → Cas particulier : FORCE_BRANCH=main et FORCE_UPDATE=true → on force HEAD de main
+    if [[ "$branch_real" == "main" && "${FORCE_UPDATE:-false}" == "true" ]]; then
+        echo
+        print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold underline" \
+            "⚠️  Attention : vous forcez la mise à jour sur HEAD de la branche 'main'."
+        echo
+        update_to_latest_branch  # HEAD de main
+    elif [[ "$branch_real" == "main" ]]; then
+        update_to_latest_tag     # Comportement classique
     else
         update_to_latest_branch
     fi

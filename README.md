@@ -54,13 +54,14 @@ rclone_homelab <argument1> <argument2> <argument3>
 Ils sont optionnels au lancement de `rclone_homelab` *(`main.sh`)*
 Argument | Explication
 --- | ---
-  -h, --help    | Affiche cette humble aide.
-  --auto        | Permet simplement de supprimer le logo (bannière).
-  --dry-run     | Simule la synchronisation sans transférer ni supprimer de fichiers.
-  --mailto=<mon_adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp.
-  --force-update <branch> | Oblige le script à se mettre à jour dans la branche désignée sinon, ce sera la branche en cours par défaut.
-  --update-tag <tag> | Va se mettre à jour vers le tag désigné, sinon ce sera la dernière release de la branche en cours par défaut.
-  --rclone_opts | Toutes autres arguments seront concidérés comme étant des options pour rclone !
+  -h, --help                     | Affiche cette humble aide.
+  --auto                         | Permet simplement de supprimer le logo (bannière).
+  --dry-run                      | Simule la synchronisation sans transférer ni supprimer de fichiers.
+  --mailto=<adresse@mail.com>    | Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp.
+  --force-update <branch>        | Oblige le script à se mettre à jour dans la branche désignée sinon, ce sera la branche en cours par défaut.
+  --update-tag <tag>             | Va se mettre à jour vers le tag désigné, sinon ce sera la dernière release de la branche en cours par défaut.
+  --discord-url=<url>            | Saisir le webhook de Discord pour y recevoir les notifications.
+  --rclone_opts                  | Toutes autres arguments seront concidérés comme étant des options pour rclone !
 
 
 
@@ -105,8 +106,9 @@ Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arb
 
 ## Mise à jour
 
-Le script rclone_homelab dispose de son propre outil de mise à jour à jour intégré.  
-Vous serez averti qu'une mise à jour est disponible et vous serez invité/guidé dans le processus.
+Le script rclone_homelab dispose de son propre outil de mise à jour intégré.  
+Vous serez averti qu'une mise à jour est disponible et vous serez invité/guidé dans le processus.  
+
 
 
 
@@ -163,7 +165,7 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 
 ## A faire / Ajouter
 - [] Internationnalisation : *wait and see...*
-- [] Webhook discord à mettre en argument de lancement
+- [x] Webhook discord à mettre en argument de lancement
 - [] Mise à jour des dépendances (rclone, msmtp, gotcha_lib)
 - [] Revoir l'installation de rclone depuis mon main.sh
 - [] Lors d'une MAJ en ligne de commande, faire cette dernière à la fin du processus normal pour ne rien bloquer.

@@ -120,6 +120,10 @@ while [[ $# -gt 0 ]]; do
             # Si une branche est fournie juste après, on la prend (switch)
             [[ $# -gt 0 && ! "$1" =~ ^-- ]] && FORCE_BRANCH="$1" && shift
             ;;
+        --discord-url=*)
+            DISCORD_WEBHOOK_URL="${1#*=}"
+            shift
+            ;;
         -h|--help)
             show_help
             exit 0
