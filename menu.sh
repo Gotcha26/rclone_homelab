@@ -175,12 +175,12 @@ while true; do
                 ;;
             menu_jobs)
                 if ! init_jobs_file; then
-                    echo "❌ Impossible de créer $DIR_JOBS_FILE, édition annulée."
+                    echo "❌  Impossible de créer $DIR_JOBS_FILE, édition annulée."
                     continue
                 fi
-                echo "▶️ Ouverture de $JOBS_FILE..."
+                echo "▶️  Ouverture de $JOBS_FILE..."
                 nano "$DIR_JOBS_FILE"
-                echo "✅ ... Édition terminée > retour au menu."
+                echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_install_rclone)
                 if install_rclone soft; then
@@ -207,7 +207,7 @@ while true; do
             menu_show_msmtp_config)
                 # Détecte le fichier configuré
                 if conf_file=$(check_msmtp_configured 2>/dev/null); then
-                    echo "▶️ Affichage du fichier de configuration msmtp : $conf_file"
+                    echo "▶️  Affichage du fichier de configuration msmtp : $conf_file"
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
                     nano "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
@@ -221,13 +221,13 @@ while true; do
                 conf_file="${MSMTPRC:-$HOME/.msmtprc}"
                 # Ouverture dans nano directement, sans polluer le log
                 nano "$conf_file"
-                echo "✅ ... Édition terminée > retour au menu."
+                echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_show_last_log)
                 echo "▶️  Affichage des 500 dernières lignes de $LAST_LOG_FILE..."
                 # Utilisation d'un pager pour ne pas polluer le log principal
                 tail -n 500 "$LAST_LOG_FILE" | less -R
-                echo "✅ ... Fin de l'affichage > retour au menu."
+                echo "✅  ... Fin de l'affichage > retour au menu."
                 ;;
             menu_init_config_local)
                 echo "▶️  Installation la configuration locale."
