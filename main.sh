@@ -45,25 +45,38 @@ TMP_JOBS_DIR=$(mktemp -d)
 
 # Correction des varaibles utilisateurs (locales) par défaut
 set_validation_vars
+validate_vars VARS_TO_VALIDATE[@]
 
 # --- ↓ DEBUG ↓ ---
-if [[ "$DEBUG_MODE" == "true" ]]; then 
-    validate_vars VARS_TO_VALIDATE[@]
+if [[ "$DEBUG_MODE" == "true" ]]; then
+    print_fancy --highlight --color "green" --align "center" --style "bold" --fill "*" " DÉBUT DU DEBUG DE TÊTE "
+
     # Debug affichage
+    print_fancy --fg "green" --align "center" "********************"
+    print_fancy --fg "green" --align "center" "Tableau des variables locales prise en compte"
+    print_fancy --fg "green" --align "center" "********************"
     for var in "${VARS_TO_VALIDATE[@]}"; do
         echo "-> $var"
     done
-    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
-fi
+    print_fancy --fg "green" --align "center" "********************"
 
-if [[ "$DEBUG_MODE" == "true" ]]; then 
+    # Dossier temporaire unique
     TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
-    mkdir -p "$TMP_JOBS_DIR"
-fi 
+    if mkdir -p "$TMP_JOBS_DIR"; then
+        print_fancy --theme "success" "Répertoire temporaire créé avec succès : $TMP_JOBS_DIR"
+    else
+        print_fancy --theme "error" "Erreur lors de la création du répertoire : $TMP_JOBS_DIR" >&2
+    fi
+fi
+ 
 
 if [[ "$DEBUG_INFOS" == "true" ]]; then 
     print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
-fi 
+fi
+echo
+print_fancy --highlight --color "green" --align "center" --style "bold" --fill "*" " FIN DU DEBUG DE TÊTE "
+echo
+read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 # --- ↑ DEBUG ↑ ---
 
 # === Mises à jour ===
