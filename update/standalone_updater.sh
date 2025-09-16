@@ -24,9 +24,10 @@
 #   - Sans --force, les fichiers ignorés par Git (.gitignore) ne sont pas touchés
 #   - Avec --force, tous les fichiers sont remplacés pour garantir une installation "propre"
 #
-# Pour créer un accès global :
+#   - Script rendu exécutable via l'installation. Sinon la commande est :
 #   chmod +x /opt/rclone_homelab/update/standalone_updater.sh
-#   sudo ln -sf /opt/rclone_homelab/update/standalone_updater.sh /usr/local/bin/rclone_homelab-updater
+#   - Un symlink est aussi créé automatiquement via install.sh Sinon  la commande est :
+#   ln -sf /opt/rclone_homelab/update/standalone_updater.sh /usr/local/bin/rclone_homelab-updater
 #
 # ============================================================================ #
 
@@ -40,6 +41,12 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RESET='\033[0m'
+
+echo
+echo "Programme de mise à jour autonome pour le script :"
+echo "rclone_homelab par GOTCHA !"
+echo "$REPO_URL"
+echo
 
 # --------------------------------------------------------------------------- #
 # 1. Lecture des arguments

@@ -49,6 +49,7 @@ validate_vars VARS_TO_VALIDATE[@]
 
 # --- ↓ DEBUG ↓ ---
 if [[ "$DEBUG_MODE" == "true" ]]; then
+    echo "================================================================================"
     print_fancy --highlight --bg "green" --align "center" --style "bold" --fill "=" " DÉBUT DU DEBUG DE TÊTE "
     echo
 
@@ -72,7 +73,7 @@ if [[ "$DEBUG_MODE" == "true" ]]; then
     if [[ "$DEBUG_INFOS" == "true" ]]; then 
         print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
     fi
-    
+
     echo
     print_fancy --highlight --bg "green" --align "center" --style "bold" --fill "=" " FIN DU DEBUG DE TÊTE "
     echo
