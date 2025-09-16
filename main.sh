@@ -68,16 +68,16 @@ if [[ "$DEBUG_MODE" == "true" ]]; then
     else
         print_fancy --theme "error" "Erreur lors de la création du répertoire : $TMP_JOBS_DIR" >&2
     fi
-fi
- 
 
-if [[ "$DEBUG_INFOS" == "true" ]]; then 
-    print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
+    if [[ "$DEBUG_INFOS" == "true" ]]; then 
+        print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
+    fi
+    
+    echo
+    print_fancy --highlight --bg "green" --align "center" --style "bold" --fill "=" " FIN DU DEBUG DE TÊTE "
+    echo
+    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 fi
-echo
-print_fancy --highlight --bg "green" --align "center" --style "bold" --fill "=" " FIN DU DEBUG DE TÊTE "
-echo
-read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 # --- ↑ DEBUG ↑ ---
 
 # === Mises à jour ===
