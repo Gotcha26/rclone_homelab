@@ -95,12 +95,7 @@ show_optional_configs() {
 #        hard    = die si absent
 ###############################################################################
 check_rclone_installed() {
-    local mode    # argument : variable:<defaut> (l'argument prime sur la variable)
-    if [ $# -ge 1 ]; then
-        mode="$1"
-    else
-        mode="${LAUNCH_MODE:-hard}"
-    fi
+    local mode="${1:-${LAUNCH_MODE:-hard}}"
 
     if ! command -v rclone >/dev/null 2>&1; then
         case "$mode" in
