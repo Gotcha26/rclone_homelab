@@ -49,6 +49,10 @@ set_validation_vars
 # --- ↓ DEBUG ↓ ---
 if [[ "$DEBUG_MODE" == "true" ]]; then 
     validate_vars VARS_TO_VALIDATE[@]
+    # Debug affichage
+    for var in "${VARS_TO_VALIDATE[@]}"; do
+        echo "-> $var"
+    done
     read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 fi
 
