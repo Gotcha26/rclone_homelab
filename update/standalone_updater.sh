@@ -98,18 +98,18 @@ fi
 # 6. Vérification dépôt Git et branche active
 # --------------------------------------------------------------------------- #
 if [ ! -d "$SCRIPT_DIR/.git" ]; then
-    echo -e "${RED}❌  Aucun dépôt Git détecté dans $SCRIPT_DIR !"
-    echo "   → Exécutez le script une première fois en mode --force pour cloner proprement.${RESET}"
+    echo -e "${RED}❌  Aucun dépôt Git détecté dans $SCRIPT_DIR !${RESET}"
+    echo -e "   → Exécutez le script une première fois en mode --force pour cloner proprement.${RESET}"
     exit 7
 fi
 
 CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "HEAD")
 if [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
-    echo -e "${RED}❌  HEAD détaché détecté, impossible de déterminer la branche active."
-    echo "   → Exécutez le script en mode --force pour réinitialiser le dépôt.${RESET}"
+    echo -e "${RED}❌  HEAD détaché détecté, impossible de déterminer la branche active.${RESET}"
+    echo -e "   → Exécutez le script en mode --force pour réinitialiser le dépôt.${RESET}"
     exit 8
 fi
-echo "🔎  Branche détectée : ${RED}$CURRENT_BRANCH${RESET}"
+echo -e "🔎  Branche détectée : ${GREEN}$CURRENT_BRANCH${RESET}"
 
 # --------------------------------------------------------------------------- #
 # 7. Mise à jour (mode normal ou --force)
@@ -139,14 +139,14 @@ if [[ "$FORCE_MODE" == true ]]; then
 
     exit 0
 else
-    echo "🔄  Vérification des mises à jour Git..."
+    echo -e "🔄  Vérification des mises à jour Git...${RESET}"
     git fetch --all --tags || { echo -e "${RED}❌ Impossible d'accéder au dépôt Git.${RESET}"; exit 6; }
 
     LOCAL_HASH=$(git rev-parse HEAD)
     REMOTE_HASH=$(git rev-parse "origin/$CURRENT_BRANCH")
 
     if [[ "$LOCAL_HASH" != "$REMOTE_HASH" ]]; then
-        echo "📥  Mise à jour vers la dernière révision de $CURRENT_BRANCH..."
+        echo -e "📥  Mise à jour vers la dernière révision de $CURRENT_BRANCH...${RESET}"
         git reset --hard "origin/$CURRENT_BRANCH"
         echo -e "${GREEN}✅  Mise à jour terminée.${RESET}"
     else
@@ -157,14 +157,14 @@ fi
 # --------------------------------------------------------------------------- #
 # 8. Ré-application des permissions essentielles
 # --------------------------------------------------------------------------- #
-echo "🔧  Vérification des permissions..."
+echo -e "🔧  Vérification des permissions...${RESET}"
 
 for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
     if [[ -f "$file" ]]; then
         if [[ -w "$file" ]]; then
             chmod +x "$file"
         else
-            sudo chmod +x "$file"
+            $SUDO chmod +x "$file"
         fi
         echo -e "${GREEN}   → $file rendu exécutable ✅${RESET}"
     fi
@@ -204,8 +204,6 @@ create_updater_symlink() {
     fi
 }
 
-echo
-echo "✅  Mise à jour terminée. Vous pouvez maintenant relancer le projet avec :"
-echo "   rclone_homelab"
-echo
+echo -e "\n✅  Mise à jour terminée. Vous pouvez maintenant relancer le projet avec :${RESET}"
+echo -e "   rclone_homelab${RESET}\n"
 exit 0
