@@ -52,9 +52,9 @@ fi
 # --------------------------------------------------------------------------- #
 # 2. Déterminer le dossier du projet
 # --------------------------------------------------------------------------- #
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 cd "$SCRIPT_DIR" || {
-    echo -e "${RED}❌  Impossible d'accéder au répertoire projet ($SCRIPT_DIR)"
+    echo -e "${RED}❌  Impossible d'accéder au répertoire projet ($SCRIPT_DIR)${RESET}"
     exit 1
 }
 
@@ -72,15 +72,15 @@ fi
 # --------------------------------------------------------------------------- #
 for bin in git curl rsync; do
     if ! command -v "$bin" >/dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️  $bin n'est pas installé."
+        echo -e "${YELLOW}⚠️  $bin n'est pas installé.${RESET}"
         if command -v apt >/dev/null 2>&1; then
             if [ "$(id -u)" -eq 0 ]; then
-                apt update && apt install -y "$bin" || { echo "❌ Impossible d'installer $bin"; exit 2; }
+                apt update && apt install -y "$bin" || { echo -e "${RED}❌ Impossible d'installer $bin${RESET}"; exit 2; }
             else
-                $SUDO apt update && $SUDO apt install -y "$bin" || { echo "❌ Impossible d'installer $bin"; exit 2; }
+                $SUDO apt update && $SUDO apt install -y "$bin" || { echo -e "${RED}❌ Impossible d'installer $bin${RESET}"; exit 2; }
             fi
         else
-            echo "❌ Installez $bin manuellement."
+            echo -e "${RED}❌ Installez $bin manuellement.${RESET}"
             exit 3
         fi
     fi
@@ -90,7 +90,7 @@ done
 # 5. Vérif connexion Internet
 # --------------------------------------------------------------------------- #
 if ! curl -Is https://github.com >/dev/null 2>&1; then
-    echo -e "${RED}❌  Pas de connexion Internet ou GitHub inaccessible."
+    echo -e "${RED}❌  Pas de connexion Internet ou GitHub inaccessible.${RESET}"
     exit 4
 fi
 
@@ -99,26 +99,26 @@ fi
 # --------------------------------------------------------------------------- #
 if [ ! -d "$SCRIPT_DIR/.git" ]; then
     echo -e "${RED}❌  Aucun dépôt Git détecté dans $SCRIPT_DIR !"
-    echo "   → Exécutez le script une première fois en mode --force pour cloner proprement."
+    echo "   → Exécutez le script une première fois en mode --force pour cloner proprement.${RESET}"
     exit 7
 fi
 
 CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "HEAD")
 if [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
     echo -e "${RED}❌  HEAD détaché détecté, impossible de déterminer la branche active."
-    echo "   → Exécutez le script en mode --force pour réinitialiser le dépôt."
+    echo "   → Exécutez le script en mode --force pour réinitialiser le dépôt.${RESET}"
     exit 8
 fi
-echo "🔎  Branche détectée : $CURRENT_BRANCH"
+echo "🔎  Branche détectée : ${RED}$CURRENT_BRANCH${RESET}"
 
 # --------------------------------------------------------------------------- #
 # 7. Mise à jour (mode normal ou --force)
 # --------------------------------------------------------------------------- #
 if [[ "$FORCE_MODE" == true ]]; then
-    echo -e "${YELLOW}⚠️  Mode FORCÉ activé : réinstallation complète depuis $REPO_URL ($CURRENT_BRANCH)"
+    echo -e "${YELLOW}⚠️  Mode FORCÉ activé : réinstallation complète depuis $REPO_URL ($CURRENT_BRANCH)${RESET}"
     TMP_DIR=$(mktemp -d)
     git clone --branch "$CURRENT_BRANCH" "$REPO_URL" "$TMP_DIR" || {
-        echo -e "${RED}❌  Impossible de cloner le dépôt."
+        echo -e "${RED}❌  Impossible de cloner le dépôt.${RESET}"
         rm -rf "$TMP_DIR"
         exit 5
     }
@@ -130,17 +130,17 @@ if [[ "$FORCE_MODE" == true ]]; then
     fi
 
     rm -rf "$TMP_DIR"
-    echo -e "${GREEN}✅  Projet réinstallé en mode FORCÉ."
+    echo -e "${GREEN}✅  Projet réinstallé en mode FORCÉ.${RESET}"
 
     # Ré-appliquer les permissions essentielles
     for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
-        [[ -f "$file" ]] && chmod +x "$file" && echo -e "${GREEN}   → $file rendu exécutable ✅"
+        [[ -f "$file" ]] && chmod +x "$file" && echo -e "${GREEN}   → $file rendu exécutable ✅${RESET}"
     done
 
     exit 0
 else
     echo "🔄  Vérification des mises à jour Git..."
-    git fetch --all --tags || { echo -e "${RED}❌ Impossible d'accéder au dépôt Git."; exit 6; }
+    git fetch --all --tags || { echo -e "${RED}❌ Impossible d'accéder au dépôt Git.${RESET}"; exit 6; }
 
     LOCAL_HASH=$(git rev-parse HEAD)
     REMOTE_HASH=$(git rev-parse "origin/$CURRENT_BRANCH")
@@ -148,16 +148,16 @@ else
     if [[ "$LOCAL_HASH" != "$REMOTE_HASH" ]]; then
         echo "📥  Mise à jour vers la dernière révision de $CURRENT_BRANCH..."
         git reset --hard "origin/$CURRENT_BRANCH"
-        echo -e "${GREEN}✅  Mise à jour terminée."
+        echo -e "${GREEN}✅  Mise à jour terminée.${RESET}"
     else
-        echo -e "${GREEN}✅  Aucune mise à jour disponible."
+        echo -e "${GREEN}✅  Aucune mise à jour disponible.${RESET}"
     fi
 fi
 
 # --------------------------------------------------------------------------- #
 # 8. Ré-application des permissions essentielles
 # --------------------------------------------------------------------------- #
-echo "🔧 Vérification des permissions..."
+echo "🔧  Vérification des permissions..."
 
 for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
     if [[ -f "$file" ]]; then
@@ -166,7 +166,7 @@ for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
         else
             sudo chmod +x "$file"
         fi
-        echo -e "${GREEN}   → $file rendu exécutable ✅"
+        echo -e "${GREEN}   → $file rendu exécutable ✅${RESET}"
     fi
 done
 
