@@ -20,7 +20,7 @@ source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"
 source "$SCRIPT_DIR/update/updater.sh"
 
-# Surchage la configuration local
+# Surchage via configuration local
 load_optional_configs
 
 # ===

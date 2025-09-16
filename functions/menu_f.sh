@@ -15,10 +15,111 @@ init_jobs_file() {
     if [[ -f "$DIR_EXEMPLE_JOBS_FILE" ]]; then
         mkdir -p "$(dirname "$DIR_JOBS_FILE")"
         cp "$DIR_EXEMPLE_JOBS_FILE" "$DIR_JOBS_FILE"
-        echo "✅  Copie de $EXEMPLE_JOBS_FILE → $JOBS_FILE réalisée"
+        print_fancy --theme "success" "Copie de $EXEMPLE_JOBS_FILE → $JOBS_FILE réalisée"
         return 0
     else
-        echo "❌  Erreur dans la copie de $EXEMPLE_JOBS_FILE → $JOBS_FILE"
+        print_fancy --theme "error" "Erreur dans la copie de $EXEMPLE_JOBS_FILE → $JOBS_FILE"
         return 1
     fi
+}
+
+
+###############################################################################
+# Fonction : Initialiser config.local.sh si absent
+###############################################################################
+init_config_local() {
+    local main_conf="$SCRIPT_DIR/config/config.main.conf"
+    local conf_file="$DIR_FILE_CONF_LOCAL"
+
+    echo
+    echo
+    print_fancy --style "underline" "⚙️  Création de config.local.sh"
+    print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
+    print_fancy --fg "blue" -n "Fichier d'origine : ";
+     print_fancy "$main_conf"
+    print_fancy --fg "blue" -n "Fichier à créer   : ";
+     print_fancy "$conf_file"
+    echo
+    read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
+    REPLY=${REPLY,,}
+    if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+        print_fancy --theme "info" "Création ignorée pour : $conf_file"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$conf_file")" || print_fancy --theme "error" "Impossible de créer le dossier cible $(dirname "$conf_file")"
+    cp "$main_conf" "$conf_file"       || print_fancy --theme "error" "Impossible de copier $main_conf vers $conf_file"
+    print_fancy --theme "success" "Fichier installé : $conf_file"
+}
+
+
+###############################################################################
+# Fonction : Recherche la présence eventuelle du fichier config.local.conf
+###############################################################################
+check_config_local () {
+    local mode="${1:-${LAUNCH_MODE:-soft}}" # argument : variable:<defaut> (l'argument prime sur la variable)
+
+    # Vérifier existence
+    if [[ ! -f "$DIR_FILE_CONF_LOCAL" ]]; then
+        case "$mode" in
+            soft|hard)    return 1 ;;
+            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_FILE_CONF_LOCAL" >&2; return 1 ;;
+        esac
+    fi
+
+    # Si tout est bon
+    return 0
+}
+
+
+###############################################################################
+# Fonction : Initialiser config.local.sh si absent
+###############################################################################
+init_secret_local() {
+    local main_conf="$DIR_EXEMPLE_SECRET_FILE"
+    local secret_file="$DIR_SECRET_FILE"
+
+    echo
+    echo
+    print_fancy --style "underline" "⚙️  Création de $SECRET_FILE"
+    print_fancy --theme "info" "Vous êtes sur le point de créer un fichier pour vos clés secrètes. (optionnel)"
+    print_fancy --fg "blue" -n "Fichier d'origine : ";
+     print_fancy "$main_conf"
+    print_fancy --fg "blue" -n "Fichier à créer   : ";
+     print_fancy "$secret_file"
+    echo
+    read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
+    REPLY=${REPLY,,}
+    if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+        print_fancy --theme "info" "Création ignorée pour : $secret_file"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$secret_file")" \
+        || { print_fancy --theme "error" "Impossible de créer le dossier cible $(dirname "$secret_file")"; return 1; }
+    cp "$main_conf" "$secret_file" \
+        || { print_fancy --theme "error" "Impossible de copier $main_conf vers $secret_file"; return 1; }
+    chmod 600 $secret_file \
+        || { print_fancy --theme "error" "Impossible de modifier les droits pour $secret_file"; return 1; }
+    print_fancy --theme "success" "Fichier installé : $secret_file"
+    return 0
+}
+
+
+###############################################################################
+# Fonction : Recherche la présence eventuelle du fichier secret.env
+###############################################################################
+check_secret_conf () {
+    local mode="${1:-${LAUNCH_MODE:-soft}}" # argument : variable:<defaut> (l'argument prime sur la variable)
+
+    # Vérifier existence
+    if [[ ! -f "$DIR_SECRET_FILE" ]]; then
+        case "$mode" in
+            soft|hard)    return 1 ;;
+            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_SECRET_FILE" >&2; return 1 ;;
+        esac
+    fi
+
+    # Si tout est bon
+    return 0
 }

@@ -98,9 +98,11 @@ Dans le cadre d'une installation standard, va installer la dernière **release**
 - Pour obtenir les dernières améliorations **BETA**  
 `rclone_holemab --force-update`           → force la mise à jour sur la branche men cours.  
 `rclone_holemab --force-update <branche>` → force la mise à jour de la branche *branche*.
-Si --force-update n’est pas présent, le script continue à vérifier le dernier tag comme avant.
+Si `--force-update` n’est pas présent, le script continue à vérifier le dernier tag comme avant.  
+Si `--force-update main` (**BETA testeur**) le script vous demandera de confirmer la mise à niveau vers le dernier commit (HEAD) de la branch stable "main" => risque d'instabilité !
 
-- Une fichier de mise à jour "/update/standalone_updater.sh" est là permettant d'effectuer une mise à jour de manière indépendante du script rclone_homelab pour qu'en cas de soucis sérieux, une remise à niveau puisse être possible en appelant tout simplement le fichier directement `/opt/rclone_homelab/update/standalone_updater.sh` ou via son symlink (installé via install.sh) qui est : `rclone_homelab-updater` qui dispose d'un argument `--force` pour repartir sur un écrasement/suppression complet du répertoire d'installation !
+- Une fichier de mise à jour "/update/standalone_updater.sh" est là permettant d'effectuer une mise à jour de manière indépendante du script rclone_homelab pour qu'en cas de soucis sérieux, une remise à niveau puisse être possible en appelant tout simplement le fichier directement `/opt/rclone_homelab/update/standalone_updater.sh` ou via son symlink (installé via install.sh) qui est : `rclone_homelab-updater` qui dispose d'un argument `--force` pour repartir sur un écrasement/suppression complet du répertoire d'installation !  
+`rclone_homelab-updater` détectera dans la mesure du possible sur quelle branche vous êtes pour installer la même branche.
 
 
 

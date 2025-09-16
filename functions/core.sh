@@ -55,18 +55,23 @@ set_validation_vars() {
 
 
 ###############################################################################
-# Fonction : Charger config.local puis config.dev (si présents)
+# Fonction : Charger config.local < config.dev < secrets.env (si présents) [Du moins important au plus important]
 ###############################################################################
 load_optional_configs() {
-    # -- config.local --
+    # 1/ -- config.main.conf
+    # 2/ -- config.local --
     if [[ -f "$DIR_FILE_CONF_LOCAL" && -r "$DIR_FILE_CONF_LOCAL" ]]; then
         source "$DIR_FILE_CONF_LOCAL"
     fi
-
-    # -- config.dev (prioritaire, chargé en dernier) --
+    # 3/ -- config.dev (prioritaire, chargé en dernier) --
     if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
         source "$DIR_FILE_CONF_DEV"
     fi
+    # 4/ -- secrets.env
+    if [[ -f "$DIR_SECRET_FILE" && -r "$DIR_SECRET_FILE" ]]; then
+        source "$DIR_SECRET_FILE"
+    fi
+    # 5/ -- arguments de lancement du script [a le dernier mots]
 }
 
 
@@ -79,6 +84,11 @@ show_optional_configs() {
     if [[ -f "$DIR_FILE_CONF_LOCAL" && -r "$DIR_FILE_CONF_LOCAL" ]]; then
         [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
         "CONFIGURATION LOCALE ACTIVÉE ℹ️ "
+    fi
+
+    if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
+        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
+        "CONFIGURATION DEV ACTIVÉE  ℹ️ "
     fi
 
     if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
@@ -157,7 +167,7 @@ check_rclone_configured() {
 
     if [[ ! -f "$conf_file" || ! -r "$conf_file" || ! -s "$conf_file" ]]; then
         if [[ "$mode" == "verbose" ]]; then
-            die 12 "❌  rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
+            die 12 "rclone est installé mais n'est pas configuré. Veuillez exécuter : rclone config"
         else
             return 1  # soft fail
         fi
@@ -330,35 +340,6 @@ print_summary_table() {
     # Ligne finale avec couleur fond jaune foncé, texte noir, centrée
     print_fancy --bg "yellow" --fg "black" "$MSG_END_REPORT"
     echo
-}
-
-
-###############################################################################
-# Fonction : Initialiser config.local.sh si absent
-###############################################################################
-init_config_local() {
-    local main_conf="$SCRIPT_DIR/config/config.main.conf"
-    local conf_file="$DIR_FILE_CONF_LOCAL"
-
-    echo
-    echo
-    print_fancy --style "underline" "⚙️  Création de config.local.sh"
-    print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
-    print_fancy --fg "blue" -n "Fichier d'origine : ";
-     print_fancy "$main_conf"
-    print_fancy --fg "blue" -n "Fichier à créer   : ";
-     print_fancy "$conf_file"
-    echo
-    read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
-    REPLY=${REPLY,,}
-    if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
-        echo "ℹ️  Création ignorée pour : $conf_file"
-        return 1
-    fi
-
-    mkdir -p "$(dirname "$conf_file")" || die 21 "Impossible de créer le dossier cible $(dirname "$conf_file")"
-    cp "$main_conf" "$conf_file"       || die 20 "Impossible de copier $main_conf vers $conf_file"
-    echo "✅  Fichier installé : $conf_file"
 }
 
 

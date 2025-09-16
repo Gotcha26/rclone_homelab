@@ -114,21 +114,20 @@ while true; do
 
     # 4) Actions
     # Options de configuration locale
-    if [[ ! -f "$DIR_FILE_CONF_LOCAL" ]]; then
+    if ! check_config_local soft >/dev/null 2>&1; then
         add_option "💻  Installer une configuration locale" "menu_init_config_local"
-    fi
-
-    #Option d'édition direct du fichier de configuration local/dconfig.local.conf
-    if [[ -f "$DIR_FILE_CONF_LOCAL" ]]; then
-        add_option "✏️  Éditer la configuration locale" "menu_edit_config_local"
-    fi
-
-    #Option d'édition direct du fichier de configuration local/config.dev.conf
-    if [[ -f "$DIR_FILE_CONF_DEV" ]]; then
+    else
         add_option "✏️  Éditer la configuration locale" "menu_edit_config_dev"
     fi
+    # Option pour installer/editer un fichier secrets.env
+    if ! check_secret_conf soft >/dev/null 2>&1; then
+        add_option "💻  Installer un fichier secret pour vos mdp / tockens (optionnel)" "menu_add_secret_file"
+    else
+        add_option "✏️  Éditer la configuration secrète" "menu_edit_config_secret"
+    fi
 
-    # Choix permanents
+    # 5) Choix permanents
+
     add_option "📖  Afficher l'aide" "menu_show_help"
     add_option "👋  Quitter" "menu_exit_script"
 
@@ -231,8 +230,9 @@ while true; do
                 ;;
             menu_init_config_local)
                 echo "▶️  Installation la configuration locale."
-                echo "Le fichier est préservé lors des mises à jours automatiques."
+                echo "Le fichier sera préservé lors des mises à jours automatiques."
                 init_config_local
+                echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_edit_config_local)
                 echo "▶️  Édition du fichiers $FILE_CONF_LOCAL"
@@ -242,6 +242,17 @@ while true; do
             menu_edit_config_dev)
                 echo "▶️  Édition du fichiers $FILE_CONF_DEV"
                 nano "$DIR_FILE_CONF_DEV"
+                echo "✅  ... Édition terminée > retour au menu."
+                ;;
+            menu_add_secret_file)
+                echo "▶️  Installation d'un fichier $SECRET_FILE (optionnel)."
+                echo "Le fichier sera préservé lors des mises à jours automatiques."
+                init_secret_local
+                echo "✅  ... Installation terminée > retour au menu."
+                ;;
+            menu_edit_config_secret)
+                echo "▶️  Édition du fichiers $SECRET_FILE"
+                nano "$SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_show_help)
