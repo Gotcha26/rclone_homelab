@@ -73,6 +73,25 @@ check_config_local () {
 
 
 ###############################################################################
+# Fonction : Recherche la présence eventuelle du fichier config.local.conf
+###############################################################################
+check_config_dev () {
+    local mode="${1:-${LAUNCH_MODE:-soft}}" # argument : variable:<defaut> (l'argument prime sur la variable)
+
+    # Vérifier existence
+    if [[ ! -f "$DIR_FILE_CONF_DEV" ]]; then
+        case "$mode" in
+            soft|hard)    return 1 ;;
+            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_FILE_CONF_DEV" >&2; return 1 ;;
+        esac
+    fi
+
+    # Si tout est bon
+    return 0
+}
+
+
+###############################################################################
 # Fonction : Initialiser config.local.sh si absent
 ###############################################################################
 init_secret_local() {
