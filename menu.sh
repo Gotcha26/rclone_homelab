@@ -126,7 +126,7 @@ while true; do
         add_option "✏️  Éditer la configuration locale" "menu_edit_config_local"
     fi
     # Propose l'édition de configuration locale pour dev seulement si présente
-    if check_config_local soft >/dev/null 2>&1; then
+    if check_config_dev soft >/dev/null 2>&1; then
         add_option "✏️  Éditer la configuration locale pour développeurs" "menu_edit_config_dev"
     fi
     # Option pour installer/editer un fichier secrets.env
