@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DISPLAY_MODE=none
+first_time=true
 
 # === Initialisation minimale ===
 
@@ -31,6 +31,13 @@ source "$SCRIPT_DIR/functions/menu_f.sh"
 ###############################################################################
 
 while true; do
+
+    # Réaffichage de la bannière mais jamais au premier passage.
+    if [ "$first_time" = false ]; then
+        clear
+        print_logo   # ta bannière
+    fi
+    first_time=false
     
     MISSING_RCLONE=false
     MISSING_MSMTP=false
@@ -77,7 +84,7 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    add_option "⌨️  Afficher/éditer des remotes" "menu_jobs"
+    add_option "⌨️  Afficher/éditer la liste des jobs (rclone)" "menu_jobs"
     # rclone
     if ! check_rclone_installed soft >/dev/null 2>&1; then
         # Cas 1 : rclone absent
@@ -169,10 +176,12 @@ while true; do
                 exit 99
                 ;;
             menu_run_all_jobs)
-                # On quitte la boucle pour renir à l'exécution normale de main.sh
+                # On quitte la boucle, on quitte le sous-shell, pour renir à l'exécution normale de main.sh
                 break
                 ;;
             menu_jobs)
+                clear
+                echo "▶️  Edition de la liste des jobs pour rclone."
                 if ! init_jobs_file; then
                     echo "❌  Impossible de créer $DIR_JOBS_FILE, édition annulée."
                     continue
@@ -181,9 +190,6 @@ while true; do
                 nano "$DIR_JOBS_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
-
-
-
             menu_install_rclone)
                 echo "▶️  Installation de rclone..."
                 if install_rclone soft; then
@@ -195,7 +201,7 @@ while true; do
             menu_show_rclone_config)
                 # Détecte le fichier configuré
                 if conf_file=$(check_rclone_configured 2>/dev/null); then
-                    echo "▶️  Affichage du fichier de configuration rclone : $conf_file"
+                    echo -e "▶️  Affichage du fichier de configuration rclone : ${GREEN}$conf_file${RESET}"
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
                     nano "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
@@ -208,13 +214,6 @@ while true; do
                 rclone config
                 echo "✅  ... Configuration terminée > retour au menu."
                 ;;
-
-
-
-
-
-
-
             menu_install_msmtp)
                 echo "▶️  Installation de msmtp..."
                 if install_msntp soft; then
@@ -239,10 +238,6 @@ while true; do
                 edit_msmtp_config
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
-
-
-
-
             menu_show_last_log)
                 echo "▶️  Affichage des 500 dernières lignes de $LAST_LOG_FILE..."
                 # Utilisation d'un pager pour ne pas polluer le log principal

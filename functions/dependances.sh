@@ -59,6 +59,9 @@ spinner() {
 
 # === Déclarations globales pour print_fancy() === 
 # Couleurs texte (FG) et fond (BG) intégrées et personnalisables
+# Compatible AUSSI avec echo -e (ne pas oublier le -e et le ${RESET} à la fin)
+# Exemple :
+# echo -e "${YELLOW}⚠️  ${bin}${RESET} n'est pas installé."
 
 # --- Couleurs texte par défaut ---
 declare -A FG_COLORS=(
@@ -77,6 +80,30 @@ declare -A BG_COLORS=(
   [light_blue]=104 [light_magenta]=105 [light_cyan]=106 [bright_white]=107
   [black_pure]="256:0" [orange]="256:208"
 )
+
+for name in "${!FG_COLORS[@]}"; do
+    code="${FG_COLORS[$name]}"
+    if [[ "$code" == 256:* ]]; then
+        # Couleur en mode 256 (ex: 256:208 → 208)
+        idx="${code#256:}"
+        printf -v "${name^^}" '\e[38;5;%sm' "$idx"
+    else
+        # Couleur standard (ex: 31, 32, 97…)
+        printf -v "${name^^}" '\e[%sm' "$code"
+    fi
+done
+
+for name in "${!BG_COLORS[@]}"; do
+    code="${BG_COLORS[$name]}"
+    if [[ "$code" == 256:* ]]; then
+        idx="${code#256:}"
+        printf -v "BG_${name^^}" '\e[48;5;%sm' "$idx"
+    else
+        printf -v "BG_${name^^}" '\e[%sm' "$code"
+    fi
+done
+
+RESET='\e[0m'
 
 # ===
 
