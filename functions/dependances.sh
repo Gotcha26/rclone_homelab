@@ -454,17 +454,15 @@ print_vars_table() {
     local -n var_array=$1
     local rows=()
     local w1=0 w2=0 w3=0 w4=0
+    local max_length="${max_length:-80}"
 
-    # Styles
-    local BOLD="\e[1m" ITALIC="\e[3m" RESET="\e[0m" RED="\e[31m"
-
-    # Préparer les lignes et largeurs
+    # Préparer les lignes et calcul des largeurs
     for entry in "${var_array[@]}"; do
         IFS=":" read -r var_name allowed default <<<"$entry"
         local value="${!var_name:-$default}"
         local valid=true
 
-        # Validation rapide (réutilisation de ta logique)
+        # Validation rapide
         if [[ "$allowed" == "bool" ]]; then
             [[ "$value" =~ ^(0|1)$ ]] || valid=false
         else
@@ -484,24 +482,53 @@ print_vars_table() {
         (( ${#value}    > w4 )) && w4=${#value}
     done
 
+    # Ajuster si dépasse max_length
+    local total_width=$(( w1 + w2 + w3 + w4 + 13 )) # 13 = bordures + espaces
+    if (( total_width > max_length )); then
+        local excess=$(( total_width - max_length ))
+        local cut=$(( (excess + 3) / 4 ))
+        w1=$(( w1 - cut > 5 ? w1 - cut : 5 ))
+        w2=$(( w2 - cut > 5 ? w2 - cut : 5 ))
+        w3=$(( w3 - cut > 5 ? w3 - cut : 5 ))
+        w4=$(( w4 - cut > 5 ? w4 - cut : 5 ))
+    fi
+
+    # Bordure haute
+    printf "┌─%*s─┬─%*s─┬─%*s─┬─%*s─┐\n" \
+        $w1 "" $w2 "" $w3 "" $w4 "" | sed 's/ /─/g'
+
     # En-tête
-    printf "┌─%*s─┬─%*s─┬─%*s─┬─%*s─┐\n" $w1 "" $w2 "" $w3 "" $w4 ""
-    printf "│ ${BOLD}%-*s${RESET} │ ${BOLD}%-*s${RESET} │ ${BOLD}%-*s${RESET} │ ${BOLD}%-*s${RESET} │\n" \
-        $w1 "Variable" $w2 "Autorisé" $w3 "Défaut" $w4 "Valeur"
-    printf "├─%*s─┼─%*s─┼─%*s─┼─%*s─┤\n" $w1 "" $w2 "" $w3 "" $w4 ""
+    printf "│ %s │ %s │ %s │ %s │\n" \
+        "$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "Variable")")" \
+        "$(print_fancy --style bold --raw "$(printf "%-*s" $w2 "Autorisé")")" \
+        "$(print_fancy --style bold --raw "$(printf "%-*s" $w3 "Défaut")")" \
+        "$(print_fancy --style bold --raw "$(printf "%-*s" $w4 "Valeur")")"
+
+    # Séparateur
+    printf "├─%*s─┼─%*s─┼─%*s─┼─%*s─┤\n" \
+        $w1 "" $w2 "" $w3 "" $w4 "" | sed 's/ /─/g'
 
     # Corps
     for row in "${rows[@]}"; do
         IFS="|" read -r c1 c2 c3 c4 valid_flag <<<"$row"
-        local display_val="$c4"
-        [[ "$valid_flag" == "false" ]] && display_val="${RED}$c4${RESET}"
 
-        printf "│ ${BOLD}%-*s${RESET} │ ${ITALIC}%-*s${RESET} │ %-*s │ %-*s │\n" \
-            $w1 "$c1" $w2 "$c2" $w3 "$c3" $w4 "$display_val"
+        local var_cell auth_cell def_cell val_cell
+        var_cell=$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "$c1")")
+        auth_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w2 "$c2")")
+        def_cell=$(printf "%-*s" $w3 "$c3")
+
+        if [[ "$valid_flag" == "false" ]]; then
+            val_cell=$(print_fancy --fg red --raw "$(printf "%-*s" $w4 "$c4")")
+        else
+            val_cell=$(print_fancy --raw "$(printf "%-*s" $w4 "$c4")")
+        fi
+
+        printf "│ %s │ %s │ %s │ %s │\n" "$var_cell" "$auth_cell" "$def_cell" "$val_cell"
     done
 
-    # Pied
-    printf "└─%*s─┴─%*s─┴─%*s─┴─%*s─┘\n" $w1 "" $w2 "" $w3 "" $w4 ""
+    # Bordure basse
+    printf "└─%*s─┴─%*s─┴─%*s─┴─%*s─┘\n" \
+        $w1 "" $w2 "" $w3 "" $w4 "" | sed 's/ /─/g'
 }
 
 
