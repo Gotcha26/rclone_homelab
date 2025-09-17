@@ -34,7 +34,6 @@ while true; do
 
     # Réaffichage de la bannière mais jamais au premier passage.
     if [ "$first_time" = false ]; then
-        clear
         print_logo   # ta bannière
     fi
     first_time=false
