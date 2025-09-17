@@ -8,7 +8,7 @@ show_debug_header() {
     if [[ "${DEBUG_MODE,,}" == "true" ]]; then
         debug_header_total
     elif [[ "${DEBUG_INFOS,,}" == "true" ]]; then
-        debug_header_partiel
+        debug_header_partial
     fi
 }
 
@@ -42,11 +42,13 @@ debug_header_start() {
 debug_header_1() {
     # Debug affichage
     echo
-    print_fancy --fg "green" --align "center" "********************"
-    print_fancy --fg "green" --align "center" "Tableau des variables locales prise en compte"
-    print_fancy --fg "green" --align "center" "********************"
-    print_vars_table VARS_TO_VALIDATE
-    print_fancy --fg "green" --align "center" "********************"
+    print_fancy --align "center" "********************"
+    print_fancy --align "center" "Tableau des variables locales prise en compte"
+    print_fancy -align "center" "********************"
+    for var in "${VARS_TO_VALIDATE[@]}"; do
+        echo "-> $var"
+    done
+    print_fancy --align "center" "********************"
 }
 
 debug_header_2() {
