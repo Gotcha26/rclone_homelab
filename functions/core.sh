@@ -426,3 +426,27 @@ create_temp_dirs() {
         mkdir -p "$DIR_LOG" 2>/dev/null || die 2 "$MSG_DIR_LOG_CREATE_FAIL : $DIR_LOG"
     fi
 }
+
+
+###############################################################################
+# Fonction : Rendre des scripts exécutable (utile après une MAJ notement)
+###############################################################################
+make_scripts_executable() {
+    local base_dir="${1:-$DIR_SCRIPT}"  # si rien passé, utilise DIR_SCRIPT
+    local scripts=("main.sh" "update/standalone_updater.sh")
+
+    for s in "${scripts[@]}"; do
+        local f="$base_dir/$s"
+        if [[ -f "$f" ]]; then
+            chmod +x "$f"
+            if [[ "${DEBUG_INFOS,,}" == "true" ]]; then
+                print_fancy --theme "success" "[DEBUG] Droits d'exécution appliqués sur : $f"
+            fi
+        else
+            if [[ "${DEBUG_INFOS,,}" == "true" ]]; then
+                print_fancy --theme "success" "[DEBUG] Fichier introuvable (pas de chmod) : $f"
+            fi
+        fi
+    done
+}
+

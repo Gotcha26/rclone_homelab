@@ -48,6 +48,8 @@ TMP_JOBS_DIR=$(mktemp -d)
 set_validation_vars
 validate_vars VARS_TO_VALIDATE[@]
 
+# Rendre le script update/standalone_updater.sh exécutable
+make_scripts_executable
 
 # --- ↓ DEBUG ↓ ---
 
