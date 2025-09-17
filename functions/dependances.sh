@@ -461,29 +461,39 @@ print_vars_table() {
 
     # Préparer les lignes et calcul des largeurs sur texte brut
     for entry in "${var_array[@]}"; do
-        IFS=":" read -r var_name allowed default <<<"$entry"
+        var_name="${entry%%:*}"
+        rest="${entry#*:}"
+        allowed="${rest%:*}"
+        default="${rest##*:}"
+
         local value="${!var_name:-$default}"
         local valid=true
+        local display_allowed=""
 
-        # Validation améliorée
+        # Calcul de la valeur "Autorisé"
         if [[ "$allowed" == "bool" ]]; then
+            display_allowed="false|true"
             [[ "$value" =~ ^(0|1|true|false)$ ]] || valid=false
         elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
+            display_allowed="$allowed"
             IFS="-" read -r min max <<< "$allowed"
             (( value < min || value > max )) && valid=false
         else
+            # Énumération
             IFS="|" read -ra allowed_arr <<<"$allowed"
             valid=false
             for v in "${allowed_arr[@]}"; do
                 [[ "$v" == "''" ]] && v=""
-                [[ "$value" == "$v" ]] && valid=true && break
+                [[ -z "$display_allowed" ]] && display_allowed="$v" || display_allowed+="|$v"
+                [[ "$value" == "$v" ]] && valid=true
             done
         fi
 
-        rows+=("$var_name|$allowed|$default|$value|$valid")
+        # Utiliser "¤" comme séparateur interne (au lieu de "|")
+        rows+=("$var_name¤$display_allowed¤$default¤$value¤$valid")
 
         (( ${#var_name} > w1 )) && w1=${#var_name}
-        (( ${#allowed}  > w2 )) && w2=${#allowed}
+        (( ${#display_allowed} > w2 )) && w2=${#display_allowed}
         (( ${#default}  > w3 )) && w3=${#default}
         (( ${#value}    > w4 )) && w4=${#value}
     done
@@ -522,19 +532,19 @@ print_vars_table() {
     # En-tête en gras
     printf "│ %s │ %s │ %s │ %s │\n" \
         "$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "Variable")")" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s " $w2 "Autorisé")")" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s " $w3 "Défaut")")" \
+        "$(print_fancy --style bold --raw "$(printf "%-*s" $w2 "Autorisé")")" \
+        "$(print_fancy --style bold --raw "$(printf "%-*s" $w3 "Défaut")")" \
         "$(print_fancy --style bold --raw "$(printf "%-*s" $w4 "Valeur")")"
 
     draw_separator $w1 $w2 $w3 $w4
 
     # Corps
     for row in "${rows[@]}"; do
-        IFS="|" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
 
-        var_cell=$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "$c1")")       # Colonne Variable en gras
-        auth_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w2 "$c2")")     # Colonne Autorisé en italique
-        def_cell=$(printf "%-*s" $w3 "$c3")                                           # Colonne Défaut normal
+        var_cell=$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "$c1")")
+        auth_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w2 "$c2")")
+        def_cell=$(printf "%-*s" $w3 "$c3")
 
         if [[ "$valid_flag" == "false" ]]; then
             val_cell=$(print_fancy --fg red --raw "$(printf "%-*s" $w4 "$c4")")
@@ -547,6 +557,10 @@ print_vars_table() {
 
     draw_bottom $w1 $w2 $w3 $w4
 }
+
+
+
+
 
 
 ###############################################################################
