@@ -441,3 +441,16 @@ validate_vars() {
 # Case       -> Quand la condition retourne "faux" selon les cas précisés...
 # Attention au signe "!" devant la condition qui inverse le sens "vrai/faux" 
 
+
+###############################################################################
+# Fonction : fait défiler l'écran vers le bas (scroll down)
+###############################################################################
+scroll_down() {
+    local lines
+    # Nombre de lignes visibles du terminal
+    lines=$(tput lines 2>/dev/null || echo 40)
+    # On imprime juste ce nombre de retours à la ligne
+    for ((i=0; i<lines; i++)); do
+        echo
+    done
+}

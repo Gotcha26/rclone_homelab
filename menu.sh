@@ -179,7 +179,7 @@ while true; do
                 break
                 ;;
             menu_jobs)
-                clear
+                scroll_down
                 echo "▶️  Edition de la liste des jobs pour rclone."
                 if ! init_jobs_file; then
                     echo "❌  Impossible de créer $DIR_JOBS_FILE, édition annulée."
