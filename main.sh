@@ -16,6 +16,7 @@ SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 # Sourcing global
 source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/config/config.main.conf"
+source "$SCRIPT_DIR/functions/debug.sh"
 source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"
 source "$SCRIPT_DIR/update/updater.sh"
@@ -47,38 +48,15 @@ TMP_JOBS_DIR=$(mktemp -d)
 set_validation_vars
 validate_vars VARS_TO_VALIDATE[@]
 
+
 # --- ↓ DEBUG ↓ ---
+
 if [[ "$DEBUG_MODE" == "true" ]]; then
-    echo "================================================================================"
-    print_fancy --highlight --bg "green" --align "center" --style "bold" --fill "=" " DÉBUT DU DEBUG DE TÊTE "
-    echo
-
-    # Debug affichage
-    print_fancy --fg "green" --align "center" "********************"
-    print_fancy --fg "green" --align "center" "Tableau des variables locales prise en compte"
-    print_fancy --fg "green" --align "center" "********************"
-    for var in "${VARS_TO_VALIDATE[@]}"; do
-        echo "-> $var"
-    done
-    print_fancy --fg "green" --align "center" "********************"
-
-    # Dossier temporaire unique
-    TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
-    if mkdir -p "$TMP_JOBS_DIR"; then
-        print_fancy --theme "success" "Répertoire temporaire créé avec succès : $TMP_JOBS_DIR"
-    else
-        print_fancy --theme "error" "Erreur lors de la création du répertoire : $TMP_JOBS_DIR" >&2
-    fi
-
-    if [[ "$DEBUG_INFOS" == "true" ]]; then 
-        print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
-    fi
-
-    echo
-    print_fancy --highlight --bg "green" --align "center" --style "bold" --fill "=" " FIN DU DEBUG DE TÊTE "
+    debug_1_header
     echo
     read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 fi
+
 # --- ↑ DEBUG ↑ ---
 
 # === Mises à jour ===

@@ -174,6 +174,7 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 - [] Ne plus parler de "configuration locale" mais ed paramètres personnalisés
 - [] Intégrer micro (choix avec nano lors de l'installation)
 - [] Réafecter correctement les codes DIE
+- [] Externaliser le débugage au démarrage.
 
 ### Petites infos
 *Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).  

@@ -448,6 +448,64 @@ validate_vars() {
 
 
 ###############################################################################
+# Fonction : Rendu en tableau formaté
+###############################################################################
+print_vars_table() {
+    local -n var_array=$1
+    local rows=()
+    local w1=0 w2=0 w3=0 w4=0
+
+    # Styles
+    local BOLD="\e[1m" ITALIC="\e[3m" RESET="\e[0m" RED="\e[31m"
+
+    # Préparer les lignes et largeurs
+    for entry in "${var_array[@]}"; do
+        IFS=":" read -r var_name allowed default <<<"$entry"
+        local value="${!var_name:-$default}"
+        local valid=true
+
+        # Validation rapide (réutilisation de ta logique)
+        if [[ "$allowed" == "bool" ]]; then
+            [[ "$value" =~ ^(0|1)$ ]] || valid=false
+        else
+            IFS="|" read -ra allowed_arr <<<"$allowed"
+            valid=false
+            for v in "${allowed_arr[@]}"; do
+                [[ "$v" == "''" ]] && v=""
+                [[ "$value" == "$v" ]] && valid=true && break
+            done
+        fi
+
+        rows+=("$var_name|$allowed|$default|$value|$valid")
+
+        (( ${#var_name} > w1 )) && w1=${#var_name}
+        (( ${#allowed}  > w2 )) && w2=${#allowed}
+        (( ${#default}  > w3 )) && w3=${#default}
+        (( ${#value}    > w4 )) && w4=${#value}
+    done
+
+    # En-tête
+    printf "┌─%*s─┬─%*s─┬─%*s─┬─%*s─┐\n" $w1 "" $w2 "" $w3 "" $w4 ""
+    printf "│ ${BOLD}%-*s${RESET} │ ${BOLD}%-*s${RESET} │ ${BOLD}%-*s${RESET} │ ${BOLD}%-*s${RESET} │\n" \
+        $w1 "Variable" $w2 "Autorisé" $w3 "Défaut" $w4 "Valeur"
+    printf "├─%*s─┼─%*s─┼─%*s─┼─%*s─┤\n" $w1 "" $w2 "" $w3 "" $w4 ""
+
+    # Corps
+    for row in "${rows[@]}"; do
+        IFS="|" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+        local display_val="$c4"
+        [[ "$valid_flag" == "false" ]] && display_val="${RED}$c4${RESET}"
+
+        printf "│ ${BOLD}%-*s${RESET} │ ${ITALIC}%-*s${RESET} │ %-*s │ %-*s │\n" \
+            $w1 "$c1" $w2 "$c2" $w3 "$c3" $w4 "$display_val"
+    done
+
+    # Pied
+    printf "└─%*s─┴─%*s─┴─%*s─┴─%*s─┘\n" $w1 "" $w2 "" $w3 "" $w4 ""
+}
+
+
+###############################################################################
 # Fonction : fait défiler l'écran vers le bas (scroll down)
 ###############################################################################
 scroll_down() {

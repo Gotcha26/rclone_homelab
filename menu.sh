@@ -11,6 +11,7 @@ SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 # Sourcing global
 source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/config/config.main.conf"
+source "$SCRIPT_DIR/functions/debug.sh"
 source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"
 source "$SCRIPT_DIR/update/updater.sh"
@@ -83,7 +84,7 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    if check_jobs_file soft then
+    if check_jobs_file soft; then
         add_option "✏️  Éditer la liste des jobs (rclone)" "menu_jobs"
     else
         add_option "⌨️  Configurer la liste des jobs (rclone)" "menu_jobs"
@@ -168,7 +169,7 @@ while true; do
                 update_to_latest_tag
                 label=$(print_fancy --theme "follow" --bg "white" --fg "red" \
                     --style "bold italic underline" --align "center" --highlight \
-                    --raw "Vous devez RELANCER LE SCRIPT pour terminer appliquer la mise à jour !")
+                    --raw "Relancer le script pour appliquer la mise à jour !")
                 printf "%b\n" "$label"
                 echo
                 exit 99
@@ -177,7 +178,7 @@ while true; do
                 update_to_latest_branch
                 label=$(print_fancy --theme "follow" --bg "white" --fg "red" \
                     --style "bold italic underline" --align "center" --highlight \
-                    --raw "Vous devez RELANCER LE SCRIPT pour terminer appliquer la mise à jour !")
+                    --raw "Relancer le script pour appliquer la mise à jour !")
                 printf "%b\n" "$label"
                 echo
                 exit 99
