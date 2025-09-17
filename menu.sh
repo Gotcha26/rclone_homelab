@@ -190,6 +190,7 @@ while true; do
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_install_rclone)
+                scroll_down
                 echo "▶️  Installation de rclone..."
                 if install_rclone soft; then
                     echo "✅  ... rclone a été installé avec succès !"
@@ -198,6 +199,7 @@ while true; do
                 fi
                 ;;
             menu_show_rclone_config)
+                scroll_down
                 # Détecte le fichier configuré
                 if conf_file=$(check_rclone_configured 2>/dev/null); then
                     echo -e "▶️  Affichage du fichier de configuration rclone : ${GREEN}$conf_file${RESET}"
@@ -209,11 +211,13 @@ while true; do
                 fi
                 ;;
             menu_config_rclone)
+                scroll_down
                 echo "▶️  Lancement de la configuration rclone..."
                 rclone config
                 echo "✅  ... Configuration terminée > retour au menu."
                 ;;
             menu_install_msmtp)
+                scroll_down
                 echo "▶️  Installation de msmtp..."
                 if install_msntp soft; then
                     echo "✅  ... msmtp a été installé avec succès !"
@@ -222,6 +226,7 @@ while true; do
                 fi
                 ;;
             menu_show_msmtp_config)
+                scroll_down
                 # Détecte le fichier configuré
                 if conf_file=$(check_msmtp_configured 2>/dev/null); then
                     echo "▶️  Affichage du fichier de configuration msmtp : $conf_file"
@@ -233,6 +238,7 @@ while true; do
                 fi
                 ;;
             menu_config_msmtp)
+                scroll_down
                 echo "▶️  Lancement de la configuration msmtp..."
                 edit_msmtp_config
                 echo "✅  ... Édition terminée > retour au menu."
@@ -244,43 +250,51 @@ while true; do
                 echo "✅  ... Fin de l'affichage > retour au menu."
                 ;;
             menu_init_config_local)
+                scroll_down
                 echo "▶️  Installation la configuration locale."
                 echo "Le fichier sera préservé lors des mises à jours automatiques."
                 init_config_local
                 echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_edit_config_local)
+                scroll_down
                 echo "▶️  Édition du fichiers $FILE_CONF_LOCAL"
                 nano "$DIR_FILE_CONF_LOCAL"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_edit_config_dev)
+                scroll_down
                 echo "▶️  Édition du fichiers $FILE_CONF_DEV"
                 nano "$DIR_FILE_CONF_DEV"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_add_secret_file)
+                scroll_down
                 echo "▶️  Installation d'un fichier $SECRET_FILE (optionnel)."
                 echo "Le fichier sera préservé lors des mises à jours automatiques."
                 init_secret_local
                 echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_edit_config_secret)
+                scroll_down
                 echo "▶️  Édition du fichiers $SECRET_FILE"
                 nano "$SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_show_help)
+                scroll_down
                 show_help
                 ;;
             menu_exit_script)
                 exit 99
                 ;;
             *)
+                scroll_down
                 echo "Choix invalide."
                 ;;
         esac
     else
+        scroll_down
         echo "Choix invalide."
     fi
 done
