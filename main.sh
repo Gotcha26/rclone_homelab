@@ -53,11 +53,7 @@ make_scripts_executable
 
 # --- ↓ DEBUG ↓ ---
 
-if [[ "$DEBUG_MODE" == "true" ]]; then
-    debug_1_header
-    echo
-    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
-fi
+show_debug_header
 
 # --- ↑ DEBUG ↑ ---
 
