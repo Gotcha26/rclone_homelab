@@ -201,6 +201,7 @@ print_fancy() {
     local text=""
     local style=""
     local highlight=""
+    local offset=0
     local theme=""
     local icon=""
     local newline=true
@@ -220,6 +221,7 @@ print_fancy() {
             --align)    align="$2"; shift 2 ;;
             --style)    style="$2"; shift 2 ;;
             --highlight) highlight="1"; shift ;;
+            --offset)   offset="$2"; shift 2 ;;
             --theme)    theme="$2"; shift 2 ;;
             --icon)     icon="$2 "; shift 2 ;;
             -n)         newline=false; shift ;;
@@ -235,7 +237,7 @@ print_fancy() {
     case "$theme" in
         success) [[ -z "$icon" ]] && icon="✅  " ; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
         error)   [[ -z "$icon" ]] && icon="❌  " ; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
-        warning) [[ -z "$icon" ]] && icon="⚠️  " ; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold" ;;
+        warning) [[ -z "$icon" ]] && icon="⚠️  " ; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold" ; offset=-1 ;;
         info)    [[ -z "$icon" ]] && icon="ℹ️  " ; [[ -z "$color" ]] && color="light_blue"; [[ -z "$style" ]] ;;
         flash)   [[ -z "$icon" ]] && icon="⚡  " ;;
         follow)  [[ -z "$icon" ]] && icon="👉  " ;;
@@ -267,6 +269,9 @@ print_fancy() {
     local visible_len=${#text}
     local pad_left=0
     local pad_right=0
+
+    # Compensation manuelle pour les emojis "glitchés"
+    visible_len=$((visible_len + offset))
 
     case "$align" in
         center)
