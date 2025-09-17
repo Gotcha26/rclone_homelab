@@ -45,7 +45,7 @@ debug_header_1() {
     print_fancy --align "center" "********************"
     print_fancy --align "center" "Tableau des variables locales prise en compte"
     print_fancy --align "center" "********************"
-    print_vars_table VARS_TO_VALIDATE[@]
+    print_vars_table VARS_TO_VALIDATE
     print_fancy --align "center" "********************"
 }
 
