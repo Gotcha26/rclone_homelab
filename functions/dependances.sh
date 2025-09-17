@@ -147,6 +147,152 @@ get_bg_color() {
 
 
 ###############################################################################
+# Fonction Sortie avec code erreur
+###############################################################################
+die() {
+    local code=$1
+    shift
+    print_fancy --theme "error" "$*" >&2
+    echo
+    exit "$code"
+}
+
+
+###############################################################################
+# Fonction : Valide des variables selon des valeurs autorisées
+# Utilisation :
+#   VARS_TO_VALIDATE=(
+#       "MODE:hard|soft|verbose:hard"
+#       "OPTIONAL_CONF:file1|file2|:''"
+#       "RETRY_COUNT:0-5:3"
+#       "ENABLE_FEATURE:bool:0"
+#   )
+#   validate_vars VARS_TO_VALIDATE[@]
+###############################################################################
+validate_vars() {
+    local -n var_array=$1   # Passage du nom de l'array en référence
+
+    for entry in "${var_array[@]}"; do
+        IFS=":" read -r var_name allowed default <<<"$entry"
+
+        # Valeur actuelle de la variable
+        local value="${!var_name:-$default}"
+
+        # Gestion spéciale booléen
+        if [[ "$allowed" == "bool" ]]; then
+            case "${value,,}" in
+                1|true|yes|on) value=1 ;;
+                0|false|no|off) value=0 ;;
+                '') value="${default:-0}" ;;  # si vide
+                *)
+                    print_fancy --theme "error" --align "center" \
+                        "Valeur invalide pour $var_name : '$value'.\n"\
+                        "Valeurs attendues : true/false, 1/0, yes/no, on/off.\n"\
+                        "Valeur par défaut appliquée : '$default'"
+                    value="${default:-0}"
+                    ;;
+            esac
+            export "$var_name"="$value"
+            continue
+        fi
+
+        # Conversion allowed en tableau
+        IFS="|" read -ra allowed_arr <<<"$allowed"
+        local valid=false
+
+        for v in "${allowed_arr[@]}"; do
+            # Cas intervalle numérique : 1-5
+            if [[ "$v" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+                local min=${BASH_REMATCH[1]}
+                local max=${BASH_REMATCH[2]}
+                if [[ "$value" =~ ^[0-9]+$ ]] && (( value >= min && value <= max )); then
+                    valid=true
+                    break
+                fi
+            # Cas valeur exacte numérique
+            elif [[ "$v" =~ ^[0-9]+$ ]]; then
+                if [[ "$value" == "$v" ]]; then
+                    valid=true
+                    break
+                fi
+            # Cas valeur littérale (y compris vide)
+            else
+                # Si vide indiqué par '', on le transforme en chaîne vide
+                [[ "$v" == "''" ]] && v=""
+                if [[ "$value" == "$v" ]]; then
+                    valid=true
+                    break
+                fi
+            fi
+        done
+
+        if [[ "$valid" == false ]]; then
+            print_fancy --theme "error" --align "center" \
+                "Valeur invalide pour $var_name : '$value'.\n"\
+                "Valeurs attendues : ${allowed//|/, }.\n"\
+                "Valeur par défaut appliquée : '$default'"
+            export "$var_name"="$default"
+        else
+            export "$var_name"="$value"
+        fi
+    done
+}
+# L'ARGUMENT dans le code d'appel de la fonciton PRIME sur la variable global
+#
+# Exemple :
+#
+# fonction_fictive soft
+#
+#
+# fonction_fictive () {
+# local LAUNCH_MODE="$1:${LAUNCH_MODE:-hard}" # <== argument : variable:<defaut>
+#    if ! [condition_blablabla] then
+#        case "$LAUNCH_MODE" in
+#            soft)
+#                return 1
+#                ;;
+#            verbose)
+#                fonction_doublement_fictive
+#                ;;
+#            hard)
+#                die 999 "❌  J'arrête le script et je meurs avec fonction die"
+#                ;;
+#            *)
+#                echo "❌  Mode inconnu '$LAUNCH_MODE' dans fonction_fictive"
+#                return 2
+#                ;;
+#        esac
+#    fi
+#    return 0
+# }
+# Explications code de sortie :
+# return 0   -> Quand la condition "vrai"
+# Case       -> Quand la condition retourne "faux" selon les cas précisés...
+# Attention au signe "!" devant la condition qui inverse le sens "vrai/faux" 
+
+
+###############################################################################
+# Fonction : fait défiler l'écran vers le bas (scroll down)
+###############################################################################
+scroll_down() {
+    local lines
+    # Nombre de lignes visibles du terminal
+    lines=$(tput lines 2>/dev/null || echo 40)
+    # On imprime juste ce nombre de retours à la ligne
+    for ((i=0; i<lines; i++)); do
+        echo
+    done
+}
+
+###############################################################################
+# Fonction : supprime séquences ANSI (lecture d'argument)
+###############################################################################
+_strip_ansi() {
+    # usage: _strip_ansi "string"
+    printf "%s" "$1" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g'
+}
+
+###############################################################################
 # Fonction alignement - décoration sur 1 ligne
 ###############################################################################
 # ----
@@ -326,131 +472,6 @@ print_fancy() {
 
 
 ###############################################################################
-# Fonction Sortie avec code erreur
-###############################################################################
-die() {
-    local code=$1
-    shift
-    print_fancy --theme "error" "$*" >&2
-    echo
-    exit "$code"
-}
-
-
-###############################################################################
-# Fonction : Valide des variables selon des valeurs autorisées
-# Utilisation :
-#   VARS_TO_VALIDATE=(
-#       "MODE:hard|soft|verbose:hard"
-#       "OPTIONAL_CONF:file1|file2|:''"
-#       "RETRY_COUNT:0-5:3"
-#       "ENABLE_FEATURE:bool:0"
-#   )
-#   validate_vars VARS_TO_VALIDATE[@]
-###############################################################################
-validate_vars() {
-    local -n var_array=$1   # Passage du nom de l'array en référence
-
-    for entry in "${var_array[@]}"; do
-        IFS=":" read -r var_name allowed default <<<"$entry"
-
-        # Valeur actuelle de la variable
-        local value="${!var_name:-$default}"
-
-        # Gestion spéciale booléen
-        if [[ "$allowed" == "bool" ]]; then
-            case "${value,,}" in
-                1|true|yes|on) value=1 ;;
-                0|false|no|off) value=0 ;;
-                '') value="${default:-0}" ;;  # si vide
-                *)
-                    print_fancy --theme "error" --align "center" \
-                        "Valeur invalide pour $var_name : '$value'.\n"\
-                        "Valeurs attendues : true/false, 1/0, yes/no, on/off.\n"\
-                        "Valeur par défaut appliquée : '$default'"
-                    value="${default:-0}"
-                    ;;
-            esac
-            export "$var_name"="$value"
-            continue
-        fi
-
-        # Conversion allowed en tableau
-        IFS="|" read -ra allowed_arr <<<"$allowed"
-        local valid=false
-
-        for v in "${allowed_arr[@]}"; do
-            # Cas intervalle numérique : 1-5
-            if [[ "$v" =~ ^([0-9]+)-([0-9]+)$ ]]; then
-                local min=${BASH_REMATCH[1]}
-                local max=${BASH_REMATCH[2]}
-                if [[ "$value" =~ ^[0-9]+$ ]] && (( value >= min && value <= max )); then
-                    valid=true
-                    break
-                fi
-            # Cas valeur exacte numérique
-            elif [[ "$v" =~ ^[0-9]+$ ]]; then
-                if [[ "$value" == "$v" ]]; then
-                    valid=true
-                    break
-                fi
-            # Cas valeur littérale (y compris vide)
-            else
-                # Si vide indiqué par '', on le transforme en chaîne vide
-                [[ "$v" == "''" ]] && v=""
-                if [[ "$value" == "$v" ]]; then
-                    valid=true
-                    break
-                fi
-            fi
-        done
-
-        if [[ "$valid" == false ]]; then
-            print_fancy --theme "error" --align "center" \
-                "Valeur invalide pour $var_name : '$value'.\n"\
-                "Valeurs attendues : ${allowed//|/, }.\n"\
-                "Valeur par défaut appliquée : '$default'"
-            export "$var_name"="$default"
-        else
-            export "$var_name"="$value"
-        fi
-    done
-}
-# L'ARGUMENT dans le code d'appel de la fonciton PRIME sur la variable global
-#
-# Exemple :
-#
-# fonction_fictive soft
-#
-#
-# fonction_fictive () {
-# local LAUNCH_MODE="$1:${LAUNCH_MODE:-hard}" # <== argument : variable:<defaut>
-#    if ! [condition_blablabla] then
-#        case "$LAUNCH_MODE" in
-#            soft)
-#                return 1
-#                ;;
-#            verbose)
-#                fonction_doublement_fictive
-#                ;;
-#            hard)
-#                die 999 "❌  J'arrête le script et je meurs avec fonction die"
-#                ;;
-#            *)
-#                echo "❌  Mode inconnu '$LAUNCH_MODE' dans fonction_fictive"
-#                return 2
-#                ;;
-#        esac
-#    fi
-#    return 0
-# }
-# Explications code de sortie :
-# return 0   -> Quand la condition "vrai"
-# Case       -> Quand la condition retourne "faux" selon les cas précisés...
-# Attention au signe "!" devant la condition qui inverse le sens "vrai/faux" 
-
-
-###############################################################################
 # Fonction : Rendu en tableau formaté
 ###############################################################################
 print_vars_table() {
@@ -556,22 +577,4 @@ print_vars_table() {
     done
 
     draw_bottom $w1 $w2 $w3 $w4
-}
-
-
-
-
-
-
-###############################################################################
-# Fonction : fait défiler l'écran vers le bas (scroll down)
-###############################################################################
-scroll_down() {
-    local lines
-    # Nombre de lignes visibles du terminal
-    lines=$(tput lines 2>/dev/null || echo 40)
-    # On imprime juste ce nombre de retours à la ligne
-    for ((i=0; i<lines; i++)); do
-        echo
-    done
 }
