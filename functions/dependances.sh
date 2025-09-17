@@ -207,6 +207,7 @@ print_fancy() {
     local newline=true
     local raw_mode=""
 
+    # Séquences ANSI
     local BOLD="\033[1m"
     local ITALIC="\033[3m"
     local UNDERLINE="\033[4m"
@@ -220,12 +221,12 @@ print_fancy() {
             --fill)     fill="$2"; shift 2 ;;
             --align)    align="$2"; shift 2 ;;
             --style)    style="$2"; shift 2 ;;
-            --highlight) highlight="1"; shift ;;
+            --highlight) highlight=1; shift ;;
             --offset)   offset="$2"; shift 2 ;;
             --theme)    theme="$2"; shift 2 ;;
             --icon)     icon="$2 "; shift 2 ;;
             -n)         newline=false; shift ;;
-            --raw)      raw_mode="1"; shift ;;
+            --raw)      raw_mode=1; shift ;;
             *)          text="$1"; shift; break ;;
         esac
     done
@@ -235,10 +236,10 @@ print_fancy() {
 
     # Application du thème (icône / couleur / style par défaut)
     case "$theme" in
-        success) [[ -z "$icon" ]] && icon="✅  " ; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
-        error)   [[ -z "$icon" ]] && icon="❌  " ; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
-        warning) [[ -z "$icon" ]] && icon="⚠️  " ; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold" ; offset=-1 ;;
-        info)    [[ -z "$icon" ]] && icon="ℹ️  " ; [[ -z "$color" ]] && color="light_blue"; [[ -z "$style" ]] ;;
+        success) [[ -z "$icon" ]] && icon="✅  "; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
+        error)   [[ -z "$icon" ]] && icon="❌  "; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
+        warning) [[ -z "$icon" ]] && icon="⚠️  "; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold"; offset=-1 ;;
+        info)    [[ -z "$icon" ]] && icon="ℹ️  "; [[ -z "$color" ]] && color="light_blue" ;;
         flash)   [[ -z "$icon" ]] && icon="⚡  " ;;
         follow)  [[ -z "$icon" ]] && icon="👉  " ;;
     esac
@@ -266,13 +267,14 @@ print_fancy() {
     [[ "$style" =~ italic ]]    && style_seq+="$ITALIC"
     [[ "$style" =~ underline ]] && style_seq+="$UNDERLINE"
 
+    # Calcul padding
     local visible_len=${#text}
     local pad_left=0
     local pad_right=0
 
     # Compensation manuelle pour les emojis "glitchés"
     visible_len=$((visible_len + offset))
-
+    
     case "$align" in
         center)
             local total_pad=$((TERM_WIDTH_DEFAULT - visible_len))
@@ -288,7 +290,12 @@ print_fancy() {
             ;;
     esac
 
-    local output=""
+    # Génération du texte final
+    local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
+    local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
+    local output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
+
+    # Highlight sur toute la ligne
     if [[ -n "$highlight" ]]; then
         # Ligne complète remplie avec le fill
         local full_line
@@ -311,13 +318,9 @@ print_fancy() {
 
     # Affichage ou retour brut, ligne contnue ou pas
     if [[ -n "$raw_mode" ]]; then
-        printf "%s" "$output"
+        printf "%b" "$output"   # toujours interpréter les séquences ANSI
     else
-        if $newline; then
-            printf "%b\n" "$output"
-        else
-            printf "%b" "$output"
-        fi
+        $newline && printf "%b\n" "$output" || printf "%b" "$output"
     fi
 }
 
@@ -456,7 +459,7 @@ print_vars_table() {
     local w1=0 w2=0 w3=0 w4=0
     local max_length="${max_length:-80}"
 
-    # Préparer les lignes et calcul des largeurs
+    # Préparer les lignes et calcul des largeurs sur texte brut
     for entry in "${var_array[@]}"; do
         IFS=":" read -r var_name allowed default <<<"$entry"
         local value="${!var_name:-$default}"
@@ -464,7 +467,7 @@ print_vars_table() {
 
         # Validation rapide
         if [[ "$allowed" == "bool" ]]; then
-            [[ "$value" =~ ^(0|1)$ ]] || valid=false
+            [[ "$value" =~ ^(0|1|true|false)$ ]] || valid=false
         else
             IFS="|" read -ra allowed_arr <<<"$allowed"
             valid=false
@@ -476,6 +479,7 @@ print_vars_table() {
 
         rows+=("$var_name|$allowed|$default|$value|$valid")
 
+        # Largeurs basées sur texte brut
         (( ${#var_name} > w1 )) && w1=${#var_name}
         (( ${#allowed}  > w2 )) && w2=${#allowed}
         (( ${#default}  > w3 )) && w3=${#default}
@@ -483,7 +487,7 @@ print_vars_table() {
     done
 
     # Ajuster si dépasse max_length
-    local total_width=$(( w1 + w2 + w3 + w4 + 13 )) # 13 = bordures + espaces
+    local total_width=$(( w1 + w2 + w3 + w4 + 13 )) # bordures + espaces
     if (( total_width > max_length )); then
         local excess=$(( total_width - max_length ))
         local cut=$(( (excess + 3) / 4 ))
@@ -493,42 +497,49 @@ print_vars_table() {
         w4=$(( w4 - cut > 5 ? w4 - cut : 5 ))
     fi
 
-    # Bordure haute
-    printf "┌─%*s─┬─%*s─┬─%*s─┬─%*s─┐\n" \
-        $w1 "" $w2 "" $w3 "" $w4 "" | sed 's/ /─/g'
+    # Bordures
+    draw_border() {
+        local a=$1 b=$2 c=$3 d=$4
+        printf "┌%s┐\n" \
+            "$(printf '─%.0s' $(seq 1 $((a+2))))┬$(printf '─%.0s' $(seq 1 $((b+2))))┬$(printf '─%.0s' $(seq 1 $((c+2))))┬$(printf '─%.0s' $(seq 1 $((d+2))))"
+    }
+    draw_separator() {
+        local a=$1 b=$2 c=$3 d=$4
+        printf "├%s┤\n" \
+            "$(printf '─%.0s' $(seq 1 $((a+2))))┼$(printf '─%.0s' $(seq 1 $((b+2))))┼$(printf '─%.0s' $(seq 1 $((c+2))))┼$(printf '─%.0s' $(seq 1 $((d+2))))"
+    }
+    draw_bottom() {
+        local a=$1 b=$2 c=$3 d=$4
+        printf "└%s┘\n" \
+            "$(printf '─%.0s' $(seq 1 $((a+2))))┴$(printf '─%.0s' $(seq 1 $((b+2))))┴$(printf '─%.0s' $(seq 1 $((c+2))))┴$(printf '─%.0s' $(seq 1 $((d+2))))"
+    }
 
-    # En-tête
+    # Affichage
+    draw_border $w1 $w2 $w3 $w4
+
+    # En-tête en gras
     printf "│ %s │ %s │ %s │ %s │\n" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "Variable")")" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s" $w2 "Autorisé")")" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s" $w3 "Défaut")")" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s" $w4 "Valeur")")"
+        "$(print_fancy --style bold --raw --offset 0 "$(printf "%-*s" $w1 "Variable")")" \
+        "$(print_fancy --style bold --raw --offset 1 "$(printf "%-*s" $w2 "Autorisé")")" \
+        "$(print_fancy --style bold --raw --offset 0 "$(printf "%-*s" $w3 "Défaut")")" \
+        "$(print_fancy --style bold --raw --offset 0 "$(printf "%-*s" $w4 "Valeur")")"
 
-    # Séparateur
-    printf "├─%*s─┼─%*s─┼─%*s─┼─%*s─┤\n" \
-        $w1 "" $w2 "" $w3 "" $w4 "" | sed 's/ /─/g'
+    draw_separator $w1 $w2 $w3 $w4
 
-    # Corps
+    # Corps : italique sur colonnes sauf Valeur
     for row in "${rows[@]}"; do
         IFS="|" read -r c1 c2 c3 c4 valid_flag <<<"$row"
 
-        local var_cell auth_cell def_cell val_cell
-        var_cell=$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "$c1")")
+        var_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w1 "$c1")")
         auth_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w2 "$c2")")
-        def_cell=$(printf "%-*s" $w3 "$c3")
+        def_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w3 "$c3")")
+        val_cell=$(printf "%-*s" $w4 "$c4")
+        [[ "$valid_flag" == "false" ]] && val_cell=$(print_fancy --fg red --raw "$val_cell")
 
-        if [[ "$valid_flag" == "false" ]]; then
-            val_cell=$(print_fancy --fg red --raw "$(printf "%-*s" $w4 "$c4")")
-        else
-            val_cell=$(print_fancy --raw "$(printf "%-*s" $w4 "$c4")")
-        fi
-
-        printf "│ %s │ %s │ %s │ %s │\n" "$var_cell" "$auth_cell" "$def_cell" "$val_cell"
+        printf "│ %b │ %b │ %b │ %b │\n" "$var_cell" "$auth_cell" "$def_cell" "$val_cell"
     done
 
-    # Bordure basse
-    printf "└─%*s─┴─%*s─┴─%*s─┴─%*s─┘\n" \
-        $w1 "" $w2 "" $w3 "" $w4 "" | sed 's/ /─/g'
+    draw_bottom $w1 $w2 $w3 $w4
 }
 
 
