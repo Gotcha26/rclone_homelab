@@ -465,9 +465,12 @@ print_vars_table() {
         local value="${!var_name:-$default}"
         local valid=true
 
-        # Validation rapide
+        # Validation améliorée
         if [[ "$allowed" == "bool" ]]; then
             [[ "$value" =~ ^(0|1|true|false)$ ]] || valid=false
+        elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
+            IFS="-" read -r min max <<< "$allowed"
+            (( value < min || value > max )) && valid=false
         else
             IFS="|" read -ra allowed_arr <<<"$allowed"
             valid=false
@@ -479,7 +482,6 @@ print_vars_table() {
 
         rows+=("$var_name|$allowed|$default|$value|$valid")
 
-        # Largeurs basées sur texte brut
         (( ${#var_name} > w1 )) && w1=${#var_name}
         (( ${#allowed}  > w2 )) && w2=${#allowed}
         (( ${#default}  > w3 )) && w3=${#default}
@@ -487,7 +489,7 @@ print_vars_table() {
     done
 
     # Ajuster si dépasse max_length
-    local total_width=$(( w1 + w2 + w3 + w4 + 13 )) # bordures + espaces
+    local total_width=$(( w1 + w2 + w3 + w4 + 13 ))
     if (( total_width > max_length )); then
         local excess=$(( total_width - max_length ))
         local cut=$(( (excess + 3) / 4 ))
@@ -519,22 +521,26 @@ print_vars_table() {
 
     # En-tête en gras
     printf "│ %s │ %s │ %s │ %s │\n" \
-        "$(print_fancy --style bold --raw --offset 0 "$(printf "%-*s" $w1 "Variable")")" \
-        "$(print_fancy --style bold --raw --offset 1 "$(printf "%-*s" $w2 "Autorisé")")" \
-        "$(print_fancy --style bold --raw --offset 0 "$(printf "%-*s" $w3 "Défaut")")" \
-        "$(print_fancy --style bold --raw --offset 0 "$(printf "%-*s" $w4 "Valeur")")"
+        "$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "Variable")")" \
+        "$(print_fancy --style bold --raw "$(printf "%-*s " $w2 "Autorisé")")" \
+        "$(print_fancy --style bold --raw "$(printf "%-*s " $w3 "Défaut")")" \
+        "$(print_fancy --style bold --raw "$(printf "%-*s" $w4 "Valeur")")"
 
     draw_separator $w1 $w2 $w3 $w4
 
-    # Corps : italique sur colonnes sauf Valeur
+    # Corps
     for row in "${rows[@]}"; do
         IFS="|" read -r c1 c2 c3 c4 valid_flag <<<"$row"
 
-        var_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w1 "$c1")")
-        auth_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w2 "$c2")")
-        def_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w3 "$c3")")
-        val_cell=$(printf "%-*s" $w4 "$c4")
-        [[ "$valid_flag" == "false" ]] && val_cell=$(print_fancy --fg red --raw "$val_cell")
+        var_cell=$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "$c1")")       # Colonne Variable en gras
+        auth_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w2 "$c2")")     # Colonne Autorisé en italique
+        def_cell=$(printf "%-*s" $w3 "$c3")                                           # Colonne Défaut normal
+
+        if [[ "$valid_flag" == "false" ]]; then
+            val_cell=$(print_fancy --fg red --raw "$(printf "%-*s" $w4 "$c4")")
+        else
+            val_cell=$(print_fancy --fg green --raw "$(printf "%-*s" $w4 "$c4")")
+        fi
 
         printf "│ %b │ %b │ %b │ %b │\n" "$var_cell" "$auth_cell" "$def_cell" "$val_cell"
     done
