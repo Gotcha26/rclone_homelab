@@ -83,7 +83,11 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    add_option "⌨️  Afficher/éditer la liste des jobs (rclone)" "menu_jobs"
+    if check_jobs_file soft then
+        add_option "✏️  Éditer la liste des jobs (rclone)" "menu_jobs"
+    else
+        add_option "⌨️  Configurer la liste des jobs (rclone)" "menu_jobs"
+    fi
     # rclone
     if ! check_rclone_installed soft >/dev/null 2>&1; then
         # Cas 1 : rclone absent
@@ -92,10 +96,10 @@ while true; do
         # Mode "soft" pour le menu : pas de die
         if ! check_rclone_configured soft >/dev/null 2>&1; then
             # Cas 2 : rclone présent → vérifier la config
-            add_option "🤖  Configurer rclone" "menu_config_rclone"
+            add_option "⚙️  Configurer rclone" "menu_config_rclone"
         else
             # Config OK ou vide
-            add_option "📄  Afficher/éditer la configuration rclone" "menu_show_rclone_config"
+            add_option "✏️  Éditer la configuration rclone" "menu_show_rclone_config"
         fi
     fi
     # msmtp
@@ -106,7 +110,7 @@ while true; do
         # Cas 2 : msmtp présent → vérifier la configuration
         if conf_file=$(check_msmtp_configured 2>/dev/null); then
             # Fichier valide trouvé → afficher/éditer
-            add_option "📄  Afficher/éditer la configuration msmtp" "menu_show_msmtp_config"
+            add_option "✏️  Éditer la configuration msmtp" "menu_show_msmtp_config"
         else
             # Aucun fichier valide → configurer
             add_option "⚙️  Configurer msmtp" "menu_config_msmtp"
@@ -123,11 +127,11 @@ while true; do
     if ! check_config_local soft >/dev/null 2>&1; then
         add_option "💻  Installer une configuration locale" "menu_init_config_local"
     else
-        add_option "✏️  Éditer la configuration locale" "menu_edit_config_local"
+        add_option "✏️  Éditer la configuration locale - vos réglages personnels" "menu_edit_config_local"
     fi
     # Propose l'édition de configuration locale pour dev seulement si présente
     if check_config_dev soft >/dev/null 2>&1; then
-        add_option "✏️  Éditer la configuration locale pour développeurs" "menu_edit_config_dev"
+        add_option "✏️  Éditer la configuration locale - orienté développeurs" "menu_edit_config_dev"
     fi
     # Option pour installer/editer un fichier secrets.env
     if ! check_secret_conf soft >/dev/null 2>&1; then
