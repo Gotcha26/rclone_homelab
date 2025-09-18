@@ -134,10 +134,10 @@ while true; do
         add_option "✏️  Éditer la configuration locale - orienté développeurs" "menu_edit_config_dev"
     fi
     # Option pour installer/editer un fichier secrets.env
-    if ! check_secret_conf soft >/dev/null 2>&1; then
-        add_option "💻  Installer un fichier secret pour vos mdp / tockens (optionnel)" "menu_add_secret_file"
+    if ! check_secrets_conf soft >/dev/null 2>&1; then
+        add_option "💻  Installer un fichier secrets.env pour vos mdp / tockens (optionnel)" "menu_add_secrets_file"
     else
-        add_option "✏️  Éditer la configuration secrète" "menu_edit_config_secret"
+        add_option "✏️  Éditer la configuration secrète" "menu_edit_config_secrets"
     fi
 
     # 5) Choix permanents
@@ -276,14 +276,14 @@ while true; do
                 nano "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
-            menu_add_secret_file)
+            menu_add_secrets_file)
                 scroll_down
                 echo "▶️  Installation d'un fichier $SECRET_FILE (optionnel)."
                 echo "Le fichier sera préservé lors des mises à jours automatiques."
-                init_secret_local
+                init_secrets_local
                 echo "✅  ... Installation terminée > retour au menu."
                 ;;
-            menu_edit_config_secret)
+            menu_edit_config_secrets)
                 scroll_down
                 echo "▶️  Édition du fichiers $SECRET_FILE"
                 nano "$SECRET_FILE"

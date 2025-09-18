@@ -117,7 +117,7 @@ check_config_dev () {
 ###############################################################################
 # Fonction : Initialiser config.local.sh si absent
 ###############################################################################
-init_secret_local() {
+init_secrets_local() {
     local main_conf="$DIR_EXEMPLE_SECRET_FILE"
     local secret_file="$DIR_SECRET_FILE"
 
