@@ -80,13 +80,13 @@ init_config_local() {
 # Fonction : Recherche la présence eventuelle du fichier config.local.conf
 ###############################################################################
 check_config_local () {
-    local mode="${1:-${LAUNCH_MODE:-soft}}" # argument : variable:<defaut> (l'argument prime sur la variable)
+    local mode="${1:-${DEBUG_INFO:-false}}" # argument : variable:<defaut> (l'argument prime sur la variable)
 
     # Vérifier existence
-    if [[ ! -f "$DIR_CONF_LOCAL" ]]; then
+    if [[ ! -f "$DIR_CONF_LOCAL_FILE" ]]; then
         case "$mode" in
-            soft|hard)    return 1 ;;
-            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_CONF_LOCAL" >&2; return 1 ;;
+            false)    return 1 ;;
+            true) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_CONF_LOCAL_FILE" >&2; return 1 ;;
         esac
     fi
 
@@ -99,13 +99,13 @@ check_config_local () {
 # Fonction : Recherche la présence eventuelle du fichier config.dev.conf
 ###############################################################################
 check_config_dev () {
-    local mode="${1:-${LAUNCH_MODE:-soft}}" # argument : variable:<defaut> (l'argument prime sur la variable)
+    local mode="${1:-${DEBUG_INFO:-false}}" # argument : variable:<defaut> (l'argument prime sur la variable)
 
     # Vérifier existence
     if [[ ! -f "$DIR_CONF_DEV_FILE" ]]; then
         case "$mode" in
-            soft|hard)    return 1 ;;
-            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_CONF_DEV_FILE" >&2; return 1 ;;
+            false)    return 1 ;;
+            true) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_CONF_DEV_FILE" >&2; return 1 ;;
         esac
     fi
 
