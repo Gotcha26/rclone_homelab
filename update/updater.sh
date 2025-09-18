@@ -105,9 +105,9 @@ analyze_update_status() {
         elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
             [[ "$display_mode" == "verbose" ]] && echo "" || true
             [[ "$display_mode" == "verbose" ]] && \
-                print_fancy --theme "success" --fg "blue" --align "right" "Version actuelle ${current_tag:-dev} >> À jour"
+                print_fancy --theme "ok" --fg "blue" --align "right" "Version actuelle ${current_tag:-dev} >> À jour"
             [[ "$display_mode" == "simplified" ]] && \
-                print_fancy --theme "success" --fg "blue" --align "right" "À jour."
+                print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
             result_code=0
         elif (( latest_tag_epoch < head_epoch )); then
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && echo "" || true
@@ -120,7 +120,7 @@ analyze_update_status() {
             [[ "$display_mode" == "verbose" ]] && \
                 print_fancy --bg "yellow" --align "center" --style "italic" --highlight "Vous êtes bien sur la dernière release stable : ${current_tag:-dev}"
             [[ "$display_mode" == "simplified" ]] && \
-                print_fancy --theme "success" --fg "yellow" --align "right" style "underline" "Votre version est à jour..."
+                print_fancy --theme "ok" --fg "yellow" --align "right" style "underline" "Votre version est à jour..."
             # [[ "$display_mode" == "simplified" ]] && \
             #     print_fancy --theme "info" "Des commits locaux plus récents que la dernière release."
             result_code=0
@@ -145,9 +145,9 @@ analyze_update_status() {
         elif [[ "$head_commit" == "$remote_commit" ]]; then
             [[ "$display_mode" == "verbose" ]] && echo "" || true
             [[ "$display_mode" == "verbose" ]] && \
-                print_fancy --theme "success" --fg "blue" --style "bold" --align "right" "Votre branche '$branch_real' est à jour avec le dépôt."
+                print_fancy --theme "ok" --fg "blue" --style "bold" --align "right" "Votre branche '$branch_real' est à jour avec le dépôt."
             [[ "$display_mode" == "simplified" ]] && \
-                print_fancy --theme "success" --fg "blue" --align "right" "À jour."
+                print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
             result_code=0
         elif (( head_epoch < remote_epoch )); then
             [[ "$display_mode" == "verbose" || "$display_mode" == "simplified" ]] && echo "" || true

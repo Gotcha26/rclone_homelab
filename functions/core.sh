@@ -435,7 +435,7 @@ make_scripts_executable() {
         local f="$base_dir/$s"
         if [[ -f "$f" ]]; then
             chmod +x "$f"
-            [[ "${DEBUG_INFOS,,}" == "true" ]] && print_fancy --theme "success" "[DEBUG] chmod +x appliqué sur $f"
+            [[ "${DEBUG_INFOS,,}" == "true" ]] && print_fancy --theme "ok" "[DEBUG] chmod +x appliqué sur $f"
         else
             [[ "${DEBUG_INFOS,,}" == "true" ]] && --theme "warning" "[DEBUG] Fichier absent : $f"
         fi
