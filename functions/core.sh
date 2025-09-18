@@ -61,28 +61,32 @@ set_validation_vars() {
 # Fonction : Charger config.local < config.dev < secrets.env (si présents) [Du moins important au plus important]
 ###############################################################################
 load_optional_configs() {
-    local display_mode="${DEBUG_INFO:-false}"  # verbose / simplified / none
+    local display_mode="${DEBUG_INFO:-false}"
 
     # 1/ -- config.main.conf
     # 2/ -- config.local --
     if [[ -f "$DIR_FILE_CONF_LOCAL" && -r "$DIR_FILE_CONF_LOCAL" ]]; then
         source "$DIR_FILE_CONF_LOCAL"
-        [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
-        "CONFIGURATION LOCALE ACTIVÉE ℹ️ "
+        [[ "$display_mode" == "true" ]] && \
+            print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight && \
+            "CONFIGURATION LOCALE ACTIVÉE ℹ️ "
     else
-        [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
+        [[ "$display_mode" == "true" ]] && \
+        print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight && \
         "CONFIGURATION PAR DEFAUT UNIQUEMENT D'ACTIVÉE ℹ️ "
     fi
     # 3/ -- config.dev (prioritaire, chargé en dernier) --
     if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
         source "$DIR_FILE_CONF_DEV"
-        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
+        [[ "$display_mode" == "true" ]] && \
+        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight && \
         "CONFIGURATION DEV ACTIVÉE  ℹ️ "
     fi
     # 4/ -- secrets.env
     if [[ -f "$DIR_SECRET_FILE" && -r "$DIR_SECRET_FILE" ]]; then
         source "$DIR_SECRET_FILE"
-        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
+        [[ "$display_mode" == "true" ]] && \
+        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight && \
         "CONFIGURATION DEV ACTIVÉE  ℹ️ "
     fi
     # 5/ -- arguments de lancement du script [a le dernier mots]
@@ -435,13 +439,13 @@ make_scripts_executable() {
         local f="$base_dir/$s"
         if [[ -f "$f" ]]; then
             chmod +x "$f"
-            [[ "${DEBUG_INFOS,,}" == "true" ]] && {
+            [[ "${DEBUG_INFOS}" == "true" ]] && {
                 print_fancy --theme "debug_info" "chmod +x appliqué sur :"
                 print_fancy --align "right" --fg "light_blue" "$f"
             }
         else
-            [[ "${DEBUG_INFOS,,}" == "true" ]] && {
-                print_fancy --theme "warning" "[DEBUG_INFO] Fichier absent :" {
+            [[ "${DEBUG_INFOS}" == "true" ]] && {
+                print_fancy --theme "warning" "[DEBUG_INFO] Fichier absent :"
                 print_fancy --align "right" --fg "red" "$f"
             }
         fi
