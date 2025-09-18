@@ -42,7 +42,7 @@ TMP_JOBS_DIR=$(mktemp -d)
 
 # Correction des varaibles utilisateurs (locales) par défaut
 set_validation_vars
-validate_vars VARS_TO_VALIDATE[@]
+validate_var_entry VARS_TO_VALIDATE[@]
 
 # Rendre le script update/standalone_updater.sh exécutable
 make_scripts_executable
@@ -66,7 +66,7 @@ analyze_update_status
 # --- ↑
 
 # Appel de la fonction de validation des variables locales
-if ! validate_vars VARS_TO_VALIDATE; then
+if ! validate_var_entry VARS_TO_VALIDATE; then
     # Problème
     echo
 
