@@ -47,11 +47,18 @@ init_config_local() {
         return 1
     fi
 
-    mkdir -p "$(dirname "$conf_file")" || print_fancy --theme "error" "Impossible de créer le dossier cible $(dirname "$conf_file")"
-    cp "$main_conf" "$conf_file"       || print_fancy --theme "error" "Impossible de copier $main_conf vers $conf_file"
+    mkdir -p "$(dirname "$conf_file")" \
+    || print_fancy --theme "error" \
+        "Impossible de créer le dossier cible $(dirname "$conf_file")"; \
+        return 1;
+    cp "$main_conf" "$conf_file" \
+    || print_fancy --theme "error" \
+        "Impossible de copier $main_conf vers $conf_file"; \
+        return 1;
     print_fancy --theme "success" "Fichier installé : $conf_file"
 
     # --- Proposer l'édition immédiate avec nano ---
+    echo
     read -rp "✏️  Voulez-vous éditer le fichier maintenant avec nano ? [Y/n] : " EDIT_REPLY
     EDIT_REPLY=${EDIT_REPLY,,}
     if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then

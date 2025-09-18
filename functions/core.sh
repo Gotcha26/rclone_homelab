@@ -121,44 +121,6 @@ check_rclone_installed() {
 
 
 ###############################################################################
-# Fonction : Installer rclone selon le mode choisi
-# Usage    : install_rclone [soft|verbose|hard]
-###############################################################################
-install_rclone() {
-    local mode="${1:-${LAUNCH_MODE:-hard}}" # argument : variable:<defaut> (l'argument prime sur la variable)
-
-    case "$mode" in
-        soft)
-            echo "📦  Installation de rclone en mode silencieux..."
-            ;;
-        verbose)
-            echo "⚠️  rclone n'est pas installé."
-            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-            REPLY=${REPLY,,}
-            if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
-                die 11 "rclone est requis mais n'a pas été installé."
-            fi
-            ;;
-        hard)
-            die 11 "rclone est requis mais n'est pas installé."
-            ;;
-    esac
-
-    # Tentative d’installation
-    echo "📦  Installation de rclone en cours..."
-    if sudo apt update && sudo apt install -y rclone; then
-        return 0
-    else
-        case "$mode" in
-            verbose) die 11 "Une erreur est survenue lors de l'installation de rclone." ;;
-            soft)    return 1 ;;
-        esac
-    fi
-}
-
-
-
-###############################################################################
 # Vérifie si rclone est configuré
 # Paramètre optionnel : "soft" -> ne pas die, juste retourner 1 si non configuré
 ###############################################################################
@@ -205,6 +167,43 @@ check_rclone_configured() {
         verbose) print_fancy --theme "info" "Aucun fichier rclone.conf trouvé." >&2; return 2 ;;
         hard)   die 30 "Aucun fichier rclone.conf trouvé — arrêt immédiat." >&2; exit 2 ;;
     esac
+}
+
+
+###############################################################################
+# Fonction : Installer rclone selon le mode choisi
+# Usage    : install_rclone [soft|verbose|hard]
+###############################################################################
+install_rclone() {
+    local mode="${1:-${LAUNCH_MODE:-hard}}" # argument : variable:<defaut> (l'argument prime sur la variable)
+
+    case "$mode" in
+        soft)
+            echo "📦  Installation de rclone en mode silencieux..."
+            ;;
+        verbose)
+            echo "⚠️  rclone n'est pas installé."
+            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+            REPLY=${REPLY,,}
+            if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+                die 11 "rclone est requis mais n'a pas été installé."
+            fi
+            ;;
+        hard)
+            die 11 "rclone est requis mais n'est pas installé."
+            ;;
+    esac
+
+    # Tentative d’installation
+    echo "📦  Installation de rclone en cours..."
+    if sudo apt update && sudo apt install -y rclone; then
+        return 0
+    else
+        case "$mode" in
+            verbose) die 11 "Une erreur est survenue lors de l'installation de rclone." ;;
+            soft)    return 1 ;;
+        esac
+    fi
 }
 
 
