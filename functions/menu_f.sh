@@ -25,15 +25,15 @@ init_jobs_file() {
 
 
 ###############################################################################
-# Fonction : Initialiser config.local.sh si absent
+# Fonction : Initialiser config.local.conf si absent
 ###############################################################################
 init_config_local() {
-    local main_conf="$SCRIPT_DIR/config/config.main.conf"
-    local conf_file="$DIR_FILE_CONF_LOCAL"
+    local main_conf="$DIR_EXEMPLE_CONF_LOCAL_FILE"
+    local conf_file="$DIR_CONF_LOCAL_FILE"
 
     echo
     echo
-    print_fancy --style "underline" "⚙️  Création de config.local.sh"
+    print_fancy --style "underline" "⚙️  Création de $CONF_LOCAL_FILE"
     print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
     print_fancy --fg "blue" -n "Fichier d'origine : ";
      print_fancy "$main_conf"
@@ -50,6 +50,15 @@ init_config_local() {
     mkdir -p "$(dirname "$conf_file")" || print_fancy --theme "error" "Impossible de créer le dossier cible $(dirname "$conf_file")"
     cp "$main_conf" "$conf_file"       || print_fancy --theme "error" "Impossible de copier $main_conf vers $conf_file"
     print_fancy --theme "success" "Fichier installé : $conf_file"
+
+    # --- Proposer l'édition immédiate avec nano ---
+    read -rp "✏️  Voulez-vous éditer le fichier maintenant avec nano ? [Y/n] : " EDIT_REPLY
+    EDIT_REPLY=${EDIT_REPLY,,}
+    if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
+        nano "$conf_file"
+    else
+        print_fancy --theme "info" "Édition ignorée pour : $conf_file"
+    fi
 }
 
 
@@ -60,10 +69,10 @@ check_config_local () {
     local mode="${1:-${LAUNCH_MODE:-soft}}" # argument : variable:<defaut> (l'argument prime sur la variable)
 
     # Vérifier existence
-    if [[ ! -f "$DIR_FILE_CONF_LOCAL" ]]; then
+    if [[ ! -f "$DIR_CONF_LOCAL" ]]; then
         case "$mode" in
             soft|hard)    return 1 ;;
-            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_FILE_CONF_LOCAL" >&2; return 1 ;;
+            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_CONF_LOCAL" >&2; return 1 ;;
         esac
     fi
 
@@ -73,16 +82,16 @@ check_config_local () {
 
 
 ###############################################################################
-# Fonction : Recherche la présence eventuelle du fichier config.local.conf
+# Fonction : Recherche la présence eventuelle du fichier config.dev.conf
 ###############################################################################
 check_config_dev () {
     local mode="${1:-${LAUNCH_MODE:-soft}}" # argument : variable:<defaut> (l'argument prime sur la variable)
 
     # Vérifier existence
-    if [[ ! -f "$DIR_FILE_CONF_DEV" ]]; then
+    if [[ ! -f "$DIR_CONF_DEV_FILE" ]]; then
         case "$mode" in
             soft|hard)    return 1 ;;
-            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_FILE_CONF_DEV" >&2; return 1 ;;
+            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_CONF_DEV_FILE" >&2; return 1 ;;
         esac
     fi
 
@@ -122,6 +131,15 @@ init_secret_local() {
         || { print_fancy --theme "error" "Impossible de modifier les droits pour $secret_file"; return 1; }
     print_fancy --theme "success" "Fichier installé : $secret_file"
     return 0
+
+    # --- Proposer l'édition immédiate avec nano ---
+    read -rp "✏️  Voulez-vous éditer le fichier maintenant avec nano ? [Y/n] : " EDIT_REPLY
+    EDIT_REPLY=${EDIT_REPLY,,}
+    if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
+        nano "$secret_file"
+    else
+        print_fancy --theme "info" "Édition ignorée pour : $secret_file"
+    fi
 }
 
 

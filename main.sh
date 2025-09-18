@@ -15,7 +15,6 @@ SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 
 # Sourcing global
 source "$SCRIPT_DIR/config/global.conf"
-source "$SCRIPT_DIR/config/config.main.conf"
 source "$SCRIPT_DIR/functions/debug.sh"
 source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"

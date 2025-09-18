@@ -88,7 +88,7 @@ fetch_git_info() {
 analyze_update_status() {
     local result_code=0
 
-    # --- Mode verbose : affichage complet si DEBUG_INFO=true ---
+    # --- Mode verbose : affichage complet si DEBUG_INFOS=true ---
     if [[ "${DEBUG_INFO:-false}" == true ]]; then
         print_fancy --fill "#" "#"
         print_fancy --align "center" --style "bold" "INFOS GIT"

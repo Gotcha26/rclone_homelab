@@ -58,39 +58,45 @@ set_validation_vars() {
 
 
 ###############################################################################
-# Fonction : Charger config.local < config.dev < secrets.env (si présents) [Du moins important au plus important]
+# Fonction : Surcharger global.conf < config.local.conf < config.dev.conf < secrets.env (si présents)
 ###############################################################################
 load_optional_configs() {
-    local display_mode="${DEBUG_INFO:-false}"
+    local any_loaded=false
 
-    # 1/ -- config.main.conf
-    # 2/ -- config.local --
-    if [[ -f "$DIR_FILE_CONF_LOCAL" && -r "$DIR_FILE_CONF_LOCAL" ]]; then
-        source "$DIR_FILE_CONF_LOCAL"
-        [[ "$display_mode" == "true" ]] && \
-            print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight && \
-            "CONFIGURATION LOCALE ACTIVÉE ℹ️ "
-    else
-        [[ "$display_mode" == "true" ]] && \
-        print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight && \
-        "CONFIGURATION PAR DEFAUT UNIQUEMENT D'ACTIVÉE ℹ️ "
+    # 1/ -- config.local.conf --
+    if [[ -f "$DIR_CONF_LOCAL_FILE" && -r "$DIR_CONF_LOCAL_FILE" ]]; then
+        source "$DIR_CONF_LOCAL_FILE"
+        any_loaded=true
+        [[ "$DEBUG_INFO" == true ]] && \
+            print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
+            "CONFIGURATION LOCALE ACTIVÉE ℹ️"
     fi
-    # 3/ -- config.dev (prioritaire, chargé en dernier) --
-    if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
-        source "$DIR_FILE_CONF_DEV"
-        [[ "$display_mode" == "true" ]] && \
-        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight && \
-        "CONFIGURATION DEV ACTIVÉE  ℹ️ "
+
+    # 2/ -- config.dev.conf (prioritaire) --
+    if [[ -f "$DIR_CONF_DEV_FILE" && -r "$DIR_CONF_DEV_FILE" ]]; then
+        source "$DIR_CONF_DEV_FILE"
+        any_loaded=true
+        [[ "$DEBUG_INFO" == true ]] && \
+            print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
+            "CONFIGURATION DEV ACTIVÉE ℹ️"
     fi
-    # 4/ -- secrets.env
+
+    # 3/ -- secrets.env --
     if [[ -f "$DIR_SECRET_FILE" && -r "$DIR_SECRET_FILE" ]]; then
         source "$DIR_SECRET_FILE"
-        [[ "$display_mode" == "true" ]] && \
-        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight && \
-        "CONFIGURATION DEV ACTIVÉE  ℹ️ "
+        any_loaded=true
+        [[ "$DEBUG_INFO" == true ]] && \
+            print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
+            "SECRETS LOADED ℹ️"
     fi
-    # 5/ -- arguments de lancement du script [a le dernier mots]
+
+    # 4/ -- Si aucun fichier n’a été chargé --
+    if [[ "$any_loaded" == false && "$DEBUG_INFO" == true ]]; then
+        print_fancy --theme "warning" --align "center" --bg "blue" --fg "white" --highlight \
+            "Aucun fichier de configuration optionnel trouvé. Configuration par défaut uniquement."
+    fi
 }
+
 
 
 ###############################################################################

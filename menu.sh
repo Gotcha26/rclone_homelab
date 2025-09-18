@@ -13,13 +13,12 @@ SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 
 # Sourcing global
 source "$SCRIPT_DIR/config/global.conf"
-source "$SCRIPT_DIR/config/config.main.conf"
 source "$SCRIPT_DIR/functions/debug.sh"
 source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"
 source "$SCRIPT_DIR/update/updater.sh"
 
-# Surchage la configuration local
+# Surchage via configuration local
 load_optional_configs
 
 # ===
@@ -267,14 +266,14 @@ while true; do
                 ;;
             menu_edit_config_local)
                 scroll_down
-                echo "▶️  Édition du fichiers $FILE_CONF_LOCAL"
-                nano "$DIR_FILE_CONF_LOCAL"
+                echo "▶️  Édition du fichiers $CONF_LOCAL_FILE"
+                nano "$DIR_CONF_LOCAL"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_edit_config_dev)
                 scroll_down
-                echo "▶️  Édition du fichiers $FILE_CONF_DEV"
-                nano "$DIR_FILE_CONF_DEV"
+                echo "▶️  Édition du fichiers $CONF_DEV_FILE"
+                nano "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_add_secret_file)

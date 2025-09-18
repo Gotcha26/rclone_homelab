@@ -43,10 +43,10 @@ cd
 
 Ensemble de fichiers locaux qui ne sont pas écrasés lors des mises à jour (sauf instruction express et délibérée.)
 ```
-├── local/                    # Espace utilisateur, jamais écrasé
-│   ├── jobs.conf             # Jobs persos
-│   ├── settings.conf         # Overrides de config
-│   └── secrets.env           # Identifiants, tokens msmtp, etc. (EXPERIMENTAL)
+├── local/                        # Espace utilisateur, jamais écrasé
+│   ├── jobs.conf                 # Jobs persos (Nécessaire)
+│   ├── config.local.conf         # Overrides de config (Optionnel)
+│   └── secrets.env               # Identifiants, tokens msmtp, etc. (Optionnel)
 ```
 
 

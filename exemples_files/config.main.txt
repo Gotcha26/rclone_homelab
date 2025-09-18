@@ -3,52 +3,61 @@
 # =========================================================================== #
 # Ce fichier vient surcharger les paramètres par défaut.                      #
 #                                                                             #
-# Fichier de référence : /config/global.conf                                  #
+# Fichier de référence : config.global.conf                                   #
 # =========================================================================== #
 
 
 # === Arguments de lancements ===
 
-DRY_RUN=false                  # <false|true>:false - ARGUMENT
+DRY_RUN=false
+                               # <false|true>:false - ARGUMENT
                                # Permet de lancer UNIQUEMENT rclone en mode
                                # simulation seulement.
 
-MAIL_TO=""                     # <texte>:"" - ARGUMENT
+MAIL_TO=""
+                               # <texte>:"" - ARGUMENT
                                # Adresse mail par défaut.
 
-DISCORD_WEBHOOK_URL=""         # <texte>:"" - ARGUMENT
+DISCORD_WEBHOOK_URL=""
+                               # <texte>:"" - ARGUMENT
                                # URL du webhook salon Discord.
 
-FORCE_UPDATE=false             # <false|true>:false - ARGUMENT
+FORCE_UPDATE=false
+                               # <false|true>:false - ARGUMENT
                                # Force à faire les MAJ dès
                                # le lancement. Sans argument = sécurité.
                                #   Accèpte un switch sur une branche spécifique
                                #   avec FORCE_BRANCH=<branche>
 
-LAUNCH_MODE=hard               # <hard|verbose>:hard - ARGUMENT
+LAUNCH_MODE=hard
+                               # <hard|verbose>:hard - ARGUMENT
                                # Propose des interractions si besoin.
                                #   hard = aucune interractions [auto : CRON]
                                #   verbose = pauses si action requises [manuel]
 
+
 # === Variables globales techniques ===
 
-TERM_WIDTH_DEFAULT=80          # <80-120>:80
+TERM_WIDTH_DEFAULT=80
+                               # <80-120>:80
                                # Largeur par défaut pour les affichages fixes.
 
-LOG_RETENTION_DAYS=15          # <1:15>:14
+LOG_RETENTION_DAYS=15
+                               # <1:15>:14
                                # Durée de conservation des logs.
 
-LOG_LINE_MAX=1000              # <100-10000>:1000
+LOG_LINE_MAX=1000
+                               # <100-10000>:1000
                                # Nombre de lignes maximales (en partant du bas)
                                # à afficher dans le rapport par email.
 
-DEBUG_INFOS=false              # <false|true>:false
+DEBUG_INFOS=false
+                               # <false|true>:false
                                # Quelques informations pour le debugage
 
-DEBUG_MODE=false               # <false|true>:false
+DEBUG_MODE=false
+                               # <false|true>:false
                                # Action d'aides actives pour le débugage
-
-
 
 
 # === Options SPECIFIQUES à : rclone ===
@@ -76,7 +85,6 @@ RCLONE_OPTS=(
 # =========================================================================== #
 # Couleurs personnalisées pour print_fancy()                                  #
 #                                                                             #
-# Déclaration dans config.local.conf                                          #
 # Syntaxe simple : définir une couleur pour le texte et/ou le fond            #
 # =========================================================================== #
 #                                                                             #
@@ -87,7 +95,7 @@ RCLONE_OPTS=(
 # MY_BG_BLUE="rgb:255;200;0" # Couleur fond RGB 24-bit                        #
 #                                               (rouge=255, vert=200, bleu=0) #
 #                                                                             #
-# UTILISATION DANS print_fancy :                                              #
+# UTILISATION avec print_fancy :                                              #
 # print_fancy --fg "$MY_ORANGE" "Texte orange"                                #
 # print_fancy --bg "$MY_BG_GRAY" "Texte sur fond gris"                        #
 # print_fancy --fg "$MY_ORANGE" --bg "$MY_BG_GRAY" "Txt orange sur fond gris" #
