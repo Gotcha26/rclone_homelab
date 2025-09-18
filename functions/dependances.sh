@@ -686,7 +686,7 @@ validate_vars() {
     done
 
     # Affichage des détails des variables invalides (si DEBUG_MODE ou DEBUG_INFO est activé)
-    if [[ "$has_invalid" == "true" && ("$DEBUG_MODE" == "true" || "$DEBUG_INFO" == "true") ]]; then
+    if [[ "$has_invalid" == "true" && ("$DEBUG_MODE" == "true" || "$DEBUG_INFOS" == "true") ]]; then
         print_fancy --theme "error" "Variables invalides :"
 
         # Calcul des largeurs de colonnes
