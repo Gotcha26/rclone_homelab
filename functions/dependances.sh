@@ -838,10 +838,119 @@ print_table() {
     draw_bottom
 }
 
+
+###############################################################################
+# Fonction : calculer la valeur affichée "Autorisé" et si la valeur est valide
+# Entrée  : var_name, allowed, default
+# Sortie  : display_allowed, value, valid
+###############################################################################
+compute_var_status() {
+    local var_name=$1
+    local allowed=$2
+    local default=$3
+
+    local value="${!var_name:-$default}"
+    local valid=true
+    local display_allowed=""
+
+    if [[ "$allowed" == "bool" ]]; then
+        display_allowed="false|true"
+        [[ "$value" =~ ^(0|1|true|false)$ ]] || valid=false
+    elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
+        display_allowed="$allowed"
+        IFS="-" read -r min max <<< "$allowed"
+        (( value < min || value > max )) && valid=false
+    elif [[ -z "$allowed" || "$allowed" == "any" || "$allowed" == "''" ]]; then
+        display_allowed="*"
+        valid=true
+    else
+        IFS="|" read -ra allowed_arr <<<"$allowed"
+        valid=false
+        display_allowed=""
+        for v in "${allowed_arr[@]}"; do
+            [[ "$v" == "''" ]] && v=""
+            [[ -z "$display_allowed" ]] && display_allowed="$v" || display_allowed+="|$v"
+            [[ "$value" == "$v" ]] && valid=true
+        done
+        [[ -z "$value" && (-z "$allowed" || "$allowed" == "any" || "$allowed" == "''") ]] && valid=true
+    fi
+
+    # Retour via variables globales (ou ref si tu veux)
+    COMPUTE_VALUE="$value"
+    COMPUTE_DISPLAY_ALLOWED="$display_allowed"
+    COMPUTE_VALID="$valid"
+}
+
+
+print_vars_table() {
+    local -n var_array=$1
+    local rows=()
+
+    for entry in "${var_array[@]}"; do
+        local var_name="${entry%%:*}"
+        local rest="${entry#*:}"
+        local allowed="${rest%:*}"
+        local default="${rest##*:}"
+
+        compute_var_status "$var_name" "$allowed" "$default"
+
+        rows+=("$var_name¤$COMPUTE_DISPLAY_ALLOWED¤$default¤$COMPUTE_VALUE¤$COMPUTE_VALID")
+    done
+
+    print_table rows
+}
+
+validate_vars() {
+    local -n var_array=$1
+    local invalid_rows=()
+    local has_invalid=false
+
+    for entry in "${var_array[@]}"; do
+        local var_name="${entry%%:*}"
+        local rest="${entry#*:}"
+        local allowed="${rest%:*}"
+        local default="${rest##*:}"
+
+        compute_var_status "$var_name" "$allowed" "$default"
+
+        if [[ "$COMPUTE_VALID" == "false" ]]; then
+            invalid_rows+=("$var_name¤$COMPUTE_DISPLAY_ALLOWED¤$default¤$COMPUTE_VALUE¤false")
+            has_invalid=true
+        fi
+    done
+
+    if [[ "$has_invalid" == "true" ]]; then
+        print_fancy --theme "error" "Variables invalides :"
+        print_table invalid_rows
+        return 1
+    fi
+
+    return 0
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ###############################################################################
 # Exemple : print_vars_table utilisant print_table
 ###############################################################################
-print_vars_table() {
+hh_print_vars_table() {
     local -n var_array=$1
     local rows=()
 
@@ -886,7 +995,7 @@ print_vars_table() {
 ###############################################################################
 # Exemple : validate_vars utilisant print_table
 ###############################################################################
-validate_vars() {
+hh_validate_vars() {
     local -n var_array=$1
     local invalid_rows=()
     local has_invalid=false
