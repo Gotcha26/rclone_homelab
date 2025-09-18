@@ -395,14 +395,14 @@ print_fancy() {
         success)    [[ -z "$icon" ]] && icon="✅  "; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
         error)      [[ -z "$icon" ]] && icon="❌  "; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
         warning)    [[ -z "$icon" ]] && icon="⚠️  "; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold"; offset=-1 ;;
-        debug_info) [[ -z "$icon" ]] && icon="ℹ️  "; [[ -z "$color" ]] && color="light_blue" ; [[ -z "$prefix" ]] && prefix="[DEBUG_INFO]:";;
+        debug_info) [[ -z "$icon" ]] && icon="ℹ️  "; [[ -z "$color" ]] && color="light_blue" ; [[ -z "$prefix" ]] && prefix="[DEBUG_INFO] " ;;
 
         info)       [[ -z "$icon" ]] && icon="ℹ️  " ;;
         ok)         [[ -z "$icon" ]] && icon="✅  " ;;
         flash)      [[ -z "$icon" ]] && icon="⚡  " ;;
         follow)     [[ -z "$icon" ]] && icon="👉  " ;;
     esac
-    text="$icon$text"
+    text="$icon$prefix$text"
 
     # Traduction des couleurs
     [[ "$color" =~ ^\\e ]] || color=$(get_fg_color "${color:-white}")
