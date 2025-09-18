@@ -26,9 +26,6 @@ load_optional_configs
 
 # ===
 
-# Informe de la surchage locale prise en compte
-show_optional_configs
-
 # Sourcing intermédiaire
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"

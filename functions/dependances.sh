@@ -538,6 +538,9 @@ print_vars_table() {
             display_allowed="$allowed"
             IFS="-" read -r min max <<< "$allowed"
             (( value < min || value > max )) && valid=false
+        elif [[ -z "$allowed" || "$allowed" == "any" ]]; then
+            display_allowed="*"
+            valid=true
         else
             IFS="|" read -ra allowed_arr <<<"$allowed"
             valid=false

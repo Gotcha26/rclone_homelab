@@ -41,14 +41,17 @@ EOF
 ###############################################################################
 set_validation_vars() {
     VARS_TO_VALIDATE=(
-        "LOG_LINE_MAX:100-10000:1000"
+        "DRY_RUN:bool:false"
+        "MAIL_TO:''"
+        "DISCORD_WEBHOOK_URL:''"
+        "FORCE_UPDATE:bool:false"
+        "FORCE_BRANCH:''"
+        "LAUNCH_MODE:hard|verbose:hard"
         "TERM_WIDTH_DEFAULT:80-120:80"
         "LOG_RETENTION_DAYS:1-15:14"
-        "FORCE_UPDATE:bool:false"
-        "DRY_RUN:bool:false"
-        "LAUNCH_MODE:hard|verbose:hard"
-        "DEBUG_MODE:bool:false"
+        "LOG_LINE_MAX:100-10000:1000"
         "DEBUG_INFOS:bool:false"
+        "DEBUG_MODE:bool:false"
         "DISPLAY_MODE:none|simplified|verbose:simplified"
     )
 }
@@ -58,43 +61,31 @@ set_validation_vars() {
 # Fonction : Charger config.local < config.dev < secrets.env (si présents) [Du moins important au plus important]
 ###############################################################################
 load_optional_configs() {
+    local display_mode="${DEBUG_INFO:-false}"  # verbose / simplified / none
+
     # 1/ -- config.main.conf
     # 2/ -- config.local --
     if [[ -f "$DIR_FILE_CONF_LOCAL" && -r "$DIR_FILE_CONF_LOCAL" ]]; then
         source "$DIR_FILE_CONF_LOCAL"
+        [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
+        "CONFIGURATION LOCALE ACTIVÉE ℹ️ "
+    else
+        [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
+        "CONFIGURATION PAR DEFAUT UNIQUEMENT D'ACTIVÉE ℹ️ "
     fi
     # 3/ -- config.dev (prioritaire, chargé en dernier) --
     if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
         source "$DIR_FILE_CONF_DEV"
+        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
+        "CONFIGURATION DEV ACTIVÉE  ℹ️ "
     fi
     # 4/ -- secrets.env
     if [[ -f "$DIR_SECRET_FILE" && -r "$DIR_SECRET_FILE" ]]; then
         source "$DIR_SECRET_FILE"
+        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
+        "CONFIGURATION DEV ACTIVÉE  ℹ️ "
     fi
     # 5/ -- arguments de lancement du script [a le dernier mots]
-}
-
-
-###############################################################################
-# Fonction charge dans l'ordre main > local > dev
-###############################################################################
-show_optional_configs() {
-    local display_mode="${DISPLAY_MODE:-simplified}"  # verbose / simplified / none
-
-    if [[ -f "$DIR_FILE_CONF_LOCAL" && -r "$DIR_FILE_CONF_LOCAL" ]]; then
-        [[ "$display_mode" == "verbose" ]] && print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
-        "CONFIGURATION LOCALE ACTIVÉE ℹ️ "
-    fi
-
-    if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
-        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
-        "CONFIGURATION DEV ACTIVÉE  ℹ️ "
-    fi
-
-    if [[ -f "$DIR_FILE_CONF_DEV" && -r "$DIR_FILE_CONF_DEV" ]]; then
-        print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
-        "CONFIGURATION DEV ACTIVÉE  ℹ️ "
-    fi
 }
 
 

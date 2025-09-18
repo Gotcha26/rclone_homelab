@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
 first_time=true
+DISPLAY_MODE=simplified        # <verbose|simplified|none>
+                               # Utilisé pour l'affichage d'infos lors des MAJ
+VARS_TO_VALIDATE+=("DISPLAY_MODE:none|simplified|verbose:simplified")
 
 # === Initialisation minimale ===
 
@@ -20,9 +23,6 @@ source "$SCRIPT_DIR/update/updater.sh"
 load_optional_configs
 
 # ===
-
-# Informe de la surchage locale prise en compte
-show_optional_configs
 
 # sourcing spécifique pour le menu
 source "$SCRIPT_DIR/functions/menu_f.sh"
