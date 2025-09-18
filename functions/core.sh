@@ -440,7 +440,8 @@ make_scripts_executable() {
                 print_fancy --align "right" --fg "light_blue" "$f"
             }
         else
-            [[ "${DEBUG_INFOS,,}" == "true" ]] && --theme "warning" "[DEBUG_INFO] Fichier absent :" {
+            [[ "${DEBUG_INFOS,,}" == "true" ]] && {
+                print_fancy --theme "warning" "[DEBUG_INFO] Fichier absent :" {
                 print_fancy --align "right" --fg "red" "$f"
             }
         fi
