@@ -169,14 +169,14 @@ init_secrets_local() {
 ###############################################################################
 # Fonction : Recherche la présence eventuelle du fichier secret.env
 ###############################################################################
-check_secret_conf () {
-    local mode="${1:-${LAUNCH_MODE:-soft}}" # argument : variable:<defaut> (l'argument prime sur la variable)
+check_secrets_conf () {
+    local mode="${1:-${DEBUG_INFO:-false}}" # argument : variable:<defaut> (l'argument prime sur la variable)
 
     # Vérifier existence
     if [[ ! -f "$DIR_SECRET_FILE" ]]; then
         case "$mode" in
-            soft|hard)    return 1 ;;
-            verbose) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_SECRET_FILE" >&2; return 1 ;;
+            false)    return 1 ;;
+            true) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_SECRET_FILE" >&2; return 1 ;;
         esac
     fi
 
