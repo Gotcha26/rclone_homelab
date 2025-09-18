@@ -45,7 +45,6 @@ debug_header_1() {
     print_fancy --align "center" --style "bold" "Tableau des variables locales prise en compte"
     print_fancy --align "center" "********************************************"
     print_vars_table VARS_TO_VALIDATE
-    print_fancy --align "center" "********************************************"
 }
 
 debug_header_2() {
@@ -62,7 +61,8 @@ debug_header_2() {
 
 debug_header_3() {
     echo
-    print_fancy --theme "debug_info" "DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
+    print_fancy --theme "debug_info" "DIR_LOG_FILE_SCRIPT = "
+    print_fancy --align "right" --fg "light_blue" "$DIR_LOG_FILE_SCRIPT"
 }
 
 debug_header_stop() {
