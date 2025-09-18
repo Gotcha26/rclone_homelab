@@ -69,8 +69,9 @@ analyze_update_status
 if ! validate_vars VARS_TO_VALIDATE; then
     # Problème
     echo
-    # Arrête le script si invalide, LAUNCH_MODE == "hard"
-    [[ "$LAUNCH_MODE" == "hard"]]; then
+
+    # Arrête le script si invalide ET LAUNCH_MODE == "hard"
+    if [[ "$LAUNCH_MODE" == "hard" ]]; then
         die 30 "Erreur : Configuration invalide. Vérifiez les variables (locales)."
     else
         print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
@@ -79,10 +80,12 @@ if ! validate_vars VARS_TO_VALIDATE; then
     fi
 else
     # Pas de soucis
-    [[ "$DEBUG_INFO" == "true" || "$DEBUG_MODE" == "true"]]; then
+    if [[ "$DEBUG_INFO" == "true" || "$DEBUG_MODE" == "true" ]]; then
         echo
         print_fancy --theme "ok" "Les variables locales sont validées"
+    fi
 fi
+
 
 
 ###############################################################################
