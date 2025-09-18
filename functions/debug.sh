@@ -18,7 +18,6 @@ debug_header_complet () {
     debug_header_1
     debug_header_2
     debug_header_3
-    debug_header_4
     debuh_header_stop
     echo
     read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
@@ -42,11 +41,11 @@ debug_header_start() {
 debug_header_1() {
     # Debug affichage
     echo
-    print_fancy --align "center" "********************"
-    print_fancy --align "center" "Tableau des variables locales prise en compte"
-    print_fancy --align "center" "********************"
+    print_fancy --align "center" "********************************************"
+    print_fancy --align "center" --style "bold" "Tableau des variables locales prise en compte"
+    print_fancy --align "center" "********************************************"
     print_vars_table VARS_TO_VALIDATE
-    print_fancy --align "center" "********************"
+    print_fancy --align "center" "********************************************"
 }
 
 debug_header_2() {
@@ -63,15 +62,10 @@ debug_header_2() {
 
 debug_header_3() {
     echo
-    print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
+    print_fancy --theme "debug_info" "DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
 }
 
-debug_header_4() {
+debug_header_stop() {
     echo
     print_fancy --highlight --bg "green" --align "center" --style "bold" --fill "=" " FIN DU DEBUG DE TÊTE "
-}
-
-debuh_header_stop() {
-    echo
-    print_fancy --theme "info" --fg "black" --bg "white" "DEBUG: DIR_LOG_FILE_SCRIPT = $DIR_LOG_FILE_SCRIPT"
 }
