@@ -394,7 +394,7 @@ print_fancy() {
         success) [[ -z "$icon" ]] && icon="✅  "; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
         ok) [[ -z "$icon" ]] && icon="✅  " ;;
         error)   [[ -z "$icon" ]] && icon="❌  "; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
-        warning) [[ -z "$icon" ]] && icon="⚠️  "; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold" ;;
+        warning) [[ -z "$icon" ]] && icon="⚠️  "; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold"; offset=-1 ;;
         info)    [[ -z "$icon" ]] && icon="ℹ️  "; [[ -z "$color" ]] && color="light_blue" ;;
         flash)   [[ -z "$icon" ]] && icon="⚡  " ;;
         follow)  [[ -z "$icon" ]] && icon="👉  " ;;
