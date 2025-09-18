@@ -67,7 +67,7 @@ load_optional_configs() {
     if [[ -f "$DIR_CONF_LOCAL_FILE" && -r "$DIR_CONF_LOCAL_FILE" ]]; then
         source "$DIR_CONF_LOCAL_FILE"
         any_loaded=true
-        [[ "$DEBUG_INFO" == true ]] && \
+        [[ "$DEBUG_INFOS" == true ]] && \
             print_fancy --theme "info" --align "center" --bg "yellow" --fg "rgb:0;0;0" --highlight \
             "CONFIGURATION LOCALE ACTIVÉE ℹ️"
     fi
@@ -76,7 +76,7 @@ load_optional_configs() {
     if [[ -f "$DIR_CONF_DEV_FILE" && -r "$DIR_CONF_DEV_FILE" ]]; then
         source "$DIR_CONF_DEV_FILE"
         any_loaded=true
-        [[ "$DEBUG_INFO" == true ]] && \
+        [[ "$DEBUG_INFOS" == true ]] && \
             print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
             "CONFIGURATION DEV ACTIVÉE ℹ️"
     fi
@@ -85,13 +85,13 @@ load_optional_configs() {
     if [[ -f "$DIR_SECRET_FILE" && -r "$DIR_SECRET_FILE" ]]; then
         source "$DIR_SECRET_FILE"
         any_loaded=true
-        [[ "$DEBUG_INFO" == true ]] && \
+        [[ "$DEBUG_INFOS" == true ]] && \
             print_fancy --theme "info" --align "center" --bg "red" --fg "rgb:0;0;0" --highlight \
             "SECRETS LOADED ℹ️"
     fi
 
     # 4/ -- Si aucun fichier n’a été chargé --
-    if [[ "$any_loaded" == false && "$DEBUG_INFO" == true ]]; then
+    if [[ "$any_loaded" == false && "$DEBUG_INFOS" == true ]]; then
         print_fancy --theme "warning" --align "center" --bg "blue" --fg "white" --highlight \
             "Aucun fichier de configuration optionnel trouvé. Configuration par défaut uniquement."
     fi

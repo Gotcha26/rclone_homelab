@@ -23,7 +23,7 @@ debug_header_complet () {
     read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 }
 
-#Montage DEBUG_INFO
+#Montage DEBUG_INFOS
 debug_header_partial () {
     debug_header_1
     debug_header_3
