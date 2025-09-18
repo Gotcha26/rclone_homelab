@@ -437,226 +437,6 @@ draw_bottom() {
 
 
 ###############################################################################
-# Fonction : Affiche un tableau formaté à partir des lignes fournies
-# Usage: print_formatted_table "Titre1¤Titre2¤Titre3¤Titre4" "ligne1¤val1¤val2¤val3¤valid" "ligne2¤..."
-###############################################################################
-print_formatted_table() {
-    local headers="$1"
-    shift
-    local rows=("$@")
-    local w1=0 w2=0 w3=0 w4=0
-    local max_length="${max_length:-80}"
-
-    # Calcul des largeurs maximales (en-têtes + données)
-    IFS="¤" read -r h1 h2 h3 h4 <<<"$headers"
-    for row in "${rows[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 _ <<<"$row"
-        (( $(strwidth "$c1") > w1 )) && w1=$(strwidth "$c1")
-        (( $(strwidth "$c2") > w2 )) && w2=$(strwidth "$c2")
-        (( $(strwidth "$c3") > w3 )) && w3=$(strwidth "$c3")
-        (( $(strwidth "$c4") > w4 )) && w4=$(strwidth "$c4")
-    done
-    (( $(strwidth "$h1") > w1 )) && w1=$(strwidth "$h1")
-    (( $(strwidth "$h2") > w2 )) && w2=$(strwidth "$h2")
-    (( $(strwidth "$h3") > w3 )) && w3=$(strwidth "$h3")
-    (( $(strwidth "$h4") > w4 )) && w4=$(strwidth "$h4")
-
-    # Ajustement si nécessaire
-    local total_width=$(( w1 + w2 + w3 + w4 + 13 ))
-    if (( total_width > max_length )); then
-        local excess=$(( total_width - max_length ))
-        local cut=$(( (excess + 3) / 4 ))
-        w1=$(( w1 - cut > 5 ? w1 - cut : 5 ))
-        w2=$(( w2 - cut > 5 ? w2 - cut : 5 ))
-        w3=$(( w3 - cut > 5 ? w3 - cut : 5 ))
-        w4=$(( w4 - cut > 5 ? w4 - cut : 5 ))
-    fi
-
-    # Affichage du tableau
-    printf "┌"
-    printf '─%.0s' $(seq 1 $((w1 + 2))) ; printf "┬"
-    printf '─%.0s' $(seq 1 $((w2 + 2))) ; printf "┬"
-    printf '─%.0s' $(seq 1 $((w3 + 2))) ; printf "┬"
-    printf '─%.0s' $(seq 1 $((w4 + 2))) ; printf "┐\n"
-
-    # En-tête
-    printf "│ "
-    print_cell "$(print_fancy --style bold --raw "$h1")" $w1
-    printf " │ "
-    print_cell "$(print_fancy --style bold --raw "$h2")" $w2
-    printf " │ "
-    print_cell "$(print_fancy --style bold --raw "$h3")" $w3
-    printf " │ "
-    print_cell "$(print_fancy --style bold --raw "$h4")" $w4
-    printf " │\n"
-
-    # Séparateur
-    printf "├"
-    printf '─%.0s' $(seq 1 $((w1 + 2))) ; printf "┼"
-    printf '─%.0s' $(seq 1 $((w2 + 2))) ; printf "┼"
-    printf '─%.0s' $(seq 1 $((w3 + 2))) ; printf "┼"
-    printf '─%.0s' $(seq 1 $((w4 + 2))) ; printf "┤\n"
-
-    # Lignes de données
-    for row in "${rows[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
-        local var_cell=$(print_fancy --style bold --raw "$c1")
-        local auth_cell=$(print_fancy --style italic --raw "$c2")
-        local def_cell="$c3"
-        local val_cell
-        if [[ "$valid_flag" == "false" ]]; then
-            val_cell=$(print_fancy --fg red --raw "$c4")
-        else
-            val_cell=$(print_fancy --fg green --raw "$c4")
-        fi
-        printf "│ "
-        print_cell "$var_cell" $w1
-        printf " │ "
-        print_cell "$auth_cell" $w2
-        printf " │ "
-        print_cell "$def_cell" $w3
-        printf " │ "
-        print_cell "$val_cell" $w4
-        printf " │\n"
-    done
-
-    # Bordure inférieure
-    printf "└"
-    printf '─%.0s' $(seq 1 $((w1 + 2))) ; printf "┴"
-    printf '─%.0s' $(seq 1 $((w2 + 2))) ; printf "┴"
-    printf '─%.0s' $(seq 1 $((w3 + 2))) ; printf "┴"
-    printf '─%.0s' $(seq 1 $((w4 + 2))) ; printf "┘\n"
-}
-
-
-###############################################################################
-# Fonction : S'occupe de valider des données en fonction de critères transmis
-# Retourne : var_name¤display_allowed¤default¤value¤valid
-###############################################################################
-validate_var_entry() {
-    local var_name="$1"
-    local allowed="$2"
-    local default="$3"
-
-    # valeur actuelle (si variable unset ou vide, on prend le default)
-    local value="${!var_name:-$default}"
-
-    local display_allowed=""
-    local valid="true"
-
-    # Cas "aucune restriction" ou "any"
-    if [[ -z "$allowed" || "$allowed" == "any" ]]; then
-        display_allowed="*"
-        valid="true"
-
-    # Booléen
-    elif [[ "$allowed" == "bool" ]]; then
-        display_allowed="false|true"
-        local vl="${value,,}"
-        if [[ "$vl" == "0" || "$vl" == "1" || "$vl" == "true" || "$vl" == "false" ]]; then
-            valid="true"
-        else
-            valid="false"
-        fi
-
-    # Plage numérique "min-max"
-    elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
-        display_allowed="$allowed"
-        local min max
-        IFS="-" read -r min max <<< "$allowed"
-        if [[ "$value" =~ ^-?[0-9]+$ ]]; then
-            (( value >= min && value <= max )) && valid="true" || valid="false"
-        else
-            valid="false"
-        fi
-
-    # Liste d'options séparées par '|'
-    else
-        IFS='|' read -ra allowed_arr <<< "$allowed"
-        valid="false"
-        for v in "${allowed_arr[@]}"; do
-            if [[ "$v" == "''" ]]; then
-                display_allowed="${display_allowed:+$display_allowed|}''"
-                v=""
-            else
-                display_allowed="${display_allowed:+$display_allowed|}$v"
-            fi
-            [[ "$value" == "$v" ]] && valid="true"
-        done
-    fi
-
-    # Cas spécial : si allowed vide et valeur vide, considérer valide
-    if [[ -z "$allowed" && -z "$value" ]]; then
-        valid="true"
-    fi
-
-    printf '%s¤%s¤%s¤%s¤%s' "$var_name" "$display_allowed" "$default" "$value" "$valid"
-}
-
-###############################################################################
-# Fonction : S'occupe de valider ligne par ligne les données entrées
-# Retourne : var_name¤display_allowed¤default¤value¤valid
-###############################################################################
-check_var() {
-    local -n var_array=$1
-    local invalid_details=()
-    local has_invalid=false
-
-    for entry in "${var_array[@]}"; do
-        local var_name="${entry%%:*}"
-        local rest="${entry#*:}"
-        local allowed="${rest%:*}"
-        local default="${rest##*:}"
-        local row="$(validate_var_entry "$var_name" "$allowed" "$default")"
-        IFS="¤" read -r _ _ _ _ valid_flag <<<"$row"
-        if [[ "$valid_flag" == "false" ]]; then
-            invalid_details+=("$row")
-            has_invalid=true
-        fi
-    done
-
-    if [[ "$has_invalid" == "true" && ("$DEBUG_MODE" == "true" || "$DEBUG_INFOS" == "true") ]]; then
-        print_fancy --theme "warning" "Liste des variables invalides :"
-        print_formatted_table "Variable¤Autorisé¤Défaut¤Valeur" "${invalid_details[@]}"
-    fi
-
-    [[ "$has_invalid" == "true" ]] && return 1 || return 0
-}
-
-###############################################################################
-# Fonction : Passe les arguments pour remplir un tableau de valeurs
-###############################################################################
-print_vars_table() {
-    local -n var_array=$1
-    local rows=()
-
-    for entry in "${var_array[@]}"; do
-        local var_name="${entry%%:*}"
-        local rest="${entry#*:}"
-        local allowed="${rest%:*}"
-        local default="${rest##*:}"
-        rows+=("$(validate_var_entry "$var_name" "$allowed" "$default")")
-    done
-
-    print_formatted_table "Variable¤Autorisé¤Défaut¤Valeur" "${rows[@]}"
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-###############################################################################
 # Fonction : Rendu en tableau formaté avec calcul de largeur "visible"
 ###############################################################################
 h_print_vars_table() {
@@ -897,3 +677,558 @@ h_validate_vars() {
     # Retourne 1 si invalide, 0 sinon
     [[ "$has_invalid" == "true" ]] && return 1 || return 0
 }
+
+
+
+
+draw_table_border() {
+    local w1=$1 w2=$2 w3=$3 w4=$4
+    printf "┌"
+    printf '─%.0s' $(seq 1 $w1) ; printf "┬"
+    printf '─%.0s' $(seq 1 $w2) ; printf "┬"
+    printf '─%.0s' $(seq 1 $w3) ; printf "┬"
+    printf '─%.0s' $(seq 1 $w4) ; printf "┐\n"
+}
+
+draw_table_separator() {
+    local w1=$1 w2=$2 w3=$3 w4=$4
+    printf "├"
+    printf '─%.0s' $(seq 1 $w1) ; printf "┼"
+    printf '─%.0s' $(seq 1 $w2) ; printf "┼"
+    printf '─%.0s' $(seq 1 $w3) ; printf "┼"
+    printf '─%.0s' $(seq 1 $w4) ; printf "┤\n"
+}
+
+draw_table_bottom() {
+    local w1=$1 w2=$2 w3=$3 w4=$4
+    printf "└"
+    printf '─%.0s' $(seq 1 $w1) ; printf "┴"
+    printf '─%.0s' $(seq 1 $w2) ; printf "┴"
+    printf '─%.0s' $(seq 1 $w3) ; printf "┴"
+    printf '─%.0s' $(seq 1 $w4) ; printf "┘\n"
+}
+
+print_cell() {
+    local content=$1
+    local width=$2
+    printf "%-*s" "$width" "$content"
+}
+
+calculate_max_widths() {
+    local -n rows=$1
+    local w1=0 w2=0 w3=0 w4=0
+    for row in "${rows[@]}"; do
+        IFS="¤" read -r c1 c2 c3 c4 _ <<<"$row"
+        (( $(strwidth "$c1") > w1 )) && w1=$(strwidth "$c1")
+        (( $(strwidth "$c2") > w2 )) && w2=$(strwidth "$c2")
+        (( $(strwidth "$c3") > w3 )) && w3=$(strwidth "$c3")
+        (( $(strwidth "$c4") > w4 )) && w4=$(strwidth "$c4")
+    done
+    # Vérifier les en-têtes
+    for header in "Variable" "Autorisé" "Défaut" "Valeur"; do
+        local len=$(strwidth "$header")
+        case "$header" in
+            Variable) (( len > w1 )) && w1=$len ;;
+            Autorisé) (( len > w2 )) && w2=$len ;;
+            Défaut)   (( len > w3 )) && w3=$len ;;
+            Valeur)   (( len > w4 )) && w4=$len ;;
+        esac
+    done
+    echo "$w1 $w2 $w3 $w4"
+}
+
+print_vars_table() {
+    local -n var_array=$1
+    local rows=()
+    local max_length="${max_length:-80}"
+    # Préparer les lignes et calcul des largeurs
+    for entry in "${var_array[@]}"; do
+        local var_name="${entry%%:*}"
+        local rest="${entry#*:}"
+        local allowed="${rest%:*}"
+        local default="${rest##*:}"
+        local value="${!var_name:-$default}"
+        local valid=true
+        local display_allowed=""
+        # Logique de validation (identique à avant)
+        if [[ "$allowed" == "bool" ]]; then
+            display_allowed="false|true"
+            [[ "$value" =~ ^(0|1|true|false)$ ]] || valid=false
+        elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
+            display_allowed="$allowed"
+            IFS="-" read -r min max <<< "$allowed"
+            (( value < min || value > max )) && valid=false
+        elif [[ -z "$allowed" || "$allowed" == "any" || "$allowed" == "''" ]]; then
+            display_allowed="*"
+            valid=true
+        else
+            IFS="|" read -ra allowed_arr <<<"$allowed"
+            valid=false
+            for v in "${allowed_arr[@]}"; do
+                [[ "$v" == "''" ]] && v=""
+                [[ -z "$display_allowed" ]] && display_allowed="$v" || display_allowed+="|$v"
+                [[ "$value" == "$v" ]] && valid=true
+            done
+            [[ -z "$value" && (-z "$allowed" || "$allowed" == "any" || "$allowed" == "''") ]] && valid=true
+        fi
+        rows+=("$var_name¤$display_allowed¤$default¤$value¤$valid")
+    done
+    # Calcul des largeurs
+    read w1 w2 w3 w4 <<<$(calculate_max_widths rows)
+    # Ajuster si dépasse max_length
+    local total_width=$(( w1 + w2 + w3 + w4 + 13 ))
+    if (( total_width > max_length )); then
+        local excess=$(( total_width - max_length ))
+        local cut=$(( (excess + 3) / 4 ))
+        w1=$(( w1 - cut > 5 ? w1 - cut : 5 ))
+        w2=$(( w2 - cut > 5 ? w2 - cut : 5 ))
+        w3=$(( w3 - cut > 5 ? w3 - cut : 5 ))
+        w4=$(( w4 - cut > 5 ? w4 - cut : 5 ))
+    fi
+    # Affichage
+    draw_table_border $w1 $w2 $w3 $w4
+    # En-tête
+    printf "│ "
+    print_cell "$(print_fancy --style bold --raw "Variable")" $w1
+    printf " │ "
+    print_cell "$(print_fancy --style bold --raw "Autorisé")" $w2
+    printf " │ "
+    print_cell "$(print_fancy --style bold --raw "Défaut")" $w3
+    printf " │ "
+    print_cell "$(print_fancy --style bold --raw "Valeur")" $w4
+    printf " │\n"
+    draw_table_separator $w1 $w2 $w3 $w4
+    # Corps
+    for row in "${rows[@]}"; do
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+        var_cell=$(print_fancy --style bold --raw "$c1")
+        auth_cell=$(print_fancy --style italic --raw "$c2")
+        def_cell="$c3"
+        if [[ "$valid_flag" == "false" ]]; then
+            val_cell=$(print_fancy --fg red --raw "$c4")
+        else
+            val_cell=$(print_fancy --fg green --raw "$c4")
+        fi
+        printf "│ "
+        print_cell "$var_cell" $w1
+        printf " │ "
+        print_cell "$auth_cell" $w2
+        printf " │ "
+        print_cell "$def_cell" $w3
+        printf " │ "
+        print_cell "$val_cell" $w4
+        printf " │\n"
+    done
+    draw_table_bottom $w1 $w2 $w3 $w4
+}
+
+validate_vars() {
+    local -n var_array=$1
+    local invalid_vars=()
+    local invalid_details=()
+    local has_invalid=false
+    # Largeurs initiales (basées sur les en-têtes)
+    local w1=$(strwidth "Variable")
+    local w2=$(strwidth "Autorisé")
+    local w3=$(strwidth "Défaut")
+    local w4=$(strwidth "Valeur")
+    for entry in "${var_array[@]}"; do
+        local var_name="${entry%%:*}"
+        local rest="${entry#*:}"
+        local allowed="${rest%:*}"
+        local default="${rest##*:}"
+        local value="${!var_name:-$default}"
+        local valid=true
+        local display_allowed=""
+        # Logique de validation (identique à avant)
+        if [[ "$allowed" == "bool" ]]; then
+            display_allowed="false|true"
+            [[ "$value" =~ ^(0|1|true|false)$ ]] || valid=false
+        elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
+            display_allowed="$allowed"
+            IFS="-" read -r min max <<< "$allowed"
+            (( value < min || value > max )) && valid=false
+        elif [[ -z "$allowed" || "$allowed" == "any" || "$allowed" == "''" ]]; then
+            display_allowed="*"
+            valid=true
+        else
+            IFS="|" read -ra allowed_arr <<<"$allowed"
+            valid=false
+            for v in "${allowed_arr[@]}"; do
+                [[ "$v" == "''" ]] && v=""
+                [[ "$value" == "$v" ]] && valid=true
+            done
+            [[ -z "$value" && (-z "$allowed" || "$allowed" == "any" || "$allowed" == "''") ]] && valid=true
+        fi
+        # Stocker les détails des variables invalides
+        if [[ "$valid" == "false" ]]; then
+            invalid_vars+=("$var_name")
+            invalid_details+=("$var_name¤$display_allowed¤$default¤$value")
+            has_invalid=true
+            # Mettre à jour les largeurs maximales
+            (( $(strwidth "$var_name") > w1 )) && w1=$(strwidth "$var_name")
+            (( $(strwidth "$display_allowed") > w2 )) && w2=$(strwidth "$display_allowed")
+            (( $(strwidth "$default") > w3 )) && w3=$(strwidth "$default")
+            (( $(strwidth "$value") > w4 )) && w4=$(strwidth "$value")
+        fi
+    done
+    # Affichage des variables invalides (si DEBUG_MODE ou DEBUG_INFOS est activé)
+    if [[ "$has_invalid" == "true" && ("$DEBUG_MODE" == "true" || "$DEBUG_INFOS" == "true") ]]; then
+        print_fancy --theme "warning" "Liste des variables invalides :"
+        # Ajouter 2 pour le padding
+        w1=$((w1 + 2))
+        w2=$((w2 + 2))
+        w3=$((w3 + 2))
+        w4=$((w4 + 2))
+        # Dessiner le tableau
+        draw_table_border $w1 $w2 $w3 $w4
+        # En-tête
+        printf "│ "
+        print_cell "$(print_fancy --style bold --raw "Variable")" $((w1 - 2))
+        printf " │ "
+        print_cell "$(print_fancy --style bold --raw "Autorisé")" $((w2 - 2))
+        printf " │ "
+        print_cell "$(print_fancy --style bold --raw "Défaut")" $((w3 - 2))
+        printf " │ "
+        print_cell "$(print_fancy --style bold --raw "Valeur")" $((w4 - 2))
+        printf " │\n"
+        # Séparateur
+        draw_table_separator $w1 $w2 $w3 $w4
+        # Corps du tableau
+        for detail in "${invalid_details[@]}"; do
+            IFS="¤" read -r c1 c2 c3 c4 <<<"$detail"
+            printf "│ "
+            print_cell "$c1" $((w1 - 2))
+            printf " │ "
+            print_cell "$c2" $((w2 - 2))
+            printf " │ "
+            print_cell "$c3" $((w3 - 2))
+            printf " │ "
+            print_cell "$c4" $((w4 - 2))
+            printf " │\n"
+        done
+        # Bord inférieur
+        draw_table_bottom $w1 $w2 $w3 $w4
+    fi
+    # Retourne 1 si invalide, 0 sinon
+    [[ "$has_invalid" == "true" ]] && return 1 || return 0
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################################################
+# Fonction : Affiche un tableau formaté à partir des lignes fournies
+# Usage: print_formatted_table "Titre1¤Titre2¤Titre3¤Titre4" "ligne1¤val1¤val2¤val3¤valid" "ligne2¤..."
+###############################################################################
+print_formatted_table() {
+    local headers="$1"
+    shift
+    local rows=("$@")
+    local w1=0 w2=0 w3=0 w4=0
+    local max_length="${max_length:-80}"
+
+    # Calcul des largeurs maximales (en-têtes + données)
+    IFS="¤" read -r h1 h2 h3 h4 <<<"$headers"
+    for row in "${rows[@]}"; do
+        IFS="¤" read -r c1 c2 c3 c4 _ <<<"$row"
+        (( $(strwidth "$c1") > w1 )) && w1=$(strwidth "$c1")
+        (( $(strwidth "$c2") > w2 )) && w2=$(strwidth "$c2")
+        (( $(strwidth "$c3") > w3 )) && w3=$(strwidth "$c3")
+        (( $(strwidth "$c4") > w4 )) && w4=$(strwidth "$c4")
+    done
+    (( $(strwidth "$h1") > w1 )) && w1=$(strwidth "$h1")
+    (( $(strwidth "$h2") > w2 )) && w2=$(strwidth "$h2")
+    (( $(strwidth "$h3") > w3 )) && w3=$(strwidth "$h3")
+    (( $(strwidth "$h4") > w4 )) && w4=$(strwidth "$h4")
+
+    # Ajustement si nécessaire
+    local total_width=$(( w1 + w2 + w3 + w4 + 13 ))
+    if (( total_width > max_length )); then
+        local excess=$(( total_width - max_length ))
+        local cut=$(( (excess + 3) / 4 ))
+        w1=$(( w1 - cut > 5 ? w1 - cut : 5 ))
+        w2=$(( w2 - cut > 5 ? w2 - cut : 5 ))
+        w3=$(( w3 - cut > 5 ? w3 - cut : 5 ))
+        w4=$(( w4 - cut > 5 ? w4 - cut : 5 ))
+    fi
+
+    # Affichage du tableau
+    printf "┌"
+    printf '─%.0s' $(seq 1 $((w1 + 2))) ; printf "┬"
+    printf '─%.0s' $(seq 1 $((w2 + 2))) ; printf "┬"
+    printf '─%.0s' $(seq 1 $((w3 + 2))) ; printf "┬"
+    printf '─%.0s' $(seq 1 $((w4 + 2))) ; printf "┐\n"
+
+    # En-tête
+    printf "│ "
+    print_cell "$(print_fancy --style bold --raw "$h1")" $w1
+    printf " │ "
+    print_cell "$(print_fancy --style bold --raw "$h2")" $w2
+    printf " │ "
+    print_cell "$(print_fancy --style bold --raw "$h3")" $w3
+    printf " │ "
+    print_cell "$(print_fancy --style bold --raw "$h4")" $w4
+    printf " │\n"
+
+    # Séparateur
+    printf "├"
+    printf '─%.0s' $(seq 1 $((w1 + 2))) ; printf "┼"
+    printf '─%.0s' $(seq 1 $((w2 + 2))) ; printf "┼"
+    printf '─%.0s' $(seq 1 $((w3 + 2))) ; printf "┼"
+    printf '─%.0s' $(seq 1 $((w4 + 2))) ; printf "┤\n"
+
+    # Lignes de données
+    for row in "${rows[@]}"; do
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+        local var_cell=$(print_fancy --style bold --raw "$c1")
+        local auth_cell=$(print_fancy --style italic --raw "$c2")
+        local def_cell="$c3"
+        local val_cell
+        if [[ "$valid_flag" == "false" ]]; then
+            val_cell=$(print_fancy --fg red --raw "$c4")
+        else
+            val_cell=$(print_fancy --fg green --raw "$c4")
+        fi
+        printf "│ "
+        print_cell "$var_cell" $w1
+        printf " │ "
+        print_cell "$auth_cell" $w2
+        printf " │ "
+        print_cell "$def_cell" $w3
+        printf " │ "
+        print_cell "$val_cell" $w4
+        printf " │\n"
+    done
+
+    # Bordure inférieure
+    printf "└"
+    printf '─%.0s' $(seq 1 $((w1 + 2))) ; printf "┴"
+    printf '─%.0s' $(seq 1 $((w2 + 2))) ; printf "┴"
+    printf '─%.0s' $(seq 1 $((w3 + 2))) ; printf "┴"
+    printf '─%.0s' $(seq 1 $((w4 + 2))) ; printf "┘\n"
+}
+
+
+###############################################################################
+# Fonction : Assure le calcul de la largeur des colonnes
+###############################################################################
+calculate_column_widths() {
+    local headers="$1"
+    shift
+    local rows=("$@")
+    local w1=0 w2=0 w3=0 w4=0
+    local max_length="${max_length:-80}"
+
+    # Calcul des largeurs (identique à ton code original)
+    IFS="¤" read -r h1 h2 h3 h4 <<<"$headers"
+    for row in "${rows[@]}"; do
+        IFS="¤" read -r c1 c2 c3 c4 _ <<<"$row"
+        (( $(strwidth "$c1") > w1 )) && w1=$(strwidth "$c1")
+        (( $(strwidth "$c2") > w2 )) && w2=$(strwidth "$c2")
+        (( $(strwidth "$c3") > w3 )) && w3=$(strwidth "$c3")
+        (( $(strwidth "$c4") > w4 )) && w4=$(strwidth "$c4")
+    done
+    (( $(strwidth "$h1") > w1 )) && w1=$(strwidth "$h1")
+    (( $(strwidth "$h2") > w2 )) && w2=$(strwidth "$h2")
+    (( $(strwidth "$h3") > w3 )) && w3=$(strwidth "$h3")
+    (( $(strwidth "$h4") > w4 )) && w4=$(strwidth "$h4")
+
+    # Ajustement si nécessaire (identique à ton code original)
+    local total_width=$(( w1 + w2 + w3 + w4 + 13 ))
+    if (( total_width > max_length )); then
+        local excess=$(( total_width - max_length ))
+        local cut=$(( (excess + 3) / 4 ))
+        w1=$(( w1 - cut > 5 ? w1 - cut : 5 ))
+        w2=$(( w2 - cut > 5 ? w2 - cut : 5 ))
+        w3=$(( w3 - cut > 5 ? w3 - cut : 5 ))
+        w4=$(( w4 - cut > 5 ? w4 - cut : 5 ))
+    fi
+
+    echo "$w1 $w2 $w3 $w4"
+}
+
+
+
+###############################################################################
+# Fonction : S'occupe de valider des données en fonction de critères transmis
+# Retourne : var_name¤display_allowed¤default¤value¤valid
+###############################################################################
+validate_var_entry() {
+    local var_name="$1"
+    local allowed="$2"
+    local default="$3"
+    local value="${!var_name:-$default}"
+    local display_allowed=""
+    local valid="true"
+
+    if [[ -z "$allowed" || "$allowed" == "any" ]]; then
+        display_allowed="*"
+        valid="true"
+    elif [[ "$allowed" == "bool" ]]; then
+        display_allowed="false|true"
+        [[ ! "$value" =~ ^(0|1|true|false)$ ]] && valid="false"
+    elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
+        display_allowed="$allowed"
+        IFS="-" read -r min max <<< "$allowed"
+        [[ ! "$value" =~ ^-?[0-9]+$ ]] || (( value < min || value > max )) && valid="false"
+    else
+        IFS='|' read -ra allowed_arr <<< "$allowed"
+        valid="false"
+        display_allowed="$allowed"
+        for v in "${allowed_arr[@]}"; do
+            [[ "$v" == "''" ]] && v=""
+            [[ "$value" == "$v" ]] && valid="true"
+        done
+    fi
+
+    printf '%s¤%s¤%s¤%s¤%s\n' "$var_name" "$display_allowed" "$default" "$value" "$valid"
+}
+
+
+###############################################################################
+# Fonction : S'occupe de valider ligne par ligne les données entrées
+###############################################################################
+validate_vars_array() {
+    local -n var_array=$1
+    local invalid_details=()
+    local has_invalid=false
+
+    for entry in "${var_array[@]}"; do
+        local var_name="${entry%%:*}"
+        local rest="${entry#*:}"
+        local allowed="${rest%:*}"
+        local default="${rest##*:}"
+
+        # <-- CORRECTION : on n'envoie que 3 arguments
+        local row
+        row=$(validate_var_entry "$var_name" "$allowed" "$default")
+
+        IFS="¤" read -r _ _ _ _ valid_flag <<< "$row"
+        [[ "$valid_flag" == "false" ]] && {
+            invalid_details+=("$row")
+            has_invalid=true
+        }
+    done
+
+    if [[ "$has_invalid" == "true" ]]; then
+        print_fancy --theme "warning" "Variables invalides :"
+        IFS=" " read -r w1 w2 w3 w4 <<< $(calculate_column_widths "Variable¤Autorisé¤Défaut¤Valeur" "${invalid_details[@]}")
+        print_formatted_table "Variable¤Autorisé¤Défaut¤Valeur" "${invalid_details[@]}"
+    fi
+
+    return $((has_invalid))
+}
+
+
+###############################################################################
+# Fonction : Passe les arguments pour remplir un tableau de valeurs
+###############################################################################
+print_vars_table() {
+    local -n var_array=$1
+    local rows=()
+
+    for entry in "${var_array[@]}"; do
+        local var_name="${entry%%:*}"
+        local rest="${entry#*:}"
+        local allowed="${rest%:*}"
+        local default="${rest##*:}"
+        rows+=("$(validate_var_entry "$var_name" "$allowed" "$default")")
+    done
+
+    # calculer les largeurs et afficher
+    IFS=" " read -r w1 w2 w3 w4 <<< $(calculate_column_widths "Variable¤Autorisé¤Défaut¤Valeur" "${rows[@]}")
+    print_formatted_table "Variable¤Autorisé¤Défaut¤Valeur" "${rows[@]}"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
