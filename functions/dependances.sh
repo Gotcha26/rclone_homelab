@@ -284,6 +284,7 @@ scroll_down() {
     done
 }
 
+
 ###############################################################################
 # Fonction : supprime séquences ANSI (lecture d'argument)
 ###############################################################################
@@ -291,6 +292,26 @@ _strip_ansi() {
     # usage: _strip_ansi "string"
     printf "%s" "$1" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g'
 }
+
+
+###############################################################################
+# Fonction : calcul de la largeur "visible" d'une chaîne (sans séquences ANSI)
+###############################################################################
+strwidth() {
+    local str="${1:-}"
+    str="${str//$'\e'\[[0-9;]*m/}"  # Supprimer les séquences ANSI
+    local width=0
+    for ((i=0; i<${#str}; i++)); do
+        char="${str:i:1}"
+        if [[ "$char" =~ [^[:ascii:]] ]]; then
+            width=$((width+2))
+        else
+            width=$((width+1))
+        fi
+    done
+    echo "$width"
+}
+
 
 ###############################################################################
 # Fonction alignement - décoration sur 1 ligne
@@ -340,18 +361,8 @@ _strip_ansi() {
 # ----
 
 print_fancy() {
-    local color=""
-    local bg=""
-    local fill=" "
-    local align=""
-    local text=""
-    local style=""
-    local highlight=""
-    local offset=0
-    local theme=""
-    local icon=""
-    local newline=true
-    local raw_mode=""
+    local color="" bg="" fill=" " align="" text="" style="" highlight="" icon="" newline=true raw_mode=""
+    local theme="" offset=0
 
     # Séquences ANSI
     local BOLD="\033[1m"
@@ -359,28 +370,26 @@ print_fancy() {
     local UNDERLINE="\033[4m"
     local RESET="\033[0m"
 
-    # Lecture des arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --fg)       color="$2"; shift 2 ;;
-            --bg)       bg="$2"; shift 2 ;;
-            --fill)     fill="$2"; shift 2 ;;
-            --align)    align="$2"; shift 2 ;;
-            --style)    style="$2"; shift 2 ;;
+            --fg) color="$2"; shift 2 ;;
+            --bg) bg="$2"; shift 2 ;;
+            --fill) fill="$2"; shift 2 ;;
+            --align) align="$2"; shift 2 ;;
+            --style) style="$2"; shift 2 ;;
             --highlight) highlight=1; shift ;;
-            --offset)   offset="$2"; shift 2 ;;
-            --theme)    theme="$2"; shift 2 ;;
-            --icon)     icon="$2 "; shift 2 ;;
-            -n)         newline=false; shift ;;
-            --raw)      raw_mode=1; shift ;;
-            *)          text="$1"; shift; break ;;
+            --offset) offset="$2"; shift 2 ;;
+            --theme) theme="$2"; shift 2 ;;
+            --icon) icon="$2 "; shift 2 ;;
+            --pad) pad="$2"; shift 2 ;;
+            -n) newline=false; shift ;;
+            --raw) raw_mode=1; shift ;;
+            *) text+="$1 "; shift ;;
         esac
     done
+    text="${text%" "}"  # supprime espace final
 
-    while [[ $# -gt 0 ]]; do text+=" $1"; shift; done
-    [[ -z "$text" ]] && { echo "$MSG_PRINT_FANCY_EMPTY" >&2; return 1; }
-
-    # Application du thème (icône / couleur / style par défaut)
+    # Application du thème
     case "$theme" in
         success) [[ -z "$icon" ]] && icon="✅  "; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
         error)   [[ -z "$icon" ]] && icon="❌  "; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
@@ -389,82 +398,55 @@ print_fancy() {
         flash)   [[ -z "$icon" ]] && icon="⚡  " ;;
         follow)  [[ -z "$icon" ]] && icon="👉  " ;;
     esac
-
-    # Ajout de l’icône si définie
     text="$icon$text"
 
-    # --- Traduction des couleurs (sauf si séquence ANSI déjà fournie) ---
+    # Traduction des couleurs
+    [[ "$color" =~ ^\\e ]] || color=$(get_fg_color "${color:-white}")
+    [[ "$bg" =~ ^\\e ]] || bg=$(get_bg_color "$bg")
 
-    # Couleur du texte
-    if [[ "$color" =~ ^\\e ]]; then
-        :  # laisse la séquence telle quelle
-    else
-        color=$(get_fg_color "${color:-white}")
-    fi
-    # Couleur du fond
-    if [[ "$bg" =~ ^\\e ]]; then
-        :  # rien à faire, la séquence est déjà complète
-    else
-        bg=$(get_bg_color "$bg")
-    fi
-
+    # Style
     local style_seq=""
-    [[ "$style" =~ bold ]]      && style_seq+="$BOLD"
-    [[ "$style" =~ italic ]]    && style_seq+="$ITALIC"
+    [[ "$style" =~ bold ]] && style_seq+="$BOLD"
+    [[ "$style" =~ italic ]] && style_seq+="$ITALIC"
     [[ "$style" =~ underline ]] && style_seq+="$UNDERLINE"
 
-    # Calcul padding
-    local visible_len=${#text}
-    local pad_left=0
-    local pad_right=0
-
-    # Compensation manuelle pour les emojis "glitchés"
+    # Padding calculé sur largeur réelle
+    local visible_len pad_left=0 pad_right=0
+    visible_len=$(strwidth "$text")
     visible_len=$((visible_len + offset))
-    
+
     case "$align" in
         center)
             local total_pad=$((TERM_WIDTH_DEFAULT - visible_len))
             pad_left=$(( (total_pad+1)/2 ))
             pad_right=$(( total_pad - pad_left ))
+            ((pad_left<0)) && pad_left=0
+            ((pad_right<0)) && pad_right=0
             ;;
         right)
-            pad_left=$((TERM_WIDTH_DEFAULT - visible_len - 1))
-            (( pad_left < 0 )) && pad_left=0
+            pad_left=$((TERM_WIDTH_DEFAULT - visible_len))
+            ((pad_left<0)) && pad_left=0
             ;;
         left)
             pad_right=$((TERM_WIDTH_DEFAULT - visible_len))
+            ((pad_right<0)) && pad_right=0
             ;;
     esac
 
-    # Génération du texte final
     local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
     local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
     local output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
 
-    # Highlight sur toute la ligne
+    # Highlight
     if [[ -n "$highlight" ]]; then
-        # Ligne complète remplie avec le fill
         local full_line
         full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
-        # Insérer le texte avec style et couleur
         full_line="${full_line:0:pad_left}${color}${bg}${style_seq}${text}${RESET}${bg}${full_line:$((pad_left + visible_len))}"
-        # Appliquer la couleur de fond sur toute la ligne
         output="${bg}${full_line}${RESET}"
-    else
-        # Version classique sans highlight
-        local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
-        local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
-        output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
     fi
 
-     # Mode debug : afficher symboles début/fin ligne
-    if [[ "$DEBUG_MODE" == true ]]; then
-        output="|${output}|"
-    fi
-
-    # Affichage ou retour brut, ligne contnue ou pas
     if [[ -n "$raw_mode" ]]; then
-        printf "%b" "$output"   # toujours interpréter les séquences ANSI
+        printf "%b" "$output"
     else
         $newline && printf "%b\n" "$output" || printf "%b" "$output"
     fi
@@ -472,7 +454,65 @@ print_fancy() {
 
 
 ###############################################################################
-# Fonction : Rendu en tableau formaté
+# Fonction : calcul de la largeur "visible" d'une chaîne (sans séquences ANSI)
+###############################################################################
+strwidth() {
+    local str="${1:-}"
+    str="${str//[$'\033'][0-9;]*[m]/}"  # Supprimer séquences ANSI
+    local width=0 char i
+    for ((i=0; i<${#str}; i++)); do
+        char="${str:i:1}"
+        [[ "$char" =~ [^[:ascii:]] ]] && ((width+=2)) || ((width+=1))
+    done
+    echo "$width"
+}
+
+
+###############################################################################
+# Fonction : Affiche un contenu (avec ANSI) correctement aligné dans une colonne
+# Arguments :
+#   $1 = contenu (ANSI autorisé)
+#   $2 = largeur visible de la colonne
+###############################################################################
+print_cell() {
+    local content="$1" col_width="$2"
+    local vis_len padding clean
+
+    # Calcul largeur visible
+    clean=$(echo -e "$content" | sed 's/\x1b\[[0-9;]*m//g')
+    vis_len=$(strwidth "$clean")
+    padding=$((col_width - vis_len))
+    (( padding<0 )) && padding=0
+
+    # Ajouter padding avant RESET final
+    if [[ "$content" =~ $'\033\[0m$' ]]; then
+        local body="${content%$'\033'[0m}" reset=$'\033[0m'
+        printf "%s%*s%s" "$body" "$padding" "" "$reset"
+    else
+        printf "%s%*s" "$content" "$padding" ""
+    fi
+}
+
+
+###############################################################################
+# Fonction : Bordures tableau
+###############################################################################
+draw_border() {
+    printf "┌%s┐\n" \
+        "$(printf '─%.0s' $(seq 1 $((w1+2))))┬$(printf '─%.0s' $(seq 1 $((w2+2))))┬$(printf '─%.0s' $(seq 1 $((w3+2))))┬$(printf '─%.0s' $(seq 1 $((w4+2))))"
+}
+draw_separator() {
+    printf "├%s┤\n" \
+        "$(printf '─%.0s' $(seq 1 $((w1+2))))┼$(printf '─%.0s' $(seq 1 $((w2+2))))┼$(printf '─%.0s' $(seq 1 $((w3+2))))┼$(printf '─%.0s' $(seq 1 $((w4+2))))"
+}
+draw_bottom() {
+    printf "└%s┘\n" \
+        "$(printf '─%.0s' $(seq 1 $((w1+2))))┴$(printf '─%.0s' $(seq 1 $((w2+2))))┴$(printf '─%.0s' $(seq 1 $((w3+2))))┴$(printf '─%.0s' $(seq 1 $((w4+2))))"
+}
+
+
+###############################################################################
+# Fonction : Rendu en tableau formaté avec calcul de largeur "visible"
 ###############################################################################
 print_vars_table() {
     local -n var_array=$1
@@ -480,18 +520,17 @@ print_vars_table() {
     local w1=0 w2=0 w3=0 w4=0
     local max_length="${max_length:-80}"
 
-    # Préparer les lignes et calcul des largeurs sur texte brut
+    # Préparer les lignes et calcul des largeurs
     for entry in "${var_array[@]}"; do
-        var_name="${entry%%:*}"
-        rest="${entry#*:}"
-        allowed="${rest%:*}"
-        default="${rest##*:}"
-
+        local var_name="${entry%%:*}"
+        local rest="${entry#*:}"
+        local allowed="${rest%:*}"
+        local default="${rest##*:}"
         local value="${!var_name:-$default}"
         local valid=true
         local display_allowed=""
 
-        # Calcul de la valeur "Autorisé"
+        # Calcul "Autorisé"
         if [[ "$allowed" == "bool" ]]; then
             display_allowed="false|true"
             [[ "$value" =~ ^(0|1|true|false)$ ]] || valid=false
@@ -500,7 +539,6 @@ print_vars_table() {
             IFS="-" read -r min max <<< "$allowed"
             (( value < min || value > max )) && valid=false
         else
-            # Énumération
             IFS="|" read -ra allowed_arr <<<"$allowed"
             valid=false
             for v in "${allowed_arr[@]}"; do
@@ -510,13 +548,23 @@ print_vars_table() {
             done
         fi
 
-        # Utiliser "¤" comme séparateur interne (au lieu de "|")
         rows+=("$var_name¤$display_allowed¤$default¤$value¤$valid")
 
-        (( ${#var_name} > w1 )) && w1=${#var_name}
-        (( ${#display_allowed} > w2 )) && w2=${#display_allowed}
-        (( ${#default}  > w3 )) && w3=${#default}
-        (( ${#value}    > w4 )) && w4=${#value}
+        (( $(strwidth "$var_name") > w1 )) && w1=$(strwidth "$var_name")
+        (( $(strwidth "$display_allowed") > w2 )) && w2=$(strwidth "$display_allowed")
+        (( $(strwidth "$default") > w3 )) && w3=$(strwidth "$default")
+        (( $(strwidth "$value") > w4 )) && w4=$(strwidth "$value")
+    done
+
+    # Vérifier l'en-tête
+    for header in "Variable" "Autorisé" "Défaut" "Valeur"; do
+        local len=$(strwidth "$header")
+        case "$header" in
+            Variable) (( len > w1 )) && w1=$len ;;
+            Autorisé) (( len > w2 )) && w2=$len ;;
+            Défaut)   (( len > w3 )) && w3=$len ;;
+            Valeur)   (( len > w4 )) && w4=$len ;;
+        esac
     done
 
     # Ajuster si dépasse max_length
@@ -530,51 +578,46 @@ print_vars_table() {
         w4=$(( w4 - cut > 5 ? w4 - cut : 5 ))
     fi
 
-    # Bordures
-    draw_border() {
-        local a=$1 b=$2 c=$3 d=$4
-        printf "┌%s┐\n" \
-            "$(printf '─%.0s' $(seq 1 $((a+2))))┬$(printf '─%.0s' $(seq 1 $((b+2))))┬$(printf '─%.0s' $(seq 1 $((c+2))))┬$(printf '─%.0s' $(seq 1 $((d+2))))"
-    }
-    draw_separator() {
-        local a=$1 b=$2 c=$3 d=$4
-        printf "├%s┤\n" \
-            "$(printf '─%.0s' $(seq 1 $((a+2))))┼$(printf '─%.0s' $(seq 1 $((b+2))))┼$(printf '─%.0s' $(seq 1 $((c+2))))┼$(printf '─%.0s' $(seq 1 $((d+2))))"
-    }
-    draw_bottom() {
-        local a=$1 b=$2 c=$3 d=$4
-        printf "└%s┘\n" \
-            "$(printf '─%.0s' $(seq 1 $((a+2))))┴$(printf '─%.0s' $(seq 1 $((b+2))))┴$(printf '─%.0s' $(seq 1 $((c+2))))┴$(printf '─%.0s' $(seq 1 $((d+2))))"
-    }
-
     # Affichage
-    draw_border $w1 $w2 $w3 $w4
+    draw_border
 
-    # En-tête en gras
-    printf "│ %s │ %s │ %s │ %s │\n" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "Variable")")" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s" $w2 "Autorisé")")" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s" $w3 "Défaut")")" \
-        "$(print_fancy --style bold --raw "$(printf "%-*s" $w4 "Valeur")")"
+    # En-tête
+    printf "│ "
+    print_cell "$(print_fancy --style bold --raw "Variable")" $w1
+    printf " │ "
+    print_cell "$(print_fancy --style bold --raw "Autorisé")" $w2
+    printf " │ "
+    print_cell "$(print_fancy --style bold --raw "Défaut")" $w3
+    printf " │ "
+    print_cell "$(print_fancy --style bold --raw "Valeur")" $w4
+    printf " │\n"
 
-    draw_separator $w1 $w2 $w3 $w4
+    draw_separator
 
     # Corps
     for row in "${rows[@]}"; do
         IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
 
-        var_cell=$(print_fancy --style bold --raw "$(printf "%-*s" $w1 "$c1")")
-        auth_cell=$(print_fancy --style italic --raw "$(printf "%-*s" $w2 "$c2")")
-        def_cell=$(printf "%-*s" $w3 "$c3")
+        var_cell=$(print_fancy --style bold --raw "$c1")
+        auth_cell=$(print_fancy --style italic --raw "$c2")
+        def_cell="$c3"
 
         if [[ "$valid_flag" == "false" ]]; then
-            val_cell=$(print_fancy --fg red --raw "$(printf "%-*s" $w4 "$c4")")
+            val_cell=$(print_fancy --fg red --raw "$c4")
         else
-            val_cell=$(print_fancy --fg green --raw "$(printf "%-*s" $w4 "$c4")")
+            val_cell=$(print_fancy --fg green --raw "$c4")
         fi
 
-        printf "│ %b │ %b │ %b │ %b │\n" "$var_cell" "$auth_cell" "$def_cell" "$val_cell"
+        printf "│ "
+        print_cell "$var_cell" $w1
+        printf " │ "
+        print_cell "$auth_cell" $w2
+        printf " │ "
+        print_cell "$def_cell" $w3
+        printf " │ "
+        print_cell "$val_cell" $w4
+        printf " │\n"
     done
 
-    draw_bottom $w1 $w2 $w3 $w4
+    draw_bottom
 }
