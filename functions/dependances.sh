@@ -361,8 +361,9 @@ strwidth() {
 # ----
 
 print_fancy() {
-    local color="" bg="" fill=" " align="" text="" style="" highlight="" icon="" newline=true raw_mode=""
+    local color="" bg="" fill=" " align="" text="" style="" highlight="" newline=true raw_mode=""
     local theme="" offset=0
+    local icon="" prefix=""
 
     # Séquences ANSI
     local BOLD="\033[1m"
@@ -391,13 +392,15 @@ print_fancy() {
 
     # Application du thème
     case "$theme" in
-        success) [[ -z "$icon" ]] && icon="✅  "; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
-        ok) [[ -z "$icon" ]] && icon="✅  " ;;
-        error)   [[ -z "$icon" ]] && icon="❌  "; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
-        warning) [[ -z "$icon" ]] && icon="⚠️  "; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold"; offset=-1 ;;
-        info)    [[ -z "$icon" ]] && icon="ℹ️  "; [[ -z "$color" ]] && color="light_blue" ;;
-        flash)   [[ -z "$icon" ]] && icon="⚡  " ;;
-        follow)  [[ -z "$icon" ]] && icon="👉  " ;;
+        success)    [[ -z "$icon" ]] && icon="✅  "; [[ -z "$color" ]] && color="green"; [[ -z "$style" ]] && style="bold" ;;
+        error)      [[ -z "$icon" ]] && icon="❌  "; [[ -z "$color" ]] && color="red"; [[ -z "$style" ]] && style="bold" ;;
+        warning)    [[ -z "$icon" ]] && icon="⚠️  "; [[ -z "$color" ]] && color="yellow"; [[ -z "$style" ]] && style="bold"; offset=-1 ;;
+        debug_info) [[ -z "$icon" ]] && icon="ℹ️  "; [[ -z "$color" ]] && color="light_blue" ; [[ -z "$prefix" ]] && prefix="[DEBUG_INFO]:";;
+
+        info)       [[ -z "$icon" ]] && icon="ℹ️  " ;;
+        ok)         [[ -z "$icon" ]] && icon="✅  " ;;
+        flash)      [[ -z "$icon" ]] && icon="⚡  " ;;
+        follow)     [[ -z "$icon" ]] && icon="👉  " ;;
     esac
     text="$icon$text"
 
