@@ -126,33 +126,42 @@ init_secret_local() {
     print_fancy --style "underline" "⚙️  Création de $SECRET_FILE"
     print_fancy --theme "info" "Vous êtes sur le point de créer un fichier pour vos clés secrètes. (optionnel)"
     print_fancy --fg "blue" -n "Fichier d'origine : ";
-     print_fancy "$main_conf"
+        print_fancy "$main_conf"
     print_fancy --fg "blue" -n "Fichier à créer   : ";
-     print_fancy "$secret_file"
+        print_fancy "$secret_file"
     echo
     read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
     REPLY=${REPLY,,}
     if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
-        print_fancy --theme "info" "Création ignorée pour : $secret_file"
+        print_fancy --theme "info" \
+            "Création ignorée pour : $secret_file"
         return 1
     fi
 
-    mkdir -p "$(dirname "$secret_file")" \
-        || { print_fancy --theme "error" "Impossible de créer le dossier cible $(dirname "$secret_file")"; return 1; }
-    cp "$main_conf" "$secret_file" \
-        || { print_fancy --theme "error" "Impossible de copier $main_conf vers $secret_file"; return 1; }
-    chmod 600 $secret_file \
-        || { print_fancy --theme "error" "Impossible de modifier les droits pour $secret_file"; return 1; }
-    print_fancy --theme "success" "Fichier installé : $secret_file"
-    return 0
+    mkdir -p "$(dirname "$secret_file")" || {
+        print_fancy --theme "error" \
+            "Impossible de créer le dossier cible $(dirname "$secret_file")";
+        return 1;
+    }
+
+    cp "$main_conf" "$secret_file" || {
+        print_fancy --theme "error" \
+            "Impossible de copier $main_conf vers $secret_file";
+        return 1;
+    }
+
+    print_fancy --theme "success" \
+        "Fichier installé : $secret_file"
 
     # --- Proposer l'édition immédiate avec nano ---
+    echo
     read -rp "✏️  Voulez-vous éditer le fichier maintenant avec nano ? [Y/n] : " EDIT_REPLY
     EDIT_REPLY=${EDIT_REPLY,,}
     if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
         nano "$secret_file"
     else
-        print_fancy --theme "info" "Édition ignorée pour : $secret_file"
+        print_fancy --theme "info" \
+            "Édition ignorée pour : $secret_file"
     fi
 }
 
