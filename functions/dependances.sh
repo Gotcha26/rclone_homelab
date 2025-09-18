@@ -534,6 +534,11 @@ print_vars_table() {
         local valid=true
         local display_allowed=""
 
+        # Débogage : Afficher les valeurs actuelles
+        if [[ "${DEBUG_MODE:-false}" == "true" ]]; then
+            echo "DEBUG: var_name='$var_name', allowed='$allowed', default='$default', value='$value'"
+        fi
+
         # Calcul "Autorisé"
         if [[ "$allowed" == "bool" ]]; then
             display_allowed="false|true"
@@ -542,9 +547,9 @@ print_vars_table() {
             display_allowed="$allowed"
             IFS="-" read -r min max <<< "$allowed"
             (( value < min || value > max )) && valid=false
-        elif [[ -z "$allowed" || "$allowed" == "any" ]]; then
-            display_allowed="- ANY -"
-            valid=true
+        elif [[ -z "$allowed" || "$allowed" == "any" || "$allowed" == "''" ]]; then
+            display_allowed="*"  # Tout est autorisé
+            valid=true  # Toujours valide, même si la valeur est vide
         else
             IFS="|" read -ra allowed_arr <<<"$allowed"
             valid=false
@@ -553,10 +558,16 @@ print_vars_table() {
                 [[ -z "$display_allowed" ]] && display_allowed="$v" || display_allowed+="|$v"
                 [[ "$value" == "$v" ]] && valid=true
             done
+            # Si la valeur est vide et que `allowed` est vide ou non défini, on la considère comme valide
+            [[ -z "$value" && (-z "$allowed" || "$allowed" == "any" || "$allowed" == "''") ]] && valid=true
+        fi
+
+        # Débogage : Afficher le résultat de la validation
+        if [[ "${DEBUG_MODE:-false}" == "true" ]]; then
+            echo "DEBUG: valid=$valid"
         fi
 
         rows+=("$var_name¤$display_allowed¤$default¤$value¤$valid")
-
         (( $(strwidth "$var_name") > w1 )) && w1=$(strwidth "$var_name")
         (( $(strwidth "$display_allowed") > w2 )) && w2=$(strwidth "$display_allowed")
         (( $(strwidth "$default") > w3 )) && w3=$(strwidth "$default")
@@ -604,23 +615,14 @@ print_vars_table() {
     # Corps
     for row in "${rows[@]}"; do
         IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
-
         var_cell=$(print_fancy --style bold --raw "$c1")
         auth_cell=$(print_fancy --style italic --raw "$c2")
         def_cell="$c3"
-
-        if [[ -z "$c4" ]]; then
-            val_display="∅"
-        else
-            val_display="$c4"
-        fi
-
         if [[ "$valid_flag" == "false" ]]; then
-            val_cell=$(print_fancy --fg red --raw "$val_display")
+            val_cell=$(print_fancy --fg red --raw "$c4")
         else
-            val_cell=$(print_fancy --fg green --raw "$val_display")
+            val_cell=$(print_fancy --fg green --raw "$c4")
         fi
-
         printf "│ "
         print_cell "$var_cell" $w1
         printf " │ "
@@ -634,3 +636,86 @@ print_vars_table() {
 
     draw_bottom
 }
+
+
+###############################################################################
+# Fonction : Validatoin des données d'un tableau complexe
+###############################################################################
+validate_vars() {
+    local -n var_array=$1
+    local invalid_vars=()  # Stocke les noms des variables invalides
+    local invalid_details=()  # Stocke les détails des variables invalides
+    local has_invalid=false
+
+    for entry in "${var_array[@]}"; do
+        local var_name="${entry%%:*}"
+        local rest="${entry#*:}"
+        local allowed="${rest%:*}"
+        local default="${rest##*:}"
+        local value="${!var_name:-$default}"
+        local valid=true
+        local display_allowed=""
+
+        # Logique de validation (identique à avant)
+        if [[ "$allowed" == "bool" ]]; then
+            display_allowed="false|true"
+            [[ "$value" =~ ^(0|1|true|false)$ ]] || valid=false
+        elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
+            display_allowed="$allowed"
+            IFS="-" read -r min max <<< "$allowed"
+            (( value < min || value > max )) && valid=false
+        elif [[ -z "$allowed" || "$allowed" == "any" || "$allowed" == "''" ]]; then
+            display_allowed="*"
+            valid=true
+        else
+            IFS="|" read -ra allowed_arr <<<"$allowed"
+            valid=false
+            for v in "${allowed_arr[@]}"; do
+                [[ "$v" == "''" ]] && v=""
+                [[ "$value" == "$v" ]] && valid=true
+            done
+            [[ -z "$value" && (-z "$allowed" || "$allowed" == "any" || "$allowed" == "''") ]] && valid=true
+        fi
+
+        # Si invalide, on stocke les détails
+        if [[ "$valid" == "false" ]]; then
+            invalid_vars+=("$var_name")
+            invalid_details+=("$var_name¤$display_allowed¤$default¤$value")
+            has_invalid=true
+        fi
+    done
+
+    # Affichage des détails des variables invalides (si DEBUG_MODE ou DEBUG_INFO est activé)
+    if [[ "$has_invalid" == "true" && ("$DEBUG_MODE" == "true" || "$DEBUG_INFO" == "true") ]]; then
+        print_fancy --theme "error" "Variables invalides :"
+
+        # Calcul des largeurs de colonnes
+        local w1=0 w2=0 w3=0 w4=0
+        for detail in "${invalid_details[@]}"; do
+            IFS="¤" read -r c1 c2 c3 c4 <<<"$detail"
+            (( $(strwidth "$c1") > w1 )) && w1=$(strwidth "$c1")
+            (( $(strwidth "$c2") > w2 )) && w2=$(strwidth "$c2")
+            (( $(strwidth "$c3") > w3 )) && w3=$(strwidth "$c3")
+            (( $(strwidth "$c4") > w4 )) && w4=$(strwidth "$c4")
+        done
+
+        # En-tête du tableau
+        printf "│ %-${w1}s │ %-${w2}s │ %-${w3}s │ %-${w4}s │\n" "Variable" "Autorisé" "Défaut" "Valeur"
+        echo "├$(printf '─%.0s' $(seq 1 $((w1 + 2))))┼$(printf '─%.0s' $(seq 1 $((w2 + 2))))┼$(printf '─%.0s' $(seq 1 $((w3 + 2))))┼$(printf '─%.0s' $(seq 1 $((w4 + 2))))┤"
+
+        # Corps du tableau
+        for detail in "${invalid_details[@]}"; do
+            IFS="¤" read -r c1 c2 c3 c4 <<<"$detail"
+            printf "│ %-${w1}s │ %-${w2}s │ %-${w3}s │ %-${w4}s │\n" "$c1" "$c2" "$c3" "$c4"
+        done
+        echo ""
+    fi
+
+    # Retourne 1 si invalide, 0 sinon
+    [[ "$has_invalid" == "true" ]] && return 1 || return 0
+}
+
+
+
+
+

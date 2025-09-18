@@ -61,9 +61,28 @@ analyze_update_status
 
 # --- ↓
 
-# L'ARGUMENT dans le code d'appel de la fonciton PRIME sur la variable global
+# L'ARGUMENT dans le code d'appel de la fonction PRIME sur la variable global
 
 # --- ↑
+
+# Appel de la fonction de validation des variables locales
+if ! validate_vars VARS_TO_VALIDATE; then
+    # Problème
+    echo
+    # Arrête le script si invalide, LAUNCH_MODE == "hard"
+    [[ "$LAUNCH_MODE" == "hard"]]; then
+        die 30 "Erreur : Configuration invalide. Vérifiez les variables (locales)."
+    else
+        print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
+        echo
+        read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+    fi
+else
+    # Pas de soucis
+    [[ "$DEBUG_INFO" == "true" || "$DEBUG_MODE" == "true"]]; then
+        echo
+        print_fancy --theme "ok" "Les variables locales sont validées"
+fi
 
 
 ###############################################################################
