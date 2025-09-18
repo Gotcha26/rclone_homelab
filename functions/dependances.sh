@@ -543,7 +543,7 @@ print_vars_table() {
             IFS="-" read -r min max <<< "$allowed"
             (( value < min || value > max )) && valid=false
         elif [[ -z "$allowed" || "$allowed" == "any" ]]; then
-            display_allowed="*"
+            display_allowed="- ANY -"
             valid=true
         else
             IFS="|" read -ra allowed_arr <<<"$allowed"
@@ -609,10 +609,16 @@ print_vars_table() {
         auth_cell=$(print_fancy --style italic --raw "$c2")
         def_cell="$c3"
 
-        if [[ "$valid_flag" == "false" ]]; then
-            val_cell=$(print_fancy --fg red --raw "$c4")
+        if [[ -z "$c4" ]]; then
+            val_display="∅"
         else
-            val_cell=$(print_fancy --fg green --raw "$c4")
+            val_display="$c4"
+        fi
+
+        if [[ "$valid_flag" == "false" ]]; then
+            val_cell=$(print_fancy --fg red --raw "$val_display")
+        else
+            val_cell=$(print_fancy --fg green --raw "$val_display")
         fi
 
         printf "│ "

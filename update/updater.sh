@@ -90,7 +90,7 @@ analyze_update_status() {
 
     # --- Mode verbose : affichage complet si DEBUG_INFOS=true ---
     if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-        print_fancy --fill "#" "####"
+        print_fancy --align "center" --fill "#" "#"
         print_fancy --align "center" --style "bold" "INFOS GIT"
         echo ""  # Ligne vide pour espacement
         print_fancy "📌  Branche locale      : $branch_real"
@@ -183,7 +183,7 @@ analyze_update_status() {
         fi
     fi
 
-    [[ "${DEBUG_INFOS:-false}" == true ]] && print_fancy --fill "#" "####"
+    [[ "${DEBUG_INFOS:-false}" == true ]] && print_fancy --align "center" --fill "#" "#"
     return $result_code
 }
 
