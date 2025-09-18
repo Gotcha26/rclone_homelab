@@ -267,7 +267,7 @@ while true; do
             menu_edit_config_local)
                 scroll_down
                 echo "▶️  Édition du fichiers $CONF_LOCAL_FILE"
-                nano "$DIR_CONF_LOCAL"
+                nano "$DIR_CONF_LOCAL_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_edit_config_dev)
