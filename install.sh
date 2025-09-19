@@ -156,7 +156,41 @@ install_micro() {
     rm -rf "micro-${version}" "$archive"
 
     echo -e "${GREEN}✅  micro installé/mis à jour avec succès (version $version).${RESET}"
+    
+    if command -v micro >/dev/null 2>&1; then
+    read -rp "Souhaitez-vous utiliser micro comme éditeur par défaut ? (y/N) : " yn
+    case "$yn" in
+        [Yy]*) update_editor_choice "micro" ;;
+        *)     update_editor_choice "nano"  ;;
+    esac
+fi
+
 }
+
+update_editor_choice() {
+    local new_editor="$1"
+    local files=(
+        "$INSTALL_DIR/config/global.conf"
+        "$INSTALL_DIR/exmples_files/config.main.txt"
+        "$INSTALL_DIR/local/config.local.conf"
+    )
+
+    for f in "${files[@]}"; do
+        if [ -f "$f" ]; then
+            if grep -q '^EDITOR=' "$f"; then
+                sed -i "s|^EDITOR=.*|EDITOR=$new_editor|" "$f"
+            else
+                echo "EDITOR=$new_editor" >> "$f"
+            fi
+            echo "✔ $f mis à jour → EDITOR=$new_editor"
+        else
+            echo "ℹ $f absent, ignoré."
+        fi
+    done
+
+    echo -e "${GREEN}✅  Éditeur par défaut mis à jour : $new_editor${RESET}"
+}
+
 
 # --------------------------------------------------------------------------- #
 # Récupération dernière release GitHub
