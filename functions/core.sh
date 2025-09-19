@@ -50,6 +50,7 @@ set_validation_vars() {
         "TERM_WIDTH_DEFAULT:80-120:80"
         "LOG_RETENTION_DAYS:1-15:14"
         "LOG_LINE_MAX:100-10000:1000"
+        "EDITOR:nano|micro:nano"
         "DEBUG_INFOS:bool:false"
         "DEBUG_MODE:bool:false"
         "DISPLAY_MODE:none|simplified|verbose:simplified"
