@@ -71,12 +71,13 @@ if ! report_invalid_vars VARS_TO_VALIDATE; then
     echo
 
     # Arrête le script si invalide ET LAUNCH_MODE == "hard"
-    if [[ "$LAUNCH_MODE" == "hard" ]]; then
+    if [[ "$LAUNCH_MODE" == "hard" || "$DEBUG_INFO" == "false" ]]; then
         die 30 "Erreur : Configuration invalide. Vérifiez les variables (locales)."
     else
         print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
         echo
         read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+        continue
     fi
 else
     # Pas de soucis

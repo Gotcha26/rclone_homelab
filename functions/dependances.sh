@@ -2,20 +2,17 @@
 
 
 ###############################################################################
-# Fonction : Affiche le logo ASCII GOTCHA
-# Accèpte 2 arguments pour fg et bg (couleurs)
+# Fonction : Affiche le logo ASCII GOTCHA (uniquement en mode manuel)
 ###############################################################################
 
 print_logo() {
     echo
     echo
-    local HASH_COLOR="${1:-white}"  # Par défaut : blanc pour les #
-    local OTHER_COLOR="${2:-red}"   # Par défaut : rouge pour le reste
-    local RESET="$RESET"            # Utilise la variable globale RESET
+    local RED="$(get_fg_color red)"
+    local RESET="$(get_fg_color reset)"
 
-    # Applique les couleurs via sed
-    sed -E "s/(#)/$(get_fg_color "$HASH_COLOR")\1${RESET}/g;
-            s/([^#])/$(get_fg_color "$OTHER_COLOR")\1${RESET}/g" <<'EOF'
+    # Règle "tout sauf #"
+    sed -E "s/([^#])/${RED}\1${RESET}/g" <<'EOF'
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::::::'######:::::'#######:::'########:::'######:::'##::::'##:::::'###:::::::::
 :::::'##... ##:::'##.... ##::... ##..:::'##... ##:: ##:::: ##::::'## ##::::::::
