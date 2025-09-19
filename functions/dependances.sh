@@ -256,6 +256,8 @@ strwidth() {
 #   msg=$(print_fancy --theme success --raw "Option colorisée")
 #      print_fancy --fg cyan --style bold -n "Fichier d'origine :"
 #      print_fancy --fg yellow "$main_conf"
+#
+# Exemple texte multi couleurs/styles
 #   text=""
 #   text+="${BOLD}Important:${RESET} "
 #   text+="Voici un message ${UNDERLINE}souligné${RESET} et un emoji ⚡"

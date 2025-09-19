@@ -93,12 +93,38 @@ analyze_update_status() {
         print_fancy --align "center" --fill "#" "#"
         print_fancy --align "center" --style "bold" "INFOS GIT"
         echo ""  # Ligne vide pour espacement
-        print_fancy "📌  Branche locale      : $branch_real"
-        print_fancy "📌  Commit local        : $head_commit ($(date -d "@$head_epoch" 2>/dev/null || echo "date inconnue"))"
-        [[ -n "$remote_commit" ]] && print_fancy "🕒  Commit distant      : $remote_commit ($(date -d "@$remote_epoch" 2>/dev/null || echo "date inconnue"))"
-        [[ -n "$latest_tag" ]] && print_fancy "🏷️  Dernière release    : $latest_tag ($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
-        [[ "$GIT_OFFLINE" == true ]] && print_fancy --theme "warning" --fg "yellow" --align "center" \
-            "Mode offline : informations GitHub incomplètes."
+
+        # Branche locale
+        text=""
+        text+=$(print_fancy --raw "📌  Branche locale   : ")
+        text+=$(print_fancy --fg "red" --style "bold" --raw "$branch_real")
+        print_fancy "$text"
+        echo ""
+
+        # Commit local
+        print_fancy "📌  Commit local     : $head_commit"
+        print_fancy --align "right" --style "italic" \
+            "($(date -d "@$head_epoch" 2>/dev/null || echo "date inconnue"))"
+
+        # Commit distant
+        if [[ -n "$remote_commit" ]]; then
+            print_fancy "🕒  Commit distant   : $remote_commit"
+            print_fancy --align "right" --style "italic" \
+                "($(date -d "@$remote_epoch" 2>/dev/null || echo "date inconnue"))"
+        fi
+
+        # Dernière release
+        if [[ -n "$latest_tag" ]]; then
+            print_fancy "🏷️  Dernière release : $latest_tag"
+            print_fancy --align "right" --style "italic" \
+                "($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
+        fi
+
+        # Mode offline
+        if [[ "$GIT_OFFLINE" == true ]]; then
+            print_fancy --theme "warning" --fg "yellow" --align "center" \
+                "Mode offline : informations GitHub incomplètes."
+        fi
     fi
 
     # --- Analyse des commits / branches ---
@@ -111,8 +137,8 @@ analyze_update_status() {
             result_code=1
 
         elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit" 2>/dev/null; then
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
             if [[ "${DEBUG_INFOS:-false}" == true ]]; then
+                echo ""
                 print_fancy --theme "ok" --fg "blue" --align "right" \
                     "Version actuelle ${current_tag:-dev} >> À jour"
             else
@@ -121,8 +147,8 @@ analyze_update_status() {
             result_code=0
 
         elif (( latest_tag_epoch < head_epoch )); then
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
             if [[ "${DEBUG_INFOS:-false}" == true ]]; then
+                echo ""
                 print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" \
                     --highlight "Des nouveautés existent mais ne sont pas encore officialisées."
                 print_fancy --theme "follow" --bg "yellow" --align "center" --style "bold underline" \
@@ -154,8 +180,8 @@ analyze_update_status() {
             result_code=1
 
         elif [[ "$head_commit" == "$remote_commit" ]]; then
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
             if [[ "${DEBUG_INFOS:-false}" == true ]]; then
+                echo ""
                 print_fancy --theme "ok" --fg "blue" --style "bold" --align "right" \
                     "Votre branche '$branch_real' est à jour avec le dépôt."
             else
