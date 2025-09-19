@@ -475,33 +475,3 @@ create_temp_dirs() {
         mkdir -p "$DIR_LOG" 2>/dev/null || die 2 "$MSG_DIR_LOG_CREATE_FAIL : $DIR_LOG"
     fi
 }
-
-
-###############################################################################
-# Fonction : Rendre des scripts exécutable (utile après une MAJ notement)
-###############################################################################
-make_scripts_executable() {
-    local base_dir="${1:-${SCRIPT_DIR:-}}"
-    local scripts=("update/standalone_updater.sh") # Ajouter des fichiers ici si besoin, chacun entre "".
-
-    if [[ -z "$base_dir" ]]; then
-        print_fancy --theme "error" "ERREUR: base_dir non défini et SCRIPT_DIR absent."
-        return 1
-    fi
-
-    for s in "${scripts[@]}"; do
-        local f="$base_dir/$s"
-        if [[ -f "$f" ]]; then
-            chmod +x "$f"
-            [[ "${DEBUG_INFOS}" == "true" ]] && {
-                print_fancy --theme "debug_info" "chmod +x appliqué sur :"
-                print_fancy --align "right" --fg "light_blue" "$f"
-            }
-        else
-            [[ "${DEBUG_INFOS}" == "true" ]] && {
-                print_fancy --theme "warning" "[DEBUG_INFO] Fichier absent :"
-                print_fancy --align "right" --fg "red" "$f"
-            }
-        fi
-    done
-}

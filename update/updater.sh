@@ -302,7 +302,7 @@ update_to_latest_branch() {
         echo
     fi
 
-    chmod +x "$SCRIPT_DIR/main.sh"
+    make_scripts_executable
 
     print_fancy --align "center" --theme "success" \
         "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
@@ -396,7 +396,7 @@ update_to_latest_tag() {
             echo
         fi
 
-        chmod +x "$SCRIPT_DIR/main.sh"
+        make_scripts_executable
         echo "🎉  Mise à jour réussie vers $latest_tag"
         echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
         return 0
@@ -493,4 +493,34 @@ update_forced() {
     else
         update_to_latest_branch
     fi
+}
+
+
+###############################################################################
+# Fonction : Rendre des scripts exécutable (utile après une MAJ notement)
+###############################################################################
+make_scripts_executable() {
+    local base_dir="${1:-${SCRIPT_DIR:-}}"
+    local scripts=("main.sh" "update/standalone_updater.sh") # Ajouter des fichiers ici si besoin, chacun entre "".
+
+    if [[ -z "$base_dir" ]]; then
+        print_fancy --theme "error" "ERREUR: base_dir non défini et SCRIPT_DIR absent."
+        return 1
+    fi
+
+    for s in "${scripts[@]}"; do
+        local f="$base_dir/$s"
+        if [[ -f "$f" ]]; then
+            chmod +x "$f"
+            [[ "${DEBUG_INFOS}" == "true" ]] && {
+                print_fancy --theme "debug_info" "chmod +x appliqué sur :"
+                print_fancy --align "right" --fg "light_blue" "$f"
+            }
+        else
+            [[ "${DEBUG_INFOS}" == "true" ]] && {
+                print_fancy --theme "warning" "[DEBUG_INFO] Fichier absent :"
+                print_fancy --align "right" --fg "red" "$f"
+            }
+        fi
+    done
 }
