@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-# Fichier log (pas encore enregistré si dossier non prêt)
-echo
-print_fancy --theme "debug_info" "DIR_LOG_FILE_SCRIPT = "
-print_fancy --align "right" --fg "light_blue" "$DIR_LOG_FILE_SCRIPT"
-
 
 ###############################################################################
 # Fonction : Affiche des informations d'aide au débugage en entête
@@ -19,6 +14,7 @@ show_debug_header() {
 
 # Montage DEBUG_MODE
 debug_header_complet () {
+    debug_common_1
     debug_header_start
     debug_header_1
     debug_header_2
@@ -30,12 +26,19 @@ debug_header_complet () {
 
 #Montage DEBUG_INFOS
 debug_header_partial () {
+    debug_common_1
     debug_header_1
 
 }
 
 
 
+debug_common_1() {
+    # Fichier log (pas encore enregistré si dossier non prêt)
+    echo
+    print_fancy --theme "debug_info" "DIR_LOG_FILE_SCRIPT = "
+    print_fancy --align "right" --fg "light_blue" "$DIR_LOG_FILE_SCRIPT"
+}
 
 debug_header_start() {
     echo "================================================================================"
