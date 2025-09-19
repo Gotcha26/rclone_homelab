@@ -65,10 +65,10 @@ init_config_local() {
 
     # --- Proposer l'édition immédiate avec nano ---
     echo
-    read -rp "✏️  Voulez-vous éditer le fichier maintenant avec nano ? [Y/n] : " EDIT_REPLY
+    read -rp "✏️  Voulez-vous éditer le fichier maintenant avec $EDITOR ? [Y/n] : " EDIT_REPLY
     EDIT_REPLY=${EDIT_REPLY,,}
     if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
-        nano "$conf_file"
+        $EDITOR "$conf_file"
     else
         print_fancy --theme "info" \
             "Édition ignorée pour : $conf_file"
@@ -155,10 +155,10 @@ init_secrets_local() {
 
     # --- Proposer l'édition immédiate avec nano ---
     echo
-    read -rp "✏️  Voulez-vous éditer le fichier maintenant avec nano ? [Y/n] : " EDIT_REPLY
+    read -rp "✏️  Voulez-vous éditer le fichier maintenant avec $EDITOR ? [Y/n] : " EDIT_REPLY
     EDIT_REPLY=${EDIT_REPLY,,}
     if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
-        nano "$secret_file"
+        $EDITOR "$secret_file"
     else
         print_fancy --theme "info" \
             "Édition ignorée pour : $secret_file"

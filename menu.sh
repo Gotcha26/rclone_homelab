@@ -183,7 +183,7 @@ while true; do
                     continue
                 fi
                 echo "▶️  Ouverture de $JOBS_FILE..."
-                nano "$DIR_JOBS_FILE"
+                $EDITOR "$DIR_JOBS_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_install_rclone)
@@ -201,7 +201,7 @@ while true; do
                 if conf_file=$(check_rclone_configured 2>/dev/null); then
                     echo -e "▶️  Affichage du fichier de configuration rclone : ${GREEN}$conf_file${RESET}"
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
-                    nano "$conf_file"
+                    $EDITOR "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
                 else
                     echo "⚠️  Aucun fichier de configuration rclone trouvé."
@@ -228,7 +228,7 @@ while true; do
                 if conf_file=$(check_msmtp_configured 2>/dev/null); then
                     echo "▶️  Affichage du fichier de configuration msmtp : $conf_file"
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
-                    nano "$conf_file"
+                    $EDITOR "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
                 else
                     echo "⚠️  Aucun fichier de configuration msmtp trouvé."
@@ -256,13 +256,13 @@ while true; do
             menu_edit_config_local)
                 scroll_down
                 echo "▶️  Édition du fichiers $CONF_LOCAL_FILE"
-                nano "$DIR_CONF_LOCAL_FILE"
+                $EDITOR "$DIR_CONF_LOCAL_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_edit_config_dev)
                 scroll_down
                 echo "▶️  Édition du fichiers $CONF_DEV_FILE"
-                nano "$DIR_CONF_DEV_FILE"
+                $EDITOR "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_add_secrets_file)
@@ -275,7 +275,7 @@ while true; do
             menu_edit_config_secrets)
                 scroll_down
                 echo "▶️  Édition du fichiers $SECRET_FILE"
-                nano "$SECRET_FILE"
+                $EDITOR "$SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_show_help)

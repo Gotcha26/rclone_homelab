@@ -102,6 +102,63 @@ check_msmtp() {
 }
 
 # --------------------------------------------------------------------------- #
+# Vérification et installation/mise à jour de micro (éditeur)
+# --------------------------------------------------------------------------- #
+check_micro() {
+    if ! command -v micro &>/dev/null; then
+        echo -e "${YELLOW}micro non détecté (éditeur optionnel).${RESET}"
+        read -rp "Voulez-vous installer micro ? (y/N) : " yn
+        case "$yn" in
+            [Yy]*) install_micro ;;
+            *) echo "micro ne sera pas installé (optionnel)." ;;
+        esac
+    else
+        local local_version latest_version
+        local_version=$(micro --version 2>/dev/null | head -n1 | awk '{print $2}')
+        latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
+                          | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
+
+        echo "micro détecté, version locale : $local_version"
+
+        if [ -n "$latest_version" ] && [ "$local_version" != "$latest_version" ]; then
+            echo "Nouvelle version de micro disponible : $latest_version"
+            read -rp "Voulez-vous mettre à jour micro ? (y/N) : " yn
+            case "$yn" in
+                [Yy]*) install_micro "$latest_version" ;;
+                *) echo "Vous gardez la version existante." ;;
+            esac
+        fi
+    fi
+}
+
+install_micro() {
+    local version="${1:-latest}"
+    echo "Installation / mise à jour de micro..."
+
+    # Déterminer la dernière version si "latest"
+    if [ "$version" = "latest" ]; then
+        version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
+                  | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
+    fi
+
+    # Téléchargement binaire Linux amd64
+    local archive="micro-${version}-linux64.tar.gz"
+    local url="https://github.com/zyedidia/micro/releases/download/v${version}/${archive}"
+
+    curl -L -o "$archive" "$url"
+    tar -xzf "$archive"
+    if [ -w "/usr/local/bin" ]; then
+        cp "micro-${version}/micro" /usr/local/bin/
+    else
+        $SUDO cp "micro-${version}/micro" /usr/local/bin/
+    fi
+    chmod +x /usr/local/bin/micro
+    rm -rf "micro-${version}" "$archive"
+
+    echo -e "${GREEN}✅  micro installé/mis à jour avec succès (version $version).${RESET}"
+}
+
+# --------------------------------------------------------------------------- #
 # Récupération dernière release GitHub
 # --------------------------------------------------------------------------- #
 get_latest_release() {
@@ -234,6 +291,7 @@ create_updater_symlink() {
 check_dependencies
 check_rclone
 check_msmtp
+check_micro
 get_latest_release
 handle_existing_dir
 install
@@ -255,6 +313,9 @@ exit 0
 
 # Fichier /update/standalone_updater.sh est rendu exécutable avec son symlink
 # rclone_homelab-updater <--force>
+
+# Ce fichier permet de mettre à jours le script (basé sur la branche main + release)
+# mais aussi les script optionnels !
 
 # Lien à communiquer pour l'installation :
 bash <(curl -s https://raw.githubusercontent.com/Gotcha26/rclone_homelab/main/install.sh)

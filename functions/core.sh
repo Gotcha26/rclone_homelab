@@ -321,7 +321,7 @@ edit_msmtp_config() {
     }
 
     print_fancy --theme "info" "Édition du fichier msmtp : $conf_file"
-    nano "$conf_file"
+    $EDITOR "$conf_file"
 }
 
 

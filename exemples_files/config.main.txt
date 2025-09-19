@@ -51,6 +51,11 @@ LOG_LINE_MAX=1000
                                # Nombre de lignes maximales (en partant du bas)
                                # à afficher dans le rapport par email.
 
+EDITOR=nano
+                               # <nano|micro>:nano
+                               # Editor des fichiers. Micro est proposé lors
+                               # de l'installation
+
 DEBUG_INFOS=false
                                # <false|true>:false
                                # Quelques informations pour le debugage
