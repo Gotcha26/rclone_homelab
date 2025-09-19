@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 
-debug_header_log_file() {
-    # Fichier log (pas encore enregistré si dossier non prêt)
-    echo
-    print_fancy --theme "debug_info" "DIR_LOG_FILE_SCRIPT = "
-    print_fancy --align "right" --fg "light_blue" "$DIR_LOG_FILE_SCRIPT"
-}
+# Fichier log (pas encore enregistré si dossier non prêt)
+echo
+print_fancy --theme "debug_info" "DIR_LOG_FILE_SCRIPT = "
+print_fancy --align "right" --fg "light_blue" "$DIR_LOG_FILE_SCRIPT"
 
 
 ###############################################################################
@@ -24,7 +22,7 @@ debug_header_complet () {
     debug_header_start
     debug_header_1
     debug_header_2
-    debug_header_3
+
     debuh_header_stop
     echo
     read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
@@ -33,7 +31,6 @@ debug_header_complet () {
 #Montage DEBUG_INFOS
 debug_header_partial () {
     debug_header_1
-    debug_header_3
 
 }
 
@@ -51,7 +48,7 @@ debug_header_1() {
     print_fancy --align "center" "********************************************"
     print_fancy --align "center" --style "bold" "Tableau des variables locales prise en compte"
     print_fancy --align "center" "********************************************"
-    print_vars_table VARS_TO_VALIDATE
+    print_table_vars VARS_TO_VALIDATE
 }
 
 debug_header_2() {
