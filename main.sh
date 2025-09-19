@@ -2,10 +2,13 @@
 
 set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
 
+SCRIPT_PATH="$(readlink -f "$0")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 
 # ###############################################################################
 # 1. Initialisation par défaut
 # ###############################################################################
+
 
 # === Initialisation minimale ===
 

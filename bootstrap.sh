@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# Résoudre le chemin réel du script (suivi des symlinks)
-SCRIPT_PATH="$(readlink -f "$0")"
-SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-
 # Sourcing global
 source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/functions/debug.sh"
