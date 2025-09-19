@@ -68,7 +68,7 @@ set_validation_vars() {
 # Argument > DISPLAY_MODE > DEBUD_INFOS
 ###############################################################################
 load_optional_configs() {
-    local arg_mode="$1"
+    local arg_mode="${1-}"
     local mode=""
 
     # --- Sélection du mode ---
