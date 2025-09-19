@@ -66,7 +66,7 @@ analyze_update_status
 # --- ↑
 
 # Appel de la fonction de validation des variables locales
-if ! validate_vars VARS_TO_VALIDATE; then
+if ! report_invalid_vars VARS_TO_VALIDATE; then
     # Problème
     echo
 

@@ -2,17 +2,20 @@
 
 
 ###############################################################################
-# Fonction : Affiche le logo ASCII GOTCHA (uniquement en mode manuel)
+# Fonction : Affiche le logo ASCII GOTCHA
+# Accèpte 2 arguments pour fg et bg (couleurs)
 ###############################################################################
 
 print_logo() {
     echo
     echo
-    local RED="$(get_fg_color red)"
-    local RESET="$(get_fg_color reset)"
+    local HASH_COLOR="${1:-white}"  # Par défaut : blanc pour les #
+    local OTHER_COLOR="${2:-red}"   # Par défaut : rouge pour le reste
+    local RESET="$RESET"            # Utilise la variable globale RESET
 
-    # Règle "tout sauf #"
-    sed -E "s/([^#])/${RED}\1${RESET}/g" <<'EOF'
+    # Applique les couleurs via sed
+    sed -E "s/(#)/$(get_fg_color "$HASH_COLOR")\1${RESET}/g;
+            s/([^#])/$(get_fg_color "$OTHER_COLOR")\1${RESET}/g" <<'EOF'
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::::::'######:::::'#######:::'########:::'######:::'##::::'##:::::'###:::::::::
 :::::'##... ##:::'##.... ##::... ##..:::'##... ##:: ##:::: ##::::'## ##::::::::
@@ -159,7 +162,7 @@ die() {
 
 
 ###############################################################################
-# Fonction : Valide des variables selon des valeurs autorisées
+# Fonction : Valide et corrige des variables selon des valeurs autorisées
 # Utilisation :
 #   VARS_TO_VALIDATE=(
 #       "MODE:hard|soft|verbose:hard"
@@ -667,7 +670,7 @@ print_vars_table() {
 ###############################################################################
 # Fonction : Affiche un tableau de valeurs hors de la plage de référence donnée
 ###############################################################################
-validate_vars() {
+report_invalid_vars() {
     local -n var_array=$1
     local invalid_rows=()
     local has_invalid=false
@@ -687,7 +690,8 @@ validate_vars() {
     done
 
     if [[ "$has_invalid" == "true" ]]; then
-        print_fancy --theme "error" "Variables invalides :"
+        echo
+        print_fancy --theme "warning" "Variables invalides :"
         print_table invalid_rows
         return 1
     fi
