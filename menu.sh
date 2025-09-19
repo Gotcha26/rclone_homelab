@@ -7,19 +7,7 @@ VARS_TO_VALIDATE+=("DISPLAY_MODE:none|simplified|verbose:simplified")
 
 # === Initialisation minimale ===
 
-# Résoudre le chemin réel du script (suivi des symlinks)
-SCRIPT_PATH="$(readlink -f "$0")"
-SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-
-# Sourcing global
-source "$SCRIPT_DIR/config/global.conf"
-source "$SCRIPT_DIR/functions/debug.sh"
-source "$SCRIPT_DIR/functions/dependances.sh"
-source "$SCRIPT_DIR/functions/core.sh"
-source "$SCRIPT_DIR/update/updater.sh"
-
-# Surchage via configuration local
-load_optional_configs
+source "$SCRIPT_DIR/bootstrap.sh"
 
 # ===
 

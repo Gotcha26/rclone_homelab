@@ -9,30 +9,9 @@ set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le co
 
 # === Initialisation minimale ===
 
-# Résoudre le chemin réel du script (suivi des symlinks)
-SCRIPT_PATH="$(readlink -f "$0")"
-SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-
-# Sourcing global
-source "$SCRIPT_DIR/config/global.conf"
-source "$SCRIPT_DIR/functions/debug.sh"
-source "$SCRIPT_DIR/functions/dependances.sh"
-source "$SCRIPT_DIR/functions/core.sh"
-source "$SCRIPT_DIR/update/updater.sh"
-
-# Surchage via configuration local
-load_optional_configs
+source "$SCRIPT_DIR/bootstrap.sh"
 
 # ===
-
-# Sourcing intermédiaire
-source "$SCRIPT_DIR/export/mail.sh"
-source "$SCRIPT_DIR/export/discord.sh"
-
-# Logger uniquement les erreurs stderr
-# Création du dossier logs si absent
-# mkdir -p "$DIR_LOG"
-# exec 2> >(tee -a "$DIR_LOG_FILE_SCRIPT" >&2)
 
 # Affichage du logo/bannière
 print_logo
