@@ -48,7 +48,9 @@ make_scripts_executable
 
 # --- ↓ DEBUG ↓ ---
 
-show_debug_header
+if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
+    show_debug_header
+fi
 
 # --- ↑ DEBUG ↑ ---
 
@@ -57,12 +59,6 @@ show_debug_header
 # Exécuter directement l’analyse (affichage immédiat au lancement)
 fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; }
 analyze_update_status
-
-# --- ↓
-
-# L'ARGUMENT dans le code d'appel de la fonction PRIME sur la variable global
-
-# --- ↑
 
 # Appel de la fonction de validation des variables locales
 if ! print_table_vars_invalid VARS_TO_VALIDATE; then

@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+debug_header_log_file() {
+    # Fichier log (pas encore enregistré si dossier non prêt)
+    echo
+    print_fancy --theme "debug_info" "DIR_LOG_FILE_SCRIPT = "
+    print_fancy --align "right" --fg "light_blue" "$DIR_LOG_FILE_SCRIPT"
+}
+
 
 ###############################################################################
 # Fonction : Affiche des informations d'aide au débugage en entête
@@ -57,12 +64,6 @@ debug_header_2() {
     else
         print_fancy --theme "error" "Erreur lors de la création du répertoire : $TMP_JOBS_DIR" >&2
     fi
-}
-
-debug_header_3() {
-    echo
-    print_fancy --theme "debug_info" "DIR_LOG_FILE_SCRIPT = "
-    print_fancy --align "right" --fg "light_blue" "$DIR_LOG_FILE_SCRIPT"
 }
 
 debug_header_stop() {
