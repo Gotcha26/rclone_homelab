@@ -140,6 +140,9 @@ if [[ $# -eq 0 ]]; then
         echo "👋  Bonne journée à vous. 👋"
         echo
         exit 0
+    else
+        scroll_down # Pas de clear
+        print_fancy "Poursuite post-menu"
     fi
 fi
 

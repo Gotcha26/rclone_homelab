@@ -22,16 +22,7 @@ while true; do
 
     # Réaffichage de la bannière mais jamais au premier passage.
     if [ "$first_time" = false ]; then
-        echo
-        print_fancy --align center --bg yellow --highligt --fill ":" --fg black \
-            "::::"
-        print_fancy --align center --style bold --bg yellow --fg black \
-            "IL EST NECESSAIRE DE RELANCER LE SCRIPT AFIN DE"
-        print_fancy --align center --style bold --bg yellow --fg black \
-            "PRENDRE EN COMPTE VOS CHANGEMENTS..."
-        print_fancy --align center --bg yellow --highligt --fill ":" --fg black \
-            "::::"
-        echo
+        load_optional_configs none # Venir recharger la configuration locale après une édition
     fi
     first_time=false
     
