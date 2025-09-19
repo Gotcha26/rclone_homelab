@@ -6,7 +6,8 @@ DISPLAY_MODE=simplified        # <verbose|simplified|none>
 VARS_TO_VALIDATE+=("DISPLAY_MODE:none|simplified|verbose:simplified")
 
 # === Initialisation minimale ===
-
+SCRIPT_PATH="$(readlink -f "$0")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 source "$SCRIPT_DIR/bootstrap.sh"
 
 # ===
