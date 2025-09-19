@@ -3,7 +3,6 @@
 first_time=true
 DISPLAY_MODE=simplified        # <verbose|simplified|none>
                                # Utilisé pour l'affichage d'infos lors des MAJ
-VARS_TO_VALIDATE+=("DISPLAY_MODE:none|simplified|verbose:simplified")
 
 # === Initialisation minimale ===
 SCRIPT_PATH="$(readlink -f "$0")"
@@ -23,7 +22,16 @@ while true; do
 
     # Réaffichage de la bannière mais jamais au premier passage.
     if [ "$first_time" = false ]; then
-        print_logo   # ta bannière
+        echo
+        print_fancy --align center --bg yellow --highligt --fill ":" --fg black \
+            "::::"
+        print_fancy --align center --style bold --bg yellow --fg black \
+            "IL EST NECESSAIRE DE RELANCER LE SCRIPT AFIN DE"
+        print_fancy --align center --style bold --bg yellow --fg black \
+            "PRENDRE EN COMPTE VOS CHANGEMENTS..."
+        print_fancy --align center --bg yellow --highligt --fill ":" --fg black \
+            "::::"
+        echo
     fi
     first_time=false
     
