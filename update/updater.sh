@@ -354,10 +354,23 @@ update_to_latest_tag() {
     latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
     current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
 
-    echo
-    echo "📌  Branche : $branch"
-    echo "🕒  Commit actuel : $head_commit ($head_date)"
-    echo "🕒  Dernier tag    : $latest_tag ($latest_tag_date)"
+    # Branche locale
+    text=""
+    text+=$(print_fancy --raw "📌  Branche locale   : ")
+    text+=$(print_fancy --fg "red" --style "bold" --raw "$branch")
+    print_fancy "$text"
+    echo ""
+
+    # Commit local
+    print_fancy "📌  Commit local     : $head_commit"
+    print_fancy --align "right" --style "italic" \
+        "($(date -d "@$$head_date" 2>/dev/null || echo "date inconnue"))"
+
+    # Dernière release
+    if [[ -n "$latest_tag" ]]; then
+        print_fancy "🏷️  Dernière release : $latest_tag"
+        print_fancy --align "right" --style "italic" \
+            "($(date -d "@$latest_tag_date" 2>/dev/null || echo "date inconnue"))"
 
     if [[ "$head_commit" == "$latest_tag_commit" ]]; then
         print_fancy --theme "ok" \
