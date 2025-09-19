@@ -1,6 +1,96 @@
 #!/usr/bin/env bash
 
 
+# === Déclarations globales pour print_fancy() === 
+# Couleurs texte (FG) et fond (BG) intégrées et personnalisables
+# Compatible AUSSI avec echo -e (ne pas oublier le -e et le ${RESET} à la fin)
+# Exemple :
+# echo -e "${YELLOW}⚠️  ${bin}${RESET} n'est pas installé."
+
+# --- Couleurs texte par défaut ---
+declare -A FG_COLORS=(
+  [reset]=0 [default]=39
+  [black]=30 [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36
+  [white]=37 [gray]=90 [light_red]=91 [light_green]=92 [light_yellow]=93
+  [light_blue]=94 [light_magenta]=95 [light_cyan]=96 [bright_white]=97
+  [black_pure]="256:0" [orange]="256:208"
+)
+
+# --- Couleurs fond par défaut ---
+declare -A BG_COLORS=(
+  [reset]=49 [default]=49
+  [black]=40 [red]=41 [green]=42 [yellow]=43 [blue]=44 [magenta]=45 [cyan]=46
+  [white]=47 [gray]=100 [light_red]=101 [light_green]=102 [light_yellow]=103
+  [light_blue]=104 [light_magenta]=105 [light_cyan]=106 [bright_white]=107
+  [black_pure]="256:0" [orange]="256:208"
+)
+
+for name in "${!FG_COLORS[@]}"; do
+    code="${FG_COLORS[$name]}"
+    if [[ "$code" == 256:* ]]; then
+        # Couleur en mode 256 (ex: 256:208 → 208)
+        idx="${code#256:}"
+        printf -v "${name^^}" '\e[38;5;%sm' "$idx"
+    else
+        # Couleur standard (ex: 31, 32, 97…)
+        printf -v "${name^^}" '\e[%sm' "$code"
+    fi
+done
+
+for name in "${!BG_COLORS[@]}"; do
+    code="${BG_COLORS[$name]}"
+    if [[ "$code" == 256:* ]]; then
+        idx="${code#256:}"
+        printf -v "BG_${name^^}" '\e[48;5;%sm' "$idx"
+    else
+        printf -v "BG_${name^^}" '\e[%sm' "$code"
+    fi
+done
+
+RESET='\e[0m'
+
+# ===
+
+
+###############################################################################
+# Fonctions pour interpréter les couleurs (support ANSI / 256 / RGB)
+###############################################################################
+
+get_fg_color() {
+    local c="$1"
+    [[ -z "$c" ]] && return 0
+
+    if [[ "$c" =~ ^ansi: ]]; then
+        printf "\033[%sm" "${c#ansi:}"
+    elif [[ "$c" =~ ^256: ]]; then
+        printf "\033[38;5;%sm" "${c#256:}"
+    elif [[ "$c" =~ ^rgb: ]]; then
+        IFS=';' read -r r g b <<< "${c#rgb:}"
+        printf "\033[38;2;%s;%s;%sm" "$r" "$g" "$b"
+    else
+        # fallback : nom de couleur classique
+        printf "\033[%sm" "${FG_COLORS[$c]:-39}"
+    fi
+}
+
+get_bg_color() {
+    local c="$1"
+    [[ -z "$c" || "$c" == "none" || "$c" == "transparent" ]] && return 0
+
+    if [[ "$c" =~ ^ansi: ]]; then
+        printf "\033[%sm" "${c#ansi:}"
+    elif [[ "$c" =~ ^256: ]]; then
+        printf "\033[48;5;%sm" "${c#256:}"
+    elif [[ "$c" =~ ^rgb: ]]; then
+        IFS=';' read -r r g b <<< "${c#rgb:}"
+        printf "\033[48;2;%s;%s;%sm" "$r" "$g" "$b"
+    else
+        # fallback : nom de couleur classique
+        printf "\033[%sm" "${BG_COLORS[$c]:-49}"
+    fi
+}
+
+
 ###############################################################################
 # Fonction : Affiche le logo ASCII GOTCHA (uniquement en mode manuel)
 ###############################################################################
@@ -57,95 +147,6 @@ spinner() {
 }
 
 
-# === Déclarations globales pour print_fancy() === 
-# Couleurs texte (FG) et fond (BG) intégrées et personnalisables
-# Compatible AUSSI avec echo -e (ne pas oublier le -e et le ${RESET} à la fin)
-# Exemple :
-# echo -e "${YELLOW}⚠️  ${bin}${RESET} n'est pas installé."
-
-# --- Couleurs texte par défaut ---
-declare -A FG_COLORS=(
-  [reset]=0 [default]=39
-  [black]=30 [red]=31 [green]=32 [yellow]=33 [blue]=34 [magenta]=35 [cyan]=36
-  [white]=37 [gray]=90 [light_red]=91 [light_green]=92 [light_yellow]=93
-  [light_blue]=94 [light_magenta]=95 [light_cyan]=96 [bright_white]=97
-  [black_pure]="256:0" [orange]="256:208"
-)
-
-# --- Couleurs fond par défaut ---
-declare -A BG_COLORS=(
-  [reset]=49 [default]=49
-  [black]=40 [red]=41 [green]=42 [yellow]=43 [blue]=44 [magenta]=45 [cyan]=46
-  [white]=47 [gray]=100 [light_red]=101 [light_green]=102 [light_yellow]=103
-  [light_blue]=104 [light_magenta]=105 [light_cyan]=106 [bright_white]=107
-  [black_pure]="256:0" [orange]="256:208"
-)
-
-for name in "${!FG_COLORS[@]}"; do
-    code="${FG_COLORS[$name]}"
-    if [[ "$code" == 256:* ]]; then
-        # Couleur en mode 256 (ex: 256:208 → 208)
-        idx="${code#256:}"
-        printf -v "${name^^}" '\e[38;5;%sm' "$idx"
-    else
-        # Couleur standard (ex: 31, 32, 97…)
-        printf -v "${name^^}" '\e[%sm' "$code"
-    fi
-done
-
-for name in "${!BG_COLORS[@]}"; do
-    code="${BG_COLORS[$name]}"
-    if [[ "$code" == 256:* ]]; then
-        idx="${code#256:}"
-        printf -v "BG_${name^^}" '\e[48;5;%sm' "$idx"
-    else
-        printf -v "BG_${name^^}" '\e[%sm' "$code"
-    fi
-done
-
-RESET='\e[0m'
-
-# ===
-
-###############################################################################
-# Fonctions pour interpréter les couleurs (support ANSI / 256 / RGB)
-###############################################################################
-
-get_fg_color() {
-    local c="$1"
-    [[ -z "$c" ]] && return 0
-
-    if [[ "$c" =~ ^ansi: ]]; then
-        printf "\033[%sm" "${c#ansi:}"
-    elif [[ "$c" =~ ^256: ]]; then
-        printf "\033[38;5;%sm" "${c#256:}"
-    elif [[ "$c" =~ ^rgb: ]]; then
-        IFS=';' read -r r g b <<< "${c#rgb:}"
-        printf "\033[38;2;%s;%s;%sm" "$r" "$g" "$b"
-    else
-        # fallback : nom de couleur classique
-        printf "\033[%sm" "${FG_COLORS[$c]:-39}"
-    fi
-}
-
-get_bg_color() {
-    local c="$1"
-    [[ -z "$c" || "$c" == "none" || "$c" == "transparent" ]] && return 0
-
-    if [[ "$c" =~ ^ansi: ]]; then
-        printf "\033[%sm" "${c#ansi:}"
-    elif [[ "$c" =~ ^256: ]]; then
-        printf "\033[48;5;%sm" "${c#256:}"
-    elif [[ "$c" =~ ^rgb: ]]; then
-        IFS=';' read -r r g b <<< "${c#rgb:}"
-        printf "\033[48;2;%s;%s;%sm" "$r" "$g" "$b"
-    else
-        # fallback : nom de couleur classique
-        printf "\033[%sm" "${BG_COLORS[$c]:-49}"
-    fi
-}
-
-
 ###############################################################################
 # Fonction Sortie avec code erreur
 ###############################################################################
@@ -156,119 +157,6 @@ die() {
     echo
     exit "$code"
 }
-
-
-###############################################################################
-# Fonction : Valide et corrige des variables selon des valeurs autorisées
-# Utilisation :
-#   VARS_TO_VALIDATE=(
-#       "MODE:hard|soft|verbose:hard"
-#       "OPTIONAL_CONF:file1|file2|:''"
-#       "RETRY_COUNT:0-5:3"
-#       "ENABLE_FEATURE:bool:0"
-#   )
-#   validate_vars VARS_TO_VALIDATE[@]
-###############################################################################
-validate_vars() {
-    local -n var_array=$1   # Passage du nom de l'array en référence
-
-    for entry in "${var_array[@]}"; do
-        IFS=":" read -r var_name allowed default <<<"$entry"
-
-        # Valeur actuelle de la variable
-        local value="${!var_name:-$default}"
-
-        # Gestion spéciale booléen
-        if [[ "$allowed" == "bool" ]]; then
-            case "${value,,}" in
-                1|true|yes|on) value=1 ;;
-                0|false|no|off) value=0 ;;
-                '') value="${default:-0}" ;;  # si vide
-                *)
-                    print_fancy --theme "error" --align "center" \
-                        "Valeur invalide pour $var_name : '$value'.\n"\
-                        "Valeurs attendues : true/false, 1/0, yes/no, on/off.\n"\
-                        "Valeur par défaut appliquée : '$default'"
-                    value="${default:-0}"
-                    ;;
-            esac
-            export "$var_name"="$value"
-            continue
-        fi
-
-        # Conversion allowed en tableau
-        IFS="|" read -ra allowed_arr <<<"$allowed"
-        local valid=false
-
-        for v in "${allowed_arr[@]}"; do
-            # Cas intervalle numérique : 1-5
-            if [[ "$v" =~ ^([0-9]+)-([0-9]+)$ ]]; then
-                local min=${BASH_REMATCH[1]}
-                local max=${BASH_REMATCH[2]}
-                if [[ "$value" =~ ^[0-9]+$ ]] && (( value >= min && value <= max )); then
-                    valid=true
-                    break
-                fi
-            # Cas valeur exacte numérique
-            elif [[ "$v" =~ ^[0-9]+$ ]]; then
-                if [[ "$value" == "$v" ]]; then
-                    valid=true
-                    break
-                fi
-            # Cas valeur littérale (y compris vide)
-            else
-                # Si vide indiqué par '', on le transforme en chaîne vide
-                [[ "$v" == "''" ]] && v=""
-                if [[ "$value" == "$v" ]]; then
-                    valid=true
-                    break
-                fi
-            fi
-        done
-
-        if [[ "$valid" == false ]]; then
-            print_fancy --theme "error" --align "center" \
-                "Valeur invalide pour $var_name : '$value'.\n"\
-                "Valeurs attendues : ${allowed//|/, }.\n"\
-                "Valeur par défaut appliquée : '$default'"
-            export "$var_name"="$default"
-        else
-            export "$var_name"="$value"
-        fi
-    done
-}
-# L'ARGUMENT dans le code d'appel de la fonciton PRIME sur la variable global
-#
-# Exemple :
-#
-# fonction_fictive soft
-#
-#
-# fonction_fictive () {
-# local LAUNCH_MODE="$1:${LAUNCH_MODE:-hard}" # <== argument : variable:<defaut>
-#    if ! [condition_blablabla] then
-#        case "$LAUNCH_MODE" in
-#            soft)
-#                return 1
-#                ;;
-#            verbose)
-#                fonction_doublement_fictive
-#                ;;
-#            hard)
-#                die 999 "❌  J'arrête le script et je meurs avec fonction die"
-#                ;;
-#            *)
-#                echo "❌  Mode inconnu '$LAUNCH_MODE' dans fonction_fictive"
-#                return 2
-#                ;;
-#        esac
-#    fi
-#    return 0
-# }
-# Explications code de sortie :
-# return 0   -> Quand la condition "vrai"
-# Case       -> Quand la condition retourne "faux" selon les cas précisés...
-# Attention au signe "!" devant la condition qui inverse le sens "vrai/faux" 
 
 
 ###############################################################################
@@ -288,9 +176,24 @@ scroll_down() {
 ###############################################################################
 # Fonction : supprime séquences ANSI (lecture d'argument)
 ###############################################################################
-_strip_ansi() {
-    # usage: _strip_ansi "string"
+strip_ansi() {
+    # usage: strip_ansi "string"
     printf "%s" "$1" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g'
+}
+
+
+###############################################################################
+# Fonction : calcul de la largeur "visible" d'une chaîne (sans séquences ANSI)
+###############################################################################
+strwidth() {
+    local str="${1:-}"
+    str="${str//[$'\033'][0-9;]*[m]/}"  # Supprimer séquences ANSI
+    local width=0 char i
+    for ((i=0; i<${#str}; i++)); do
+        char="${str:i:1}"
+        [[ "$char" =~ [^[:ascii:]] ]] && ((width+=2)) || ((width+=1))
+    done
+    echo "$width"
 }
 
 
@@ -458,17 +361,83 @@ print_fancy() {
 
 
 ###############################################################################
-# Fonction : calcul de la largeur "visible" d'une chaîne (sans séquences ANSI)
+# Fonction : Valide et corrige des variables selon des valeurs autorisées
+# Utilisation :
+#   VARS_TO_VALIDATE=(
+#       "MODE:hard|soft|verbose:hard"
+#       "OPTIONAL_CONF:file1|file2|:''"
+#       "RETRY_COUNT:0-5:3"
+#       "ENABLE_FEATURE:bool:0"
+#   )
+#   validate_vars VARS_TO_VALIDATE[@]
 ###############################################################################
-strwidth() {
-    local str="${1:-}"
-    str="${str//[$'\033'][0-9;]*[m]/}"  # Supprimer séquences ANSI
-    local width=0 char i
-    for ((i=0; i<${#str}; i++)); do
-        char="${str:i:1}"
-        [[ "$char" =~ [^[:ascii:]] ]] && ((width+=2)) || ((width+=1))
+validate_vars() {
+    local -n var_array=$1   # Passage du nom de l'array en référence
+
+    for entry in "${var_array[@]}"; do
+        IFS=":" read -r var_name allowed default <<<"$entry"
+
+        # Valeur actuelle de la variable
+        local value="${!var_name:-$default}"
+
+        # Gestion spéciale booléen
+        if [[ "$allowed" == "bool" ]]; then
+            case "${value,,}" in
+                1|true|yes|on) value=1 ;;
+                0|false|no|off) value=0 ;;
+                '') value="${default:-0}" ;;  # si vide
+                *)
+                    print_fancy --theme "error" --align "center" \
+                        "Valeur invalide pour $var_name : '$value'.\n"\
+                        "Valeurs attendues : true/false, 1/0, yes/no, on/off.\n"\
+                        "Valeur par défaut appliquée : '$default'"
+                    value="${default:-0}"
+                    ;;
+            esac
+            export "$var_name"="$value"
+            continue
+        fi
+
+        # Conversion allowed en tableau
+        IFS="|" read -ra allowed_arr <<<"$allowed"
+        local valid=false
+
+        for v in "${allowed_arr[@]}"; do
+            # Cas intervalle numérique : 1-5
+            if [[ "$v" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+                local min=${BASH_REMATCH[1]}
+                local max=${BASH_REMATCH[2]}
+                if [[ "$value" =~ ^[0-9]+$ ]] && (( value >= min && value <= max )); then
+                    valid=true
+                    break
+                fi
+            # Cas valeur exacte numérique
+            elif [[ "$v" =~ ^[0-9]+$ ]]; then
+                if [[ "$value" == "$v" ]]; then
+                    valid=true
+                    break
+                fi
+            # Cas valeur littérale (y compris vide)
+            else
+                # Si vide indiqué par '', on le transforme en chaîne vide
+                [[ "$v" == "''" ]] && v=""
+                if [[ "$value" == "$v" ]]; then
+                    valid=true
+                    break
+                fi
+            fi
+        done
+
+        if [[ "$valid" == false ]]; then
+            print_fancy --theme "error" --align "center" \
+                "Valeur invalide pour $var_name : '$value'.\n"\
+                "Valeurs attendues : ${allowed//|/, }.\n"\
+                "Valeur par défaut appliquée : '$default'"
+            export "$var_name"="$default"
+        else
+            export "$var_name"="$value"
+        fi
     done
-    echo "$width"
 }
 
 
@@ -645,7 +614,7 @@ compute_var_status() {
 ###############################################################################
 # Fonction : Affiche un tableau de valeurs passé en arguments
 ###############################################################################
-print_vars_table() {
+print_table_vars() {
     local -n var_array=$1
     local rows=()
 
@@ -667,7 +636,7 @@ print_vars_table() {
 ###############################################################################
 # Fonction : Affiche un tableau de valeurs hors de la plage de référence donnée
 ###############################################################################
-report_invalid_vars() {
+print_table_vars_invalid() {
     local -n var_array=$1
     local invalid_rows=()
     local has_invalid=false
@@ -695,3 +664,37 @@ report_invalid_vars() {
 
     return 0
 }
+
+
+# L'ARGUMENT dans le code d'appel de la fonciton PRIME sur la variable global
+#
+# Exemple :
+#
+# fonction_fictive soft
+#
+#
+# fonction_fictive () {
+# local LAUNCH_MODE="$1:${LAUNCH_MODE:-hard}" # <== argument : variable:<defaut>
+#    if ! [condition_blablabla] then
+#        case "$LAUNCH_MODE" in
+#            soft)
+#                return 1
+#                ;;
+#            verbose)
+#                fonction_doublement_fictive
+#                ;;
+#            hard)
+#                die 999 "❌  J'arrête le script et je meurs avec fonction die"
+#                ;;
+#            *)
+#                echo "❌  Mode inconnu '$LAUNCH_MODE' dans fonction_fictive"
+#                return 2
+#                ;;
+#        esac
+#    fi
+#    return 0
+# }
+# Explications code de sortie :
+# return 0   -> Quand la condition "vrai"
+# Case       -> Quand la condition retourne "faux" selon les cas précisés...
+# Attention au signe "!" devant la condition qui inverse le sens "vrai/faux" 

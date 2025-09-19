@@ -40,9 +40,8 @@ print_logo
 # On créait un dossier temporaire de manière temporaire. Il est supprimé à la fermeture.
 TMP_JOBS_DIR=$(mktemp -d)
 
-# Correction des varaibles utilisateurs (locales) par défaut
+# Mise en tableau des variables locales
 set_validation_vars
-validate_vars VARS_TO_VALIDATE[@]
 
 # Rendre le script update/standalone_updater.sh exécutable
 make_scripts_executable
@@ -66,18 +65,17 @@ analyze_update_status
 # --- ↑
 
 # Appel de la fonction de validation des variables locales
-if ! report_invalid_vars VARS_TO_VALIDATE; then
+if ! print_table_vars_invalid VARS_TO_VALIDATE; then
     # Problème
     echo
 
-    # Arrête le script si invalide ET LAUNCH_MODE == "hard"
-    if [[ "$LAUNCH_MODE" == "hard" || "$DEBUG_INFO" == "false" ]]; then
+    # Arrête le script si invalide ET si DEBUG_INFOS == "false"
+    if [[ "$DEBUG_INFOS" == "false" ]]; then
         die 30 "Erreur : Configuration invalide. Vérifiez les variables (locales)."
     else
         print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
         echo
         read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
-        continue
     fi
 else
     # Pas de soucis
@@ -173,6 +171,9 @@ fi
 ###############################################################################
 # 4. Vérifications fonctionnelles
 ###############################################################################
+
+# Correction arbitraire des variables utilisateurs (locales) par défaut
+validate_vars VARS_TO_VALIDATE[@]
 
 # Vérification du mail fourni + msmtp dans ce cas.
 check_mail_bundle
