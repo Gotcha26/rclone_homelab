@@ -4,13 +4,11 @@
 # jobs.sh - Exécution des jobs rclone
 # ---------------------------------------------------------------------------
 
-# re-charger les fonctions
-source "$SCRIPT_DIR/functions/core.sh"
+source "$SCRIPT_DIR/functions/jobs_f.sh"
 
 # Déclarer les tableaux globaux
 declare -a JOBS_LIST       # Liste des jobs src|dst
 declare -A JOB_STATUS      # idx -> OK / PROBLEM
-declare -A REMOTE_STATUS   # remote_name -> OK / PROBLEM
 
 # Charger les remotes rclone configurés
 mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
@@ -19,8 +17,6 @@ mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 # ---------------------------------------------------------------------------
 # 1. Parser les jobs et initialiser les statuts
 # ---------------------------------------------------------------------------
-
-
 
 parse_jobs "$DIR_JOBS_FILE"
 
@@ -34,31 +30,6 @@ for idx in "${!JOBS_LIST[@]}"; do
     JOB_ID=$(generate_job_id "$idx")     # <- ID unique pour ce job
     init_job_logs "$JOB_ID"              # <- logs prêts à l’emploi
 done
-
-# Boucle d'affichage pour les options reçues et prise en compte par rclone
-if [[ "${DEBUG_MODE:-false}" == "true" ]]; then
-    echo
-    echo "===== Variables RCLONE_OPTS ====="
-    if [[ -n "${RCLONE_OPTS[*]:-}" ]]; then
-        for ((i=0; i<${#RCLONE_OPTS[@]}; i++)); do
-            opt="${RCLONE_OPTS[$i]}"
-
-            # Si l'option commence par -- et qu'il y a un argument après
-            if [[ "$opt" == --* ]] && [[ $((i+1)) -lt ${#RCLONE_OPTS[@]} ]] && [[ "${RCLONE_OPTS[$((i+1))]}" != --* ]]; then
-                val="${RCLONE_OPTS[$((i+1))]}"
-                printf "    %s \"%s\"\n" "$opt" "$val"
-                ((i++))  # sauter la valeur
-            else
-                printf "    %s\n" "$opt"
-            fi
-        done
-    else
-        echo "    (aucune option globale définie)"
-    fi
-
-    echo
-    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
-fi
 
 check_remotes
 
@@ -108,15 +79,11 @@ for idx in "${!JOBS_LIST[@]}"; do
 
     # === Vérification du statut du job ===
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        # Utiliser directement le type enregistré dans JOB_MSG_LIST pour l'affichage
-        if [[ -n "${JOB_MSG_LIST[$idx]}" ]]; then
-            warn_remote_problem "${JOB_REMOTE[$idx]}" "${JOB_MSG_LIST[$idx]}" "$idx" "$TMP_JOB_LOG_RAW"
-        else
-            warn_remote_problem "${JOB_REMOTE[$idx]}" "unknown" "$idx" "$TMP_JOB_LOG_RAW"
-        fi
+        handle_job_problem "$idx"
         job_rc=1
     else
         # === Exécution rclone ===
+        # C'est parti mon kiki !!!
         rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
         RCLONE_PID=$!
         spinner $RCLONE_PID
@@ -126,6 +93,7 @@ for idx in "${!JOBS_LIST[@]}"; do
         # Détecter si le job a échoué
         if (( job_rc != 0 )); then
             ERROR_CODE=8
+
             # Analyse rapide du log pour détecter token expiré ou remote inaccessible
             if grep -q -i "unauthenticated\|invalid_grant\|couldn't fetch token" "$TMP_JOB_LOG_RAW"; then
                 JOB_MSG_LIST[$idx]="token_expired"
