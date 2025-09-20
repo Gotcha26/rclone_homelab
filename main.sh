@@ -141,7 +141,8 @@ if [[ $# -eq 0 ]]; then
         echo
         exit 0
     else
-        scroll_down # Pas de clear
+        scroll_down     # Pas de clear
+        add_rclone_opts # Ajouter des options à rclone (dry-run)
         print_fancy "Poursuite post-menu"
     fi
 fi

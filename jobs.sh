@@ -20,6 +20,8 @@ mapfile -t RCLONE_REMOTES < <(rclone listremotes 2>/dev/null | sed 's/:$//')
 # 1. Parser les jobs et initialiser les statuts
 # ---------------------------------------------------------------------------
 
+
+
 parse_jobs "$DIR_JOBS_FILE"
 
 
@@ -32,6 +34,32 @@ for idx in "${!JOBS_LIST[@]}"; do
     JOB_ID=$(generate_job_id "$idx")     # <- ID unique pour ce job
     init_job_logs "$JOB_ID"              # <- logs prêts à l’emploi
 done
+
+
+
+
+
+if [[ "${DEBUG_INFOS:-false}" == "true" ]]; then
+    echo -e "\n===== Variables RCLONE_OPTS ====="
+    if [[ -n "${RCLONE_OPTS[*]:-}" ]]; then
+        for opt in "${RCLONE_OPTS[@]}"; do
+            echo "$opt"
+        done
+    else
+        echo "(aucune option globale définie)"
+    fi
+
+    echo
+    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+fi
+
+
+
+
+
+
+
+
 
 check_remotes
 
