@@ -55,7 +55,7 @@ if ! print_table_vars_invalid VARS_TO_VALIDATE; then
     fi
 else
     # Pas de soucis
-    if [[ "$DEBUG_INFO" == "true" || "$DEBUG_MODE" == "true" ]]; then
+    if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
         echo
         print_fancy --theme "ok" "Les variables locales sont validées"
     fi

@@ -43,6 +43,7 @@ make_scripts_executable() {
     done
 }
 
+# *** ↓↓ FONCTIONS PERSISTANTES (en cas de MAJ) ↓↓ ***
 
 ###############################################################################
 # Fonction : Mise à jour (upgrade) des fichiers exemples à destination des fichiers locaux (préférences utilisateurs)
