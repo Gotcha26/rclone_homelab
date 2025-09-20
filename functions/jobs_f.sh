@@ -119,15 +119,17 @@ check_remotes() {
                 fi
             fi
 
-            # --- Vérification dry-run ---
-            if [[ " ${RCLONE_OPTS[*]} " == *"--dry-run"* ]]; then
-                if ! check_dry_run_compat "$endpoint"; then
+            # --- Vérification dry-run uniquement pour la destination distante ---
+            dst_only="$dst"
+            if [[ "$dst_only" == *:* ]] && [[ " ${RCLONE_OPTS[*]} " == *"--dry-run"* ]]; then
+                if ! check_dry_run_compat "$dst_only"; then
                     JOB_STATUS[$idx]="PROBLEM"
-                    JOB_REMOTE[$idx]="$endpoint"
-                    REMOTE_STATUS["$endpoint"]="PROBLEM"
+                    JOB_REMOTE[$idx]="$dst_only"
+                    REMOTE_STATUS["$dst_only"]="PROBLEM"
                     ERROR_CODE=20
-                    warn_remote_problem "$endpoint" "dry_run_incompatible" "$idx" "$TMP_JOB_LOG_RAW"
-                    continue 2
+                    warn_remote_problem "$dst_only" "dry_run_incompatible" "$idx" "$TMP_JOB_LOG_RAW"
+                    JOB_MSG_LIST[$idx]="dry_run_incompatible"
+                    continue  # passe au job suivant
                 fi
             fi
         done

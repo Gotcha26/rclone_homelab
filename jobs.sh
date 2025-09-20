@@ -108,13 +108,15 @@ for idx in "${!JOBS_LIST[@]}"; do
 
     # === Vérification du statut du job ===
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        # Génération des logs RAW directement
-        warn_remote_problem "${JOB_REMOTE[$idx]}" "${JOB_MSG_LIST[$idx]:-ok}" "$idx" "$TMP_JOB_LOG_RAW"
-
+        # Utiliser directement le type enregistré dans JOB_MSG_LIST pour l'affichage
+        if [[ -n "${JOB_MSG_LIST[$idx]}" ]]; then
+            warn_remote_problem "${JOB_REMOTE[$idx]}" "${JOB_MSG_LIST[$idx]}" "$idx" "$TMP_JOB_LOG_RAW"
+        else
+            warn_remote_problem "${JOB_REMOTE[$idx]}" "unknown" "$idx" "$TMP_JOB_LOG_RAW"
+        fi
         job_rc=1
     else
         # === Exécution rclone ===
-        # C'est parti mon kiki !!!
         rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
         RCLONE_PID=$!
         spinner $RCLONE_PID
@@ -124,7 +126,6 @@ for idx in "${!JOBS_LIST[@]}"; do
         # Détecter si le job a échoué
         if (( job_rc != 0 )); then
             ERROR_CODE=8
-
             # Analyse rapide du log pour détecter token expiré ou remote inaccessible
             if grep -q -i "unauthenticated\|invalid_grant\|couldn't fetch token" "$TMP_JOB_LOG_RAW"; then
                 JOB_MSG_LIST[$idx]="token_expired"
