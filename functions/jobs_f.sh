@@ -75,9 +75,7 @@ check_remotes() {
     local timeout_duration="10s"
 
     # Initialisation du code d'erreur global si non défini
-    if [[ -z "${ERROR_CODE+x}" ]]; then
-        ERROR_CODE=0
-    fi
+    ERROR_CODE=${ERROR_CODE:-0}
 
     for idx in "${!JOBS_LIST[@]}"; do
         local job="${JOBS_LIST[$idx]}"
@@ -91,7 +89,7 @@ check_remotes() {
         for endpoint in "$src" "$dst"; do
             local remote_type="local"
 
-            # --- Si remote rclone ---
+            # --- Si endpoint rclone distant ---
             if [[ "$endpoint" == *:* ]]; then
                 local remote="${endpoint%%:*}"
 
@@ -100,15 +98,16 @@ check_remotes() {
                     JOB_STATUS[$idx]="PROBLEM"
                     JOB_MSG[$idx]="missing"
                     JOB_REMOTE[$idx]="$remote"
-                    REMOTE_STATUS["$remote"]="missing"
-                    ERROR_CODE=6   # remote manquant
+                    REMOTE_STATUS["$remote"]="PROBLEM"
+                    ERROR_CODE=6
+                    warn_remote_problem "$remote" "missing" "$idx" "$TMP_JOB_LOG_RAW"
                     continue 2
                 fi
 
-                # Déterminer le type du remote
+                # Type du remote
                 remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
-                # Test token pour certains remotes distants (onedrive / drive)
+                # Test token pour remotes distants sensibles
                 if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
                     if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
                         JOB_STATUS[$idx]="PROBLEM"
@@ -116,6 +115,7 @@ check_remotes() {
                         JOB_REMOTE[$idx]="$remote"
                         REMOTE_STATUS["$remote"]="PROBLEM"
                         ERROR_CODE=14
+                        warn_remote_problem "$remote" "$remote_type" "$idx" "$TMP_JOB_LOG_RAW"
                         continue 2
                     fi
                 else
@@ -130,7 +130,7 @@ check_remotes() {
                     JOB_REMOTE[$idx]="$endpoint"
                     JOB_MSG[$idx]="dry_run_incompatible"
                     REMOTE_STATUS["$endpoint"]="PROBLEM"
-                    ERROR_CODE=20  # code spécifique dry-run incompatible
+                    ERROR_CODE=20
                     warn_remote_problem "$endpoint" "dry_run_incompatible" "$idx" "$TMP_JOB_LOG_RAW"
                     continue 2
                 fi
@@ -138,7 +138,6 @@ check_remotes() {
         done
     done
 }
-
 
 
 ###############################################################################
