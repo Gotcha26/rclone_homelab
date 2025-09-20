@@ -142,7 +142,7 @@ if [[ $# -eq 0 ]]; then
         exit 0
     else
         scroll_down             # Pas de clear
-        [[ "$DEBUG_INFOS" == "true"]] && print_fancy --theme "debug_info" "Poursuite post-menu"
+        [[ "${DEBUG_INFOS:-}" == "true" ]] && print_fancy --theme "debug_info" "Poursuite post-menu"
         load_optional_configs   # Rappel des configurations locales
         add_rclone_opts         # Ajouter des options à rclone (dry-run)
     fi
