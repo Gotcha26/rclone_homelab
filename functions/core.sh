@@ -413,7 +413,6 @@ print_summary_table() {
     print_aligned_table "Nb. de jobs traités" "$(safe_var "$EXECUTED_JOBS") / $(safe_count JOBS_LIST)"
     print_aligned_table "Code erreur"         "$(safe_var "$ERROR_CODE")"
     print_aligned_table "Dossier"             "$(safe_var "$DIR_LOG")/"
-    print_aligned_table "Log script"          "$(safe_var "$LOG_FILE_SCRIPT")"
     print_aligned_table "Log mail"            "$(safe_var "$LOG_FILE_MAIL")"
     print_aligned_table "Log rclone"          "$(safe_var "$FILE_INFO")"
 

@@ -104,11 +104,6 @@ while true; do
             add_option "⚙️  Configurer msmtp" "menu_config_msmtp"
         fi
     fi
-    # Affichage du log précédent
-    LAST_LOG_FILE=$(get_last_log)
-    if [[ -n "$LAST_LOG_FILE" && -f "$LAST_LOG_FILE" ]]; then
-        add_option "💾  Afficher les logs du dernier run (touche q pour quitter !!!)" "menu_show_last_log"
-    fi
 
     # 4) Actions
     # Option de configuration locale
@@ -238,12 +233,6 @@ while true; do
                 echo "▶️  Lancement de la configuration msmtp..."
                 edit_msmtp_config
                 echo "✅  ... Édition terminée > retour au menu."
-                ;;
-            menu_show_last_log)
-                echo "▶️  Affichage des 500 dernières lignes de $LAST_LOG_FILE..."
-                # Utilisation d'un pager pour ne pas polluer le log principal
-                tail -n 500 "$LAST_LOG_FILE" | less -R
-                echo "✅  ... Fin de l'affichage > retour au menu."
                 ;;
             menu_init_config_local)
                 scroll_down
