@@ -87,28 +87,6 @@ for idx in "${!JOBS_LIST[@]}"; do
         job_rc=1
     else
         # === Exécution rclone ===
-
-        # Vérification compatibilité --dry-run
-        if [[ " ${RCLONE_OPTS[*]} " == *"--dry-run"* ]]; then
-            for endpoint in "$src" "$dst"; do
-                if ! check_dry_run_compat "$endpoint"; then
-                    # Log et message utilisateur
-                    warn_dry_run_incompatible "$endpoint" "$idx" "$TMP_JOB_LOG_RAW"
-
-                    # Affichage immédiat dans le terminal
-                    echo -e "${JOB_MSG[$idx]}"
-                    print_fancy --theme "error"  "L'option dry-run (simulation) n'est pas compatible avec ce service local / SMB : "
-                    print_fancy --fg "RED" "'$endpoint'"
-                    echo
-                    print_fancy --fg "RED" "Abandon du job pour éviter toute suppression ou copie non désirée."
-
-                    # On ne lance pas le job
-                    job_rc=1
-                    continue 2  # passe au job suivant
-                fi
-            done
-        fi
-
         # C'est parti mon kiki !!!
         rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
         RCLONE_PID=$!

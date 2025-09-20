@@ -89,6 +89,9 @@ check_remotes() {
         JOB_REMOTE[$idx]=""
 
         for endpoint in "$src" "$dst"; do
+            local remote_type="local"
+
+            # --- Si remote rclone ---
             if [[ "$endpoint" == *:* ]]; then
                 local remote="${endpoint%%:*}"
 
@@ -103,10 +106,9 @@ check_remotes() {
                 fi
 
                 # Déterminer le type du remote
-                local remote_type
                 remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
-                # Test token (onedrive / drive)
+                # Test token pour certains remotes distants (onedrive / drive)
                 if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
                     if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
                         JOB_STATUS[$idx]="PROBLEM"
@@ -120,9 +122,23 @@ check_remotes() {
                     REMOTE_STATUS["$remote"]="OK"
                 fi
             fi
+
+            # --- Vérification dry-run ---
+            if [[ " ${RCLONE_OPTS[*]} " == *"--dry-run"* ]]; then
+                if ! check_dry_run_compat "$endpoint"; then
+                    JOB_STATUS[$idx]="PROBLEM"
+                    JOB_REMOTE[$idx]="$endpoint"
+                    JOB_MSG[$idx]="dry_run_incompatible"
+                    REMOTE_STATUS["$endpoint"]="PROBLEM"
+                    ERROR_CODE=20  # code spécifique dry-run incompatible
+                    warn_remote_problem "$endpoint" "dry_run_incompatible" "$idx" "$TMP_JOB_LOG_RAW"
+                    continue 2
+                fi
+            fi
         done
     done
 }
+
 
 
 ###############################################################################
@@ -221,6 +237,15 @@ Pour résoudre le problème :
   2. Reconnecter le remote et accepter toutes les permissions nécessaires.
   3. Commande pour éditer directement le fichier de conf. de rclone :
      \e[1mnano ~/.config/rclone/rclone.conf\e[0m
+"
+            ;;
+        dry_run_incompatible)
+            msg="❌  \e[1;33mAttention\e[0m : dry-run activé sur un endpoint incompatible !
+Le job impliquant '\e[1m$endpoint\e[0m' ne peut pas être exécuté en dry-run.
+Ce type de service (local / SMB / CIFS) ne respectera pas la simulation et
+exécuterait réellement les actions.
+Le job sera \e[31mignoré\e[0m pour éviter toute suppression ou copie non désirée.
+Supprimer la simulation --dry-run ou supprimer le job de la lsite.
 "
             ;;
         *)
@@ -361,31 +386,4 @@ check_dry_run_compat() {
             return 0  # compatible
             ;;
     esac
-}
-
-###############################################################################
-# Message en cas de non compatiblité entre le simulation et un service local
-###############################################################################
-warn_dry_run_incompatible() {
-    local endpoint="$1"
-    local job_idx="$2"
-    local log_file="$3"
-
-    local msg
-    msg="❌  \e[1;33mAttention\e[0m : dry-run activé sur un endpoint incompatible !
-Le job impliquant '\e[1m$endpoint\e[0m' ne peut pas être exécuté en dry-run.
-Ce type de service (local / SMB / CIFS) ne respectera pas la simulation et
-exécuterait réellement les actions.
-Le job sera \e[31mignoré\e[0m pour éviter toute suppression ou copie non désirée.
-Supprimer la simulation --dry-run ou supprimer le job de la lsite.
-"
-
-    # Log RAW
-    echo -e "$msg" >> "$log_file"
-
-    # Assignation du message à JOB_MSG
-    JOB_MSG["$job_idx"]="$msg"
-
-    # Mettre le statut du job à PROBLEM
-    JOB_STATUS["$job_idx"]="PROBLEM"
 }
