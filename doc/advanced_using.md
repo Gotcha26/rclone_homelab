@@ -51,6 +51,12 @@ Ensemble de fichiers locaux qui ne sont pas écrasés lors des mises à jour (sa
 
 
 
+## Utilisation de l'éditeur "micro"
+Choix rendu possible lors de l'installation `instal.sh` *(curl)*.  
+Les raccourcis clavier sont trouvables via ce lien : https://doc.ubuntu-fr.org/micro
+
+
+
 ## Envoi d'emails
 
 1. Le fichier de configuration de msmtp peux se trouver à plusieurs endroits.

@@ -42,6 +42,8 @@ check_remotes
 GLOBAL_HTML_BLOCK=""          # Initialisation du HTML global
 JOB_COUNTER=1                 # Compteur de jobs pour le label [JOBxx]
 
+START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
+
 
 # ---------------------------------------------------------------------------
 # 4. Exécution des jobs filtrés

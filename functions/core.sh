@@ -193,7 +193,6 @@ check_rclone_configured() {
             filesize=$(stat -c %s "$conf_file" 2>/dev/null || echo 0)
             if (( filesize > 0 )); then
                 [[ "$mode" == "verbose" ]] && print_fancy --theme "sucess" "Fichier rclone valide trouvé : $conf_file" >&2
-                echo "$conf_file"
                 return 0
             else
                 [[ "$mode" == "verbose" ]] && print_fancy --theme "warning" "Fichier rclone trouvé mais vide : $conf_file" >&2
@@ -403,61 +402,56 @@ print_aligned_table() {
 ###############################################################################
 print_summary_table() {
     END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
-    START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
+
     echo
     echo "INFOS"
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
-    print_aligned_table "Date / Heure début" "$START_TIME"
-    print_aligned_table "Date / Heure fin" "$END_TIME"
-    print_aligned_table "Mode de lancement" "$LAUNCH_MODE"
-    print_aligned_table "Nb. de jobs traités" "${EXECUTED_JOBS} / ${#JOBS_LIST[@]}"
-    print_aligned_table "Code erreur" "$ERROR_CODE"
-    print_aligned_table "Dossier" "${DIR_LOG}/"
-    print_aligned_table "Log script" "$LOG_FILE_SCRIPT"
-    print_aligned_table "Log mail" "$LOG_FILE_MAIL"
-    print_aligned_table "Log rclone" "$FILE_INFO"
+    print_aligned_table "Date / Heure début"  "$(safe_var "$START_TIME")"
+    print_aligned_table "Date / Heure fin"    "$END_TIME"
+    print_aligned_table "Mode de lancement"   "$(safe_var "$LAUNCH_MODE")"
+    print_aligned_table "Nb. de jobs traités" "$(safe_var "$EXECUTED_JOBS") / $(safe_count JOBS_LIST)"
+    print_aligned_table "Code erreur"         "$(safe_var "$ERROR_CODE")"
+    print_aligned_table "Dossier"             "$(safe_var "$DIR_LOG")/"
+    print_aligned_table "Log script"          "$(safe_var "$LOG_FILE_SCRIPT")"
+    print_aligned_table "Log mail"            "$(safe_var "$LOG_FILE_MAIL")"
+    print_aligned_table "Log rclone"          "$(safe_var "$FILE_INFO")"
 
-    if [[ -n "$MAIL_TO" ]]; then
-        print_aligned_table "Email envoyé à" "$MAIL_TO"
-        print_aligned_table "Sujet email" "$SUBJECT_RAW"
+    if [[ -n "${MAIL_TO:-}" ]]; then
+        print_aligned_table "Email envoyé à" "$(safe_var "$MAIL_TO")"
+        print_aligned_table "Sujet email"    "$(safe_var "$SUBJECT_RAW")"
     fi
 
-    if [[ -n "$DISCORD_WEBHOOK_URL" ]]; then
-        print_aligned_table "Notifs Discord" "$MSG_DISCORD_PROCESSED"
+    if [[ -n "${DISCORD_WEBHOOK_URL:-}" ]]; then
+        print_aligned_table "Notifs Discord" "$(safe_var "$MSG_DISCORD_PROCESSED")"
     else
-        print_aligned_table "Notifs Discord" "$MSG_DISCORD_ABORDED"
+        print_aligned_table "Notifs Discord" "$(safe_var "$MSG_DISCORD_ABORDED")"
     fi
 
-    [[ "$DRY_RUN" == true ]] && print_aligned_table "Simulation (dry-run)" "$MSG_DRYRUN"
+    [[ "${DRY_RUN:-}" == true ]] && \
+        print_aligned_table "Simulation (dry-run)" "$(safe_var "$MSG_DRYRUN")"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
-
-    # Ligne finale avec couleur fond jaune foncé, texte noir, centrée
-    print_fancy --bg "yellow" --fg "black" "$MSG_END_REPORT"
+    print_fancy --bg "yellow" --fg "black" "$(safe_var "$MSG_END_REPORT")"
     echo
 }
 
 
 ###############################################################################
-# Fonction : Récupérer le log précédent afin de l'afficher via le menu
+# Fonction : Retourne la valeur d'une variable ou "-ABSENT-" si vide/non déclarée
 ###############################################################################
-get_last_log() {
-    # Tous les logs triés par date décroissante
-    local logs=("$DIR_LOG"/*.log)
+safe_var() {
+    local val="${1:-}"
+    [[ -z "$val" ]] && echo "-ABSENT-" || echo "$val"
+}
 
-    # Aucun log ?
-    [[ ${#logs[@]} -eq 0 ]] && echo "" && return
 
-    # Exclure le log actuel
-    local previous=""
-    for log in "${logs[@]}"; do
-        [[ "$log" == "$LOG_FILE_INFO" ]] && continue
-        previous="$log"
-        break
-    done
-
-    echo "$previous"
+###############################################################################
+# Fonction : Pour les tableaux : renvoie la taille, ou 0 si non défini
+###############################################################################
+safe_count() {
+    local -n arr=$1 2>/dev/null || { echo 0; return; }
+    echo "${#arr[@]}"
 }
 
 

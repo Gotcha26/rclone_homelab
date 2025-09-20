@@ -183,3 +183,25 @@ check_secrets_conf () {
     # Si tout est bon
     return 0
 }
+
+
+###############################################################################
+# Fonction : Récupérer le log précédent afin de l'afficher via le menu
+###############################################################################
+get_last_log() {
+    # Tous les logs triés par date décroissante
+    local logs=("$DIR_LOG"/*.log)
+
+    # Aucun log ?
+    [[ ${#logs[@]} -eq 0 ]] && echo "" && return
+
+    # Exclure le log actuel
+    local previous=""
+    for log in "${logs[@]}"; do
+        [[ "$log" == "$LOG_FILE_INFO" ]] && continue
+        previous="$log"
+        break
+    done
+
+    echo "$previous"
+}
