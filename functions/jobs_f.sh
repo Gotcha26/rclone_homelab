@@ -335,3 +335,57 @@ colorize() {
         fflush()
     }'
 }
+
+
+###############################################################################
+# Vérifie si un endpoint rclone est compatible avec --dry-run
+# Retourne 0 si OK, 1 si incompatible
+###############################################################################
+check_dry_run_compat() {
+    local endpoint="$1"   # src ou dst
+    local remote_type=""
+
+    # Cas remote distant
+    if [[ "$endpoint" == *:* ]]; then
+        local remote="${endpoint%%:*}"
+        remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
+    else
+        remote_type="local"  # pas de :, donc local
+    fi
+
+    case "$remote_type" in
+        local|smb|cifs)
+            return 1  # incompatible dry-run
+            ;;
+        *)
+            return 0  # compatible
+            ;;
+    esac
+}
+
+###############################################################################
+# Message en cas de non compatiblité entre le simulation et un service local
+###############################################################################
+warn_dry_run_incompatible() {
+    local endpoint="$1"
+    local job_idx="$2"
+    local log_file="$3"
+
+    local msg
+    msg="❌  \e[1;33mAttention\e[0m : dry-run activé sur un endpoint incompatible !
+Le job impliquant '\e[1m$endpoint\e[0m' ne peut pas être exécuté en dry-run.
+Ce type de service (local / SMB / CIFS) ne respectera pas la simulation et
+exécuterait réellement les actions.
+Le job sera \e[31mignoré\e[0m pour éviter toute suppression ou copie non désirée.
+Supprimer la simulation --dry-run ou supprimer le job de la lsite.
+"
+
+    # Log RAW
+    echo -e "$msg" >> "$log_file"
+
+    # Assignation du message à JOB_MSG
+    JOB_MSG["$job_idx"]="$msg"
+
+    # Mettre le statut du job à PROBLEM
+    JOB_STATUS["$job_idx"]="PROBLEM"
+}
