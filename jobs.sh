@@ -60,10 +60,6 @@ if [[ "${DEBUG_MODE:-false}" == "true" ]]; then
     read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 fi
 
-    echo
-    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
-fi
-
 check_remotes
 
 
