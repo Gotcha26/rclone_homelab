@@ -411,7 +411,7 @@ print_summary_table() {
     print_aligned_table "Date / Heure fin"    "$END_TIME"
     print_aligned_table "Mode de lancement"   "$(safe_var "$LAUNCH_MODE")"
     print_aligned_table "Nb. de jobs traités" "$(safe_var "$EXECUTED_JOBS") / $(safe_count JOBS_LIST)"
-    print_aligned_table "Code erreur"         "$(safe_var "$ERROR_CODE")"
+    print_aligned_table "Dernier code erreur" "$(safe_var "$ERROR_CODE")"
     print_aligned_table "Dossier"             "$(safe_var "$DIR_LOG")/"
     print_aligned_table "Log mail"            "$(safe_var "$LOG_FILE_MAIL")"
     print_aligned_table "Log rclone"          "$(safe_var "$FILE_INFO")"
@@ -437,11 +437,22 @@ print_summary_table() {
 
 
 ###############################################################################
-# Fonction : Retourne la valeur d'une variable ou "-ABSENT-" si vide/non déclarée
+# Fonction : Retourne la valeur d'une variable
+#   - Si variable non déclarée : "-nc-"
+#   - Si variable déclarée mais vide : "-ABSENT-"
+#   - Sinon : la valeur
+# Usage :
+#   safe_var VAR_NAME
 ###############################################################################
 safe_var() {
-    local val="${1:-}"
-    [[ -z "$val" ]] && echo "-ABSENT-" || echo "$val"
+    local varname="$1"
+
+    if ! declare -p "$varname" &>/dev/null; then
+        echo "-nc-"
+    else
+        local val="${!varname}"
+        [[ -z "$val" ]] && echo "-ABSENT-" || echo "$val"
+    fi
 }
 
 

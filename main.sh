@@ -141,9 +141,10 @@ if [[ $# -eq 0 ]]; then
         echo
         exit 0
     else
-        scroll_down     # Pas de clear
-        add_rclone_opts # Ajouter des options à rclone (dry-run)
-        print_fancy "Poursuite post-menu"
+        scroll_down             # Pas de clear
+        [[ "$DEBUG_INFOS" == "true"]] && print_fancy --theme "DEBUG_INFO" "Poursuite post-menu"
+        load_optional_configs   # Rappel des configurations locales
+        add_rclone_opts         # Ajouter des options à rclone (dry-run)
     fi
 fi
 
@@ -171,10 +172,8 @@ check_jobs_file hard
 
 ###############################################################################
 # 5. Exécution des jobs rclone
-# Sourcing
 ###############################################################################
 
-source "$SCRIPT_DIR/functions/jobs_f.sh"
 source "$SCRIPT_DIR/jobs.sh"
 
 
@@ -182,9 +181,7 @@ source "$SCRIPT_DIR/jobs.sh"
 # 6. Traitement des emails
 ###############################################################################
 
-if [[ -n "$MAIL_TO" ]]; then
-    send_email_if_needed "$GLOBAL_HTML_BLOCK"
-fi
+[[ -n "$MAIL_TO" ]] && send_email_if_needed "$GLOBAL_HTML_BLOCK"
 
 
 ###############################################################################

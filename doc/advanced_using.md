@@ -16,9 +16,10 @@ git clone https://github.com/Gotcha26/rclone_homelab.git .
 ```
 ⚠ Le `.` final permet de cloner dans le dossier courant sans créer un sous-dossier supplémentaire.
 
-4. Rendre le script exécutable
+4. Rendre le script exécutable (+1 fichier pour mise à jour en standalone)
 ```
 chmod +x /opt/rclone_homelab/main.sh
+chmod +x /opt/rclone_homelab/update/standalone_updater.sh
 ```
 5. Ajouter un symlink (raccourcis) pour un accès global afin de pour pouvoir lancer la commande simplement avec `rclone_homelab` :
 ```
@@ -44,9 +45,9 @@ cd
 Ensemble de fichiers locaux qui ne sont pas écrasés lors des mises à jour (sauf instruction express et délibérée.)
 ```
 ├── local/                        # Espace utilisateur, jamais écrasé
-│   ├── jobs.conf                 # Jobs persos (Nécessaire)
-│   ├── config.local.conf         # Overrides de config (Optionnel)
-│   └── secrets.env               # Identifiants, tokens msmtp, etc. (Optionnel)
+│   ├── jobs.conf                 # Nécessaire - Jobs persos (Nécessaire)
+│   ├── config.local.conf         # Optionnel - Overrides de config (Optionnel)
+│   └── secrets.env               # Optionnel - Identifiants, tokens msmtp, etc. (Optionnel)
 ```
 
 
