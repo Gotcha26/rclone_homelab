@@ -468,3 +468,13 @@ create_temp_dirs() {
         mkdir -p "$DIR_LOG" 2>/dev/null || die 2 "$MSG_DIR_LOG_CREATE_FAIL : $DIR_LOG"
     fi
 }
+
+
+###############################################################################
+# Fonction : Ajouter des options à rclone
+###############################################################################
+add_rclone_opts() {
+    if [[ "${DRY_RUN:-false}" == true ]]; then
+        RCLONE_OPTS_GLOBAL+=(--dry-run)
+    fi
+}
