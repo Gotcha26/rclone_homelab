@@ -407,31 +407,31 @@ print_summary_table() {
     echo "INFOS"
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
 
-    print_aligned_table "Date / Heure début"  "$(safe_var "$START_TIME")"
+    print_aligned_table "Date / Heure début"  "$(safe_var "START_TIME")"
     print_aligned_table "Date / Heure fin"    "$END_TIME"
-    print_aligned_table "Mode de lancement"   "$(safe_var "$LAUNCH_MODE")"
-    print_aligned_table "Nb. de jobs traités" "$(safe_var "$EXECUTED_JOBS") / $(safe_count JOBS_LIST)"
-    print_aligned_table "Dernier code erreur" "$(safe_var "$ERROR_CODE")"
-    print_aligned_table "Dossier"             "$(safe_var "$DIR_LOG")/"
-    print_aligned_table "Log mail"            "$(safe_var "$LOG_FILE_MAIL")"
-    print_aligned_table "Log rclone"          "$(safe_var "$FILE_INFO")"
+    print_aligned_table "Mode de lancement"   "$(safe_var "LAUNCH_MODE")"
+    print_aligned_table "Nb. de jobs traités" "$(safe_var "EXECUTED_JOBS") / $(safe_count JOBS_LIST)"
+    print_aligned_table "Dernier code erreur" "$(safe_var "ERROR_CODE")"
+    print_aligned_table "Dossier"             "$(safe_var "DIR_LOG")/"
+    print_aligned_table "Log mail"            "$(safe_var "LOG_FILE_MAIL")"
+    print_aligned_table "Log rclone"          "$(safe_var "FILE_INFO")"
 
     if [[ -n "${MAIL_TO:-}" ]]; then
-        print_aligned_table "Email envoyé à" "$(safe_var "$MAIL_TO")"
-        print_aligned_table "Sujet email"    "$(safe_var "$SUBJECT_RAW")"
+        print_aligned_table "Email envoyé à" "$(safe_var "MAIL_TO")"
+        print_aligned_table "Sujet email"    "$(safe_var "SUBJECT_RAW")"
     fi
 
     if [[ -n "${DISCORD_WEBHOOK_URL:-}" ]]; then
-        print_aligned_table "Notifs Discord" "$(safe_var "$MSG_DISCORD_PROCESSED")"
+        print_aligned_table "Notifs Discord" "$(safe_var "MSG_DISCORD_PROCESSED")"
     else
-        print_aligned_table "Notifs Discord" "$(safe_var "$MSG_DISCORD_ABORDED")"
+        print_aligned_table "Notifs Discord" "$(safe_var "MSG_DISCORD_ABORDED")"
     fi
 
     [[ "${DRY_RUN:-}" == true ]] && \
-        print_aligned_table "Simulation (dry-run)" "$(safe_var "$MSG_DRYRUN")"
+        print_aligned_table "Simulation (dry-run)" "$(safe_var "MSG_DRYRUN")"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
-    print_fancy --bg "yellow" --fg "black" "$(safe_var "$MSG_END_REPORT")"
+    print_fancy --bg "yellow" --fg "black" "$(safe_var "MSG_END_REPORT")"
     echo
 }
 
