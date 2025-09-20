@@ -414,7 +414,7 @@ print_summary_table() {
     print_aligned_table "Dernier code erreur" "$(safe_var "ERROR_CODE")"
     print_aligned_table "Dossier"             "$(safe_var "DIR_LOG")/"
     print_aligned_table "Log mail"            "$(safe_var "LOG_FILE_MAIL")"
-    print_aligned_table "Log rclone"          "$(safe_var "FILE_INFO")"
+    print_aligned_table "Log rclone"          "$(safe_var "LOG_FILE_INFO")"
 
     if [[ -n "${MAIL_TO:-}" ]]; then
         print_aligned_table "Email envoyé à" "$(safe_var "MAIL_TO")"
@@ -427,11 +427,10 @@ print_summary_table() {
         print_aligned_table "Notifs Discord" "$(safe_var "MSG_DISCORD_ABORDED")"
     fi
 
-    [[ "${DRY_RUN:-}" == true ]] && \
-        print_aligned_table "Simulation (dry-run)" "$(safe_var "MSG_DRYRUN")"
+    print_aligned_table "Simulation (dry-run)" "$(safe_var "MSG_DRYRUN")"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
-    print_fancy --bg "yellow" --fg "black" "$(safe_var "MSG_END_REPORT")"
+    print_fancy --align "center" --bg "yellow" --fg "black" "$(safe_var "MSG_END_REPORT")"
     echo
 }
 
