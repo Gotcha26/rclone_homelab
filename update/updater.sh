@@ -307,7 +307,7 @@ update_to_latest_branch() {
     make_scripts_executable
 
     print_fancy --align "center" --theme "success" \
-        "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
+        "Script mis à jour avec succès."
     return 0
 }
 
@@ -366,13 +366,14 @@ update_to_latest_tag() {
     # Commit local
     print_fancy "📌  Commit local     : $head_commit"
     print_fancy --align "right" --style "italic" \
-        "($(date -d "@$$head_date" 2>/dev/null || echo "date inconnue"))"
+        "($(date -d "@$head_date" 2>/dev/null || echo "date inconnue"))"
 
     # Dernière release
     if [[ -n "$latest_tag" ]]; then
         print_fancy "🏷️  Dernière release : $latest_tag"
         print_fancy --align "right" --style "italic" \
             "($(date -d "@$latest_tag_date" 2>/dev/null || echo "date inconnue"))"
+    fi
 
     if [[ "$head_commit" == "$latest_tag_commit" ]]; then
         print_fancy --theme "ok" \
@@ -518,7 +519,7 @@ update_forced() {
 # Fonction : Rendre des scripts exécutable (utile après une MAJ notement)
 ###############################################################################
 make_scripts_executable() {
-    local base_dir="${1:-${SCRIPT_DIR:-}}"
+    local base_dir="${1:-$SCRIPT_DIR}"
     local scripts=("main.sh" "update/standalone_updater.sh") # Ajouter des fichiers ici si besoin, chacun entre "".
 
     if [[ -z "$base_dir" ]]; then
@@ -608,6 +609,9 @@ update_local_configs() {
                 fi
                 # 6. Mise à jour du backup de référence
                 cp "$ref_file" "$last_ref_backup"
+
+                # On marque que quelque chose a été traité
+                files_updated=true
             else
                 echo "❌ Mise à jour annulée pour $user_file."
             fi
@@ -616,11 +620,14 @@ update_local_configs() {
         fi
     }
 
+    # Flag pour savoir si au moins un fichier a été traité
+    local files_updated=false
+
     # Liste des fichiers à traiter (référence, local)
     # Format : ["nom_unique"]="référence;local"
     declare -A files=(
         ["fichier1"]="${DIR_EXEMPLE_CONF_DEV_FILE};${DIR_CONF_DEV_FILE}"
-        ["fichier1"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
+        ["fichier1_local"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
         ["fichier2"]="${DIR_EXEMPLE_JOBS_FILE};${DIR_JOBS_FILE}"
         ["fichier3"]="${DIR_EXEMPLE_SECRETS_FILE};${DIR_SECRETS_FILE}"
         # Ajoutez d'autres fichiers ici
@@ -632,4 +639,13 @@ update_local_configs() {
         update_user_file "$ref_file" "$user_file"
     done
 
+    # Code retour et message final
+    if [[ "$files_updated" == true ]]; then
+        return 0
+    else
+        echo "ℹ️ Aucun changement détecté sur les fichiers d'exemples."
+        return 2
+    fi
+
 }
+
