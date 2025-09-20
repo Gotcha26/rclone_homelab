@@ -35,34 +35,34 @@ for idx in "${!JOBS_LIST[@]}"; do
     init_job_logs "$JOB_ID"              # <- logs prêts à l’emploi
 done
 
-
-
-
-
-if [[ "${DEBUG_INFOS:-false}" == "true" ]]; then
+# Boucle d'affichage pour les options reçues et prise en compte par rclone
+if [[ "${DEBUG_MODE:-false}" == "true" ]]; then
     echo
-    echo "DRY_RUN = $DRY_RUN"
-    echo
-    echo -e "\n===== Variables RCLONE_OPTS ====="
+    echo "===== Variables RCLONE_OPTS ====="
     if [[ -n "${RCLONE_OPTS[*]:-}" ]]; then
-        for opt in "${RCLONE_OPTS[@]}"; do
-            echo "$opt"
+        for ((i=0; i<${#RCLONE_OPTS[@]}; i++)); do
+            opt="${RCLONE_OPTS[$i]}"
+
+            # Si l'option commence par -- et qu'il y a un argument après
+            if [[ "$opt" == --* ]] && [[ $((i+1)) -lt ${#RCLONE_OPTS[@]} ]] && [[ "${RCLONE_OPTS[$((i+1))]}" != --* ]]; then
+                val="${RCLONE_OPTS[$((i+1))]}"
+                printf "    %s \"%s\"\n" "$opt" "$val"
+                ((i++))  # sauter la valeur
+            else
+                printf "    %s\n" "$opt"
+            fi
         done
     else
-        echo "(aucune option globale définie)"
+        echo "    (aucune option globale définie)"
     fi
 
     echo
     read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 fi
 
-
-
-
-
-
-
-
+    echo
+    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+fi
 
 check_remotes
 
@@ -113,7 +113,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     # === Vérification du statut du job ===
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
         # Génération des logs RAW directement
-        warn_remote_problem "${JOB_REMOTE[$idx]}" "${JOB_MSG[$idx]}" "$idx" "$TMP_JOB_LOG_RAW"
+        warn_remote_problem "${JOB_REMOTE[$idx]}" "${JOB_MSG_LIST[$idx]:-ok}" "$idx" "$TMP_JOB_LOG_RAW"
 
         job_rc=1
     else
@@ -131,13 +131,13 @@ for idx in "${!JOBS_LIST[@]}"; do
 
             # Analyse rapide du log pour détecter token expiré ou remote inaccessible
             if grep -q -i "unauthenticated\|invalid_grant\|couldn't fetch token" "$TMP_JOB_LOG_RAW"; then
-                JOB_MSG[$idx]="token_expired"
+                JOB_MSG_LIST[$idx]="token_expired"
             else
-                JOB_MSG[$idx]="rclone_error"
+                JOB_MSG_LIST[$idx]="rclone_error"
             fi
         else
             JOB_STATUS[$idx]="OK"
-            JOB_MSG[$idx]="ok"
+            JOB_MSG_LIST[$idx]="ok"
         fi
     fi
 

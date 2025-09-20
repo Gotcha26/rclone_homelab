@@ -66,52 +66,48 @@ remote_exists() {
 
 
 ###############################################################################
-# Fonction pour parcourir tous les remotes et vérifier leur disponibilité
-# Silencieux : pas de messages affichés, juste mise à jour de JOB_STATUS/JOB_MSG
+# Fonction : parcourir tous les remotes et vérifier leur disponibilité
+# Cumule les problèmes sans écraser les précédents
 ###############################################################################
 declare -A JOB_REMOTE   # idx -> remote problématique
+declare -A JOB_MSG_LIST
 
 check_remotes() {
     local timeout_duration="10s"
-
-    # Initialisation du code d'erreur global si non défini
     ERROR_CODE=${ERROR_CODE:-0}
 
     for idx in "${!JOBS_LIST[@]}"; do
         local job="${JOBS_LIST[$idx]}"
         IFS='|' read -r src dst <<< "$job"
 
-        # On part du principe que le job est OK
+        # Initialisation
         JOB_STATUS[$idx]="OK"
-        JOB_MSG[$idx]="ok"
         JOB_REMOTE[$idx]=""
+        JOB_MSG_LIST[$idx]=""  # réinitialisation pour chaque job
 
         for endpoint in "$src" "$dst"; do
             local remote_type="local"
 
-            # --- Si endpoint rclone distant ---
+            # --- Vérification remote distant ---
             if [[ "$endpoint" == *:* ]]; then
                 local remote="${endpoint%%:*}"
 
-                # Remote configuré dans rclone ?
+                # Remote connu ?
                 if ! printf '%s\n' "${RCLONE_REMOTES[@]}" | grep -qx "$remote"; then
                     JOB_STATUS[$idx]="PROBLEM"
-                    JOB_MSG[$idx]="missing"
                     JOB_REMOTE[$idx]="$remote"
                     REMOTE_STATUS["$remote"]="PROBLEM"
                     ERROR_CODE=6
                     warn_remote_problem "$remote" "missing" "$idx" "$TMP_JOB_LOG_RAW"
-                    continue 2
+                    continue 2  # passer au job suivant
                 fi
 
-                # Type du remote
                 remote_type=$(rclone config dump | jq -r --arg r "$remote" '.[$r].type')
 
-                # Test token pour remotes distants sensibles
+                # Test token pour remotes sensibles
                 if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
                     if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
                         JOB_STATUS[$idx]="PROBLEM"
-                        JOB_MSG[$idx]="$remote_type"
                         JOB_REMOTE[$idx]="$remote"
                         REMOTE_STATUS["$remote"]="PROBLEM"
                         ERROR_CODE=14
@@ -128,7 +124,6 @@ check_remotes() {
                 if ! check_dry_run_compat "$endpoint"; then
                     JOB_STATUS[$idx]="PROBLEM"
                     JOB_REMOTE[$idx]="$endpoint"
-                    JOB_MSG[$idx]="dry_run_incompatible"
                     REMOTE_STATUS["$endpoint"]="PROBLEM"
                     ERROR_CODE=20
                     warn_remote_problem "$endpoint" "dry_run_incompatible" "$idx" "$TMP_JOB_LOG_RAW"
@@ -156,7 +151,7 @@ check_remote_non_blocking() {
         for i in "${!JOBS_LIST[@]}"; do
             [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
                 JOB_STATUS[$i]="PROBLEM"
-                JOB_MSG["$i"]="missing"
+                JOB_MSG_LIST["$i"]="missing"
             }
         done
         return
@@ -181,7 +176,7 @@ check_remote_non_blocking() {
         for i in "${!JOBS_LIST[@]}"; do
             [[ "${JOBS_LIST[$i]}" == *"$remote:"* ]] && {
                 JOB_STATUS[$i]="PROBLEM"
-                JOB_MSG["$i"]="$remote_type"
+                JOB_MSG_LIST["$i"]="$remote_type"
             }
         done
     else
@@ -191,80 +186,59 @@ check_remote_non_blocking() {
 
 
 ###############################################################################
-# Fonction : Avertissement remote inaccessible
+# Fonction : avertissement remote inaccessible ou problème dry-run
+# Cumule tous les problèmes au lieu d'écraser
 ###############################################################################
-declare -A JOB_MSG         # idx -> message d'erreur détaillé
-
 warn_remote_problem() {
-    local remote="$1"
-    local remote_type="$2"
-    local job_idx="$3"
-    local log_file="$4"
+    local endpoint="$1"       # endpoint exact (src ou dst)
+    local problem_type="$2"   # missing / onedrive / drive / dry_run_incompatible / autre
+    local job_idx="$3"        # index du job
+    local log_file="$4"       # fichier raw log
 
-    local msg
-    msg="❌  \e[1;33mAttention\e[0m : erreur unexpected détectée !
-Un problème empèche l'exécution du job pour le remote '\e[1m$remote\e[0m'
-    
-    "
+    local msg=""
 
-    case "$remote_type" in
+    case "$problem_type" in
         missing)
-            msg+="Raison : le remote '$remote' n'existe pas...
-... ou n'a pas été trouvé dans votre configuration de rclone.
-Vous êtes invité à revoir votre configuration pour le job et/ou rclone."
+            msg="❌  \e[1;33mAttention\e[0m : le remote '$endpoint' n'existe pas ou n'a pas été trouvé dans votre configuration rclone.
+Le job associé sera \e[31mignoré\e[0m jusqu'à résolution."
             ;;
         onedrive)
-            msg+="
-Le remote '\e[1m$remote\e[0m' est \e[31minaccessible\e[0m pour l'écriture.
-
-Ce problème est typique de \e[36mOneDrive\e[0m : le token OAuth actuel
-ne permet plus l'écriture, même si la lecture fonctionne. [unauthenticated]
-Il faut refaire complètement la configuration du remote :
-  1. Supprimer ou éditer le remote existant : \e[1mrclone config\e[0m
-  2. Reconnecter le remote et accepter toutes les permissions
-     (\e[32mlecture\e[0m + \e[32mécriture\e[0m).
-  3. Commande pour éditer directement le fichier de conf. de rclone :
-     \e[1mnano ~/.config/rclone/rclone.conf\e[0m
-"
+            msg="❌  \e[1;33mAttention\e[0m : le remote OneDrive '$endpoint' est \e[31minaccessible\e[0m pour l'écriture.
+Problème typique de token OAuth expiré ou permissions insuffisantes.
+Le job sera \e[31mignoré\e[0m jusqu'à résolution."
             ;;
         drive)
-            msg+="
-Ce problème peut se produire sur \e[36mGoogle Drive\e[0m si le token
-OAuth est expiré ou si les scopes d'accès sont insuffisants. [unauthenticated]
-Pour résoudre le problème :
-  1. Supprimer ou éditer le remote existant : \e[1mrclone config\e[0m
-  2. Reconnecter le remote et accepter toutes les permissions nécessaires.
-  3. Commande pour éditer directement le fichier de conf. de rclone :
-     \e[1mnano ~/.config/rclone/rclone.conf\e[0m
-"
+            msg="❌  \e[1;33mAttention\e[0m : le remote Google Drive '$endpoint' est \e[31minaccessible\e[0m pour l'écriture.
+Token OAuth expiré ou scopes insuffisants.
+Le job sera \e[31mignoré\e[0m jusqu'à résolution."
             ;;
         dry_run_incompatible)
-            msg="❌  \e[1;33mAttention\e[0m : dry-run activé sur un endpoint incompatible !
-Le job impliquant '\e[1m$endpoint\e[0m' ne peut pas être exécuté en dry-run.
-Ce type de service (local / SMB / CIFS) ne respectera pas la simulation et
-exécuterait réellement les actions.
+            msg="❌  \e[1;33mAttention\e[0m : dry-run activé sur un endpoint incompatible ('$endpoint').
+Ce type de service (local / SMB / CIFS) ne respectera pas la simulation et exécuterait réellement les actions.
 Le job sera \e[31mignoré\e[0m pour éviter toute suppression ou copie non désirée.
-Supprimer la simulation --dry-run ou supprimer le job de la lsite.
-"
+Supprimer --dry-run ou le job de la liste."
             ;;
         *)
-            msg+="
+            msg="❌  Attention : erreur unexpected détectée sur '$endpoint'.
 Le problème provient probablement du token ou des permissions.
 Vérifiez la configuration du remote avec : \e[1mrclone config\e[0m
-"
+Le job sera \e[31mignoré\e[0m jusqu'à résolution."
             ;;
     esac
 
-    msg+="
-Les jobs utilisant ce remote seront \e[31mignorés\e[0m jusqu'à résolution.
-"
+    # Écriture dans le log RAW si fourni
+    [[ -n "$log_file" ]] && echo -e "\n$msg\n" >> "$log_file"
 
-    # Écriture dans le log RAW
-    echo -e "\n$msg\n" >> "$log_file"
-
-    # Associer au JOB_MSG si job_idx fourni
-    [[ -n "$job_idx" ]] && JOB_MSG["$job_idx"]="$msg"
+    # Ajouter le message à la liste cumulée pour le job
+    if [[ -n "$job_idx" ]]; then
+        if [[ -z "${JOB_MSG_LIST[$job_idx]}" ]]; then
+            JOB_MSG_LIST[$job_idx]="$msg"
+        else
+            JOB_MSG_LIST[$job_idx]+="|$msg"
+        fi
+    fi
 }
+
 
 
 ###############################################################################
