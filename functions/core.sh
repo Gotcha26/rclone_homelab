@@ -475,6 +475,6 @@ create_temp_dirs() {
 ###############################################################################
 add_rclone_opts() {
     if [[ "${DRY_RUN:-false}" == true ]]; then
-        RCLONE_OPTS_GLOBAL+=(--dry-run)
+        RCLONE_OPTS+=(--dry-run)
     fi
 }

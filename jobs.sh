@@ -40,6 +40,9 @@ done
 
 
 if [[ "${DEBUG_INFOS:-false}" == "true" ]]; then
+    echo
+    echo "DRY_RUN = $DRY_RUN"
+    echo
     echo -e "\n===== Variables RCLONE_OPTS ====="
     if [[ -n "${RCLONE_OPTS[*]:-}" ]]; then
         for opt in "${RCLONE_OPTS[@]}"; do
