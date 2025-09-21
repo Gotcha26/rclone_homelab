@@ -4,6 +4,7 @@ clear
 echo "================================================================================"
 echo "*            Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            *"
 echo "================================================================================"
+echo
 
 
 # =========================================================================== #
@@ -93,7 +94,7 @@ check_rclone() {
     else
         local local_version
         local_version=$(rclone version 2>/dev/null | head -n1 | awk '{print $2}')
-        echo "rclone détecté, version : $local_version"
+        echo "✔️  rclone détecté. Réputé : ${UNDERLINE}à jour${RESET}"
         latest_rclone=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
         if [ "$local_version" != "$latest_rclone" ]; then
             echo "ℹ️  Nouvelle version rclone disponible : $latest_rclone"
@@ -144,7 +145,7 @@ check_msmtp() {
     else
         local local_version
         local_version=$(msmtp --version | head -n1 | awk '{print $2}')
-        echo "msmtp détecté, version : $local_version"
+        echo "✔️  msmtp détecté. Réputé : ${UNDERLINE}à jour${RESET}"
     fi
 }
 
@@ -167,7 +168,7 @@ check_micro() {
         latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                           | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
 
-        echo "micro détecté, version locale : $local_version"
+        echo "✔️  micro détecté. Réputé : ${UNDERLINE}à jour${RESET}"
 
         if [ -n "$latest_version" ] && [ "$local_version" != "$latest_version" ]; then
             echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
@@ -239,7 +240,7 @@ update_editor_choice() {
         fi
     done
 
-    echo -e "✅  Éditeur par défaut mis à jour : $new_editor"
+    echo -e "✔️  Éditeur par défaut mis à jour : $new_editor"
 }
 
 
@@ -341,9 +342,9 @@ install() {
     }
     echo -e "✅  Branche locale  ${BOLD}'main'${RESET} créée sur $LATEST_TAG."
     echo
-    echo -e "${GREEN}✅  Installation réussie !${RESET}"
+    echo -e "${GREEN}✅  Installation réussie !${RESET} 🎉"
     echo -e "⏯ Pour démarrer, chemin d'accès : cd $INSTALL_DIR && ./main.sh"
-    echo -e "${BLUE}⏭ Ou le symlink utilisable partout : ${BOLD}rclone_homelab${RESET}"
+    echo -e "⏭ Ou le symlink utilisable partout : ${BOLD}${BLUE}rclone_homelab${RESET}"
     echo
 
 
