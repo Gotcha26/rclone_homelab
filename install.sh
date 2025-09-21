@@ -83,7 +83,7 @@ check_dependencies() {
 # --------------------------------------------------------------------------- #
 check_rclone() {
     if ! command -v rclone &>/dev/null; then
-        echo -e "⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET} n'est pas installé, il est ${BOLD}indispensable${RESET}."
+        echo -e "⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET}${RED} n'est pas encore installé, il est ${BOLD}indispensable${RESET}."
         echo "Plus d'infos sur rclone : https://rclone.org/"
         echo
         read -rp "Voulez-vous installer rclone maintenant ? (y/N) : " yn
@@ -118,35 +118,45 @@ check_rclone() {
 install_rclone() {
     echo "📦  Installation / mise à jour de rclone..."
 
-    # Détection architecture
-    local arch rclone_arch
+    # Détection architecture pour télécharger le bon binaire
     arch=$(uname -m)
     case "$arch" in
-        x86_64) rclone_arch="amd64" ;;
-        aarch64) rclone_arch="arm64" ;;
-        armv7l) rclone_arch="arm" ;;
-        *) echo -e "${RED}❌  Architecture $arch non supportée.${RESET}"; return 1 ;;
+        x86_64) arch_tag="linux-amd64" ;;
+        aarch64|arm64) arch_tag="linux-arm64" ;;
+        *) echo -e "${RED}❌ Architecture $arch non supportée.${RESET}"; exit 1 ;;
     esac
 
-    # Téléchargement de la dernière version
-    local latest_url latest_version archive
-    latest_version=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
-    archive="rclone-${latest_version}-linux-${rclone_arch}.zip"
-    latest_url="https://downloads.rclone.org/${archive}"
+    # Téléchargement du zip officiel
+    zip_file="rclone-current-${arch_tag}.zip"
+    curl -Of "https://downloads.rclone.org/${zip_file}" || { 
+        echo -e "${RED}❌ Échec du téléchargement de rclone.${RESET}"; 
+        exit 1; 
+    }
 
-    curl -O "$latest_url" || { echo -e "${RED}❌  Échec du téléchargement.${RESET}"; return 1; }
-    unzip -o "$archive" || { echo -e "${RED}❌  Échec de l'extraction.${RESET}"; return 1; }
+    # Vérifie que le fichier existe et n’est pas vide
+    if [ ! -s "$zip_file" ]; then
+        echo -e "${RED}❌ Fichier téléchargé invalide ou vide : $zip_file${RESET}"
+        exit 1
+    fi
 
+    # Extraction
+    unzip -o "$zip_file" || { 
+        echo -e "${RED}❌ Échec de l'extraction du zip rclone.${RESET}"; 
+        exit 1; 
+    }
+
+    # Copie du binaire
     if [ -w "/usr/local/bin" ]; then
-        cp rclone-*-linux-"$rclone_arch"/rclone /usr/local/bin/ || return 1
+        cp rclone-*-${arch_tag}/rclone /usr/local/bin/ || { echo "❌ Impossible de copier rclone"; exit 1; }
     else
-        $SUDO cp rclone-*-linux-"$rclone_arch"/rclone /usr/local/bin/ || return 1
+        sudo cp rclone-*-${arch_tag}/rclone /usr/local/bin/ || { echo "❌ Impossible de copier rclone"; exit 1; }
     fi
     chmod +x /usr/local/bin/rclone
 
-    rm -rf rclone-*-linux-"$rclone_arch" "$archive"
+    # Nettoyage
+    rm -rf rclone-*-${arch_tag} "$zip_file"
 
-    echo -e "✅  ${GREEN}rclone installé/mis à jour avec succès (version $latest_version).${RESET}"
+    echo "✅  rclone installé/mis à jour avec succès."
 }
 
 
