@@ -143,11 +143,11 @@ if [[ $# -eq 0 ]]; then
     else
         scroll_down             # Pas de clear
         [[ "${DEBUG_INFOS:-}" == "true" ]] && print_fancy --theme "debug_info" "Poursuite post-menu"
-        load_optional_configs   # Rappel des configurations locales
         add_rclone_opts         # Ajouter des options à rclone (dry-run)
     fi
 fi
 
+load_optional_configs   # Rappel des configurations locales (surcharge après le menu et/ou pour le mode full auto)
 
 ###############################################################################
 # 4. Vérifications fonctionnelles
