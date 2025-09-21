@@ -71,7 +71,7 @@ check_dependencies() {
                 fi
                 ;;
             *)
-                echo "${RED}❌  Impossible de continuer sans unzip.${RESET}"
+                echo -e "${RED}❌  Impossible de continuer sans unzip.${RESET}"
                 exit 1
                 ;;
         esac
@@ -89,12 +89,12 @@ check_rclone() {
         read -rp "Voulez-vous installer rclone maintenant ? (y/N) : " yn
         case "$yn" in
             [Yy]*) install_rclone ;;
-            *) echo "${RED}${BOLD}Impossible de continuer sans rclone.${RESET}"; exit 1 ;;
+            *) echo -e "${RED}${BOLD}Impossible de continuer sans rclone.${RESET}"; exit 1 ;;
         esac
     else
         local local_version
         local_version=$(rclone version 2>/dev/null | head -n1 | awk '{print $2}')
-        echo "✔️  rclone détecté. Réputé : ${UNDERLINE}à jour${RESET}"
+        echo -e "✔️  rclone détecté. Réputé : ${UNDERLINE}à jour${RESET}."
         latest_rclone=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
         if [ "$local_version" != "$latest_rclone" ]; then
             echo "ℹ️  Nouvelle version rclone disponible : $latest_rclone"
@@ -145,7 +145,7 @@ check_msmtp() {
     else
         local local_version
         local_version=$(msmtp --version | head -n1 | awk '{print $2}')
-        echo "✔️  msmtp détecté. Réputé : ${UNDERLINE}à jour${RESET}"
+        echo -e "✔️  msmtp détecté. Réputé : ${UNDERLINE}à jour${RESET}."
     fi
 }
 
@@ -155,24 +155,24 @@ check_msmtp() {
 check_micro() {
     if ! command -v micro &>/dev/null; then
         echo -e "${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
-        echo -e "Il s'agit d'une alternative plus fournie à l'éditeur "nano"."
-        echo
+        echo -e "Il s'agit d'une alternative plus fournie à l'éditeur ${BOLD}nano${RESET}."
         read -rp "Voulez-vous installer micro ? (y/N) : " yn
         case "$yn" in
             [Yy]*) install_micro ;;
-            *) echo "👉  micro (optionnel)ne sera pas installé." ;;
+            *) echo "👉  micro (optionnel) ne sera pas installé." ;;
         esac
     else
+        # Récupération version locale (extrait uniquement le numéro)
         local local_version latest_version
-        local_version=$(micro --version 2>/dev/null | head -n1 | awk '{print $2}')
+        local_version=$(micro --version 2>/dev/null | head -n1 | grep -oP '\d+(\.\d+)+')
         latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                           | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
 
-        echo "✔️  micro détecté. Réputé : ${UNDERLINE}à jour${RESET}"
+        echo -e "✔️  micro détecté. Réputé : ${UNDERLINE}à jour${RESET}."
 
+        # Comparaison versions
         if [ -n "$latest_version" ] && [ "$local_version" != "$latest_version" ]; then
             echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
-            echo
             read -rp "Voulez-vous mettre à jour micro ? (y/N) : " yn
             case "$yn" in
                 [Yy]*) install_micro "$latest_version" ;;
@@ -286,7 +286,7 @@ handle_existing_dir() {
                     echo -e "${RED}Impossible de passer sur $LATEST_TAG${RESET}"
                     exit 1
                 }
-                echo -e "✅  Mise à jour vers $LATEST_TAG réussie !"
+                echo "✅  Mise à jour vers $LATEST_TAG réussie !"
                 exit 0
                 ;;
             3|*)
@@ -328,6 +328,9 @@ install() {
         fi
     fi
 
+    # Nettoyage avant clone
+    rm -rf "$INSTALL_DIR"/*
+
     # Vérifier droits écriture
     if [ ! -w "$INSTALL_DIR" ]; then
         $SUDO chown "$(whoami)" "$INSTALL_DIR" || { echo "❌  Impossible de prendre possession de $INSTALL_DIR"; exit 1; }
@@ -336,13 +339,14 @@ install() {
     cd "$INSTALL_DIR" || exit 1
 
     echo "⏬ Téléchargement via shallow clone (--depth 5)..."
-    if ! git -c advice.detachedHead=false clone --branch "$LATEST_TAG" --depth 5 "$REPO_URL" .; then
+    if ! git -c advice.detachedHead=false clone --branch "$LATEST_TAG" --depth 5 "$REPO_URL" "$INSTALL_DIR"; then
         echo -e "⚠️  ${YELLOW}Échec du shallow clone, tentative d’un clone complet...${RESET}"
         rm -rf "$INSTALL_DIR"/*
-        git -c advice.detachedHead=false clone --branch "$LATEST_TAG" "$REPO_URL" . || exit 1
+        git -c advice.detachedHead=false clone --branch "$LATEST_TAG" "$REPO_URL" "$INSTALL_DIR" || exit 1
     fi
 
     chmod +x main.sh
+    echo -e "✅  chmod appliqué sur ${BOLD}'main.sh'${RESET}. Script dorénavant exécutable."
 
     # Création d'une branche locale main sur le tag
     if ! git checkout -b main; then
@@ -364,8 +368,7 @@ create_symlink() {
     else
         $SUDO ln -sf "$INSTALL_DIR/main.sh" "$SYMLINK"
     fi
-    chmod +x "$INSTALL_DIR/main.sh"
-    echo -e "✅  Symlink créé : $SYMLINK → $INSTALL_DIR/main.sh"
+    echo "✅  Symlink créé : $SYMLINK → $INSTALL_DIR/main.sh"
 }
 
 # --------------------------------------------------------------------------- #
@@ -377,12 +380,13 @@ create_updater_symlink() {
 
     if [ -f "$UPDATER_SCRIPT" ]; then
         chmod +x "$UPDATER_SCRIPT"
+        echo -e "✅  chmod appliqué sur ${BOLD}'UPDATER_SCRIPT'${RESET}. Script dorénavant exécutable."
         if [ -w "$(dirname "$UPDATER_SYMLINK")" ]; then
             ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
         else
             $SUDO ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
         fi
-        echo -e "✅  Updater exécutable et symlink créé : $UPDATER_SYMLINK → $UPDATER_SCRIPT"
+        echo "✅  Updater exécutable et symlink créé : $UPDATER_SYMLINK → $UPDATER_SCRIPT"
     else
         echo -e "⚠️  ${YELLOW}Fichier ${BOLD}$UPDATER_SCRIPT${RESET}${YELLOW} introuvable.${RESET}"
     fi
@@ -394,7 +398,7 @@ create_updater_symlink() {
 result_install() {
     echo
     echo -e "${GREEN}✅  Installation réussie !${RESET} 🎉"
-    echo -e "⏯ Pour démarrer, chemin d'accès : cd $INSTALL_DIR && ./main.sh"
+    echo "⏯ Pour démarrer, chemin d'accès : cd $INSTALL_DIR && ./main.sh"
     echo -e "⏭ Ou le symlink utilisable partout : ${BOLD}${BLUE}rclone_homelab${RESET}"
     echo
 }
