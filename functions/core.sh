@@ -140,7 +140,7 @@ load_optional_configs() {
                 "Aucun fichier de configuration optionnel trouvé. Configuration par défaut uniquement."
                 ;;
             simplified)
-                echo "⚠️ Aucun fichier optionnel trouvé"
+                echo "ℹ️  Aucun configuration locale de trouvée/chargée."
                 ;;
             none) ;;
         esac
