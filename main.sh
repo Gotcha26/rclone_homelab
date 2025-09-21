@@ -12,7 +12,25 @@ SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 source "$SCRIPT_DIR/bootstrap.sh"
 
-# ===
+# === Initialisation du dispositif d'affichage ===
+# Valeurs par défaut si les variables ne sont pas définies
+: "${DEBUG_INFOS:=false}"
+: "${DEBUG_MODE:=false}"
+: "${DISPLAY_MODE:=hard}"
+
+# Mise à jour de DISPLAY_MODE si nécessaire
+if [ "$DEBUG_INFOS" = true ] || [ "$DEBUG_MODE" = true ]; then
+    DISPLAY_MODE="verbose"
+fi
+
+# Affichage pour vérification
+displayer_main1() {
+    display_msg "verbos|hard" "
+DEBUG_INFOS : $DEBUG_INFOS
+DEBUG_MODE : $DEBUG_MODE
+DISPLAY_MODE est défini à : $DISPLAY_MODE"
+}
+
 
 # Affichage du logo/bannière
 print_logo
