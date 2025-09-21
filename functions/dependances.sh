@@ -700,3 +700,75 @@ print_table_vars_invalid() {
 # return 0   -> Quand la condition "vrai"
 # Case       -> Quand la condition retourne "faux" selon les cas précisés...
 # Attention au signe "!" devant la condition qui inverse le sens "vrai/faux" 
+
+
+###############################################################################
+# Fonction : Gère l'affichage dans des fonctions.
+# https://chatgpt.com/share/68cfb520-cf24-8004-9dab-17a1cf40bae9
+###############################################################################
+# EXPLICATIONS
+# Attend 3 arguments mais seuls 2 sont à préciser
+# - modes : <soft|verbose|hard>
+# - msg : <votre texte>
+# Les modes sont commulatifs/communs
+# En cas d'appel sans précision, par défaut, la fonction prendre l'affichage "soft".
+# Un message par défaut est défini.
+# Sécurisation des varaibles si elles ne sont sont pas définies dans le code (set -u UNBOUND VARIABLE...)
+
+# EXEMPLE D'USAGE
+# my_function() {
+#     local file="/tmp/test"
+# 
+#     if [[ -f "$file" ]]; then
+        # Affiche en verbose ET arrête si nécessaire
+#         display_msg "verbose|hard" "Fichier trouvé : $file" "${FUNCNAME[0]}"
+#     else
+        # Juste verbose
+#         display_msg "verbose" "Pas de fichier : $file" "${FUNCNAME[0]}"
+#     fi
+# }
+###############################################################################
+
+display_msg() {
+    local modes="$1"
+    local msg="$2"
+    local caller="${3:-${FUNCNAME[1]:-main}}"
+
+    # Valeurs par défaut pour les variables globales
+    local launch_mode="${LAUNCH_MODE:-soft}"     # si pas défini → soft
+    local debug_mode="${DEBUG_MODE:-false}"      # si pas défini → false
+    local debug_infos="${DEBUG_INFOS:-false}"    # si pas défini → false
+
+    # Décalage si aucun mode explicite n’est fourni
+    if [[ -z "$msg" ]]; then
+        msg="$modes"
+        modes="$launch_mode"
+    fi
+
+    # Si msg reste vide → message par défaut
+    if [[ -z "$msg" ]]; then
+        msg="$(print_fancy --theme "info" "[$caller] (no message provided)")"
+    fi
+
+    # Si debug activé, forcer verbose
+    if [[ "$debug_mode" == true || "$debug_infos" == true ]]; then
+        modes="verbose"
+    fi
+
+    # Découpe en liste si plusieurs modes (séparés par |)
+    IFS="|" read -r -a mode_list <<< "$modes"
+
+    for mode in "${mode_list[@]}"; do
+        case "$mode" in
+            soft|verbose|hard)
+                # On n’applique aucun format ici, msg est déjà formaté si besoin
+                echo -e "$msg"
+                ;;
+            *)
+                # Cas d'affichage inconnu (appel non reconnu...)
+                print_fancy --theme "danger" "[$caller] - [UNKNOWN] : Cas d'affichage non communiqué."
+                ;;
+        esac
+    done
+}
+
