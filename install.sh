@@ -71,7 +71,7 @@ check_dependencies() {
                 fi
                 ;;
             *)
-                echo "${RED}❌  Impossible de continuer sans unzip.${RESET}"
+                echo -e "${RED}❌  Impossible de continuer sans unzip.${RESET}"
                 exit 1
                 ;;
         esac
@@ -83,21 +83,35 @@ check_dependencies() {
 # --------------------------------------------------------------------------- #
 check_rclone() {
     if ! command -v rclone &>/dev/null; then
-        echo -e "$⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET} n'est pas installé, Il est un composant ${BOLD}indispensable.${RESET}"
+        echo -e "⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET}${RED} n'est pas encore installé, il est ${BOLD}indispensable${RESET}."
         echo "Plus d'infos sur rclone : https://rclone.org/"
         echo
         read -rp "Voulez-vous installer rclone maintenant ? (y/N) : " yn
         case "$yn" in
             [Yy]*) install_rclone ;;
-            *) echo "${RED}${BOLD}Impossible de continuer sans rclone.${RESET}"; exit 1 ;;
+            *) echo -e "${RED}${BOLD}Impossible de continuer sans rclone.${RESET}"; exit 1 ;;
         esac
     else
-        local local_version
+        local local_version latest_version
         local_version=$(rclone version 2>/dev/null | head -n1 | awk '{print $2}')
-        echo "✔️  rclone détecté. Réputé : ${UNDERLINE}à jour${RESET}"
-        latest_rclone=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
-        if [ "$local_version" != "$latest_rclone" ]; then
-            echo "ℹ️  Nouvelle version rclone disponible : $latest_rclone"
+        
+        # Récupération de la dernière version stable de rclone
+        latest_version=$(curl -s https://rclone.org/downloads/ \
+            | grep 'Current stable version:' \
+            | awk '{print $4}')
+
+        # Vérification des versions
+        if [[ -z "$latest_version" ]]; then
+            echo -e "${YELLOW}⚠️  Impossible de récupérer la dernière version de rclone.${RESET}"
+            echo -e "  Version locale détectée : ${local_version:-inconnue}"
+            echo -e "  Version stable récupérée : ${latest_version:-inconnue}"
+            return
+        fi
+
+        echo -e "✔️  rclone détecté. Version locale : ${ITALIC}${local_version}${RESET}, version stable : ${ITALIC}${latest_version}${RESET}"
+
+        if [[ "$local_version" != "$latest_version" ]]; then
+            echo "ℹ️  Nouvelle version rclone disponible : $latest_version"
             echo
             read -rp "Voulez-vous mettre à jour rclone ? (y/N) : " yn
             case "$yn" in
@@ -110,17 +124,48 @@ check_rclone() {
 
 install_rclone() {
     echo "📦  Installation / mise à jour de rclone..."
-    curl -Of https://downloads.rclone.org/rclone-current-linux-amd64.zip
-    unzip -o rclone-current-linux-amd64.zip
+
+    # Détection architecture pour télécharger le bon binaire
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64) arch_tag="linux-amd64" ;;
+        aarch64|arm64) arch_tag="linux-arm64" ;;
+        *) echo -e "${RED}❌  Architecture $arch non supportée.${RESET}"; exit 1 ;;
+    esac
+
+    # Téléchargement du zip officiel
+    zip_file="rclone-current-${arch_tag}.zip"
+    curl -Of "https://downloads.rclone.org/${zip_file}" || { 
+        echo -e "${RED}❌  Échec du téléchargement de rclone.${RESET}"; 
+        exit 1; 
+    }
+
+    # Vérifie que le fichier existe et n’est pas vide
+    if [ ! -s "$zip_file" ]; then
+        echo -e "${RED}❌  Fichier téléchargé invalide ou vide : $zip_file${RESET}"
+        exit 1
+    fi
+
+    # Extraction
+    unzip -o "$zip_file" || { 
+        echo -e "${RED}❌  Échec de l'extraction du zip rclone.${RESET}"; 
+        exit 1; 
+    }
+
+    # Copie du binaire
     if [ -w "/usr/local/bin" ]; then
-        cp rclone-*-linux-amd64/rclone /usr/local/bin/
+        cp rclone-*-${arch_tag}/rclone /usr/local/bin/ || { echo "❌  Impossible de copier rclone"; exit 1; }
     else
-        $SUDO cp rclone-*-linux-amd64/rclone /usr/local/bin/
+        sudo cp rclone-*-${arch_tag}/rclone /usr/local/bin/ || { echo "❌  Impossible de copier rclone"; exit 1; }
     fi
     chmod +x /usr/local/bin/rclone
-    rm -rf rclone-*-linux-amd64*
-    echo -e "✅  ${GREEN}rclone installé/mis à jour avec succès.${RESET}"
+
+    # Nettoyage
+    rm -rf rclone-*-${arch_tag} "$zip_file"
+
+    echo "✅  rclone installé/mis à jour avec succès."
 }
+
 
 # --------------------------------------------------------------------------- #
 # Vérification optionnelle de msmtp
@@ -145,7 +190,7 @@ check_msmtp() {
     else
         local local_version
         local_version=$(msmtp --version | head -n1 | awk '{print $2}')
-        echo "✔️  msmtp détecté. Réputé : ${UNDERLINE}à jour${RESET}"
+        echo -e "✔️  msmtp détecté. Réputé : ${ITALIC}à jour${RESET}."
     fi
 }
 
@@ -154,23 +199,30 @@ check_msmtp() {
 # --------------------------------------------------------------------------- #
 check_micro() {
     if ! command -v micro &>/dev/null; then
-        echo -e "${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
-        echo -e "Il s'agit d'une alternative plus fournie à l'éditeur "nano"."
+        echo -e "⚠️  ${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
+        echo -e "Il s'agit d'une alternative plus fournie à l'éditeur ${BOLD}nano${RESET}."
         echo
         read -rp "Voulez-vous installer micro ? (y/N) : " yn
         case "$yn" in
             [Yy]*) install_micro ;;
-            *) echo "👉  micro (optionnel)ne sera pas installé." ;;
+            *) echo "👉  micro (optionnel) ne sera pas installé." ;;
         esac
     else
+        # Récupération version locale (extrait uniquement le numéro principal)
         local local_version latest_version
-        local_version=$(micro --version 2>/dev/null | head -n1 | awk '{print $2}')
+        local_version=$(micro --version 2>/dev/null | head -n1 | grep -oP '\d+(\.\d+)+')
         latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                           | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
 
-        echo "✔️  micro détecté. Réputé : ${UNDERLINE}à jour${RESET}"
+        if [ -z "$latest_version" ]; then
+            echo -e "${YELLOW}⚠️  Impossible de récupérer la dernière version de micro.${RESET}"
+            return
+        fi
 
-        if [ -n "$latest_version" ] && [ "$local_version" != "$latest_version" ]; then
+        echo -e "✔️  micro détecté. Réputé : ${ITALIC}à jour${RESET}."
+
+        # Comparaison versions
+        if [ "$local_version" != "$latest_version" ]; then
             echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
             echo
             read -rp "Voulez-vous mettre à jour micro ? (y/N) : " yn
@@ -190,33 +242,48 @@ install_micro() {
     if [ "$version" = "latest" ]; then
         version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                   | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
+        if [ -z "$version" ]; then
+            echo -e "${RED}❌  Impossible de récupérer la dernière version de micro.${RESET}"
+            return 1
+        fi
     fi
 
-    # Téléchargement binaire Linux amd64
-    local archive="micro-${version}-linux64.tar.gz"
+    # Détection architecture
+    local arch micro_arch
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64) micro_arch="linux64" ;;
+        aarch64) micro_arch="linux-arm64" ;;
+        armv7l) micro_arch="linux-arm" ;;
+        *) echo -e "${RED}❌  Architecture $arch non supportée.${RESET}"; return 1 ;;
+    esac
+
+    # Téléchargement binaire
+    local archive="micro-${version}-${micro_arch}.tar.gz"
     local url="https://github.com/zyedidia/micro/releases/download/v${version}/${archive}"
 
-    curl -L -o "$archive" "$url"
-    tar -xzf "$archive"
+    curl -L -o "$archive" "$url" || { echo -e "${RED}❌  Échec du téléchargement.${RESET}"; return 1; }
+    tar -xzf "$archive" || { echo -e "${RED}❌  Échec de l'extraction.${RESET}"; return 1; }
+
     if [ -w "/usr/local/bin" ]; then
-        cp "micro-${version}/micro" /usr/local/bin/
+        cp "micro-${version}/micro" /usr/local/bin/ || return 1
     else
-        $SUDO cp "micro-${version}/micro" /usr/local/bin/
+        $SUDO cp "micro-${version}/micro" /usr/local/bin/ || return 1
     fi
     chmod +x /usr/local/bin/micro
+
     rm -rf "micro-${version}" "$archive"
-
     echo -e "✅  micro installé/mis à jour avec succès (version $version)."
-    
-    if command -v micro >/dev/null 2>&1; then
-    echo
-    read -rp "Souhaitez-vous utiliser micro comme éditeur par défaut ? (y/N) : " yn
-    case "$yn" in
-        [Yy]*) update_editor_choice "micro" ;;
-        *)     update_editor_choice "nano"  ;;
-    esac
-fi
 
+    # Proposer de définir comme éditeur par défaut
+    if command -v micro >/dev/null 2>&1; then
+        echo
+        read -rp "Souhaitez-vous utiliser micro comme éditeur par défaut ? (y/N) : " yn
+        case "$yn" in
+            [Yy]*) update_editor_choice "micro" ;;
+            *)     update_editor_choice "nano"  ;;
+        esac
+    fi
 }
 
 update_editor_choice() {
@@ -254,7 +321,7 @@ get_latest_release() {
         echo -e "${RED}Impossible de récupérer la dernière release.${RESET}"
         exit 1
     fi
-    echo "Dernière release : $LATEST_TAG ($LATEST_DATE)"
+    echo -e "ℹ️  Script ${BOLD}rclone_homlab${RESET} - ${UNDERLINE}Dernière release${RESET} : $LATEST_TAG ${ITALIC}($LATEST_DATE)${RESET}"
 }
 
 # --------------------------------------------------------------------------- #
@@ -286,7 +353,7 @@ handle_existing_dir() {
                     echo -e "${RED}Impossible de passer sur $LATEST_TAG${RESET}"
                     exit 1
                 }
-                echo -e "✅  Mise à jour vers $LATEST_TAG réussie !"
+                echo "✅  Mise à jour vers $LATEST_TAG réussie !"
                 exit 0
                 ;;
             3|*)
@@ -313,13 +380,11 @@ get_installed_release() {
 
 # --------------------------------------------------------------------------- #
 # Installation principale
-# Ne récupère que les 5 derniers comits nécessaire pour le bon fonctionnement des MAJ.
-# Si nécessaire de retrouver tout l'historique : git fetch --unshallow
 # --------------------------------------------------------------------------- #
 install() {
-    echo -e "📦  Installation de ${BOLD}rclone_homelab${RESET} (version $LATEST_TAG)...${RESET}"
+    echo -e "📦  Installation de ${BOLD}rclone_homelab${RESET} sur le dernier tag de main..."
 
-    # Création du dossier
+    # Création du dossier si nécessaire
     if [ ! -d "$INSTALL_DIR" ]; then
         if mkdir -p "$INSTALL_DIR" 2>/dev/null; then
             echo "📂  Dossier $INSTALL_DIR créé."
@@ -328,6 +393,9 @@ install() {
         fi
     fi
 
+    # Nettoyage avant clone
+    rm -rf "$INSTALL_DIR"/*
+
     # Vérifier droits écriture
     if [ ! -w "$INSTALL_DIR" ]; then
         $SUDO chown "$(whoami)" "$INSTALL_DIR" || { echo "❌  Impossible de prendre possession de $INSTALL_DIR"; exit 1; }
@@ -335,23 +403,40 @@ install() {
 
     cd "$INSTALL_DIR" || exit 1
 
-    echo "⏬ Téléchargement via shallow clone (--depth 5)..."
-    if ! git -c advice.detachedHead=false clone --branch "$LATEST_TAG" --depth 5 "$REPO_URL" .; then
-        echo -e "⚠️  ${YELLOW}Échec du shallow clone, tentative d’un clone complet...${RESET}"
-        rm -rf "$INSTALL_DIR"/*
-        git -c advice.detachedHead=false clone --branch "$LATEST_TAG" "$REPO_URL" . || exit 1
+    echo "⏬ Clone complet du dépôt..."
+    git -c advice.detachedHead=false clone --branch main "$REPO_URL" "$INSTALL_DIR" || {
+        echo "❌  Clone échoué."
+        exit 1
+    }
+
+    cd "$INSTALL_DIR" || exit 1
+
+    # Récupérer tous les tags
+    git fetch --tags || { echo "❌  Échec fetch tags"; exit 1; }
+
+    # Déterminer le dernier tag sur la branche main
+    LATEST_TAG=$(git tag --merged main | sort -V | tail -n1)
+    if [[ -z "$LATEST_TAG" ]]; then
+        echo "⚠️  Aucun tag trouvé sur la branche main. On restera sur main."
+        LATEST_TAG="main"
+    else
+        echo "🏷️  Dernier tag de main : $LATEST_TAG"
     fi
 
+    # Checkout sur le dernier tag
+    if git show-ref --verify --quiet refs/heads/main; then
+        echo "⚠️  La branche 'main' existe déjà, on la positionne sur $LATEST_TAG"
+        git checkout main || { echo "❌  Impossible de checkout main"; exit 1; }
+        git reset --hard "$LATEST_TAG" || { echo "❌  Impossible de reset main sur $LATEST_TAG"; exit 1; }
+    else
+        git checkout -b main "$LATEST_TAG" || { echo "❌  Impossible de créer main sur $LATEST_TAG"; exit 1; }
+    fi
+
+    echo -e "✅  Branche locale 'main' positionnée sur $LATEST_TAG."
+
+    # Rendre le script exécutable
     chmod +x main.sh
-
-    # Création d'une branche locale main sur le tag
-    if ! git checkout -b main; then
-        echo -e "⚠️  ${YELLOW}La branche ${BOLD}'main'${RESET}${YELLOW} existe déjà, elle sera mise à jour pour pointer sur $LATEST_TAG.${RESET}"
-        git branch -f main "$LATEST_TAG"
-    fi
-
-    echo -e "✅  Branche locale  ${BOLD}'main'${RESET} créée sur $LATEST_TAG."
-
+    echo -e "✅  chmod appliqué sur ${BOLD}'main.sh'${RESET}. Script exécutable."
 }
 
 # --------------------------------------------------------------------------- #
@@ -364,8 +449,7 @@ create_symlink() {
     else
         $SUDO ln -sf "$INSTALL_DIR/main.sh" "$SYMLINK"
     fi
-    chmod +x "$INSTALL_DIR/main.sh"
-    echo -e "✅  Symlink créé : $SYMLINK → $INSTALL_DIR/main.sh"
+    echo "✅  Symlink créé : $SYMLINK → $INSTALL_DIR/main.sh"
 }
 
 # --------------------------------------------------------------------------- #
@@ -377,12 +461,13 @@ create_updater_symlink() {
 
     if [ -f "$UPDATER_SCRIPT" ]; then
         chmod +x "$UPDATER_SCRIPT"
+        echo -e "✅  chmod appliqué sur ${BOLD}'UPDATER_SCRIPT'${RESET}. Script dorénavant exécutable."
         if [ -w "$(dirname "$UPDATER_SYMLINK")" ]; then
             ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
         else
             $SUDO ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
         fi
-        echo -e "✅  Updater exécutable et symlink créé : $UPDATER_SYMLINK → $UPDATER_SCRIPT"
+        echo "✅  Updater exécutable et symlink créé : $UPDATER_SYMLINK → $UPDATER_SCRIPT"
     else
         echo -e "⚠️  ${YELLOW}Fichier ${BOLD}$UPDATER_SCRIPT${RESET}${YELLOW} introuvable.${RESET}"
     fi
@@ -394,7 +479,7 @@ create_updater_symlink() {
 result_install() {
     echo
     echo -e "${GREEN}✅  Installation réussie !${RESET} 🎉"
-    echo -e "⏯ Pour démarrer, chemin d'accès : cd $INSTALL_DIR && ./main.sh"
+    echo "⏯ Pour démarrer, chemin d'accès : cd $INSTALL_DIR && ./main.sh"
     echo -e "⏭ Ou le symlink utilisable partout : ${BOLD}${BLUE}rclone_homelab${RESET}"
     echo
 }
