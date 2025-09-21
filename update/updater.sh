@@ -48,17 +48,7 @@ fetch_git_info() {
     head_epoch=$(git show -s --format=%ct "$head_commit" 2>/dev/null || echo 0)
 
     # --- Détection de la branche locale réelle ---
-    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || true)
-
-    if [[ -z "$branch_real" ]]; then
-        # Cas HEAD détaché (install sur un tag)
-        # Essayer de retrouver une branche associée à ce commit
-        branch_real=$(git branch -r --contains HEAD 2>/dev/null | grep -E 'origin/' | head -n1 | sed 's|origin/||')
-
-        # Si toujours rien → fallback sur "main"
-        [[ -z "$branch_real" ]] && branch_real="main"
-    fi
-
+    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
 
     # --- Commit et date HEAD distant (si branche existante et fetch réussi) ---
     if [[ "$branch_real" != "(détaché)" && "$GIT_OFFLINE" == false ]]; then

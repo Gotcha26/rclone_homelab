@@ -1,11 +1,5 @@
 #!/bin/bash
 
-clear
-echo "================================================================================"
-echo "*            Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            *"
-echo "================================================================================"
-
-
 # =========================================================================== #
 #           Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            #
 # =========================================================================== #
@@ -14,16 +8,11 @@ REPO_URL="https://github.com/Gotcha26/rclone_homelab.git"
 INSTALL_DIR="/opt/rclone_homelab"
 GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest"
 
-# Couleurs / styles
+# Couleurs
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[1;34m'
 RESET='\033[0m'
-
-BOLD="\033[1m"
-ITALIC="\033[3m"
-UNDERLINE="\033[4m"
 
 # ---------------------------------------------------------------------------- #
 # Détection sudo
@@ -38,43 +27,12 @@ fi
 # Vérification des dépendances
 # --------------------------------------------------------------------------- #
 check_dependencies() {
-    local deps=(git curl)
-    local missing=()
-
-    # Vérifie git et curl
-    for dep in "${deps[@]}"; do
+    for dep in git curl unzip; do
         if ! command -v "$dep" &>/dev/null; then
-            missing+=("$dep")
+            echo -e "${RED}Erreur : $dep n'est pas installé.${RESET}"
+            exit 1
         fi
     done
-
-    if [[ ${#missing[@]} -gt 0 ]]; then
-        echo -e "⚠️  ${RED}Erreur :${RESET} dépendances manquantes : ${YELLOW}${missing[*]}${RESET}"
-        echo
-        echo "Installez-les avec : sudo apt install ${missing[*]}"
-        exit 1
-    fi
-
-    # Gestion spéciale pour unzip
-    if ! command -v unzip &>/dev/null; then
-        echo -e "⚠️  ${RED}Le composant ${UNDERLINE}unzip${RESET}${RED} est requis mais n'est pas installé.${RESET}"
-        echo
-        read -rp "Voulez-vous installer unzip maintenant ? (y/N) : " yn
-        case "$yn" in
-            [Yy]*)
-                if sudo apt update && sudo apt install -y unzip; then
-                    echo -e "✅  unzip installé avec succès."
-                else
-                    echo -e "${RED}❌  Impossible d'installer unzip.${RESET}"
-                    exit 1
-                fi
-                ;;
-            *)
-                echo "${RED}❌  Impossible de continuer sans unzip.${RESET}"
-                exit 1
-                ;;
-        esac
-    fi
 }
 
 # --------------------------------------------------------------------------- #
@@ -82,13 +40,11 @@ check_dependencies() {
 # --------------------------------------------------------------------------- #
 check_rclone() {
     if ! command -v rclone &>/dev/null; then
-        echo -e "$⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET} n'est pas installé, Il est un composant ${BOLD}indispensable.${RESET}"
-        echo "Plus d'infos sur rclone : https://rclone.org/"
-        echo
+        echo -e "${RED}rclone n'est pas installé, c'est indispensable.${RESET}"
         read -rp "Voulez-vous installer rclone maintenant ? (y/N) : " yn
         case "$yn" in
             [Yy]*) install_rclone ;;
-            *) echo "${RED}${BOLD}Impossible de continuer sans rclone.${RESET}"; exit 1 ;;
+            *) echo "Impossible de continuer sans rclone."; exit 1 ;;
         esac
     else
         local local_version
@@ -96,19 +52,18 @@ check_rclone() {
         echo "rclone détecté, version : $local_version"
         latest_rclone=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
         if [ "$local_version" != "$latest_rclone" ]; then
-            echo "ℹ️  Nouvelle version rclone disponible : $latest_rclone"
-            echo
+            echo "Nouvelle version rclone disponible : $latest_rclone"
             read -rp "Voulez-vous mettre à jour rclone ? (y/N) : " yn
             case "$yn" in
                 [Yy]*) install_rclone ;;
-                *) echo "👉  Vous gardez la version existante." ;;
+                *) echo "Vous gardez la version existante." ;;
             esac
         fi
     fi
 }
 
 install_rclone() {
-    echo "📦  Installation / mise à jour de rclone..."
+    echo "Installation / mise à jour de rclone..."
     curl -Of https://downloads.rclone.org/rclone-current-linux-amd64.zip
     unzip -o rclone-current-linux-amd64.zip
     if [ -w "/usr/local/bin" ]; then
@@ -118,7 +73,7 @@ install_rclone() {
     fi
     chmod +x /usr/local/bin/rclone
     rm -rf rclone-*-linux-amd64*
-    echo -e "✅  ${GREEN}rclone installé/mis à jour avec succès.${RESET}"
+    echo -e "${GREEN}rclone installé/mis à jour avec succès.${RESET}"
 }
 
 # --------------------------------------------------------------------------- #
@@ -126,9 +81,7 @@ install_rclone() {
 # --------------------------------------------------------------------------- #
 check_msmtp() {
     if ! command -v msmtp &>/dev/null; then
-        echo -e "⚠️  ${YELLOW}Le compostant ${UNDERLINE}msmtp${RESET}${YELLOW} non détecté (optionnel).${RESET}"
-        echo -e "Il sera néanmoins obligatoire pour pouvoir envoyer des rapports ${UNDERLINE}par email.${RESET}"
-        echo
+        echo -e "${YELLOW}msmtp non détecté (optionnel).${RESET}"
         read -rp "Voulez-vous installer msmtp ? (y/N) : " yn
         case "$yn" in
             [Yy]*)
@@ -139,7 +92,7 @@ check_msmtp() {
                     echo -e "${YELLOW}⚠️  Échec installation msmtp, ce n'est pas bloquant.${RESET}"
                 fi
                 ;;
-            *) echo "👉  msmtp ne sera pas installé (optionnel)." ;;
+            *) echo "msmtp ne sera pas installé (optionnel)." ;;
         esac
     else
         local local_version
@@ -153,13 +106,11 @@ check_msmtp() {
 # --------------------------------------------------------------------------- #
 check_micro() {
     if ! command -v micro &>/dev/null; then
-        echo -e "${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
-        echo -e "Il s'agit d'une alternative plus fournie à l'éditeur "nano"."
-        echo
+        echo -e "${YELLOW}micro non détecté (éditeur optionnel).${RESET}"
         read -rp "Voulez-vous installer micro ? (y/N) : " yn
         case "$yn" in
             [Yy]*) install_micro ;;
-            *) echo "👉  micro (optionnel)ne sera pas installé." ;;
+            *) echo "micro ne sera pas installé (optionnel)." ;;
         esac
     else
         local local_version latest_version
@@ -170,12 +121,11 @@ check_micro() {
         echo "micro détecté, version locale : $local_version"
 
         if [ -n "$latest_version" ] && [ "$local_version" != "$latest_version" ]; then
-            echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
-            echo
+            echo "Nouvelle version de micro disponible : $latest_version"
             read -rp "Voulez-vous mettre à jour micro ? (y/N) : " yn
             case "$yn" in
                 [Yy]*) install_micro "$latest_version" ;;
-                *) echo "👉  Vous gardez la version existante." ;;
+                *) echo "Vous gardez la version existante." ;;
             esac
         fi
     fi
@@ -183,7 +133,7 @@ check_micro() {
 
 install_micro() {
     local version="${1:-latest}"
-    echo "📦  Installation / mise à jour de micro..."
+    echo "Installation / mise à jour de micro..."
 
     # Déterminer la dernière version si "latest"
     if [ "$version" = "latest" ]; then
@@ -205,10 +155,9 @@ install_micro() {
     chmod +x /usr/local/bin/micro
     rm -rf "micro-${version}" "$archive"
 
-    echo -e "✅  micro installé/mis à jour avec succès (version $version)."
+    echo -e "${GREEN}✅  micro installé/mis à jour avec succès (version $version).${RESET}"
     
     if command -v micro >/dev/null 2>&1; then
-    echo
     read -rp "Souhaitez-vous utiliser micro comme éditeur par défaut ? (y/N) : " yn
     case "$yn" in
         [Yy]*) update_editor_choice "micro" ;;
@@ -239,7 +188,7 @@ update_editor_choice() {
         fi
     done
 
-    echo -e "✅  Éditeur par défaut mis à jour : $new_editor"
+    echo -e "${GREEN}✅  Éditeur par défaut mis à jour : $new_editor${RESET}"
 }
 
 
@@ -261,14 +210,13 @@ get_latest_release() {
 # --------------------------------------------------------------------------- #
 handle_existing_dir() {
     if [ -d "$INSTALL_DIR/.git" ]; then
-        echo -e "${YELLOW}Le répertoire ${BOLD}$INSTALL_DIR${RESET}${YELLOW} existe déjà.${RESET}"
+        echo -e "${YELLOW}Le répertoire $INSTALL_DIR existe déjà.${RESET}"
         get_installed_release
         echo
         echo "Que voulez-vous faire ?"
         echo "  [1] Supprimer et réinstaller la dernière release"
         echo "  [2] Mettre à jour vers la dernière release"
         echo "  [3] Ne rien faire et quitter"
-        echo
         read -rp "Choix (1/2/3) : " choice
         case "$choice" in
             1)
@@ -285,11 +233,11 @@ handle_existing_dir() {
                     echo -e "${RED}Impossible de passer sur $LATEST_TAG${RESET}"
                     exit 1
                 }
-                echo -e "✅  Mise à jour vers $LATEST_TAG réussie !"
+                echo -e "${GREEN}✅  Mise à jour vers $LATEST_TAG réussie !${RESET}"
                 exit 0
                 ;;
             3|*)
-                echo "Abandon. Ciao"
+                echo "Abandon."
                 exit 0
                 ;;
         esac
@@ -314,7 +262,7 @@ get_installed_release() {
 # Installation principale
 # --------------------------------------------------------------------------- #
 install() {
-    echo -e "📦  Installation de ${BOLD}rclone_homelab${RESET} (version $LATEST_TAG)...${RESET}"
+    echo -e "${GREEN}Installation de rclone_homelab (version $LATEST_TAG)...${RESET}"
 
     # Création du dossier
     if [ ! -d "$INSTALL_DIR" ]; then
@@ -334,9 +282,15 @@ install() {
     git -c advice.detachedHead=false clone --branch "$LATEST_TAG" --depth 1 "$REPO_URL" . || exit 1
     chmod +x main.sh
     echo -e "${GREEN}✅  Installation réussie !${RESET}"
-    echo -e "⏯ Pour démarrer, chemin d'accès : cd $INSTALL_DIR && ./main.sh"
-    echo -e "${BLUE}⏭ Ou le symlink utilisable partout : ${BOLD}rclone_homelab${RESET}"
-    echo
+    echo "Pour démarrer : cd $INSTALL_DIR && ./main.sh"
+
+    # Création d'une branche locale main sur le tag installé
+    git checkout -b main || {
+        echo -e "${YELLOW}⚠️  La branche 'main' existe déjà, elle sera mise à jour pour pointer sur $LATEST_TAG.${RESET}"
+        git branch -f main "$LATEST_TAG"
+    }
+    echo -e "${GREEN}✅  Branche locale 'main' créée sur $LATEST_TAG.${RESET}"
+
 }
 
 # --------------------------------------------------------------------------- #
@@ -350,7 +304,7 @@ create_symlink() {
         $SUDO ln -sf "$INSTALL_DIR/main.sh" "$SYMLINK"
     fi
     chmod +x "$INSTALL_DIR/main.sh"
-    echo -e "✅  Symlink créé : $SYMLINK → $INSTALL_DIR/main.sh"
+    echo -e "${GREEN}✅  Symlink créé : $SYMLINK → $INSTALL_DIR/main.sh${RESET}"
 }
 
 # --------------------------------------------------------------------------- #
@@ -367,9 +321,9 @@ create_updater_symlink() {
         else
             $SUDO ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
         fi
-        echo -e "✅  Updater exécutable et symlink créé : $UPDATER_SYMLINK → $UPDATER_SCRIPT"
+        echo -e "${GREEN}✅  Updater exécutable et symlink créé : $UPDATER_SYMLINK → $UPDATER_SCRIPT${RESET}"
     else
-        echo -e "⚠️  ${YELLOW}Fichier ${BOLD}$UPDATER_SCRIPT${RESET}${YELLOW} introuvable.${RESET}"
+        echo -e "${YELLOW}⚠️  Fichier $UPDATER_SCRIPT introuvable.${RESET}"
     fi
 }
 
