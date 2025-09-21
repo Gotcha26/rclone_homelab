@@ -4,6 +4,7 @@ clear
 echo "================================================================================"
 echo "*            Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            *"
 echo "================================================================================"
+echo
 
 
 # =========================================================================== #
@@ -93,7 +94,7 @@ check_rclone() {
     else
         local local_version
         local_version=$(rclone version 2>/dev/null | head -n1 | awk '{print $2}')
-        echo "rclone détecté, version : $local_version"
+        echo "✔️  rclone détecté. Réputé : ${UNDERLINE}à jour${RESET}"
         latest_rclone=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
         if [ "$local_version" != "$latest_rclone" ]; then
             echo "ℹ️  Nouvelle version rclone disponible : $latest_rclone"
@@ -144,7 +145,7 @@ check_msmtp() {
     else
         local local_version
         local_version=$(msmtp --version | head -n1 | awk '{print $2}')
-        echo "msmtp détecté, version : $local_version"
+        echo "✔️  msmtp détecté. Réputé : ${UNDERLINE}à jour${RESET}"
     fi
 }
 
@@ -167,7 +168,7 @@ check_micro() {
         latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                           | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
 
-        echo "micro détecté, version locale : $local_version"
+        echo "✔️  micro détecté. Réputé : ${UNDERLINE}à jour${RESET}"
 
         if [ -n "$latest_version" ] && [ "$local_version" != "$latest_version" ]; then
             echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
@@ -239,7 +240,7 @@ update_editor_choice() {
         fi
     done
 
-    echo -e "✅  Éditeur par défaut mis à jour : $new_editor"
+    echo -e "✔️  Éditeur par défaut mis à jour : $new_editor"
 }
 
 
@@ -312,6 +313,8 @@ get_installed_release() {
 
 # --------------------------------------------------------------------------- #
 # Installation principale
+# Ne récupère que les 5 derniers comits nécessaire pour le bon fonctionnement des MAJ.
+# Si nécessaire de retrouver tout l'historique : git fetch --unshallow
 # --------------------------------------------------------------------------- #
 install() {
     echo -e "📦  Installation de ${BOLD}rclone_homelab${RESET} (version $LATEST_TAG)...${RESET}"
@@ -331,21 +334,23 @@ install() {
     fi
 
     cd "$INSTALL_DIR" || exit 1
-    git -c advice.detachedHead=false clone --branch "$LATEST_TAG" --depth 1 "$REPO_URL" . || exit 1
+
+    echo "⏬ Téléchargement via shallow clone (--depth 5)..."
+    if ! git -c advice.detachedHead=false clone --branch "$LATEST_TAG" --depth 5 "$REPO_URL" .; then
+        echo -e "⚠️  ${YELLOW}Échec du shallow clone, tentative d’un clone complet...${RESET}"
+        rm -rf "$INSTALL_DIR"/*
+        git -c advice.detachedHead=false clone --branch "$LATEST_TAG" "$REPO_URL" . || exit 1
+    fi
+
     chmod +x main.sh
 
     # Création d'une branche locale main sur le tag
-    git checkout -b main || {
+    if ! git checkout -b main; then
         echo -e "⚠️  ${YELLOW}La branche ${BOLD}'main'${RESET}${YELLOW} existe déjà, elle sera mise à jour pour pointer sur $LATEST_TAG.${RESET}"
         git branch -f main "$LATEST_TAG"
-    }
-    echo -e "✅  Branche locale  ${BOLD}'main'${RESET} créée sur $LATEST_TAG."
-    echo
-    echo -e "${GREEN}✅  Installation réussie !${RESET}"
-    echo -e "⏯ Pour démarrer, chemin d'accès : cd $INSTALL_DIR && ./main.sh"
-    echo -e "${BLUE}⏭ Ou le symlink utilisable partout : ${BOLD}rclone_homelab${RESET}"
-    echo
+    fi
 
+    echo -e "✅  Branche locale  ${BOLD}'main'${RESET} créée sur $LATEST_TAG."
 
 }
 
@@ -383,6 +388,17 @@ create_updater_symlink() {
     fi
 }
 
+# --------------------------------------------------------------------------- #
+# Résumé de fin d'installation
+# --------------------------------------------------------------------------- #
+result_install() {
+    echo
+    echo -e "${GREEN}✅  Installation réussie !${RESET} 🎉"
+    echo -e "⏯ Pour démarrer, chemin d'accès : cd $INSTALL_DIR && ./main.sh"
+    echo -e "⏭ Ou le symlink utilisable partout : ${BOLD}${BLUE}rclone_homelab${RESET}"
+    echo
+}
+
 # =========================================================================== #
 # Execution
 # =========================================================================== #
@@ -395,6 +411,7 @@ handle_existing_dir
 install
 create_symlink
 create_updater_symlink
+result_install
 
 exit 0
 
