@@ -1,4 +1,5 @@
 # Ignorer le fichier de config perso
+local/*
 Notes.txt
-config/config.dev.sh
-jobs.txt
+UPDATES.md
+README_old.md

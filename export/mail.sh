@@ -1,16 +1,28 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# Fonctions de vérification de l'email (forme)
+# Fonctions de vérification de l'email (forme + installation + configuration msmtp)
 ###############################################################################
 
-email_check() {
-    local email="$1"
-    # Regex basique : texte@texte.domaine
-    if [[ ! "$email" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-        die 12 "$MSG_MAIL_ERROR : $email"
+check_mail_bundle() {
+    if [[ -n "$MAIL_TO" ]]; then
+        # Vérifie la syntaxe de l'email
+        if ! [[ "$MAIL_TO" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+            die 12 "$MSG_MAIL_ERROR : $MAIL_TO"
+        fi
+
+        # Vérifie si msmtp est installé
+        if ! command -v msmtp >/dev/null 2>&1; then
+            die 10 "❌ msmtp n'est pas installé."
+        fi
+
+        # Vérifie la configuration msmtp via la fonction existante
+        if ! check_msmtp_configured >/dev/null; then
+            die 22 "❌ msmtp est requis mais aucune configuration valide n'a été trouvée."
+        fi
     fi
 }
+
 
 
 ###############################################################################
@@ -111,7 +123,7 @@ encode_subject_for_email() {
 assemble_and_send_mail() {
     local log_file="$1"        # Fichier log utilisé pour calcul du résumé global (copied/updated/deleted)
     local html_block="$2"      # Bloc HTML global déjà préparé (tous les jobs), facultatif
-    local MAIL="${TMP_RCLONE}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
+    local MAIL="${DIR_TMP}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
 
     # Récupération de l'adresse expéditeur depuis msmtp
     FROM_ADDRESS="$(grep '^from' /etc/msmtprc | awk '{print $2}')"
@@ -200,7 +212,7 @@ HTML
     echo "--MIXED_BOUNDARY--" >> "$MAIL"
 
     # --- Envoi du mail ---
-    msmtp --logfile "$LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$LOG_FILE_MAIL"
+    msmtp --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$DIR_LOG_FILE_MAIL"
     print_fancy --align "center" "$MSG_EMAIL_SENT"
 
     # --- Nettoyage optionnel ---

@@ -1,161 +1,341 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# Fonction : Met à jour (forcée) du script sur la branche en cour ou sur une branche spécifiée si précisée
-# Appel explicite ou implicite si forcé via FORCE_UPDATE=true
+# Fonction principale : update_check
+# → Vérifie si une mise à jour est disponible et affiche le statut
 ###############################################################################
-update_force_branch() {
-    local branch="${FORCE_BRANCH:-$BRANCH}"
-    MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
-    echo
-    print_fancy --align "center" --bg "green" --style "italic" "$MSG_MAJ_UPDATE_BRANCH"
+update_check() {
+    fetch_git_info || return 1
+    analyze_update_status
+}
 
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
 
-    # Récupération des dernières infos du remote
-    git fetch --all --tags
+###############################################################################
+# Fonction : Récupère toutes les informations nécessaires sur Git
+# Variables retournées :
+# - head_commit / head_epoch
+# - remote_commit / remote_epoch
+# - latest_tag / latest_tag_epoch
+# - branch_real
+# - current_tag
+# - GIT_OFFLINE (true si GitHub/remote inaccessible)
+###############################################################################
+fetch_git_info() {
 
-    # Vérifie si la branche locale est déjà à jour
-    local local_hash remote_hash
-    local_hash=$(git rev-parse "$branch")
-    remote_hash=$(git rev-parse "origin/$branch")
+    # --- Initialisation obligatoire à cause de set -u ---
+    branch_real=""
+    head_commit=""
+    head_epoch=0
+    remote_commit=""
+    remote_epoch=0
+    latest_tag=""
+    latest_tag_commit=""
+    latest_tag_epoch=0
+    current_tag=""
+    GIT_OFFLINE=false
 
-    if [[ "$local_hash" == "$remote_hash" ]]; then
-        # Rien à mettre à jour → on retourne 1
-        print_fancy --align "center" --theme "info" "Branche '$branch' déjà à jour"
-        return 1
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
+
+    # --- Récupération des dernières infos du remote avec fallback ---
+    if ! git fetch origin --tags --prune --quiet; then
+        print_fancy --theme "error" --fg "red" \
+            "Impossible de contacter GitHub ou le remote. Mode offline activé."
+        GIT_OFFLINE=true
     fi
 
-    # Assure que l'on est bien sur la branche souhaitée
-    git checkout -f "$branch" || { echo "Erreur lors du checkout de $branch" >&2; exit 1; }
+    # --- Commit et date HEAD local ---
+    head_commit=$(git rev-parse HEAD 2>/dev/null || echo "")
+    head_epoch=$(git show -s --format=%ct "$head_commit" 2>/dev/null || echo 0)
 
-    # Écrase toutes les modifications locales, y compris fichiers non suivis
+    # --- Détection de la branche locale réelle ---
+    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
+
+    # --- Commit et date HEAD distant (si branche existante et fetch réussi) ---
+    if [[ "$branch_real" != "(détaché)" && "$GIT_OFFLINE" == false ]]; then
+        remote_commit=$(git rev-parse "origin/$branch_real" 2>/dev/null || echo "")
+        remote_epoch=$(git show -s --format=%ct "$remote_commit" 2>/dev/null || echo 0)
+    else
+        remote_commit=""
+        remote_epoch=0
+    fi
+
+    # --- Dernier tag disponible sur la branche réelle ---
+    if [[ "$branch_real" != "(détaché)" && "$GIT_OFFLINE" == false ]]; then
+        latest_tag=$(git tag --merged "origin/$branch_real" 2>/dev/null | sort -V | tail -n1)
+    else
+        latest_tag=""
+    fi
+
+    if [[ -n "$latest_tag" ]]; then
+        latest_tag_commit=$(git rev-parse "$latest_tag" 2>/dev/null || echo "")
+        latest_tag_epoch=$(git show -s --format=%ct "$latest_tag_commit" 2>/dev/null || echo 0)
+    else
+        latest_tag_commit=""
+        latest_tag_epoch=0
+    fi
+
+    # --- Tag actuel si HEAD exactement sur un tag ---
+    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+}
+
+
+##############################################################################
+# Fonction : Affichage des informations Git issues de fetch_git_info()
+# → Affichage basé sur DEBUG_INFOS (true = verbose, false = simplified)
+# → Protège contre les erreurs si GitHub/remote indisponible
+##############################################################################
+analyze_update_status() {
+    local result_code=0
+
+    # --- Mode verbose : affichage complet si DEBUG_INFOS=true ---
+    if [[ "${DEBUG_INFOS:-false}" == true ]]; then
+        print_fancy --align "center" --fill "#" "#"
+        print_fancy --align "center" --style "bold" "INFOS GIT"
+        echo ""  # Ligne vide pour espacement
+
+        # Branche locale
+        text=""
+        text+=$(print_fancy --raw "📌  Branche locale   : ")
+        text+=$(print_fancy --fg "red" --style "bold" --raw "$branch_real")
+        print_fancy "$text"
+        echo ""
+
+        # Commit local
+        print_fancy "📌  Commit local     : $head_commit"
+        print_fancy --align "right" --style "italic" \
+            "($(date -d "@$head_epoch" 2>/dev/null || echo "date inconnue"))"
+
+        # Commit distant
+        if [[ -n "$remote_commit" ]]; then
+            print_fancy "🕒  Commit distant   : $remote_commit"
+            print_fancy --align "right" --style "italic" \
+                "($(date -d "@$remote_epoch" 2>/dev/null || echo "date inconnue"))"
+        fi
+
+        # Dernière release
+        if [[ -n "$latest_tag" ]]; then
+            print_fancy "🏷️  Dernière release : $latest_tag"
+            print_fancy --align "right" --style "italic" \
+                "($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
+        fi
+
+        # Mode offline
+        if [[ "$GIT_OFFLINE" == true ]]; then
+            print_fancy --theme "warning" --fg "yellow" --align "center" \
+                "Mode offline : informations GitHub incomplètes."
+        fi
+    fi
+
+    # --- Analyse des commits / branches ---
+    if [[ "$branch_real" == "main" ]]; then
+        # --- Branche main : vérifier si on est à jour avec la dernière release ---
+        if [[ -z "$latest_tag" ]]; then
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
+                "Impossible de vérifier les mises à jour (API GitHub muette ou mode offline)."
+            result_code=1
+
+        elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit" 2>/dev/null; then
+            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
+                echo ""
+                print_fancy --theme "ok" --fg "blue" --align "right" \
+                    "Version actuelle ${current_tag:-dev} >> À jour"
+            else
+                print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
+            fi
+            result_code=0
+
+        elif (( latest_tag_epoch < head_epoch )); then
+            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
+                echo ""
+                print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" \
+                    --highlight "Des nouveautés existent mais ne sont pas encore officialisées."
+                print_fancy --theme "follow" --bg "yellow" --align "center" --style "bold underline" \
+                    --highlight "La mise à jour automatisée n'est pas proposée pour garantir la stabilité."
+                print_fancy --bg "yellow" --align "center" --style "italic" \
+                    --highlight "Forcer la mise à jour (possible) pourrait avoir des effets indésirables."
+                print_fancy --bg "yellow" --align "center" --style "italic" \
+                    --highlight "Vous êtes bien sur la dernière release stable : ${current_tag:-dev}"
+            else
+                print_fancy --theme "ok" --fg "yellow" --align "right" --style "underline" \
+                    "Votre version est à jour..."
+            fi
+            result_code=0
+
+        else
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
+                "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
+            print_fancy --theme "info" --bg "blue" --align "center" --highlight \
+                "Pour mettre à jour : relancer le script sans arguments pour accéder au menu."
+        fi
+
+    else
+        # --- Branche dev ou autre ---
+        if [[ -z "$remote_commit" ]]; then
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
+                "Aucune branche distante détectée pour '$branch_real' (mode offline ou fetch échoué)."
+            result_code=1
+
+        elif [[ "$head_commit" == "$remote_commit" ]]; then
+            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
+                echo ""
+                print_fancy --theme "ok" --fg "blue" --style "bold" --align "right" \
+                    "Votre branche '$branch_real' est à jour avec le dépôt."
+            else
+                print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
+            fi
+            result_code=0
+
+        elif (( head_epoch < remote_epoch )); then
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
+                "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
+            print_fancy --bg "blue" --align "center" --highlight \
+                "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
+            print_fancy --theme "warning" --bg "blue" --align "center" --style "underline" --highlight \
+                "Les modifications (hors .gitignore) seront écrasées/perdues."
+            result_code=1
+
+        else
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "warning" --bg "blue" --align "center" --style "bold" --highlight \
+                "Votre commit local est plus récent que origin/$branch_real"
+            print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight \
+                "Pas de mise à jour à faire sous peine de régressions/pertes."
+            result_code=0
+        fi
+    fi
+
+    [[ "${DEBUG_INFOS:-false}" == true ]] && print_fancy --align "center" --fill "#" "#"
+    return $result_code
+}
+
+
+###############################################################################
+# Fonction : Affichage un résumé conditionnel de analyze_update_status()
+# → Protège contre mode offline et set -u
+###############################################################################
+git_summary() {
+    # Si DEBUG_INFOS=false, on ne fait rien
+    [[ "${DEBUG_INFOS:-true}" == "false" ]] || return
+
+    # Argument : code retour d'analyze_update_status()
+    local code="${1:-0}"
+
+    if [[ "$code" -eq 0 ]]; then
+        print_fancy --theme "success" --align "right" \
+            "Git → OK"
+    else
+        print_fancy --theme "warning" --align "center" \
+            "Git → Une information sur une éventuelle MAJ est disponible."
+    fi
+}
+
+
+###############################################################################
+# Fonction : Met à jour (forcée) du script sur la branche en cours
+# ou sur une branche spécifiée via FORCE_BRANCH
+# → préserve les fichiers ignorés (.gitignore)
+###############################################################################
+update_to_latest_branch() {
+    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
+
+    # Déterminer la branche réelle
+    # Appel obligatoire à fetch_git_info si pas déjà fait
+    [[ -z "${branch_real:-}" ]] && fetch_git_info
+
+    # Choix de la branche à utiliser
+    local branch="${FORCE_BRANCH:-$branch_real}"
+
+    # Si HEAD détaché ou branche vide → fallback sur main
+    if [[ -z "$branch" || "$branch" == "(détaché)" || "$branch" == "HEAD" ]]; then
+        print_fancy --theme "warning" \
+            "HEAD détaché détecté → fallback automatique sur 'main'"
+        branch="main"
+    fi
+
+    # Alerte spéciale si mise à jour sur main
+    if [[ "$branch" == "main" ]]; then
+        print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold underline" \
+            "Mise à jour forcée sur HEAD de main ! Les commits locaux peuvent être écrasés."
+    fi
+
+    MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
+    echo
+    print_fancy --align "center" --bg "green" --style "italic" --highlight \
+        "$MSG_MAJ_UPDATE_BRANCH"
+
+    # Liste des fichiers ignorés (d'après .gitignore)
+    local ignored_files
+    ignored_files=$(git ls-files --ignored --other --exclude-standard)
+
+    # Sauvegarde temporaire si fichiers ignorés présents
+    if [[ -n "$ignored_files" ]]; then
+        echo
+        echo "💾  Prendre soin des fichiers personnalisables..."
+        echo
+        tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
+    fi
+
+    # Récupération des dernières infos
+    git fetch --all --tags
+
+    # Passage forcé sur la branche cible
+    git checkout -f "$branch" || {
+        print_fancy --theme "error" \
+            "Erreur lors du checkout de $branch" >&2
+        exit 1
+        }
     git reset --hard "origin/$branch"
     git clean -fd
 
-    # Rendre le script principal exécutable
-    chmod +x "$SCRIPT_DIR/main.sh"
+    # Restauration éventuelle des fichiers ignorés
+    if [[ -f /tmp/ignored_backup.tar.gz ]]; then
+        echo
+        echo "♻️  ... Retour des fichiers personnalisables."
+        tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
+        rm -f /tmp/ignored_backup.tar.gz
+        echo "✅  Les fichiers personnalisables sont heureux de faire leur retour !"
+        echo
+    fi
 
-    print_fancy --align "center" --theme "success" "$MSG_MAJ_UPDATE_BRANCH_SUCCESS"
+    update_local_configs
 
-    # Retourne 0 pour signaler qu’une MAJ a été effectuée
+    make_scripts_executable
+
+    print_fancy --align "center" --theme "success" \
+        "Script mis à jour avec succès."
     return 0
 }
 
 
 ###############################################################################
-# Fonction : Vérifie s'il existe une nouvelle release (tag) sur la branche active
-# Affiche minimal pour main si à jour ou en avance, sinon détails complets
-# Pour les branches dev ou autres expérimentales, affiche l'état local vs distant
-###############################################################################
-update_check() {
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
-
-    git fetch --all --tags --quiet
-
-    # Commit et date HEAD local
-    local head_commit head_date
-    head_commit=$(git rev-parse HEAD)
-    head_date=$(git --no-pager show -s --format=%ci "$head_commit")
-
-    # Détecter la branche réelle (HEAD peut être détaché)
-    local branch_real
-    branch_real=$(git branch --show-current)
-    if [[ -z "$branch_real" ]]; then
-        branch_real=$(git branch -r --contains "$head_commit" | head -n1 | sed 's|origin/||')
-    fi
-    [[ -z "$branch_real" ]] && branch_real="(détaché)"
-
-    # Commit et date HEAD distant
-    local remote_commit remote_date
-    remote_commit=$(git rev-parse "origin/$branch_real")
-    remote_date=$(git --no-pager show -s --format=%ci "$remote_commit")
-
-    # Dernier tag disponible sur la branche réelle
-    local latest_tag latest_tag_commit latest_tag_date
-    latest_tag=$(git tag --merged "origin/$branch_real" | sort -V | tail -n1)
-    [[ -n "$latest_tag" ]] && latest_tag_commit=$(git rev-parse "$latest_tag")
-    [[ -n "$latest_tag_commit" ]] && latest_tag_date=$(git --no-pager show -s --format=%ci "$latest_tag_commit")
-
-    # Tag actuel si HEAD exactement sur un tag
-    local current_tag
-    current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
-
-    # --- Affichage général ---
-    echo
-    echo "📌  Branch réelle utilisée pour les mises à jour : $branch_real"
-    echo "📌  Commit local   : $head_commit ($head_date)"
-    echo "🕒  Commit distant : $remote_commit ($remote_date)"
-    [[ -n "$latest_tag" ]] && echo "🕒  Dernière release : $latest_tag ($latest_tag_date)"
-
-    # --- Branche main ---
-    if [[ "$BRANCH" == "main" ]]; then
-        if [[ -z "$latest_tag" ]]; then
-            print_fancy --fg "red" --bg "white" --style "bold underline" "$MSG_MAJ_ERROR"
-            return 1
-        fi
-
-        # Déjà sur le dernier tag ou commit local plus récent ?
-        if [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-            echo "✅  Version actuelle ${current_tag:-dev} >> A jour"
-            return 0
-        fi
-
-        # Comparaison horodatage
-        local head_epoch tag_epoch
-        head_epoch=$(date -d "$head_date" +%s)
-        tag_epoch=$(date -d "$latest_tag_date" +%s)
-
-        echo
-        echo "⚡  Nouvelle release détectée : $latest_tag ($latest_tag_date)"
-
-        if (( tag_epoch < head_epoch )); then
-            print_fancy --bg "yellow" --align "center" --highlight \
-                "⚠️  Attention : votre commit local est plus récent que la dernière release !"
-            echo "👉  Forcer la mise à jour pourrait écraser des changements locaux"
-            return 0
-        else
-            echo "🕒  Dernière release disponible : $latest_tag ($latest_tag_date)"
-            echo "ℹ️  Pour mettre à jour : relancer le script en mode menu ou utiliser --update-tag"
-            return 1
-        fi
-    fi
-
-    # --- Branche dev ou expérimentale ---
-
-    if [[ "$head_commit" == "$remote_commit" ]]; then
-        echo "✅  Votre branche est à jour avec l'origine."
-        return 0
-    elif git merge-base --is-ancestor "$head_commit" "$remote_commit"; then
-        print_fancy --bg "blue" --align "center" --highlight "⚡  Mise à jour possible : votre branche est en retard sur origin/$branch_real"
-        return 1
-    elif git merge-base --is-ancestor "$remote_commit" "$head_commit"; then
-        print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche est en avance sur origin/$branch_real"
-        return 0
-    else
-        local local_epoch remote_epoch
-        local_epoch=$(date -d "$head_date" +%s)
-        remote_epoch=$(date -d "$remote_date" +%s)
-
-        if (( local_epoch < remote_epoch )); then
-            print_fancy --bg "blue" --align "center" --highlight "⚡  Votre branche diverge, mais le remote est plus récent → MAJ recommandée"
-            return 1
-        else
-            print_fancy --bg "green" --align "center" --highlight "⚠️  Votre branche diverge, mais vous êtes plus récent → pas de MAJ nécessaire"
-            return 0
-        fi
-    fi
-}
-
-
-###############################################################################
 # Fonction : Met à jour le script vers la dernière release (tag)
-# Affiche horodatages pour plus de clarté
+# → préserve les fichiers ignorés (.gitignore)
 ###############################################################################
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
-    local branch="${FORCE_BRANCH:-$BRANCH}"
+    # Déterminer la branche réelle
+    # Récupérer infos Git si nécessaire
+    [[ -z "${branch_real:-}" ]] && fetch_git_info
+
+    # Choix de la branche : priorité à FORCE_BRANCH
+    local branch
+    if [[ -n "${FORCE_BRANCH:-}" ]]; then
+        branch="$FORCE_BRANCH"
+    else
+        branch="$branch_real"
+    fi
+
+    # Si HEAD détaché ou branche vide → fallback sur main
+    if [[ -z "$branch" || "$branch" == "(détaché)" || "$branch" == "HEAD" ]]; then
+        print_fancy --theme "warning" \
+            "HEAD détaché détecté → fallback automatique sur 'main'"
+        branch="main"
+    fi
 
     git fetch origin "$branch" --tags --quiet
 
@@ -163,45 +343,172 @@ update_to_latest_tag() {
     latest_tag=$(git tag --merged "origin/$branch" | sort -V | tail -n1)
 
     if [[ -z "$latest_tag" ]]; then
-        echo "❌  Aucun tag trouvé sur la branche $branch"
+        print_fancy --theme "error" \
+            "Aucun tag trouvé sur la branche $branch"
         return 1
     fi
 
-    local head_commit head_date
+    local head_commit head_date latest_tag_commit latest_tag_date current_tag
     head_commit=$(git rev-parse HEAD)
     head_date=$(git --no-pager show -s --format=%ci "$head_commit")
-
-    local latest_tag_commit latest_tag_date
     latest_tag_commit=$(git rev-parse "$latest_tag")
     latest_tag_date=$(git show -s --format=%ci "$latest_tag_commit")
-
-    local current_tag
     current_tag=$(git --no-pager describe --tags --exact-match 2>/dev/null || echo "")
 
-    echo
-    echo "📌  Branche : $branch"
-    echo "🕒  Commit actuel : $head_commit ($head_date)"
-    echo "🕒  Dernier tag    : $latest_tag ($latest_tag_date)"
+    # Branche locale
+    text=""
+    text+=$(print_fancy --raw "📌  Branche locale   : ")
+    text+=$(print_fancy --fg "red" --style "bold" --raw "$branch")
+    print_fancy "$text"
+    echo ""
+
+    # Commit local
+    print_fancy "📌  Commit local     : $head_commit"
+    print_fancy --align "right" --style "italic" \
+        "($(date -d "@$head_date" 2>/dev/null || echo "date inconnue"))"
+
+    # Dernière release
+    if [[ -n "$latest_tag" ]]; then
+        print_fancy "🏷️  Dernière release : $latest_tag"
+        print_fancy --align "right" --style "italic" \
+            "($(date -d "@$latest_tag_date" 2>/dev/null || echo "date inconnue"))"
+    fi
 
     if [[ "$head_commit" == "$latest_tag_commit" ]]; then
-        echo "✅  Déjà sur la dernière release : $latest_tag"
+        print_fancy --theme "ok" \
+            "Déjà sur la dernière release : $latest_tag"
         return 0
     fi
 
     if git merge-base --is-ancestor "$latest_tag_commit" "$head_commit"; then
-        echo "⚠️  Vous êtes en avance sur la dernière release : ${current_tag:-dev}"
+        print_fancy --theme "warning" \
+            "Vous êtes en avance sur la dernière release : ${current_tag:-dev}"
         echo "👉  Pas de mise à jour effectuée"
         return 0
     fi
 
     echo "⚡ Nouvelle release détectée : $latest_tag (actuellement ${current_tag:-dev})"
+
+    # --- Sauvegarde des fichiers ignorés ---
+    local ignored_files
+    ignored_files=$(git ls-files --ignored --other --exclude-standard)
+    if [[ -n "$ignored_files" ]]; then
+        echo
+        echo "💾  Prendre soin des fichiers personnalisables..."
+        echo
+        tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
+    fi
+
+    # Checkout vers le tag
     if git -c advice.detachedHead=false checkout "$latest_tag"; then
-        chmod +x "$SCRIPT_DIR/main.sh"
+        # Restauration des fichiers ignorés
+        if [[ -f /tmp/ignored_backup.tar.gz ]]; then
+            echo
+            echo "♻️  ... Retour des fichiers personnalisables."
+            tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
+            rm -f /tmp/ignored_backup.tar.gz
+            echo "✅  Les fichiers personnalisables sont heureux de faire leur retour !"
+            echo
+        fi
+
+        update_local_configs
+
+        make_scripts_executable
+
         echo "🎉  Mise à jour réussie vers $latest_tag"
         echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
         return 0
     else
-        echo "❌  Échec lors du passage à $latest_tag"
+        print_fancy --theme "error" \
+            "Échec lors du passage à $latest_tag"
         return 1
+    fi
+}
+
+
+###############################################################################
+# Fonction : Mise à jour forcée avec possibilité de switch de branche
+# → Utilise GIT_OFFLINE pour éviter les erreurs bloquantes
+###############################################################################
+update_forced() {
+    # --- 1. Si FORCE_BRANCH défini → switch ---
+    if [[ -n "${FORCE_BRANCH:-}" ]]; then
+        echo "🔀 Switch forcé vers la branche : $FORCE_BRANCH"
+        cd "$SCRIPT_DIR" || {
+            print_fancy --theme "error" \
+                "Impossible d'accéder au dossier du script"; return 1;
+        }
+        if ! git fetch origin --quiet; then
+            print_fancy --theme "warning" --fg "yellow" \
+            "Impossible de contacter GitHub pour le fetch. Mode offline activé."
+            GIT_OFFLINE=true
+        fi
+        if ! git checkout -f "$FORCE_BRANCH"; then
+            print_fancy --theme "error" \
+                "Échec du switch vers $FORCE_BRANCH"
+            return 1
+        fi
+    fi
+
+    # --- 2. Récupérer infos Git ---
+    fetch_git_info || {
+        print_fancy --theme "error" \
+            "Impossible de récupérer les infos Git."; return 1;
+    }
+
+    # --- 3. Afficher résumé ---
+    git_summary $?
+
+    # --- 4. Déterminer si mise à jour nécessaire ---
+    local need_update=0
+    if [[ "$branch_real" == "main" ]]; then
+        if [[ "$GIT_OFFLINE" == true ]]; then
+            print_fancy --theme "warning" --fg "yellow" \
+                "Mode offline : impossible de vérifier les dernières releases."
+            need_update=0
+        else
+            [[ "$head_commit" != "$latest_tag_commit" ]] && ! git merge-base --is-ancestor "$latest_tag_commit" "$head_commit" && need_update=1
+        fi
+    else
+        [[ "$head_commit" != "$remote_commit" ]] && need_update=1
+    fi
+
+    if [[ $need_update -eq 0 ]]; then
+        print_fancy --theme "success" \
+            "✅ Aucune mise à jour nécessaire pour la branche '$branch_real'."
+        return 0
+    fi
+
+    echo
+    print_fancy --theme "info" --align "center" \
+        "⚡ Mise à jour détectée sur la branche '$branch_real'"
+
+    # --- 5. Appliquer la mise à jour appropriée ---
+    if [[ "$branch_real" == "main" && "${FORCE_UPDATE:-false}" == "true" ]]; then
+        echo
+        print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold underline" \
+            "Attention : vous forcez la mise à jour sur HEAD de la branche 'main'."
+        echo
+        read -rp "Confirmez-vous la mise à jour sur HEAD de main ? (y/N) : " user_confirm
+        case "$user_confirm" in
+            y|Y|yes|YES)
+                echo "🔄 Mise à jour en cours..."
+                update_to_latest_branch  # HEAD de main
+                ;;
+            *)
+                print_fancy --theme "error" \
+                    "Mise à jour annulée par l'utilisateur."
+                return 1
+                ;;
+        esac
+    elif [[ "$branch_real" == "main" ]]; then
+        if [[ "$GIT_OFFLINE" == true ]]; then
+            print_fancy --theme "warning" --fg "yellow" \
+                "Mode offline : impossible de mettre à jour vers le dernier tag."
+            return 1
+        fi
+        update_to_latest_tag     # Comportement classique
+    else
+        update_to_latest_branch
     fi
 }
