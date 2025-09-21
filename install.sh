@@ -1,5 +1,11 @@
 #!/bin/bash
 
+clear
+echo "================================================================================"
+echo "=            Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            ="
+echo "================================================================================"
+
+
 # =========================================================================== #
 #           Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            #
 # =========================================================================== #
@@ -27,12 +33,33 @@ fi
 # Vérification des dépendances
 # --------------------------------------------------------------------------- #
 check_dependencies() {
-    for dep in git curl unzip; do
+    for dep in git curl; do
         if ! command -v "$dep" &>/dev/null; then
             echo -e "${RED}Erreur : $dep n'est pas installé.${RESET}"
+            echo "Installez-le avec : sudo apt install $dep"
             exit 1
         fi
     done
+
+    # Gestion spéciale pour unzip (obligatoire)
+    if ! command -v unzip &>/dev/null; then
+        echo -e "${YELLOW}unzip est requis mais n'est pas installé.${RESET}"
+        read -rp "Voulez-vous installer unzip maintenant ? (y/N) : " yn
+        case "$yn" in
+            [Yy]*)
+                if sudo apt update && sudo apt install -y unzip; then
+                    echo -e "${GREEN}✅ unzip installé avec succès.${RESET}"
+                else
+                    echo -e "${RED}❌ Impossible d'installer unzip.${RESET}"
+                    exit 1
+                fi
+                ;;
+            *)
+                echo "Impossible de continuer sans unzip."
+                exit 1
+                ;;
+        esac
+    fi
 }
 
 # --------------------------------------------------------------------------- #
