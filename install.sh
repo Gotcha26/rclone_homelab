@@ -123,33 +123,33 @@ install_rclone() {
     case "$arch" in
         x86_64) arch_tag="linux-amd64" ;;
         aarch64|arm64) arch_tag="linux-arm64" ;;
-        *) echo -e "${RED}❌ Architecture $arch non supportée.${RESET}"; exit 1 ;;
+        *) echo -e "${RED}❌  Architecture $arch non supportée.${RESET}"; exit 1 ;;
     esac
 
     # Téléchargement du zip officiel
     zip_file="rclone-current-${arch_tag}.zip"
     curl -Of "https://downloads.rclone.org/${zip_file}" || { 
-        echo -e "${RED}❌ Échec du téléchargement de rclone.${RESET}"; 
+        echo -e "${RED}❌  Échec du téléchargement de rclone.${RESET}"; 
         exit 1; 
     }
 
     # Vérifie que le fichier existe et n’est pas vide
     if [ ! -s "$zip_file" ]; then
-        echo -e "${RED}❌ Fichier téléchargé invalide ou vide : $zip_file${RESET}"
+        echo -e "${RED}❌  Fichier téléchargé invalide ou vide : $zip_file${RESET}"
         exit 1
     fi
 
     # Extraction
     unzip -o "$zip_file" || { 
-        echo -e "${RED}❌ Échec de l'extraction du zip rclone.${RESET}"; 
+        echo -e "${RED}❌  Échec de l'extraction du zip rclone.${RESET}"; 
         exit 1; 
     }
 
     # Copie du binaire
     if [ -w "/usr/local/bin" ]; then
-        cp rclone-*-${arch_tag}/rclone /usr/local/bin/ || { echo "❌ Impossible de copier rclone"; exit 1; }
+        cp rclone-*-${arch_tag}/rclone /usr/local/bin/ || { echo "❌  Impossible de copier rclone"; exit 1; }
     else
-        sudo cp rclone-*-${arch_tag}/rclone /usr/local/bin/ || { echo "❌ Impossible de copier rclone"; exit 1; }
+        sudo cp rclone-*-${arch_tag}/rclone /usr/local/bin/ || { echo "❌  Impossible de copier rclone"; exit 1; }
     fi
     chmod +x /usr/local/bin/rclone
 
@@ -192,7 +192,7 @@ check_msmtp() {
 # --------------------------------------------------------------------------- #
 check_micro() {
     if ! command -v micro &>/dev/null; then
-        echo -e "${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
+        echo -e "⚠️  ${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
         echo -e "Il s'agit d'une alternative plus fournie à l'éditeur ${BOLD}nano${RESET}."
         echo
         read -rp "Voulez-vous installer micro ? (y/N) : " yn
@@ -373,13 +373,11 @@ get_installed_release() {
 
 # --------------------------------------------------------------------------- #
 # Installation principale
-# Ne récupère que les 5 derniers comits nécessaire pour le bon fonctionnement des MAJ.
-# Si nécessaire de retrouver tout l'historique : git fetch --unshallow
 # --------------------------------------------------------------------------- #
 install() {
-    echo -e "📦  Installation de ${BOLD}rclone_homelab${RESET} (version $LATEST_TAG)...${RESET}"
+    echo -e "📦  Installation de ${BOLD}rclone_homelab${RESET} sur le dernier tag de main..."
 
-    # Création du dossier
+    # Création du dossier si nécessaire
     if [ ! -d "$INSTALL_DIR" ]; then
         if mkdir -p "$INSTALL_DIR" 2>/dev/null; then
             echo "📂  Dossier $INSTALL_DIR créé."
@@ -398,24 +396,35 @@ install() {
 
     cd "$INSTALL_DIR" || exit 1
 
-    echo "⏬ Téléchargement via shallow clone (--depth 5)..."
-    if ! git -c advice.detachedHead=false clone --branch "$LATEST_TAG" --depth 5 "$REPO_URL" "$INSTALL_DIR"; then
-        echo -e "⚠️  ${YELLOW}Échec du shallow clone, tentative d’un clone complet...${RESET}"
-        rm -rf "$INSTALL_DIR"/*
-        git -c advice.detachedHead=false clone --branch "$LATEST_TAG" "$REPO_URL" "$INSTALL_DIR" || exit 1
+    echo "⏬ Clone complet du dépôt..."
+    git -c advice.detachedHead=false clone --branch main "$REPO_URL" "$INSTALL_DIR" || {
+        echo "❌  Clone échoué."
+        exit 1
+    }
+
+    cd "$INSTALL_DIR" || exit 1
+
+    # Récupérer tous les tags
+    git fetch --tags || { echo "❌  Échec fetch tags"; exit 1; }
+
+    # Déterminer le dernier tag sur la branche main
+    LATEST_TAG=$(git tag --merged main | sort -V | tail -n1)
+    if [[ -z "$LATEST_TAG" ]]; then
+        echo "⚠️  Aucun tag trouvé sur la branche main. On restera sur main."
+        LATEST_TAG="main"
+    else
+        echo "🏷️  Dernier tag de main : $LATEST_TAG"
     fi
 
+    # Checkout sur le dernier tag
+    git checkout -b main "$LATEST_TAG" 2>/dev/null || git branch -f main "$LATEST_TAG"
+    git reset --hard "$LATEST_TAG"
+
+    echo -e "✅  Branche locale 'main' positionnée sur $LATEST_TAG."
+
+    # Rendre le script exécutable
     chmod +x main.sh
-    echo -e "✅  chmod appliqué sur ${BOLD}'main.sh'${RESET}. Script dorénavant exécutable."
-
-    # Création d'une branche locale main sur le tag
-    if ! git checkout -b main; then
-        echo -e "⚠️  ${YELLOW}La branche ${BOLD}'main'${RESET}${YELLOW} existe déjà, elle sera mise à jour pour pointer sur $LATEST_TAG.${RESET}"
-        git branch -f main "$LATEST_TAG"
-    fi
-
-    echo -e "✅  Branche locale  ${BOLD}'main'${RESET} créée sur $LATEST_TAG."
-
+    echo -e "✅  chmod appliqué sur ${BOLD}'main.sh'${RESET}. Script exécutable."
 }
 
 # --------------------------------------------------------------------------- #
