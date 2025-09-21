@@ -94,7 +94,7 @@ check_rclone() {
     else
         local local_version
         local_version=$(rclone version 2>/dev/null | head -n1 | awk '{print $2}')
-        echo -e "✔️  rclone détecté. Réputé : ${UNDERLINE}à jour${RESET}."
+        echo -e "✔️  rclone détecté. Réputé : ${italic}à jour${RESET}."
         latest_rclone=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
         if [ "$local_version" != "$latest_rclone" ]; then
             echo "ℹ️  Nouvelle version rclone disponible : $latest_rclone"
@@ -145,7 +145,7 @@ check_msmtp() {
     else
         local local_version
         local_version=$(msmtp --version | head -n1 | awk '{print $2}')
-        echo -e "✔️  msmtp détecté. Réputé : ${UNDERLINE}à jour${RESET}."
+        echo -e "✔️  msmtp détecté. Réputé : ${italic}à jour${RESET}."
     fi
 }
 
@@ -156,23 +156,30 @@ check_micro() {
     if ! command -v micro &>/dev/null; then
         echo -e "${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
         echo -e "Il s'agit d'une alternative plus fournie à l'éditeur ${BOLD}nano${RESET}."
+        echo
         read -rp "Voulez-vous installer micro ? (y/N) : " yn
         case "$yn" in
             [Yy]*) install_micro ;;
             *) echo "👉  micro (optionnel) ne sera pas installé." ;;
         esac
     else
-        # Récupération version locale (extrait uniquement le numéro)
+        # Récupération version locale (extrait uniquement le numéro principal)
         local local_version latest_version
         local_version=$(micro --version 2>/dev/null | head -n1 | grep -oP '\d+(\.\d+)+')
         latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                           | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
 
-        echo -e "✔️  micro détecté. Réputé : ${UNDERLINE}à jour${RESET}."
+        if [ -z "$latest_version" ]; then
+            echo -e "${YELLOW}⚠️ Impossible de récupérer la dernière version de micro.${RESET}"
+            return
+        fi
+
+        echo -e "✔️  micro détecté. Réputé : ${italic}à jour${RESET}."
 
         # Comparaison versions
-        if [ -n "$latest_version" ] && [ "$local_version" != "$latest_version" ]; then
+        if [ "$local_version" != "$latest_version" ]; then
             echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
+            echo
             read -rp "Voulez-vous mettre à jour micro ? (y/N) : " yn
             case "$yn" in
                 [Yy]*) install_micro "$latest_version" ;;
@@ -190,33 +197,38 @@ install_micro() {
     if [ "$version" = "latest" ]; then
         version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                   | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
+        if [ -z "$version" ]; then
+            echo -e "${RED}❌ Impossible de récupérer la dernière version de micro.${RESET}"
+            return 1
+        fi
     fi
 
     # Téléchargement binaire Linux amd64
     local archive="micro-${version}-linux64.tar.gz"
     local url="https://github.com/zyedidia/micro/releases/download/v${version}/${archive}"
 
-    curl -L -o "$archive" "$url"
-    tar -xzf "$archive"
+    curl -L -o "$archive" "$url" || { echo -e "${RED}❌ Échec du téléchargement.${RESET}"; return 1; }
+    tar -xzf "$archive" || { echo -e "${RED}❌ Échec de l'extraction.${RESET}"; return 1; }
+
     if [ -w "/usr/local/bin" ]; then
-        cp "micro-${version}/micro" /usr/local/bin/
+        cp "micro-${version}/micro" /usr/local/bin/ || return 1
     else
-        $SUDO cp "micro-${version}/micro" /usr/local/bin/
+        $SUDO cp "micro-${version}/micro" /usr/local/bin/ || return 1
     fi
     chmod +x /usr/local/bin/micro
+
     rm -rf "micro-${version}" "$archive"
-
     echo -e "✅  micro installé/mis à jour avec succès (version $version)."
-    
-    if command -v micro >/dev/null 2>&1; then
-    echo
-    read -rp "Souhaitez-vous utiliser micro comme éditeur par défaut ? (y/N) : " yn
-    case "$yn" in
-        [Yy]*) update_editor_choice "micro" ;;
-        *)     update_editor_choice "nano"  ;;
-    esac
-fi
 
+    # Proposer de définir comme éditeur par défaut
+    if command -v micro >/dev/null 2>&1; then
+        echo
+        read -rp "Souhaitez-vous utiliser micro comme éditeur par défaut ? (y/N) : " yn
+        case "$yn" in
+            [Yy]*) update_editor_choice "micro" ;;
+            *)     update_editor_choice "nano"  ;;
+        esac
+    fi
 }
 
 update_editor_choice() {
