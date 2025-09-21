@@ -83,7 +83,7 @@ check_dependencies() {
 # --------------------------------------------------------------------------- #
 check_rclone() {
     if ! command -v rclone &>/dev/null; then
-        echo -e "$⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET} n'est pas installé, Il est un composant ${BOLD}indispensable.${RESET}"
+        echo -e "⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET} n'est pas installé, il est ${BOLD}indispensable${RESET}."
         echo "Plus d'infos sur rclone : https://rclone.org/"
         echo
         read -rp "Voulez-vous installer rclone maintenant ? (y/N) : " yn
@@ -92,12 +92,19 @@ check_rclone() {
             *) echo -e "${RED}${BOLD}Impossible de continuer sans rclone.${RESET}"; exit 1 ;;
         esac
     else
-        local local_version
+        local local_version latest_version
         local_version=$(rclone version 2>/dev/null | head -n1 | awk '{print $2}')
-        echo -e "✔️  rclone détecté. Réputé : ${italic}à jour${RESET}."
-        latest_rclone=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
-        if [ "$local_version" != "$latest_rclone" ]; then
-            echo "ℹ️  Nouvelle version rclone disponible : $latest_rclone"
+        latest_version=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
+
+        if [ -z "$latest_version" ]; then
+            echo -e "${YELLOW}⚠️  Impossible de récupérer la dernière version de rclone.${RESET}"
+            return
+        fi
+
+        echo -e "✔️  rclone détecté. Réputé : ${ITALIC}à jour${RESET}."
+
+        if [ "$local_version" != "$latest_version" ]; then
+            echo "ℹ️  Nouvelle version rclone disponible : $latest_version"
             echo
             read -rp "Voulez-vous mettre à jour rclone ? (y/N) : " yn
             case "$yn" in
@@ -110,17 +117,38 @@ check_rclone() {
 
 install_rclone() {
     echo "📦  Installation / mise à jour de rclone..."
-    curl -Of https://downloads.rclone.org/rclone-current-linux-amd64.zip
-    unzip -o rclone-current-linux-amd64.zip
+
+    # Détection architecture
+    local arch rclone_arch
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64) rclone_arch="amd64" ;;
+        aarch64) rclone_arch="arm64" ;;
+        armv7l) rclone_arch="arm" ;;
+        *) echo -e "${RED}❌  Architecture $arch non supportée.${RESET}"; return 1 ;;
+    esac
+
+    # Téléchargement de la dernière version
+    local latest_url latest_version archive
+    latest_version=$(curl -s https://rclone.org/downloads/ | grep -oP 'Current stable version: \K[0-9.]+')
+    archive="rclone-${latest_version}-linux-${rclone_arch}.zip"
+    latest_url="https://downloads.rclone.org/${archive}"
+
+    curl -O "$latest_url" || { echo -e "${RED}❌  Échec du téléchargement.${RESET}"; return 1; }
+    unzip -o "$archive" || { echo -e "${RED}❌  Échec de l'extraction.${RESET}"; return 1; }
+
     if [ -w "/usr/local/bin" ]; then
-        cp rclone-*-linux-amd64/rclone /usr/local/bin/
+        cp rclone-*-linux-"$rclone_arch"/rclone /usr/local/bin/ || return 1
     else
-        $SUDO cp rclone-*-linux-amd64/rclone /usr/local/bin/
+        $SUDO cp rclone-*-linux-"$rclone_arch"/rclone /usr/local/bin/ || return 1
     fi
     chmod +x /usr/local/bin/rclone
-    rm -rf rclone-*-linux-amd64*
-    echo -e "✅  ${GREEN}rclone installé/mis à jour avec succès.${RESET}"
+
+    rm -rf rclone-*-linux-"$rclone_arch" "$archive"
+
+    echo -e "✅  ${GREEN}rclone installé/mis à jour avec succès (version $latest_version).${RESET}"
 }
+
 
 # --------------------------------------------------------------------------- #
 # Vérification optionnelle de msmtp
@@ -145,7 +173,7 @@ check_msmtp() {
     else
         local local_version
         local_version=$(msmtp --version | head -n1 | awk '{print $2}')
-        echo -e "✔️  msmtp détecté. Réputé : ${italic}à jour${RESET}."
+        echo -e "✔️  msmtp détecté. Réputé : ${ITALIC}à jour${RESET}."
     fi
 }
 
@@ -170,11 +198,11 @@ check_micro() {
                           | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
 
         if [ -z "$latest_version" ]; then
-            echo -e "${YELLOW}⚠️ Impossible de récupérer la dernière version de micro.${RESET}"
+            echo -e "${YELLOW}⚠️  Impossible de récupérer la dernière version de micro.${RESET}"
             return
         fi
 
-        echo -e "✔️  micro détecté. Réputé : ${italic}à jour${RESET}."
+        echo -e "✔️  micro détecté. Réputé : ${ITALIC}à jour${RESET}."
 
         # Comparaison versions
         if [ "$local_version" != "$latest_version" ]; then
@@ -198,17 +226,27 @@ install_micro() {
         version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                   | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
         if [ -z "$version" ]; then
-            echo -e "${RED}❌ Impossible de récupérer la dernière version de micro.${RESET}"
+            echo -e "${RED}❌  Impossible de récupérer la dernière version de micro.${RESET}"
             return 1
         fi
     fi
 
-    # Téléchargement binaire Linux amd64
-    local archive="micro-${version}-linux64.tar.gz"
+    # Détection architecture
+    local arch micro_arch
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64) micro_arch="linux64" ;;
+        aarch64) micro_arch="linux-arm64" ;;
+        armv7l) micro_arch="linux-arm" ;;
+        *) echo -e "${RED}❌  Architecture $arch non supportée.${RESET}"; return 1 ;;
+    esac
+
+    # Téléchargement binaire
+    local archive="micro-${version}-${micro_arch}.tar.gz"
     local url="https://github.com/zyedidia/micro/releases/download/v${version}/${archive}"
 
-    curl -L -o "$archive" "$url" || { echo -e "${RED}❌ Échec du téléchargement.${RESET}"; return 1; }
-    tar -xzf "$archive" || { echo -e "${RED}❌ Échec de l'extraction.${RESET}"; return 1; }
+    curl -L -o "$archive" "$url" || { echo -e "${RED}❌  Échec du téléchargement.${RESET}"; return 1; }
+    tar -xzf "$archive" || { echo -e "${RED}❌  Échec de l'extraction.${RESET}"; return 1; }
 
     if [ -w "/usr/local/bin" ]; then
         cp "micro-${version}/micro" /usr/local/bin/ || return 1
