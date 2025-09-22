@@ -37,7 +37,6 @@ GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/la
 FORCED=""
 FORCED_BRANCH="main"
 
-echo "checkpoint avant la définition du dev_mode"
 if [[ "${1:-}" == "--force" ]]; then
     FORCED="--force"
     FORCED_BRANCH="${2:-main}"
@@ -84,7 +83,6 @@ read_version_file() {
 # Vérification des dépendances
 # --------------------------------------------------------------------------- #
 check_dependencies() {
-    echo "Checkpoint check_dependencies"
     local deps=(git curl)
     local missing=()
 
@@ -128,7 +126,6 @@ check_dependencies() {
 # Vérification et installation de rclone
 # --------------------------------------------------------------------------- #
 check_rclone() {
-    echo "Checkpoint check_rclone"
     if ! command -v rclone &>/dev/null; then
         echo -e "⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET}${RED} n'est pas encore installé, il est ${BOLD}indispensable${RESET}."
         echo "Plus d'infos sur rclone : https://rclone.org/"
@@ -143,9 +140,10 @@ check_rclone() {
         local_version=$(rclone version 2>/dev/null | head -n1 | awk '{print $2}')
         
         # Récupération de la dernière version stable de rclone
-        latest_version=$(curl -s https://rclone.org/downloads/ \
-            | grep 'Current stable version:' \
-            | awk '{print $4}')
+        latest_version=$(curl -s https://api.github.com/repos/rclone/rclone/releases/latest \
+            | grep '"tag_name":' \
+            | awk -F'"' '{print $4}')
+
 
         # Vérification des versions
         if [[ -z "$latest_version" ]]; then
@@ -245,6 +243,8 @@ check_msmtp() {
 # Vérification et installation/mise à jour de micro (éditeur)
 # --------------------------------------------------------------------------- #
 check_micro() {
+    local local_version latest_version yn
+
     if ! command -v micro &>/dev/null; then
         echo -e "⚠️  ${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
         echo -e "Il s'agit d'une alternative plus fournie à l'éditeur ${BOLD}nano${RESET}."
@@ -254,32 +254,40 @@ check_micro() {
             [Yy]*) install_micro ;;
             *) echo "👉  micro (optionnel) ne sera pas installé." ;;
         esac
-    else
-        # Récupération version locale (extrait uniquement le numéro principal)
-        local local_version latest_version
-        local_version=$(micro --version 2>/dev/null | head -n1 | grep -oP '\d+(\.\d+)+')
-        latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
-                          | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
+        return
+    fi
 
-        if [ -z "$latest_version" ]; then
-            echo -e "${YELLOW}⚠️  Impossible de récupérer la dernière version de micro.${RESET}"
-            return
-        fi
+    # Récupération version locale
+    local_version=$(micro --version 2>/dev/null | head -n1 | grep -oP '\d+(\.\d+)+')
+    local_version=$(echo "$local_version" | tr -d '[:space:]')
 
-        echo -e "✔️  micro détecté. Réputé : ${ITALIC}à jour${RESET}."
+    # Récupération version distante (GitHub)
+    latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
+                      | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//' )
+    latest_version=$(echo "$latest_version" | tr -d '[:space:]')
 
-        # Comparaison versions
-        if [ "$local_version" != "$latest_version" ]; then
-            echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
-            echo
-            read -rp "Voulez-vous mettre à jour micro ? (y/N) : " yn
-            case "$yn" in
-                [Yy]*) install_micro "$latest_version" ;;
-                *) echo "👉  Vous gardez la version existante." ;;
-            esac
-        fi
+    if [ -z "$latest_version" ]; then
+        echo -e "${YELLOW}⚠️  Impossible de récupérer la dernière version de micro.${RESET}"
+        echo -e "  Version locale détectée : ${local_version:-inconnue}"
+        echo -e "  Version distante : ${latest_version:-inconnue}"
+        return
+    fi
+
+    # Affichage final des versions
+    echo -e "✔️  micro détecté. Version locale : ${ITALIC}${local_version}${RESET}, version distante : ${ITALIC}${latest_version}${RESET}"
+
+    # Comparaison versions
+    if [ "$local_version" != "$latest_version" ]; then
+        echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
+        echo
+        read -rp "Voulez-vous mettre à jour micro ? (y/N) : " yn
+        case "$yn" in
+            [Yy]*) install_micro "$latest_version" ;;
+            *) echo "👉  Vous gardez la version existante." ;;
+        esac
     fi
 }
+
 
 install_micro() {
     local version="${1:-latest}"
@@ -643,8 +651,7 @@ create_updater_symlink() {
 # Execution principale
 # --------------------------------------------------------------------------- #
 main() {
-    echo "Checkpoint main"
-    check_dependencies && echo "✅  Toutes les dépendances : ok"
+    check_dependencies
     check_rclone
     check_msmtp
     check_micro
