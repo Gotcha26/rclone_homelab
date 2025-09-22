@@ -33,9 +33,18 @@ LOCAL_DIR="$INSTALL_DIR/local"
 VERSION_FILE="$LOCAL_DIR/.version"
 GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest"
 
-# Argument pour mode dev
-FORCED="${1:-}"
-FORCED_BRANCH="${2:-main}"  # si pas de branche précisée, fallback sur main
+# --- Argument pour mode dev ---
+FORCED=""
+FORCED_BRANCH="main"
+
+if [[ "${1:-}" == "--force" ]]; then
+    FORCED="--force"
+    FORCED_BRANCH="${2:-main}"
+fi
+# ---
+
+installed_tag="${installed_tag:-}"
+LATEST_TAG="${LATEST_TAG:-}"
 
 # Couleurs / styles
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
@@ -386,7 +395,7 @@ handle_existing_dir() {
                     exit 1
                 }
                 echo "✅  Mise à jour vers $LATEST_TAG réussie !"
-                exit 0
+                return 0
                 ;;
             3|*)
                 echo "Abandon. Ciao"
@@ -509,36 +518,28 @@ update_minimal_if_needed() {
 install_dev_branch() {
     local branch="${1:-main}"
 
-    if [[ "$FORCE_BRANCH" == "true" ]]; then
-        echo -e "📦  Mode développement - Installation via clone Git complet de la branche ${BOLD}$branch${RESET}"
-        rm -rf "$INSTALL_DIR"
-        mkdir -p "$INSTALL_DIR"
+    echo -e "📦  Mode développement - Installation via clone Git complet de la branche ${BOLD}$branch${RESET}"
+    $SUDO rm -rf "$INSTALL_DIR"
+    $SUDO mkdir -p "$INSTALL_DIR"
 
-        # Vérifie si la branche existe côté distant
-        if git ls-remote --heads "$REPO_URL" "$branch" | grep -q "$branch"; then
-            git clone --branch "$branch" --single-branch "$REPO_URL" "$INSTALL_DIR" || {
-                echo -e "${RED}❌  Échec clone de la branche ${BOLD}$branch${RESET}"
-                exit 1
-            }
-        else
-            echo -e "${RED}❌ La branche '${BOLD}$branch' n'existe pas dans le dépôt.${RESET}"
-            exit 1
-        fi
-    else
-        echo -e "📦  Installation ${ITALIC}corrigée${RESET} depuis la branche stable (main)"
-        git clone --branch main --single-branch "$REPO_URL" "$INSTALL_DIR" || {
-            echo -e "${RED}❌  Échec clone de la branche ${BOLD}main${RESET}"
-            exit 1
+    # Vérifie si la branche existe côté distant
+    if git ls-remote --heads "$REPO_URL" "$branch" | grep -q "refs/heads/$branch"; then
+        git clone --branch "$branch" --single-branch "$REPO_URL" "$INSTALL_DIR" || {
+            echo -e "${RED}❌  Échec clone de la branche ${BOLD}$branch${RESET}"
+            return 1
         }
+    else
+        echo -e "${RED}❌ La branche '${BOLD}$branch${RESET}${RED}' n'existe pas dans le dépôt.${RESET}"
+        return 1
     fi
 
     # --- Bloc de finalisation commun ---
-    cd "$INSTALL_DIR" || exit 1
-    git fetch --tags
-    chmod +x main.sh
+    cd "$INSTALL_DIR" || return 1
+    git fetch --tags || return 1
+    chmod +x main.sh || return 1
     echo -e "${GREEN}✅  Clone complet branch $branch terminé${RESET}"
+    return 0
 }
-
 
 # --------------------------------------------------------------------------- #
 # Installation principale
@@ -639,6 +640,7 @@ create_updater_symlink() {
 # Execution principale
 # --------------------------------------------------------------------------- #
 main() {
+    echo "Checkpoint main"
     check_dependencies
     check_rclone
     check_msmtp
@@ -649,16 +651,16 @@ main() {
 
     # === Choix du mode d'installation ===
     if [[ "${FORCED:-}" == "--force" ]]; then
-        # Mode forcé : clone complet depuis la branche demandée
+        # Cas 4 : Mode forcé : clone complet depuis la branche demandée
         echo -e "${YELLOW}⚠️  Mode forcé demandé → branche : ${BOLD}${FORCED_BRANCH}${RESET}"
         install_dev_branch "$FORCED_BRANCH"
 
     elif [[ -d "$INSTALL_DIR" ]]; then
-        # Dossier existant → gestion selon contenu (.git / .version / corrompu)
+        # Cas 2 ou 3 : Dossier existant → gestion selon contenu (.git / .version / corrompu)
         handle_existing_dir
 
     else
-        # Dossier absent → installation minimale depuis le dernier tag
+        # Cas 1 : Dossier absent → installation minimale depuis le dernier tag
         install_minimal "$LATEST_TAG"
     fi
 
