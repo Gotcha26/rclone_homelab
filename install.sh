@@ -518,18 +518,38 @@ update_minimal_if_needed() {
 # Gestion du mode dev : clone Git complet d'une branche
 # --------------------------------------------------------------------------- #
 install_dev_branch() {
-    local branch="$1"
-    echo -e "📦  Mode développement - Installation via clone Git complet de la branche $branch"
-    rm -rf "$INSTALL_DIR"
-    mkdir -p "$INSTALL_DIR"
-    git clone --branch "$branch" --single-branch "$REPO_URL" "$INSTALL_DIR" || {
-        echo -e "${RED}❌  Échec clone de la branche $branch${RESET}"; exit 1
-    }
-    cd "$INSTALL_DIR" || exit
+    local branch="${1:-main}"
+
+    if [[ "$FORCE_BRANCH" == "true" ]]; then
+        echo -e "📦  Mode développement - Installation via clone Git complet de la branche ${BOLD}$branch${RESET}"
+        rm -rf "$INSTALL_DIR"
+        mkdir -p "$INSTALL_DIR"
+
+        # Vérifie si la branche existe côté distant
+        if git ls-remote --heads "$REPO_URL" "$branch" | grep -q "$branch"; then
+            git clone --branch "$branch" --single-branch "$REPO_URL" "$INSTALL_DIR" || {
+                echo -e "${RED}❌  Échec clone de la branche ${BOLD}$branch${RESET}"
+                exit 1
+            }
+        else
+            echo -e "${RED}❌ La branche '${BOLD}$branch' n'existe pas dans le dépôt.${RESET}"
+            exit 1
+        fi
+    else
+        echo -e "📦  Installation ${ITALIC}corrigée${RESET} depuis la branche stable (main)"
+        git clone --branch main --single-branch "$REPO_URL" "$INSTALL_DIR" || {
+            echo -e "${RED}❌  Échec clone de la branche ${BOLD}main${RESET}"
+            exit 1
+        }
+    fi
+
+    # --- Bloc de finalisation commun ---
+    cd "$INSTALL_DIR" || exit 1
     git fetch --tags
     chmod +x main.sh
     echo -e "${GREEN}✅  Clone complet branch $branch terminé${RESET}"
 }
+
 
 # --------------------------------------------------------------------------- #
 # Installation principale
@@ -634,22 +654,27 @@ main() {
     check_rclone
     check_msmtp
     check_micro
+
+    # Récupère la dernière release (nécessaire pour install_minimal)
     get_latest_release
 
-    if [[ "$FORCED" == "--force" ]]; then
-        # Mode dev / clone Git complet
+    # === Choix du mode d'installation ===
+    if [[ "${FORCED:-}" == "--force" ]]; then
+        # Mode forcé : clone complet depuis la branche demandée
+        echo -e "${YELLOW}⚠️  Mode forcé demandé → branche : ${BOLD}${FORCED_BRANCH}${RESET}"
         install_dev_branch "$FORCED_BRANCH"
 
     elif [[ -d "$INSTALL_DIR" ]]; then
-        # Dossier existant → gestion détaillée selon contenu
+        # Dossier existant → gestion selon contenu (.git / .version / corrompu)
         handle_existing_dir
 
     else
-        # Cas classique : dossier absent → installation minimale
+        # Dossier absent → installation minimale depuis le dernier tag
         install_minimal "$LATEST_TAG"
     fi
 
-    # Création des symlinks (dans tous les cas)
+    # === Étapes communes à exécuter uniquement si l'installation a réussi ===
+    # (set -e fera sauter le script si une des fonctions échoue)
     create_symlinks
     create_updater_symlink
 
@@ -682,5 +707,5 @@ exit 0
 # Lien à communiquer pour l'installation :
 bash <(curl -s https://raw.githubusercontent.com/Gotcha26/rclone_homelab/main/install.sh)
 
-# Pour les utilisateur aguerris (moi) :
+# Pour les utilisateur aguerris (dev) :
 bash <(curl -s https://raw.githubusercontent.com/Gotcha26/rclone_homelab/main/install.sh) --force dev
