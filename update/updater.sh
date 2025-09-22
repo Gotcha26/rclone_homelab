@@ -11,14 +11,20 @@ update_check() {
 
 
 ###############################################################################
+# Fonction : Juste pour lire le contenu de .version
+###############################################################################
+get_local_version() {
+    local version_file="$DIR_LOCAL/.version"
+    if [[ -f "$version_file" ]]; then
+        cat "$version_file"
+    else
+        echo ""
+    fi
+}
+
+
+###############################################################################
 # Fonction : Récupère toutes les informations nécessaires sur Git
-# Variables retournées :
-# - head_commit / head_epoch
-# - remote_commit / remote_epoch
-# - latest_tag / latest_tag_epoch
-# - branch_real
-# - current_tag
-# - GIT_OFFLINE (true si GitHub/remote inaccessible)
 ###############################################################################
 fetch_git_info() {
 
@@ -33,12 +39,26 @@ fetch_git_info() {
     latest_tag_epoch=0
     current_tag=""
     GIT_OFFLINE=false
+    LOCAL_VERSION=""
 
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
+    # --- Vérifier si .git existe ---
+    if [[ ! -d ".git" ]]; then
+        print_fancy --theme "warning" --fg "yellow" \
+            "⚠️  Pas de dépôt Git détecté. Mode version locale activé."
+        LOCAL_VERSION=$(get_local_version)
+        branch_real="(local-standalone-version)"
+
+        # Ici, on peut simuler un latest_tag distant si on veut comparer avec une version sur serveur
+        latest_tag=$(curl -s "${REMOTE_VERSION_URL:-}" 2>/dev/null || echo "")
+        return 0
+    fi
+
+    # --- Git normal ---
     # --- Récupération des dernières infos du remote avec fallback ---
     if ! git fetch origin --tags --prune --quiet; then
-        print_fancy --theme "error" --fg "red" \
+        print_fancy --theme "warning" --fg "yellow" \
             "Impossible de contacter GitHub ou le remote. Mode offline activé."
         GIT_OFFLINE=true
     fi
@@ -50,31 +70,22 @@ fetch_git_info() {
     # --- Détection de la branche locale réelle ---
     branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
 
-    # --- Commit et date HEAD distant (si branche existante et fetch réussi) ---
+    # --- Commit et date HEAD distant ---
     if [[ "$branch_real" != "(détaché)" && "$GIT_OFFLINE" == false ]]; then
         remote_commit=$(git rev-parse "origin/$branch_real" 2>/dev/null || echo "")
         remote_epoch=$(git show -s --format=%ct "$remote_commit" 2>/dev/null || echo 0)
-    else
-        remote_commit=""
-        remote_epoch=0
     fi
 
-    # --- Dernier tag disponible sur la branche réelle ---
+    # --- Dernier tag disponible ---
     if [[ "$branch_real" != "(détaché)" && "$GIT_OFFLINE" == false ]]; then
         latest_tag=$(git tag --merged "origin/$branch_real" 2>/dev/null | sort -V | tail -n1)
-    else
-        latest_tag=""
     fi
 
     if [[ -n "$latest_tag" ]]; then
         latest_tag_commit=$(git rev-parse "$latest_tag" 2>/dev/null || echo "")
         latest_tag_epoch=$(git show -s --format=%ct "$latest_tag_commit" 2>/dev/null || echo 0)
-    else
-        latest_tag_commit=""
-        latest_tag_epoch=0
     fi
 
-    # --- Tag actuel si HEAD exactement sur un tag ---
     current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
 }
 
@@ -86,6 +97,15 @@ fetch_git_info() {
 ##############################################################################
 analyze_update_status() {
     local result_code=0
+
+    # === Mode sans Git : on affiche juste la version locale ===
+    if [[ "$branch_real" == "(local-standalone-version)" ]]; then
+        print_fancy --theme "info" --fg "blue" --align "center" \
+            "Version locale installée : ${LOCAL_VERSION:-inconnue}"
+        return 0
+    fi
+
+    # === Mode Git normal ===
 
     # --- Mode verbose : affichage complet si DEBUG_INFOS=true ---
     if [[ "${DEBUG_INFOS:-false}" == true ]]; then
@@ -219,11 +239,19 @@ analyze_update_status() {
 ###############################################################################
 git_summary() {
     # Si DEBUG_INFOS=false, on ne fait rien
-    [[ "${DEBUG_INFOS:-true}" == "false" ]] || return
+    [[ "${DEBUG_INFOS:-false}" == "true" ]] || return
 
     # Argument : code retour d'analyze_update_status()
     local code="${1:-0}"
 
+    # Cas sans Git
+    if [[ "${branch_real:-}" == "(local-standalone-version)" ]]; then
+        print_fancy --theme "info" --align "center" \
+            "Mode standalone → aucune mise à jour Git possible."
+        return
+    fi
+
+    # Cas Git normal
     if [[ "$code" -eq 0 ]]; then
         print_fancy --theme "success" --align "right" \
             "Git → OK"
@@ -242,6 +270,19 @@ git_summary() {
 update_to_latest_branch() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; exit 1; }
 
+    # --- Cas pas de Git mais version locale ---
+    if [[ "$branch_real" == "(local-standalone-version)" ]]; then
+        print_fancy --theme "info" \
+            "⚠️  Pas de dépôt Git : mise à jour automatique impossible."
+        if [[ -n "$latest_tag" && "$LOCAL_VERSION" != "$latest_tag" ]]; then
+            print_fancy --theme "flash" "Nouvelle version disponible : $latest_tag (locale : $LOCAL_VERSION)"
+        else
+            print_fancy --theme "ok" "Vous êtes à jour."
+        fi
+        return 0
+    fi
+
+    # --- Git normal ---
     # Déterminer la branche réelle
     # Appel obligatoire à fetch_git_info si pas déjà fait
     [[ -z "${branch_real:-}" ]] && fetch_git_info
@@ -318,6 +359,18 @@ update_to_latest_branch() {
 update_to_latest_tag() {
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
+    # --- Cas pas de Git mais version locale ---
+    if [[ "$branch_real" == "(local-standalone-version)" ]]; then
+        print_fancy --theme "info" "⚠️  Pas de dépôt Git : mise à jour vers tag impossible."
+        if [[ -n "$latest_tag" && "$LOCAL_VERSION" != "$latest_tag" ]]; then
+            print_fancy --theme "flash" "Nouvelle version détectée : $latest_tag (locale : $LOCAL_VERSION)"
+        else
+            print_fancy --theme "ok" "Vous êtes à jour."
+        fi
+        return 0
+    fi
+
+    # --- Git normal ---
     # Déterminer la branche réelle
     # Récupérer infos Git si nécessaire
     [[ -z "${branch_real:-}" ]] && fetch_git_info
@@ -431,6 +484,26 @@ update_to_latest_tag() {
 # → Utilise GIT_OFFLINE pour éviter les erreurs bloquantes
 ###############################################################################
 update_forced() {
+    cd "$SCRIPT_DIR" || { print_fancy --theme "error" "Impossible d'accéder au dossier du script"; return 1; }
+
+    # === Cas pas de Git mais fichier .version ===
+    if [[ "$branch_real" == "(local-standalone-version)" ]]; then
+        print_fancy --theme "info" \
+            "⚠️  Installation locale détectée, version : ${LOCAL_VERSION:-inconnue}"
+
+        if [[ -n "$latest_tag" ]]; then
+            print_fancy --theme "info" "Version distante disponible : $latest_tag"
+            if [[ "$LOCAL_VERSION" != "$latest_tag" ]]; then
+                print_fancy --theme "flash" \
+                    "Nouvelle version détectée ! Vous pouvez remplacer votre installation locale."
+                # ici, tu pourrais appeler un script de mise à jour local si nécessaire
+            else
+                print_fancy --theme "ok" "Vous êtes à jour."
+            fi
+        fi
+        return 0
+    fi
+
     # --- 1. Si FORCE_BRANCH défini → switch ---
     if [[ -n "${FORCE_BRANCH:-}" ]]; then
         echo "🔀 Switch forcé vers la branche : $FORCE_BRANCH"

@@ -102,24 +102,34 @@ if ! curl -Is https://github.com >/dev/null 2>&1; then
 fi
 
 # --------------------------------------------------------------------------- #
-# 6. Vérification dépôt Git et branche active
+# 6. Détection mode Git ou standalone
 # --------------------------------------------------------------------------- #
-if [ ! -d "$SCRIPT_DIR/.git" ]; then
-    echo -e "${RED}❌  Aucun dépôt Git détecté dans $SCRIPT_DIR !${RESET}"
-    echo -e "   → Exécutez le script une première fois en mode --force pour cloner proprement.${RESET}"
+LOCAL_VERSION_FILE="$SCRIPT_DIR/.version"
+
+if [ -d "$SCRIPT_DIR/.git" ]; then
+    MODE="git"
+    CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "HEAD")
+    if [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
+        echo -e "${RED}❌  HEAD détaché détecté, impossible de déterminer la branche active.${RESET}"
+        echo -e "   → Exécutez le script en mode --force pour réinitialiser le dépôt.${RESET}"
+        exit 8
+    fi
+    echo -e "🔎  Branche détectée : ${GREEN}$CURRENT_BRANCH${RESET}"
+
+elif [[ -f "$LOCAL_VERSION_FILE" ]]; then
+    MODE="standalone"
+    CURRENT_BRANCH="main"   # par convention, on suit la branche main
+    LOCAL_VERSION=$(cat "$LOCAL_VERSION_FILE")
+    echo -e "🔎  Mode ${YELLOW}standalone${RESET}, version locale : ${GREEN}$LOCAL_VERSION${RESET}"
+
+else
+    echo -e "${RED}❌  Impossible de déterminer le mode de mise à jour (ni .git ni .version trouvés).${RESET}"
+    echo -e "   → Exécutez le script une première fois en mode --force.${RESET}"
     exit 7
 fi
 
-CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "HEAD")
-if [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
-    echo -e "${RED}❌  HEAD détaché détecté, impossible de déterminer la branche active.${RESET}"
-    echo -e "   → Exécutez le script en mode --force pour réinitialiser le dépôt.${RESET}"
-    exit 8
-fi
-echo -e "🔎  Branche détectée : ${GREEN}$CURRENT_BRANCH${RESET}"
-
 # --------------------------------------------------------------------------- #
-# 7. Mise à jour (mode normal ou --force)
+# 7. Mise à jour selon le mode
 # --------------------------------------------------------------------------- #
 if [[ "$FORCE_MODE" == true ]]; then
     echo -e "${YELLOW}⚠️  Mode FORCÉ activé : réinstallation complète depuis $REPO_URL ($CURRENT_BRANCH)${RESET}"
@@ -129,35 +139,45 @@ if [[ "$FORCE_MODE" == true ]]; then
         rm -rf "$TMP_DIR"
         exit 5
     }
-
-    if [ "$(id -u)" -eq 0 ] || [ -w "$SCRIPT_DIR" ]; then
-        rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
-    else
-        $SUDO rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
-    fi
-
+    rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
     rm -rf "$TMP_DIR"
-    echo -e "${GREEN}✅  Projet réinstallé en mode FORCÉ.${RESET}"
+    echo -e "${GREEN}✅  Réinstallation complète effectuée.${RESET}"
+    echo "$(git -C "$SCRIPT_DIR" describe --tags --abbrev=0 2>/dev/null || echo "unknown")" > "$LOCAL_VERSION_FILE"
 
-    # Ré-appliquer les permissions essentielles
-    for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
-        [[ -f "$file" ]] && chmod +x "$file" && echo -e "${GREEN}   → $file rendu exécutable ✅${RESET}"
-    done
-
-    exit 0
 else
-    echo -e "🔄  Vérification des mises à jour Git...${RESET}"
-    git fetch --all --tags || { echo -e "${RED}❌ Impossible d'accéder au dépôt Git.${RESET}"; exit 6; }
+    if [[ "$MODE" == "git" ]]; then
+        echo -e "🔄  Vérification des mises à jour Git...${RESET}"
+        git fetch --all --tags
+        LOCAL_HASH=$(git rev-parse HEAD)
+        REMOTE_HASH=$(git rev-parse "origin/$CURRENT_BRANCH")
+        if [[ "$LOCAL_HASH" != "$REMOTE_HASH" ]]; then
+            echo -e "📥  Mise à jour vers la dernière révision de $CURRENT_BRANCH...${RESET}"
+            git reset --hard "origin/$CURRENT_BRANCH"
+            echo -e "${GREEN}✅  Mise à jour terminée.${RESET}"
+        else
+            echo -e "${GREEN}✅  Aucune mise à jour disponible.${RESET}"
+        fi
 
-    LOCAL_HASH=$(git rev-parse HEAD)
-    REMOTE_HASH=$(git rev-parse "origin/$CURRENT_BRANCH")
+    elif [[ "$MODE" == "standalone" ]]; then
+        echo -e "🔄  Vérification des nouvelles releases GitHub...${RESET}"
+        REMOTE_VERSION=$(curl -s "https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest" \
+                         | grep -oP '"tag_name": "\K(.*)(?=")')
+        if [[ -z "$REMOTE_VERSION" ]]; then
+            echo -e "${YELLOW}⚠️  Impossible de récupérer la version distante.${RESET}"
+            exit 6
+        fi
 
-    if [[ "$LOCAL_HASH" != "$REMOTE_HASH" ]]; then
-        echo -e "📥  Mise à jour vers la dernière révision de $CURRENT_BRANCH...${RESET}"
-        git reset --hard "origin/$CURRENT_BRANCH"
-        echo -e "${GREEN}✅  Mise à jour terminée.${RESET}"
-    else
-        echo -e "${GREEN}✅  Aucune mise à jour disponible.${RESET}"
+        if [[ "$REMOTE_VERSION" != "$LOCAL_VERSION" ]]; then
+            echo -e "📥  Nouvelle release disponible : $REMOTE_VERSION (actuelle : $LOCAL_VERSION)"
+            TMP_DIR=$(mktemp -d)
+            git clone --branch "$CURRENT_BRANCH" "$REPO_URL" "$TMP_DIR"
+            rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
+            rm -rf "$TMP_DIR"
+            echo "$REMOTE_VERSION" > "$LOCAL_VERSION_FILE"
+            echo -e "${GREEN}✅  Mise à jour standalone terminée.${RESET}"
+        else
+            echo -e "${GREEN}✅  Aucune mise à jour disponible (version $LOCAL_VERSION).${RESET}"
+        fi
     fi
 fi
 
