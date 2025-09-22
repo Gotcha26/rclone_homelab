@@ -488,3 +488,20 @@ add_rclone_opts() {
         RCLONE_OPTS+=(--dry-run)
     fi
 }
+
+
+###############################################################################
+# Fonction : Intérroger le numéro de version/tag/release (local ou git)
+###############################################################################
+get_current_version() {
+    if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null; then
+        APP_VERSION="$(git describe --tags --always 2>/dev/null || echo "(local-standalone-version)")"
+    else
+        if [[ -f "$SCRIPT_DIR/.version" ]]; then
+            APP_VERSION="$(<"$SCRIPT_DIR/.version")"
+        else
+            APP_VERSION="-NC-"
+        fi
+    fi
+}
+
