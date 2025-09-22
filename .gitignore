@@ -1,5 +1,6 @@
 # Ignorer le fichier de config perso
 local/*
+maintenance/*
 Notes.txt
 UPDATES.md
 README_old.md
