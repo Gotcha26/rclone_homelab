@@ -70,17 +70,6 @@ read_version_file() {
     fi
 }
 
-# ---------------------------------------------------------------------------- #
-# Mode FORCED / DEV → clone complet direct
-# ---------------------------------------------------------------------------- #
-if [[ "$FORCED" == "--force" || "$FORCED" == "--dev" ]]; then
-    echo -e "⚡ Mode ${BOLD}développement forcé${RESET} → clone Git complet de la branche : ${ITALIC}$FORCED_BRANCH${RESET}"
-    $SUDO rm -rf "$INSTALL_DIR"
-    git clone --branch "$FORCED_BRANCH" --single-branch --depth 1 "$REPO_URL" "$INSTALL_DIR"
-    echo -e "✅ Dépôt cloné depuis ${UNDERLINE}$REPO_URL${RESET} (branche ${BOLD}$FORCED_BRANCH${RESET})"
-    exit 0
-fi
-
 # --------------------------------------------------------------------------- #
 # Vérification des dépendances
 # --------------------------------------------------------------------------- #
