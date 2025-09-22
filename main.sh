@@ -32,17 +32,14 @@ DISPLAY_MODE est défini à : $DISPLAY_MODE"
 }
 
 
-# Affichage du logo/bannière
-print_logo
 
-# On créait un dossier temporaire de manière temporaire. Il est supprimé à la fermeture.
-TMP_JOBS_DIR=$(mktemp -d)
+TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé à la fermeture.
+print_logo                   # Affichage du logo/bannière
+get_current_version          # On va chercher le numéro de version du script installé içi
+set_validation_vars          # Mise en tableau des variables locales
+make_scripts_executable      # Rendre le script update/standalone_updater.sh exécutable
 
-# Mise en tableau des variables locales
-set_validation_vars
-
-# Rendre le script update/standalone_updater.sh exécutable
-make_scripts_executable
+print_fancy --align "right" "${APP_VERSION}"
 
 # --- ↓ DEBUG ↓ ---
 
