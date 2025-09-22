@@ -14,7 +14,7 @@
 # ⚠️ Les installations minimalistes ne conservent pas le .git, donc pas d'historique complet
 # ⚠️ Le mode --force <branche> permet de travailler avec Git complet mais limité à la branche demandée
 
-set -euo pipefail
+set -uo pipefail
 
 clear
 echo "+==============================================================================+"
@@ -37,6 +37,7 @@ GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/la
 FORCED=""
 FORCED_BRANCH="main"
 
+echo "checkpoint avant la définition du dev_mode"
 if [[ "${1:-}" == "--force" ]]; then
     FORCED="--force"
     FORCED_BRANCH="${2:-main}"
