@@ -83,6 +83,7 @@ read_version_file() {
 # Vérification des dépendances
 # --------------------------------------------------------------------------- #
 check_dependencies() {
+    echo "Checkpoint check_dependencies"
     local deps=(git curl)
     local missing=()
 
@@ -126,6 +127,7 @@ check_dependencies() {
 # Vérification et installation de rclone
 # --------------------------------------------------------------------------- #
 check_rclone() {
+    echo "Checkpoint check_rclone"
     if ! command -v rclone &>/dev/null; then
         echo -e "⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET}${RED} n'est pas encore installé, il est ${BOLD}indispensable${RESET}."
         echo "Plus d'infos sur rclone : https://rclone.org/"
@@ -641,7 +643,7 @@ create_updater_symlink() {
 # --------------------------------------------------------------------------- #
 main() {
     echo "Checkpoint main"
-    check_dependencies
+    check_dependencies && echo "✅  Toutes les dépendances : ok"
     check_rclone
     check_msmtp
     check_micro
