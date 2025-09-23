@@ -281,31 +281,65 @@ install_rclone() {
 # Vérification optionnelle de msmtp
 # --------------------------------------------------------------------------- #
 check_msmtp() {
-    local local_version yn
+    local local_version latest_version yn
     echo ""
     echo "📦  Contrôle de la présence de msmtp..."
 
     if ! command -v msmtp &>/dev/null; then
         echo ""
         echo -e "⚠️  ${YELLOW}Le composant ${UNDERLINE}msmtp${RESET}${YELLOW} non détecté (optionnel).${RESET}"
-        echo -e "ℹ️  Il sera néanmoins obligatoire pour pouvoir envoyer des rapports ${UNDERLINE}par email.${RESET}"
+        echo -e "ℹ️  msmtp est nécessaire pour l'envoi de rapports par email."
         echo ""
         read -rp "Voulez-vous installer msmtp ? (y/N) : " yn
         case "$yn" in
             [Yy]*)
                 echo "📥  Installation de msmtp..."
                 safe_exec "✅  msmtp installé." \
-                          "❗  Échec de l'installation de msmtp, ${UNDERLINE}ce n'est pas bloquant.${RESET}" "--no-exit" \
+                          "❗  Échec de l'installation de msmtp, ce n'est pas bloquant." "--no-exit" \
                           bash -c "apt update && apt install -y msmtp"
+                return
                 ;;
             *) echo "👌  msmtp (optionnel) ne sera pas installé." ;;
         esac
-    else
-        local_version=$(msmtp --version 2>/dev/null | head -n1 | awk '{print $2}')
-        echo -e "✔️  msmtp détecté. Version locale : ${ITALIC}${local_version:-inconnue}${RESET}."
+        return
+    fi
+
+    # Récupération version locale
+    local_version=$(msmtp --version 2>/dev/null | grep -oP '\d+(\.\d+)+')
+    [ -z "$local_version" ] && local_version="inconnue"
+
+    # Récupération version distante depuis GitHub (msmtp/msmtp)
+    latest_version=$(curl -s https://api.github.com/repos/marlam/msmtp/releases/latest \
+                    | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
+    
+    safe_exec "✅  Dernière version : $latest_version" \
+              "❗  Impossible de récupérer la dernière version de msmtp" "--no-exit" \
+              test -n "$latest_version"
+
+    [ -z "$latest_version" ] && latest_version="inconnue"
+
+    # Affichage final des versions
+    echo -e "✔️  msmtp détecté."
+    echo -e "📌  Version installée : ${ITALIC}${local_version}${RESET}"
+    echo -e "📌  Version disponible : ${ITALIC}${latest_version}${RESET}"
+
+    # Comparaison versions
+    if [ "$local_version" != "$latest_version" ] && [ "$latest_version" != "inconnue" ]; then
+        echo ""
+        echo "ℹ️  Nouvelle version de msmtp disponible : $latest_version"
+        echo ""
+        read -rp "Voulez-vous mettre à jour msmtp ? (y/N) : " yn
+        case "$yn" in
+            [Yy]*)
+                echo "📥  Mise à jour de msmtp vers $latest_version..."
+                safe_exec "✅  msmtp mis à jour." \
+                          "❗  Échec de la mise à jour de msmtp, ce n'est pas bloquant." "--no-exit" \
+                          bash -c "apt update && apt install -y msmtp"
+                ;;
+            *) echo "👌  Vous gardez la version existante." ;;
+        esac
     fi
 }
-
 
 # --------------------------------------------------------------------------- #
 # Vérification et installation/mise à jour de micro (éditeur)
