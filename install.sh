@@ -30,7 +30,8 @@ echo
 REPO_URL="https://github.com/Gotcha26/rclone_homelab.git"
 INSTALL_DIR="/opt/rclone_homelab"
 DIR_LOCAL="$INSTALL_DIR/local"
-VERSION_FILE="$DIR_LOCAL/.version"
+VERSION_FILE="${DIR_LOCAL}/.version"
+DIR_VERSION_FILE="${INSTALL_DIR}/${VERSION_FILE}"
 GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest"
 SAFE_EXEC_EXIT_ON_FAIL=true
 
@@ -780,6 +781,11 @@ install_dev_branch() {
     safe_exec "✅  Récupération des tags effectuée." \
               "❌  Échec fetch tags" \
               git -C "$INSTALL_DIR" fetch --tags
+
+    # Création fichier version
+    safe_exec "✅  Ecriture OK" \
+              "❌  Impossible d'écrire le fichier de version" \
+              write_version_file "$tag"
 }
 
 
@@ -849,6 +855,11 @@ install_old() {
                   "❌  Impossible de créer main sur $LATEST_TAG" \
                   git checkout -b main "$LATEST_TAG"
     fi
+
+    # Création fichier version
+    safe_exec "✅  Ecriture OK" \
+              "❌  Impossible d'écrire le fichier de version" \
+              write_version_file "$tag"
 }
 
 # --------------------------------------------------------------------------- #
