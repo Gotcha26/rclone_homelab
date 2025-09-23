@@ -458,9 +458,9 @@ get_latest_release() {
     local json
 
     # Récupération JSON
-    safe_exec "✅  Récupération d'information sur GitHub" \
-              "❌  Impossible de récupérer les informations de release depuis GitHub." \
-              curl -s "$GITHUB_API_URL" > >(cat) | { read -r json; }
+     json=$(safe_exec "✅  Récupération d'information sur GitHub" \
+                      "❌  Impossible de récupérer les informations de release depuis GitHub." \
+                      curl -s "$GITHUB_API_URL")
 
     # Extraction directe
     LATEST_TAG=$(echo "$json" | jq -r '.tag_name')
