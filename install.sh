@@ -743,6 +743,7 @@ update_minimal_if_needed() {
 # --------------------------------------------------------------------------- #
 install_dev_branch() {
     local branch="${1:-main}"
+    cd /
     echo ""
     echo -e "📦  ${UNDERLINE}Mode développement${RESET} - Installation via clone Git complet de la branche ${BOLD}$branch${RESET}"
 
