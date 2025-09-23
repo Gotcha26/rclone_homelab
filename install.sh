@@ -314,9 +314,9 @@ check_msmtp() {
     latest_version=$(apt-cache policy msmtp | grep Candidate | awk '{print $2}')
     [ -z "$latest_version" ] && latest_version="inconnue"
 
-    # Normalisation pour comparaison (on ne garde que les chiffres)
-    local_version_clean=$(echo "$local_version" | grep -oP '^\d+(\.\d+)+')
-    latest_version_clean=$(echo "$latest_version" | grep -oP '^\d+(\.\d+)+')
+    # Normalisation pour comparaison
+    local_version_clean=$(echo "$local_version" | cut -d'-' -f1)
+    latest_version_clean=$(echo "$latest_version" | cut -d'-' -f1)
 
     # Affichage
     echo -e "✔️  msmtp détecté."
