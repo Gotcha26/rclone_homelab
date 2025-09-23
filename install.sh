@@ -645,10 +645,10 @@ install_minimal() {
     # Téléchargement de la release ZIP
     local zip_url="https://github.com/Gotcha26/rclone_homelab/archive/refs/tags/${tag}.zip"
     local zip_file="$INSTALL_DIR/release.zip"
-    
+
 # ↓ DEBUG
-    echo "DEBUG: tag=$tag"
-    echo "DEBUG: zip_url=$zip_url"
+    echo "ℹ️  DEBUG: tag=$tag"
+    echo "ℹ️  DEBUG: zip_url=$zip_url"
     if [[ -z "$tag" ]]; then
         echo -e "${RED}❌  Tag vide, impossible de télécharger la release.${RESET}"
         exit 1
@@ -672,11 +672,11 @@ install_minimal() {
     local extracted_dir="$INSTALL_DIR/rclone_homelab-${tag}"
     safe_exec "✅  Déplacement OK" \
               "❌  Impossible de déplacer les fichiers extraits à la racine" \
-              mv "$extracted_dir"/* "$INSTALL_DIR"/
+              bash -c "mv "$extracted_dir"/* "$INSTALL_DIR"/"
 
     safe_exec "✅  Suppression OK" \
               "❌  Impossible de supprimer le dossier temporaire $extracted_dir" \
-              rm -rf "$extracted_dir" || true
+              bash -c "rm -rf "$extracted_dir" || true"
 
     # Création fichier version
     safe_exec "✅  Ecriture OK" \
@@ -775,7 +775,7 @@ install_old() {
     # Nettoyage avant clone (supprime contenu mais garde le dossier)
     safe_exec "✅  Nettoyage de $INSTALL_DIR" \
               "❌  Impossible de nettoyer $INSTALL_DIR" \
-              rm -rf "$INSTALL_DIR"/*
+              bash -c "rm -rf "$INSTALL_DIR"/*"
 
     # Vérifier droits écriture
     if [ ! -w "$INSTALL_DIR" ]; then
