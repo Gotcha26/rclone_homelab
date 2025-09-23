@@ -648,7 +648,7 @@ install_minimal() {
 
     safe_exec "✅  Téléchargement de la release terminé." \
               "❌  Échec téléchargement release" \
-              curl -fsSL -O "$zip_file" "$zip_url"
+              curl -fsSL -o "$zip_file" "$zip_url"
 
     # Extraction et nettoyage
     safe_exec "✅  Extraction terminée." \
