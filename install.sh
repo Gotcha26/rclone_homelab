@@ -97,7 +97,7 @@ safe_exec() {
     local status=$?
 
     if [ $status -eq 0 ]; then
-        [ -n "$msg_success" ] && echo -e "✅  $msg_success"
+        [ -n "$msg_success" ] && echo -e "$msg_success"
         return 0
     else
         echo -e "${YELLOW}⚠️  ${RED}$msg_fail${RESET}"
