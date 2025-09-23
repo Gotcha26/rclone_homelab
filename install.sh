@@ -579,7 +579,7 @@ handle_existing_dir() {
         read -rp "Choix (1/2/3) : " choice
         case "$choice" in
             1)
-                safe_exec "✅  $INSTALL_DIR supprimé avec succès." \
+                safe_exec "✅  Ancien dossier "$INSTALL_DIR" supprimé avec succès." \
                           "❌  Impossible de supprimer $INSTALL_DIR" \
                           rm -rf "$INSTALL_DIR"
 
@@ -645,6 +645,15 @@ install_minimal() {
     # Téléchargement de la release ZIP
     local zip_url="https://github.com/Gotcha26/rclone_homelab/archive/refs/tags/${tag}.zip"
     local zip_file="$INSTALL_DIR/release.zip"
+    
+# ↓ DEBUG
+    echo "DEBUG: tag=$tag"
+    echo "DEBUG: zip_url=$zip_url"
+    if [[ -z "$tag" ]]; then
+        echo -e "${RED}❌  Tag vide, impossible de télécharger la release.${RESET}"
+        exit 1
+    fi
+# ↑ DEBUG
 
     safe_exec "✅  Téléchargement de la release terminé." \
               "❌  Échec téléchargement release" \
