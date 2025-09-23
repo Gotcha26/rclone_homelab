@@ -458,9 +458,10 @@ get_latest_release() {
     local json
 
     # Récupération JSON
-     json=$(safe_exec "✅  Récupération d'information sur GitHub" \
-                      "❌  Impossible de récupérer les informations de release depuis GitHub." \
-                      curl -s "$GITHUB_API_URL")
+    json=$(curl -s "$GITHUB_API_URL")
+    safe_exec "✅  Récupération d'information sur GitHub" \
+            "❌  Impossible de récupérer les informations de release depuis GitHub." \
+            test -n "$json"
 
     # Extraction directe
     LATEST_TAG=$(echo "$json" | jq -r '.tag_name')
@@ -589,7 +590,7 @@ install_minimal() {
     # Création du dossier local
     safe_exec "✅  Dossier $INSTALL_DIR prêt." \
               "❌  Impossible de créer $INSTALL_DIR" \
-              bash -c create_local_dir
+              create_local_dir
 
     # --- Backup si des fichiers existent déjà ---
     if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
@@ -636,7 +637,6 @@ install_minimal() {
     safe_exec "✅  Ecriture OK" \
               "❌  Impossible d'écrire le fichier de version" \
               write_version_file "$tag"
-
 }
 
 # --------------------------------------------------------------------------- #
