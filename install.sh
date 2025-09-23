@@ -186,6 +186,7 @@ check_rclone() {
     echo "📦  Contrôle de la présence de rclone..."
 
     if ! command -v rclone &>/dev/null; then
+        echo ""
         echo -e "⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET}${RED} n'est pas encore installé, il est ${BOLD}indispensable${RESET}."
         echo "Plus d'infos sur rclone : https://rclone.org/"
         echo ""
@@ -217,10 +218,11 @@ check_rclone() {
     [ -z "$latest_version" ] && latest_version="inconnue"
 
     echo -e "✔️  rclone détecté."
-    echo -e "📌 Version installée : ${ITALIC}${local_version}${RESET}"
-    echo -e "📌 Version disponible : ${ITALIC}${latest_version}${RESET}"
+    echo -e "📌  Version installée : ${ITALIC}${local_version}${RESET}"
+    echo -e "📌  Version disponible : ${ITALIC}${latest_version}${RESET}"
 
     if [[ "$local_version" != "$latest_version" ]] && [[ "$latest_version" != "inconnue" ]]; then
+        echo ""
         echo "ℹ️  Nouvelle version rclone disponible : $latest_version"
         echo ""
         read -rp "Voulez-vous mettre à jour rclone ? (y/N) : " yn
@@ -283,6 +285,7 @@ check_msmtp() {
     echo "📦  Contrôle de la présence de msmtp..."
 
     if ! command -v msmtp &>/dev/null; then
+        echo ""
         echo -e "⚠️  ${YELLOW}Le composant ${UNDERLINE}msmtp${RESET}${YELLOW} non détecté (optionnel).${RESET}"
         echo -e "ℹ️  Il sera néanmoins obligatoire pour pouvoir envoyer des rapports ${UNDERLINE}par email.${RESET}"
         echo ""
@@ -312,6 +315,7 @@ check_micro() {
     echo "📦  Contrôle de la présence de micro..."
 
     if ! command -v micro &>/dev/null; then
+        echo ""
         echo -e "⚠️  ${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
         echo -e "Il s'agit d'une alternative plus fournie à l'éditeur ${BOLD}nano${RESET}."
         echo ""
@@ -646,6 +650,7 @@ update_minimal_if_needed() {
     if [[ "$installed_tag" == "$LATEST_TAG" ]]; then
         echo "✅  Installation déjà à jour."
     else
+        echo""
         echo "ℹ️  Mise à jour disponible : $installed_tag → $LATEST_TAG"
         echo ""
         read -rp "Voulez-vous mettre à jour vers $LATEST_TAG ? (y/N) : " yn
