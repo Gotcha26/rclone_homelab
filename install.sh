@@ -295,7 +295,7 @@ check_msmtp() {
                 echo "📥  Installation de msmtp..."
                 safe_exec "✅  msmtp installé." \
                           "❗  Échec de l'installation de msmtp, ${UNDERLINE}ce n'est pas bloquant.${RESET}" "--no-exit" \
-                          bash -c "$SUDO apt update && $SUDO apt install -y msmtp"
+                          bash -c "apt update && apt install -y msmtp"
                 ;;
             *) echo "👌  msmtp (optionnel) ne sera pas installé." ;;
         esac
@@ -332,10 +332,13 @@ check_micro() {
     [ -z "$local_version" ] && local_version="inconnue"
 
     # Récupération version distante
-    safe_exec "✅  Récupération de la dernière version de micro" \
-              "❌  Impossible de récupérer la dernière version de micro." \
-              latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
-                                 | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
+    latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
+                    | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
+    
+    safe_exec "✅  Dernière version : $latest_version" \
+              "❗  Impossible de récupérer la dernière version de micro" "--no-exit" \
+              test -n "$latest_version"
+
     [ -z "$latest_version" ] && latest_version="inconnue"
 
     # Affichage final des versions
@@ -364,8 +367,9 @@ install_micro() {
     if [ "$version" = "latest" ]; then
         version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                   | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
-        safe_exec "✅  Dernière version : ${BOLD}$version${RESET}" \
-                  "❌  Impossible de récupérer la dernière version de micro" "--no-exit" \
+
+        safe_exec "✅  Dernière version : $version" \
+                  "❗  Impossible de récupérer la dernière version de micro" "--no-exit" \
                   test -n "$version"
     fi
 
