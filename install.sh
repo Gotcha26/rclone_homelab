@@ -677,13 +677,21 @@ install_minimal() {
         exit 1
     fi
 
+    # --- Important : s'assurer de ne pas être DANS le dossier qu'on va supprimer/mv ---
+    local PREV_PWD="$PWD"
+    # se placer dans INSTALL_DIR (parent commun) ou / si impossible
+    cd "$INSTALL_DIR" 2>/dev/null || cd / 2>/dev/null || true
+
     safe_exec "✅  Déplacement OK" \
               "❌  Impossible de déplacer les fichiers extraits à la racine" \
               bash -c "mv \"$extracted_dir\"/* \"$INSTALL_DIR\"/"
 
     safe_exec "✅  Suppression OK" \
               "❌  Impossible de supprimer le dossier temporaire $extracted_dir" \
-              bash -c "rm -rf \"$extracted_dir\" || true"
+              bash -c "rm -rf \"$extracted_dir\""
+
+    # Restaurer le répertoire courant si possible (silencieux si disparu)
+    cd "$PREV_PWD" 2>/dev/null || true
 
     # Création fichier version
     safe_exec "✅  Ecriture OK" \
@@ -911,7 +919,7 @@ main() {
     create_executables
 
     echo ""
-    echo -e "${GREEN}🎉 Installation terminée.${RESET}"
+    echo -e "${GREEN}🎉  ${BOLD}Installation terminée.${RESET}"
     echo -e "Pour lancer : $INSTALL_DIR/main.sh ou via le symlink ${BLUE}rclone_homelab${RESET}"
     echo ""
 }
