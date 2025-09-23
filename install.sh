@@ -542,7 +542,7 @@ handle_existing_dir() {
                           "❌  Impossible de supprimer $INSTALL_DIR" \
                           rm -rf "$INSTALL_DIR"
                           echo "⏩  Bacule vers installation normale..."
-                          install_minimal
+                          install_old
                 ;;
             2)
                 echo "⏩  Bacule vers un mise à niveau..."
@@ -672,11 +672,11 @@ install_minimal() {
     local extracted_dir="$INSTALL_DIR/rclone_homelab-${tag}"
     safe_exec "✅  Déplacement OK" \
               "❌  Impossible de déplacer les fichiers extraits à la racine" \
-              bash -c "mv "$extracted_dir"/* "$INSTALL_DIR"/"
+              bash -c "mv \"$extracted_dir\"/* \"$INSTALL_DIR\"/"
 
     safe_exec "✅  Suppression OK" \
               "❌  Impossible de supprimer le dossier temporaire $extracted_dir" \
-              bash -c "rm -rf "$extracted_dir" || true"
+              bash -c "rm -rf \"$extracted_dir\" || true"
 
     # Création fichier version
     safe_exec "✅  Ecriture OK" \
@@ -759,7 +759,7 @@ install_dev_branch() {
 }
 
 # --------------------------------------------------------------------------- #
-# Installation principale
+# Installation principale (git clone)
 # --------------------------------------------------------------------------- #
 install_old() {
     echo ""
@@ -775,7 +775,7 @@ install_old() {
     # Nettoyage avant clone (supprime contenu mais garde le dossier)
     safe_exec "✅  Nettoyage de $INSTALL_DIR" \
               "❌  Impossible de nettoyer $INSTALL_DIR" \
-              bash -c "rm -rf "$INSTALL_DIR"/*"
+              bash -c "rm -rf \"$INSTALL_DIR\"/*"
 
     # Vérifier droits écriture
     if [ ! -w "$INSTALL_DIR" ]; then
@@ -858,7 +858,7 @@ create_symlinks() {
 # --------------------------------------------------------------------------- #
 create_executables() {
     echo ""
-    echo "🏹  Rendre les scripts exécutables..."
+    echo "🤖  Rendre les scripts exécutables..."
 
     local files=()
     files+=("$INSTALL_DIR/main.sh")
