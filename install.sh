@@ -348,6 +348,7 @@ check_micro() {
 
     # Comparaison versions
     if [ "$local_version" != "$latest_version" ] && [ "$latest_version" != "inconnue" ]; then
+        echo ""
         echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
         echo ""
         read -rp "Voulez-vous mettre à jour micro ? (y/N) : " yn
@@ -413,7 +414,8 @@ install_micro() {
     # Proposer de définir comme éditeur par défaut
     if command -v micro >/dev/null 2>&1; then
         echo ""
-        read -rp "Souhaitez-vous utiliser micro comme éditeur par défaut ? (y/N) : " yn
+        echo "Souhaitez-vous utiliser micro comme éditeur par défaut"
+        read -rp "${BOLD}(UNIQUEMENT pour l'utilisation au sein de ${UNDERLINE}rclone_homelab${UNDERLINE}${BOLD}) ?${$RESET} (y/N) : " yn
         case "$yn" in
             [Yy]*) update_editor_choice "micro" ;;
             *)     update_editor_choice "nano"  ;;
@@ -668,8 +670,8 @@ update_minimal_if_needed() {
     fi
 
     # Affichage récapitulatif des versions
-    echo -e "📌 Version installée : ${ITALIC}${installed_tag}${RESET}"
-    echo -e "📌 Version disponible : ${ITALIC}${LATEST_TAG}${RESET}"
+    echo -e "📌  Version installée : ${ITALIC}${installed_tag}${RESET}"
+    echo -e "📌  Version disponible : ${ITALIC}${LATEST_TAG}${RESET}"
 }
 
 # --------------------------------------------------------------------------- #
