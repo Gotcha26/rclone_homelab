@@ -622,6 +622,7 @@ get_installed_release() {
 # --------------------------------------------------------------------------- #
 install_minimal() {
     local tag="$1"
+    cd /
     echo ""
     echo -e "📦  Cas 1/ Installation minimale de ${BOLD}RCLONE_HOMELAB : $tag${RESET}"
 
@@ -741,44 +742,43 @@ update_minimal_if_needed() {
 # Gestion du mode dev : clone Git complet d'une branche
 # --------------------------------------------------------------------------- #
 install_dev_branch() {
-    local branch="${1:-}"
+    local branch="${1:-main}"
     echo ""
-
-    # Détection branche par défaut si non spécifiée
-    if [[ -z "$branch" ]]; then
-        branch=$(git ls-remote --symref "$REPO_URL" HEAD \
-                  | grep 'ref:' | awk '{print $2}' | sed 's@refs/heads/@@')
-    fi
-
     echo -e "📦  ${UNDERLINE}Mode développement${RESET} - Installation via clone Git complet de la branche ${BOLD}$branch${RESET}"
-    
-    # Nettoyage et création
+
+    # --- Nettoyage de l’ancien dossier ---
     safe_exec "✅  Nettoyage de $INSTALL_DIR effectué." \
               "❌  Impossible de supprimer $INSTALL_DIR" \
-              rm -rf "$INSTALL_DIR"
+              bash -c "cd /tmp && rm -rf \"$INSTALL_DIR\""
 
+    # Création du dossier
     safe_exec "✅  Dossier $INSTALL_DIR créé." \
               "❌  Impossible de créer $INSTALL_DIR" \
               mkdir -p "$INSTALL_DIR"
 
     # Vérifie si la branche existe côté distant
-    if git ls-remote --heads "$REPO_URL" "$branch" | grep -q "refs/heads/$branch"; then
-        safe_exec "✅  Clone de la branche $branch terminé." \
-                  "❌  Échec clone de la branche $branch" \
-                  git clone --branch "$branch" --single-branch "$REPO_URL" "$INSTALL_DIR"
-    else
-        echo -e "❌  ${RED}La branche '${BOLD}$branch${RESET}${RED}' n'existe pas dans le dépôt.${RESET}"
-        exit 1
+    if ! git ls-remote --heads "$REPO_URL" "$branch" | grep -q "refs/heads/$branch"; then
+        echo -e "⚠️  La branche '${BOLD}$branch${RESET}' n’existe pas dans le dépôt."
+        # Tentative de détection automatique de la branche par défaut
+        branch=$(git ls-remote --symref "$REPO_URL" HEAD \
+                  | awk '/ref:/ {print $2}' \
+                  | sed 's@refs/heads/@@')
+        echo -e "ℹ️  Utilisation de la branche par défaut détectée : ${BOLD}$branch${RESET}"
     fi
+
+    # Clone
+    safe_exec "✅  Clone de la branche $branch terminé." \
+              "❌  Échec clone de la branche $branch" \
+              git clone --branch "$branch" --single-branch "$REPO_URL" "$INSTALL_DIR"
 
     # --- Bloc de finalisation commun ---
     safe_exec "✅  Se placer dans $INSTALL_DIR" \
               "❌  Impossible d’entrer dans $INSTALL_DIR" \
-              cd "$INSTALL_DIR"
+              bash -c "cd \"$INSTALL_DIR\""
 
     safe_exec "✅  Récupération des tags effectuée." \
               "❌  Échec fetch tags" \
-              git fetch --tags
+              git -C "$INSTALL_DIR" fetch --tags
 }
 
 
@@ -786,6 +786,7 @@ install_dev_branch() {
 # Installation principale (git clone)
 # --------------------------------------------------------------------------- #
 install_old() {
+    cd /
     echo ""
     echo -e "📦  Installation de ${BOLD}rclone_homelab${RESET} sur le dernier tag de main..."
 
