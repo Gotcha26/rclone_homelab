@@ -929,9 +929,9 @@ main() {
     create_executables
 
     echo ""
-    echo -e "+==============================================================================+"
-    echo -e "|                       ${GREEN}🎉  ${BOLD}Installation terminée.${RESET}                       |"
-    echo -e "+==============================================================================+"
+    echo -e "+----------------------------+"
+    echo -e "| ${GREEN}🎉  ${BOLD}Installation terminée.${RESET} |"
+    echo -e "+----------------------------+"
     echo ""
     echo -e "🔀  Pour lancer : $INSTALL_DIR/main.sh ou via le symlink ${BLUE}rclone_homelab${RESET}"
     echo ""
