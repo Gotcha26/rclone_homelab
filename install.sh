@@ -544,8 +544,8 @@ handle_existing_dir() {
                 safe_exec "✅  $INSTALL_DIR nettoyé avec succès." \
                           "❌  Impossible de supprimer $INSTALL_DIR" \
                           rm -rf "$INSTALL_DIR"
-                          echo "⏩  Bacule vers installation normale..."
-                          install_normal
+                          echo "⏩  Bacule vers installation normale (minimale)..."
+                          install_minimal
                 ;;
             2)
                 echo "⏩  Bacule vers un mise à niveau..."
