@@ -202,9 +202,15 @@ check_rclone() {
     # Version locale
     local_version=$(rclone version 2>/dev/null | head -n1 | awk '{print $2}')
 
-    # Récupération version “distante” depuis apt
-    latest_version=$(apt-cache policy msmtp | grep Candidate | awk '{print $2}')
-    [ -z "$latest_version" ] && latest_version="inconnue"
+    # Version distante via GitHub API
+    safe_exec "✅  Récupération des infos GitHub" \
+              "❌  Impossible de récupérer les informations de release rclone." \
+              curl -s https://api.github.com/repos/rclone/rclone/releases/latest -o /tmp/rclone_release.json
+
+    latest_version=$(jq -r '.tag_name // empty' /tmp/rclone_release.json 2>/dev/null)
+    safe_exec "✅  Nettoyage du fichier temporaire" \
+              "❌  Impossible de supprimer le fichier temporaire" \
+              rm -f /tmp/rclone_release.json
 
     # Normalisation (suppression éventuelle du "v")
     latest_version="${latest_version#v}"
@@ -302,14 +308,8 @@ check_msmtp() {
     local_version=$(msmtp --version 2>/dev/null | grep -oP '\d+(\.\d+)+')
     [ -z "$local_version" ] && local_version="inconnue"
 
-    # Récupération version distante depuis GitHub (msmtp/msmtp)
-    latest_version=$(curl -s https://api.github.com/repos/marlam/msmtp/releases/latest \
-                    | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
-    
-    safe_exec "✅  Dernière version : $latest_version" \
-              "❗  Impossible de récupérer la dernière version de msmtp" "--no-exit" \
-              test -n "$latest_version"
-
+    # Récupération version “distante” depuis apt
+    latest_version=$(apt-cache policy msmtp | grep Candidate | awk '{print $2}')
     [ -z "$latest_version" ] && latest_version="inconnue"
 
     # Affichage final des versions
