@@ -668,8 +668,15 @@ install_minimal() {
               "❌  Impossible de supprimer le fichier ZIP" \
               rm -f "$zip_file"
 
-    # Déplacement des fichiers extraits à la racine
-    local extracted_dir="$INSTALL_DIR/rclone_homelab-${tag}"
+    # Détection automatique du dossier extrait
+    local extracted_dir
+    extracted_dir=$(find "$INSTALL_DIR" -maxdepth 1 -type d -name "rclone_homelab-*" | head -n1)
+
+    if [[ -z "$extracted_dir" ]]; then
+        echo -e "❌  Aucun dossier extrait trouvé dans $INSTALL_DIR"
+        exit 1
+    fi
+
     safe_exec "✅  Déplacement OK" \
               "❌  Impossible de déplacer les fichiers extraits à la racine" \
               bash -c "mv \"$extracted_dir\"/* \"$INSTALL_DIR\"/"
@@ -682,6 +689,7 @@ install_minimal() {
     safe_exec "✅  Ecriture OK" \
               "❌  Impossible d'écrire le fichier de version" \
               write_version_file "$tag"
+
 }
 
 # --------------------------------------------------------------------------- #
