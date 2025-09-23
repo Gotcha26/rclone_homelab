@@ -149,7 +149,7 @@ read_version_file() {
 check_dependencies() {
     echo ""
     echo "📦  Contrôle des dépendances nécéssaires à l'installation..."
-    ehco -e "👉  ${ITALIC}git curl unzip perl jq.${RESET}"
+    echo -e "👉  ${ITALIC}git curl unzip perl jq.${RESET}"
     local deps=(git curl unzip perl jq)
     local missing=()
 
@@ -362,7 +362,7 @@ check_micro() {
 
 install_micro() {
     local version="${1:-latest}"
-    echo
+    echo ""
     echo "📦  Installation / mise à jour de micro..."
 
     # Déterminer la dernière version si "latest"
@@ -416,7 +416,7 @@ install_micro() {
     if command -v micro >/dev/null 2>&1; then
         echo ""
         echo "Souhaitez-vous utiliser micro comme éditeur par défaut"
-        read -rp "${BOLD}(UNIQUEMENT pour l'utilisation au sein de ${UNDERLINE}rclone_homelab${UNDERLINE}${BOLD}) ?${$RESET} (y/N) : " yn
+        read -rp "${BOLD}(UNIQUEMENT pour l'utilisation au sein de ${UNDERLINE}rclone_homelab${UNDERLINE}${BOLD}) ?${RESET} (y/N) : " yn
         case "$yn" in
             [Yy]*) update_editor_choice "micro" ;;
             *)     update_editor_choice "nano"  ;;
@@ -484,41 +484,36 @@ ${UNDERLINE}Dernière release${RESET} : $LATEST_TAG ${ITALIC}($LATEST_DATE)${RES
 # --------------------------------------------------------------------------- #
 handle_existing_dir() {
     echo ""
-    echo -e "📦  Cas 2-3/ Installation sur dossier existant détécté..."
+    echo -e "📦  Cas 2-3/ Dossier d'installation déjà en place..."
 
     if [[ -d "$INSTALL_DIR/.git" ]]; then
         # Dossier Git existant
+        echo "-- Cas hybride ---"
+        echo "Traces d'un dossier git : oui"
+        echo "Absence de fichier .version"
+        echo "En attente d'une decision..."
         echo ""
         echo -e "❓  ${YELLOW}Le répertoire ${BOLD}$INSTALL_DIR${RESET}${YELLOW} contient un dépôt Git.${RESET}"
         get_installed_release
         echo ""
-        echo "Que voulez-vous faire ?"
-        echo "  [1] Supprimer et réinstaller la dernière release"
-        echo "  [2] Mettre à jour vers la dernière release"
-        echo "  [3] Ne rien faire et quitter"
+        echo -e "${UNDERLINE}${ITALIC}Que voulez-vous faire ?${RESET}"
+        echo -e "  [1] ${BOLD}Supprimer ${RED}TOUT${RESET} et continuer à l'installation proprement"
+        echo -e "  [2] ${BOLD}Installer / Mettre à jour${RESET} vers la dernière version"
+        echo -e "  [3] Ne rien faire et quitter"
         echo ""
         read -rp "Choix (1/2/3) : " choice
         case "$choice" in
             1)
-                safe_exec "✅  $INSTALL_DIR supprimé avec succès." \
+                safe_exec "✅  $INSTALL_DIR nettoyé avec succès." \
                           "❌  Impossible de supprimer $INSTALL_DIR" \
                           rm -rf "$INSTALL_DIR"
+                          echo "⏩  Bacule vers installation normale..."
+                          install_minimal
                 ;;
             2)
-                safe_exec "✅  Se placer dans $INSTALL_DIR" \
-                          "❌  Impossible d’entrer dans $INSTALL_DIR" \
-                          cd "$INSTALL_DIR"
-
-                safe_exec "✅  Tags récupérés." \
-                          "❌  Échec fetch tags" \
-                          git fetch --tags
-
-                safe_exec "✅  Passage sur $LATEST_TAG réussi." \
-                          "❌  Impossible de passer sur $LATEST_TAG" \
-                          git checkout -q "$LATEST_TAG"
-
-                echo "✅  Mise à jour vers $LATEST_TAG réussie !"
-                return 0
+                echo "⏩  Bacule vers un mise à niveau..."
+                # Mise à jour Cas 3 
+                update_minimal_if_needed
                 ;;
             3|*)
                 echo "Abandon. Ciao 👋"
@@ -533,14 +528,19 @@ handle_existing_dir() {
     else
         # Cas singulier : dossier existant mais ni .git ni .version : Cas 2
         # Se transforme en Cas 1 après avoir fait le choix.
+        echo "-- Cas hybride ---"
+        echo "Traces d'un dossier git : non"
+        echo "Absence de fichier .version"
+        echo "En attente d'une decision..."
         echo ""
         echo -e "📦  Cas 2/ Installation sur dossier existant détécté, incomplet/correct..."
         echo ""
         echo -e "❗  ${RED}Le répertoire $INSTALL_DIR existe mais semble incomplet ou corrompu.${RESET}"
-        echo "Que voulez-vous faire ?"
-        echo "  [1] Supprimer le contenu et installer depuis la dernière release"
-        echo "  [2] Installer 'par-dessus' le contenu existant (risque de conflits)"
-        echo "  [3] Ne rien faire et quitter"
+        echo ""
+        echo -e "${UNDERLINE}${ITALIC}Que voulez-vous faire ?${RESET}"
+        echo -e "  [1] ${BOLD}${RED}Supprimer${RESET} le contenu et continuer à l'installation proprement"
+        echo -e "  [2] Installer 'par-dessus' le contenu existant (risque de conflits)"
+        echo -e "  [3] Ne rien faire et quitter"
         echo ""
         read -rp "Choix (1/2/3) : " choice
         case "$choice" in
@@ -569,7 +569,7 @@ handle_existing_dir() {
 
 get_installed_release() {
     if [ -d "$INSTALL_DIR/.git" ]; then
-        cd "$INSTALL_DIR" || return
+        cd "$INSTALL_DIR" || return 1
         INSTALLED_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
         INSTALLED_DATE=$(git log -1 --format=%cd --date=short 2>/dev/null)
         if [ -n "$INSTALLED_TAG" ]; then
@@ -577,7 +577,7 @@ get_installed_release() {
         else
             echo -e "📌  Version installée : ${ITALIC}${BOLD}inconnue${RESET}."
         fi
-        cd - >/dev/null || return
+        cd "$INSTALL_DIR" || return 1
     fi
 }
 
@@ -658,7 +658,7 @@ update_minimal_if_needed() {
     if [[ "$installed_tag" == "$LATEST_TAG" ]]; then
         echo "✅  Installation déjà à jour."
     else
-        echo""
+        echo ""
         echo "ℹ️  Mise à jour disponible : $installed_tag → $LATEST_TAG"
         echo ""
         read -rp "Voulez-vous mettre à jour vers $LATEST_TAG ? (y/N) : " yn
@@ -823,10 +823,10 @@ create_executables() {
     local UPDATER_SCRIPT="$INSTALL_DIR/update/standalone_updater.sh"
     [[ -f "$UPDATER_SCRIPT" ]] && files+=("$UPDATER_SCRIPT")
 
-    safe_exec \
-        "❌  ${BOLD}${files[*]}${RESET} : n'a pas pu être rendu exécutable." \
-        "✅  ${BOLD}${files[*]}${RESET} → rendu(s) exécutable(s)." \
-        chmod +x "${files[@]}"
+    safe_exec "✅  ${BOLD}${files[*]}${RESET} → rendu(s) exécutable(s)." \
+            "❌  ${BOLD}${files[*]}${RESET} : n'a pas pu être rendu exécutable." \
+            chmod +x "${files[@]}"
+
 }
 
 # --------------------------------------------------------------------------- #
