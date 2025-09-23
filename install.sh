@@ -29,8 +29,8 @@ echo
 
 REPO_URL="https://github.com/Gotcha26/rclone_homelab.git"
 INSTALL_DIR="/opt/rclone_homelab"
-LOCAL_DIR="$INSTALL_DIR/local"
-VERSION_FILE="$LOCAL_DIR/.version"
+DIR_LOCAL="$INSTALL_DIR/local"
+VERSION_FILE="$DIR_LOCAL/.version"
 GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest"
 SAFE_EXEC_EXIT_ON_FAIL=true
 
@@ -65,7 +65,7 @@ RESET='\033[0m'; BOLD="\033[1m"; ITALIC="\033[3m"; UNDERLINE="\033[4m"
 # --------------------------------------------------------------------------- #
 # Exemples d'utilisation :
 # safe_exec "Dossier $INSTALL_DIR créé" "Impossible de créer $INSTALL_DIR" mkdir -p "$INSTALL_DIR"
-# safe_exec "Fichiers déplacés vers $backup_dir" "" mv "$INSTALL_DIR"/* "$backup_dir"/
+# safe_exec "Fichiers déplacés vers $DIR_BACKUP" "" mv "$INSTALL_DIR"/* "$DIR_BACKUP"/
 # safe_exec "" "" rm -rf "$INSTALL_DIR"
 # safe_exec "Succès" "Échec" bash -c 'commande complexe avec > et &&'
 # safe_exec "✅  Exemple OK" "❌  Exemple échoué" bash -c 'commande1 && commande2 > fichier.log'
@@ -129,9 +129,9 @@ fi
 # Helpers
 # --------------------------------------------------------------------------- #
 create_local_dir() {
-    safe_exec "✅  Dossier $LOCAL_DIR créé." \
-              "❌  Impossible de créer ${BOLD}$LOCAL_DIR${RESET}" \
-              mkdir -p "$LOCAL_DIR"
+    safe_exec "✅  Dossier $DIR_LOCAL créé." \
+              "❌  Impossible de créer ${BOLD}$DIR_LOCAL${RESET}" \
+              mkdir -p "$DIR_LOCAL"
 }
 
 write_version_file() {
@@ -148,7 +148,8 @@ read_version_file() {
 # --------------------------------------------------------------------------- #
 check_dependencies() {
     echo ""
-    echo -e "📦  Contrôle des dépendances..."
+    echo "📦  Contrôle des dépendances nécéssaires à l'installation..."
+    ehco -e "👉  ${ITALIC}git curl unzip perl jq.${RESET}"
     local deps=(git curl unzip perl jq)
     local missing=()
 
@@ -343,8 +344,8 @@ check_micro() {
 
     # Affichage final des versions
     echo -e "✔️  micro détecté."
-    echo -e "📌 Version installée : ${ITALIC}${local_version}${RESET}"
-    echo -e "📌 Version disponible : ${ITALIC}${latest_version}${RESET}"
+    echo -e "📌  Version installée : ${ITALIC}${local_version}${RESET}"
+    echo -e "📌  Version disponible : ${ITALIC}${latest_version}${RESET}"
 
     # Comparaison versions
     if [ "$local_version" != "$latest_version" ] && [ "$latest_version" != "inconnue" ]; then
@@ -457,17 +458,18 @@ update_editor_choice() {
 get_latest_release() {
     local json
 
-    # Récupération JSON
+    # Récupération JSON pur
     json=$(curl -s "$GITHUB_API_URL")
-    safe_exec "✅  Récupération d'information sur GitHub" \
-            "❌  Impossible de récupérer les informations de release depuis GitHub." \
-            test -n "$json"
+    if [[ -z "$json" ]]; then
+        echo -e "❌  ${RED}Impossible de récupérer les informations de release depuis GitHub.${RESET}"
+        exit 1
+    fi
 
-    # Extraction directe
-    LATEST_TAG=$(echo "$json" | jq -r '.tag_name')
-    LATEST_DATE=$(echo "$json" | jq -r '.published_at' | cut -d'T' -f1)
+    # Extraction avec fallback
+    LATEST_TAG=$(echo "$json" | jq -r '.tag_name // empty')
+    LATEST_DATE=$(echo "$json" | jq -r '.published_at // empty' | cut -d'T' -f1)
 
-    if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
+    if [[ -z "$LATEST_TAG" ]]; then
         echo -e "❌  ${RED}Impossible de récupérer la dernière release.${RESET}"
         exit 1
     fi
@@ -571,9 +573,9 @@ get_installed_release() {
         INSTALLED_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
         INSTALLED_DATE=$(git log -1 --format=%cd --date=short 2>/dev/null)
         if [ -n "$INSTALLED_TAG" ]; then
-            echo -e "📌 Version installée : ${ITALIC}$INSTALLED_TAG${BOLD}${ITALIC} ($INSTALLED_DATE)${RESET}."
+            echo -e "📌  Version installée : ${ITALIC}$INSTALLED_TAG${BOLD}${ITALIC} ($INSTALLED_DATE)${RESET}."
         else
-            echo -e "📌 Version installée : ${ITALIC}${BOLD}inconnue${RESET}."
+            echo -e "📌  Version installée : ${ITALIC}${BOLD}inconnue${RESET}."
         fi
         cd - >/dev/null || return
     fi
@@ -588,22 +590,22 @@ install_minimal() {
     echo -e "📦  Cas 1/ Installation minimale de ${BOLD}RCLONE_HOMELAB : $tag${RESET}"
 
     # Création du dossier local
-    safe_exec "✅  Dossier $INSTALL_DIR prêt." \
-              "❌  Impossible de créer $INSTALL_DIR" \
+    safe_exec "✅  Dossier $DIR_LOCAL prêt." \
+              "❌  Impossible de créer $DIR_LOCAL" \
               create_local_dir
 
     # --- Backup si des fichiers existent déjà ---
-    if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
-        local backup_dir="${INSTALL_DIR}/backup_$(date +%Y%m%d_%H%M%S)"
-        echo "⚠️  Des fichiers existent déjà dans $INSTALL_DIR. Création d'un backup : $backup_dir"
+    if [ -n "$(ls -A "$DIR_LOCAL" 2>/dev/null)" ]; then
+        local DIR_BACKUP="${INSTALL_DIR}/backup_$(date +%Y%m%d_%H%M%S)"
+        echo "⚠️  Des fichiers existent déjà dans $INSTALL_DIR. Création d'un backup : $DIR_BACKUP"
 
-        safe_exec "✅  Dossier backup créé : $backup_dir" \
-                  "❌  Impossible de créer : $backup_dir" \
-                  mkdir -p "$backup_dir"
+        safe_exec "✅  Dossier backup créé : $DIR_BACKUP" \
+                  "❌  Impossible de créer : $DIR_BACKUP" \
+                  mkdir -p "$DIR_BACKUP"
 
-        safe_exec "✅  Déplacement effectué avec succès : $INSTALL_DIR/* → $backup_dir" \
-                  "❌  Impossible de déplacer : $INSTALL_DIR → $backup_dir" \
-                  mv "$INSTALL_DIR"/* "$backup_dir"/
+        safe_exec "✅  Déplacement effectué avec succès : $DIR_LOCAL/* → $DIR_BACKUP" \
+                  "❌  Impossible de déplacer : $DIR_LOCAL → $DIR_BACKUP" \
+                  mv "$DIR_LOCAL"/* "$DIR_BACKUP"/
     fi
 
     # Téléchargement de la release ZIP
