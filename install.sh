@@ -51,6 +51,71 @@ LATEST_TAG="${LATEST_TAG:-}"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
 RESET='\033[0m'; BOLD="\033[1m"; ITALIC="\033[3m"; UNDERLINE="\033[4m"
 
+# --------------------------------------------------------------------------- #
+# safe_exec : exécute une commande avec sudo si nécessaire, avec messages et 
+# gestion d'erreurs flexibles.
+# --------------------------------------------------------------------------- #
+# Arguments :
+#   $1 : message succès (optionnel)
+#   $2 : message échec (optionnel, sinon message par défaut)
+#   $3…$n : options (--critical|--no-exit) puis commande et ses arguments
+# --------------------------------------------------------------------------- #
+# Variables globales :
+#   SAFE_EXEC_EXIT_ON_FAIL : si true, toutes les commandes critiques feront exit
+# --------------------------------------------------------------------------- #
+# Exemples d'utilisation :
+# safe_exec "Dossier $INSTALL_DIR créé" "Impossible de créer $INSTALL_DIR" mkdir -p "$INSTALL_DIR"
+# safe_exec "Fichiers déplacés vers $backup_dir" "" mv "$INSTALL_DIR"/* "$backup_dir"/
+# safe_exec "" "" rm -rf "$INSTALL_DIR"
+# safe_exec "Succès" "Échec" bash -c 'commande complexe avec > et &&'
+# safe_exec "✅  Exemple OK" "❌  Exemple échoué" bash -c 'commande1 && commande2 > fichier.log'
+# safe_exec "Création d'un lien" "Échec du lien" --critical ln -sf "$target" "$symlink"
+# --------------------------------------------------------------------------- #
+
+SAFE_EXEC_EXIT_ON_FAIL="${SAFE_EXEC_EXIT_ON_FAIL:-false}"
+
+safe_exec() {
+    local msg_success="$1"
+    local msg_fail="$2"
+    shift 2
+
+    local critical_override=""
+    # Vérifier si le prochain argument est --critical ou --no-exit
+    if [[ "$1" == "--critical" || "$1" == "--no-exit" ]]; then
+        critical_override="$1"
+        shift
+    fi
+
+    [ -z "$msg_fail" ] && msg_fail="Échec de la commande : $*"
+
+    # Exécution de la commande avec tous les arguments tels quels
+    if [ -n "$SUDO" ]; then
+        "$SUDO" "$@"
+    else
+        "$@"
+    fi
+    local status=$?
+
+    if [ $status -eq 0 ]; then
+        [ -n "$msg_success" ] && echo -e "✅  $msg_success"
+        return 0
+    else
+        echo -e "${YELLOW}⚠️  ${RED}$msg_fail${RESET}"
+
+        # Gestion de l'exit selon les règles : argument ou variable globale
+        if [[ "$critical_override" == "--critical" ]]; then
+            exit 1
+        elif [[ "$critical_override" == "--no-exit" ]]; then
+            return 1
+        elif [[ "$SAFE_EXEC_EXIT_ON_FAIL" == "true" ]]; then
+            exit 1
+        fi
+
+        return 1
+    fi
+}
+
+
 # ---------------------------------------------------------------------------- #
 # Détection sudo
 # ---------------------------------------------------------------------------- #
@@ -789,70 +854,6 @@ main() {
 
 main "$@"
 exit 0
-
-# --------------------------------------------------------------------------- #
-# safe_exec : exécute une commande avec sudo si nécessaire, avec messages et 
-# gestion d'erreurs flexibles.
-# --------------------------------------------------------------------------- #
-# Arguments :
-#   $1 : message succès (optionnel)
-#   $2 : message échec (optionnel, sinon message par défaut)
-#   $3…$n : options (--critical|--no-exit) puis commande et ses arguments
-# --------------------------------------------------------------------------- #
-# Variables globales :
-#   SAFE_EXEC_EXIT_ON_FAIL : si true, toutes les commandes critiques feront exit
-# --------------------------------------------------------------------------- #
-# Exemples d'utilisation :
-# safe_exec "Dossier $INSTALL_DIR créé" "Impossible de créer $INSTALL_DIR" mkdir -p "$INSTALL_DIR"
-# safe_exec "Fichiers déplacés vers $backup_dir" "" mv "$INSTALL_DIR"/* "$backup_dir"/
-# safe_exec "" "" rm -rf "$INSTALL_DIR"
-# safe_exec "Succès" "Échec" bash -c 'commande complexe avec > et &&'
-# safe_exec "Création d'un lien" "Échec du lien" --critical ln -sf "$target" "$symlink"
-# --------------------------------------------------------------------------- #
-
-SAFE_EXEC_EXIT_ON_FAIL="${SAFE_EXEC_EXIT_ON_FAIL:-false}"
-
-safe_exec() {
-    local msg_success="$1"
-    local msg_fail="$2"
-    shift 2
-
-    local critical_override=""
-    # Vérifier si le prochain argument est --critical ou --no-exit
-    if [[ "$1" == "--critical" || "$1" == "--no-exit" ]]; then
-        critical_override="$1"
-        shift
-    fi
-
-    [ -z "$msg_fail" ] && msg_fail="Échec de la commande : $*"
-
-    local status
-    if [ -n "$SUDO" ]; then
-        "$SUDO" "$@"
-        status=$?
-    else
-        "$@"
-        status=$?
-    fi
-
-    if [ $status -eq 0 ]; then
-        [ -n "$msg_success" ] && echo -e "✅  $msg_success"
-        return 0
-    else
-        echo -e "${YELLOW}⚠️  ${RED}$msg_fail${RESET}"
-
-        # Gestion de l'exit selon les règles : argument ou variable globale
-        if [[ "$critical_override" == "--critical" ]]; then
-            exit 1
-        elif [[ "$critical_override" == "--no-exit" ]]; then
-            return 1
-        elif [[ "$SAFE_EXEC_EXIT_ON_FAIL" == "true" ]]; then
-            exit 1
-        fi
-
-        return 1
-    fi
-}
 
 
 
