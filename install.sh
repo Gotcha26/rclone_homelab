@@ -17,9 +17,9 @@
 set -uo pipefail
 
 clear
-echo "+==============================================================================+"
+echo "+------------------------------------------------------------------------------+"
 echo "|            Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            |"
-echo "+==============================================================================+"
+echo "+------------------------------------------------------------------------------+"
 echo
 
 
@@ -219,7 +219,7 @@ check_rclone() {
     [ -z "$latest_version" ] && latest_version="inconnue"
 
     echo -e "✔️  rclone détecté."
-    echo -e "📌  Version installée : ${ITALIC}${local_version}${RESET}"
+    echo -e "📌  Version installée  : ${ITALIC}${local_version}${RESET}"
     echo -e "📌  Version disponible : ${ITALIC}${latest_version}${RESET}"
 
     if [[ "$local_version" != "$latest_version" ]] && [[ "$latest_version" != "inconnue" ]]; then
@@ -320,7 +320,7 @@ check_msmtp() {
 
     # Affichage
     echo -e "✔️  msmtp détecté."
-    echo -e "📌  Version installée : ${ITALIC}${local_version}${RESET}"
+    echo -e "📌  Version installée  : ${ITALIC}${local_version}${RESET}"
     echo -e "📌  Version disponible : ${ITALIC}${latest_version}${RESET}"
 
     # Comparaison versions
@@ -370,7 +370,7 @@ check_micro() {
     latest_version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                     | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
     
-    safe_exec "✅  Dernière version : $latest_version" \
+    safe_exec "" \
               "❗  Impossible de récupérer la dernière version de micro" "--no-exit" \
               test -n "$latest_version"
 
@@ -378,7 +378,7 @@ check_micro() {
 
     # Affichage final des versions
     echo -e "✔️  micro détecté."
-    echo -e "📌  Version installée : ${ITALIC}${local_version}${RESET}"
+    echo -e "📌  Version installée  : ${ITALIC}${local_version}${RESET}"
     echo -e "📌  Version disponible : ${ITALIC}${latest_version}${RESET}"
 
     # Comparaison versions
@@ -404,7 +404,7 @@ install_micro() {
         version=$(curl -s https://api.github.com/repos/zyedidia/micro/releases/latest \
                   | grep '"tag_name":' | cut -d'"' -f4 | sed 's/^v//')
 
-        safe_exec "✅  Dernière version : $version" \
+        safe_exec "" \
                   "❗  Impossible de récupérer la dernière version de micro" "--no-exit" \
                   test -n "$version"
     fi
@@ -507,7 +507,9 @@ get_latest_release() {
         echo -e "❌  ${RED}Impossible de récupérer la dernière release.${RESET}"
         exit 1
     fi
-
+    echo ""
+    echo "----"
+    echo ""
     echo -e "ℹ️  Script ${BOLD}rclone_homelab${RESET} - \
 ${UNDERLINE}Dernière release${RESET} : $LATEST_TAG ${ITALIC}($LATEST_DATE)${RESET}"
 }
@@ -607,9 +609,9 @@ get_installed_release() {
         INSTALLED_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
         INSTALLED_DATE=$(git log -1 --format=%cd --date=short 2>/dev/null)
         if [ -n "$INSTALLED_TAG" ]; then
-            echo -e "📌  Version installée : ${ITALIC}$INSTALLED_TAG${BOLD}${ITALIC} ($INSTALLED_DATE)${RESET}."
+            echo -e "📌  Version installée  : ${ITALIC}$INSTALLED_TAG${BOLD}${ITALIC} ($INSTALLED_DATE)${RESET}."
         else
-            echo -e "📌  Version installée : ${ITALIC}${BOLD}inconnue${RESET}."
+            echo -e "📌  Version installée  : ${ITALIC}${BOLD}inconnue${RESET}."
         fi
         cd "$INSTALL_DIR" || return 1
     fi
@@ -731,7 +733,7 @@ update_minimal_if_needed() {
     fi
 
     # Affichage récapitulatif des versions
-    echo -e "📌  Version installée : ${ITALIC}${installed_tag}${RESET}"
+    echo -e "📌  Version installée  : ${ITALIC}${installed_tag}${RESET}"
     echo -e "📌  Version disponible : ${ITALIC}${LATEST_TAG}${RESET}"
 }
 
@@ -739,16 +741,22 @@ update_minimal_if_needed() {
 # Gestion du mode dev : clone Git complet d'une branche
 # --------------------------------------------------------------------------- #
 install_dev_branch() {
-    local branch="${1:-main}"
+    local branch="${1:-}"
     echo ""
+
+    # Détection branche par défaut si non spécifiée
+    if [[ -z "$branch" ]]; then
+        branch=$(git ls-remote --symref "$REPO_URL" HEAD \
+                  | grep 'ref:' | awk '{print $2}' | sed 's@refs/heads/@@')
+    fi
+
     echo -e "📦  ${UNDERLINE}Mode développement${RESET} - Installation via clone Git complet de la branche ${BOLD}$branch${RESET}"
     
-    # Nettoyage de l’ancien dossier
+    # Nettoyage et création
     safe_exec "✅  Nettoyage de $INSTALL_DIR effectué." \
               "❌  Impossible de supprimer $INSTALL_DIR" \
               rm -rf "$INSTALL_DIR"
 
-    # Création du dossier
     safe_exec "✅  Dossier $INSTALL_DIR créé." \
               "❌  Impossible de créer $INSTALL_DIR" \
               mkdir -p "$INSTALL_DIR"
@@ -760,7 +768,7 @@ install_dev_branch() {
                   git clone --branch "$branch" --single-branch "$REPO_URL" "$INSTALL_DIR"
     else
         echo -e "❌  ${RED}La branche '${BOLD}$branch${RESET}${RED}' n'existe pas dans le dépôt.${RESET}"
-        return 1
+        exit 1
     fi
 
     # --- Bloc de finalisation commun ---
@@ -771,8 +779,8 @@ install_dev_branch() {
     safe_exec "✅  Récupération des tags effectuée." \
               "❌  Échec fetch tags" \
               git fetch --tags
-
 }
+
 
 # --------------------------------------------------------------------------- #
 # Installation principale (git clone)
@@ -919,8 +927,11 @@ main() {
     create_executables
 
     echo ""
-    echo -e "${GREEN}🎉  ${BOLD}Installation terminée.${RESET}"
-    echo -e "Pour lancer : $INSTALL_DIR/main.sh ou via le symlink ${BLUE}rclone_homelab${RESET}"
+    echo -e "+==============================================================================+"
+    echo -e "|                       ${GREEN}🎉  ${BOLD}Installation terminée.${RESET}                       |"
+    echo -e "+==============================================================================+"
+    echo ""
+    echo -e "🔀  Pour lancer : $INSTALL_DIR/main.sh ou via le symlink ${BLUE}rclone_homelab${RESET}"
     echo ""
 }
 
