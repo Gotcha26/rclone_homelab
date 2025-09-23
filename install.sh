@@ -66,7 +66,7 @@ fi
 create_local_dir() {
     safe_exec "✅  Dossier $LOCAL_DIR créé." \
               "❌  Impossible de créer ${BOLD}$LOCAL_DIR${RESET}" \
-              $SUDO mkdir -p "$LOCAL_DIR"
+              mkdir -p "$LOCAL_DIR"
 }
 
 write_version_file() {
@@ -84,7 +84,7 @@ read_version_file() {
 check_dependencies() {
     echo ""
     echo -e "📦  Contrôle des dépendances..."
-    local deps=(git curl unzip perl)
+    local deps=(git curl unzip perl jq)
     local missing=()
 
     # Vérifie toutes les dépendances
@@ -98,9 +98,14 @@ check_dependencies() {
     if [[ ${#missing[@]} -gt 0 ]]; then
         echo -e "⚠️  Dépendances manquantes : ${YELLOW}${missing[*]}${RESET}"
         echo "Installation automatique..."
-        safe_exec "✅  Dépendances installées avec succès." \
-                  "❌  Impossible d'installer les dépendances : ${missing[*]}" \
-                  bash -c "$SUDO apt update && $SUDO apt install -y ${missing[*]}"
+        safe_exec "✅ apt update OK" \
+                  "❌ apt update échoué" \
+                  apt update
+        
+        safe_exec "✅ Dépendances installées." \
+                  "❌ Impossible d’installer..." \
+                  apt install -y "${missing[@]}"
+
     else
         echo -e "✅  Toutes les dépendances sont présentes."
     fi
@@ -127,12 +132,23 @@ check_rclone() {
         return
     fi
 
-    # Versions locale et distante
+    # Version locale
     local_version=$(rclone version 2>/dev/null | head -n1 | awk '{print $2}')
-    safe_exec "✅  Récupération depuis GitHub" \
-              "❌  Impossible de récupérer la dernière version stable de rclone." \
-              latest_version=$(curl -s https://api.github.com/repos/rclone/rclone/releases/latest \
-                                 | grep '"tag_name":' | awk -F'"' '{print $4}')
+
+    # Version distante via GitHub API
+    safe_exec "✅  Récupération des infos GitHub" \
+              "❌  Impossible de récupérer les informations de release rclone." \
+              curl -s https://api.github.com/repos/rclone/rclone/releases/latest -o /tmp/rclone_release.json
+
+    latest_version=$(jq -r '.tag_name // empty' /tmp/rclone_release.json 2>/dev/null)
+    safe_exec "✅  Nettoyage du fichier temporaire" \
+              "❌  Impossible de supprimer le fichier temporaire" \
+              rm -f /tmp/rclone_release.json
+
+    # Normalisation (suppression éventuelle du "v")
+    latest_version="${latest_version#v}"
+    local_version="${local_version#v}"
+
     [ -z "$latest_version" ] && latest_version="inconnue"
 
     echo -e "✔️  rclone détecté."
@@ -300,7 +316,7 @@ install_micro() {
 
     safe_exec "✅  Téléchargement OK" \
               "❌  Échec du téléchargement de $archive" \
-              curl -fsSL -O "$archive" "$url"
+              curl -fsSL -o "$archive" "$url"
 
     safe_exec "✅  Extraction OK" \
               "❌  Échec de l'extraction de $archive" \
@@ -308,7 +324,7 @@ install_micro() {
 
     # Installation binaire
     safe_exec "✅  Copie OK" \
-              "❌  Impossible de copier micro dans /usr/local/bin"
+              "❌  Impossible de copier micro dans /usr/local/bin" \
               cp "micro-${version}/micro" /usr/local/bin/
 
     safe_exec "✅  Est bien rendu exécutable" \
@@ -348,7 +364,7 @@ update_editor_choice() {
                           sed -i "s|^EDITOR=.*|EDITOR=$new_editor|" "$f"
             else
                 safe_exec "✅  Ajout de la préférence dans le fichier" \
-                          "❌  Impossible d'ajouter EDITOR à $f" 
+                          "❌  Impossible d'ajouter EDITOR à $f" \
                           bash -c "echo 'EDITOR=$new_editor' >> '$f'"
             fi
             echo "✔ $f mis à jour → EDITOR=$new_editor"
@@ -454,7 +470,7 @@ handle_existing_dir() {
                 safe_exec "✅  $INSTALL_DIR supprimé avec succès." \
                           "❌  Impossible de supprimer $INSTALL_DIR" \
                           rm -rf "$INSTALL_DIR"
-                          
+
                 safe_exec "✅  Installation minimale terminée." \
                           "❌  Échec installation minimale." \
                           install_minimal "$LATEST_TAG"
@@ -498,7 +514,7 @@ install_minimal() {
     # Création du dossier local
     safe_exec "✅  Dossier $INSTALL_DIR prêt." \
               "❌  Impossible de créer $INSTALL_DIR" \
-              create_local_dir
+              bash -c create_local_dir
 
     # --- Backup si des fichiers existent déjà ---
     if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
