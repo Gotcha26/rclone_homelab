@@ -281,10 +281,12 @@ install_rclone() {
 # Vérification optionnelle de msmtp
 # --------------------------------------------------------------------------- #
 check_msmtp() {
-    local local_version latest_version yn
+    local local_version latest_version local_version_clean latest_version_clean yn
+
     echo ""
     echo "📦  Contrôle de la présence de msmtp..."
 
+    # Vérification présence
     if ! command -v msmtp &>/dev/null; then
         echo ""
         echo -e "⚠️  ${YELLOW}Le composant ${UNDERLINE}msmtp${RESET}${YELLOW} non détecté (optionnel).${RESET}"
@@ -304,21 +306,25 @@ check_msmtp() {
         return
     fi
 
-    # Récupération version locale
+    # Version locale
     local_version=$(msmtp --version 2>/dev/null | grep -oP '\d+(\.\d+)+')
     [ -z "$local_version" ] && local_version="inconnue"
 
-    # Récupération version “distante” depuis apt
+    # Version disponible depuis apt
     latest_version=$(apt-cache policy msmtp | grep Candidate | awk '{print $2}')
     [ -z "$latest_version" ] && latest_version="inconnue"
 
-    # Affichage final des versions
+    # Normalisation pour comparaison (on ne garde que les chiffres)
+    local_version_clean=$(echo "$local_version" | grep -oP '^\d+(\.\d+)+')
+    latest_version_clean=$(echo "$latest_version" | grep -oP '^\d+(\.\d+)+')
+
+    # Affichage
     echo -e "✔️  msmtp détecté."
     echo -e "📌  Version installée : ${ITALIC}${local_version}${RESET}"
     echo -e "📌  Version disponible : ${ITALIC}${latest_version}${RESET}"
 
     # Comparaison versions
-    if [ "$local_version" != "$latest_version" ] && [ "$latest_version" != "inconnue" ]; then
+    if [ "$local_version_clean" != "$latest_version_clean" ] && [ "$latest_version" != "inconnue" ]; then
         echo ""
         echo "ℹ️  Nouvelle version de msmtp disponible : $latest_version"
         echo ""
