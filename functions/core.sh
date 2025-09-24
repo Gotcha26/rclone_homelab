@@ -35,28 +35,6 @@ EOF
 
 
 ###############################################################################
-# Fonction : Tableau - S'assure des valeurs prises par les varaibles locales utilisateur
-###############################################################################
-set_validation_vars() {
-    VARS_TO_VALIDATE=(
-        "DRY_RUN:bool:false"
-        "MAIL_TO:''"
-        "DISCORD_WEBHOOK_URL:''"
-        "FORCE_UPDATE:bool:false"
-        "FORCE_BRANCH:''"
-        "ACTION_MODE:auto|manu:auto"
-        "DISPLAY_MODE:soft|verbose|hard:verbose"
-        "TERM_WIDTH_DEFAULT:80-120:80"
-        "LOG_RETENTION_DAYS:1-15:14"
-        "LOG_LINE_MAX:100-10000:1000"
-        "EDITOR:nano|micro:nano"
-        "DEBUG_INFOS:bool:false"
-        "DEBUG_MODE:bool:false"
-    )
-}
-
-
-###############################################################################
 # Fonction : Surcharger global.conf < config.local.conf < config.dev.conf < secrets.env (si présents)
 # Utilise display_msg() pour tout affichage
 # DISPLAY_MODE possible : soft (aucun affichage) | verbose (messages détaillés)
