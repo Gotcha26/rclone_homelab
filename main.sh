@@ -15,7 +15,6 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")" || exit 1
 
 source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration local incluse
 
-# === Initialisation du dispositif d'affichage ===
 # Valeurs par défaut si les variables ne sont pas définies
 : "${DEBUG_INFOS:=false}"
 : "${DEBUG_MODE:=false}"
@@ -26,16 +25,42 @@ source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration loca
 [[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
 [[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
 
-
-# Affichage pour vérification
-displayer_main1() {
-    display_msg "verbose|hard" "
-    DEBUG_INFOS : $DEBUG_INFOS
-    DEBUG_MODE : $DEBUG_MODE
-    DISPLAY_MODE est défini à : $DISPLAY_MODE"
-}
-
 TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé à la fermeture.
+
+# === Tableau récatitulatif des variables locale avec correction
+
+[[ $DEBUG_INFO == true ]] $$ print_table_vars
+
+controle_local_config
+
+# Appel de la fonction de validation des variables locales
+if ! print_table_vars_invalid VARS_TO_VALIDATE; then
+    # Problème
+    echo
+    print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
+    echo
+    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+    echo
+    echo "Voulez-vous :"
+    echo "[1] Appliquer la valeure par Défaut automatiquement."
+    echo "[2] Editer la configuration locale ?"
+    echo "[3] Quitter."
+
+
+    # Arrête le script si invalide ET si DEBUG_INFOS == "false"
+    if [[ "$DEBUG_INFOS" == "false" ]]; then
+        die 30 "Erreur : Configuration invalide. Vérifiez les variables (locales)."
+    else
+        print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
+        echo
+        read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+    fi
+else
+    # Pas de soucis
+    display_msg "verbose" --theme success "Configuration locale vérifiée."
+fi
+
+# === Initialisation du dispositif d'affichage ===
 
 print_logo                   # Affichage du logo/bannière suivi de la version installée
 print_fancy --align "right" "$(get_current_version)"
@@ -56,28 +81,6 @@ fi
 # Exécuter directement l’analyse (affichage immédiat au lancement)
 fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; }
 analyze_update_status
-
-# Appel de la fonction de validation des variables locales
-if ! print_table_vars_invalid VARS_TO_VALIDATE; then
-    # Problème
-    echo
-
-    # Arrête le script si invalide ET si DEBUG_INFOS == "false"
-    if [[ "$DEBUG_INFOS" == "false" ]]; then
-        die 30 "Erreur : Configuration invalide. Vérifiez les variables (locales)."
-    else
-        print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
-        echo
-        read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
-    fi
-else
-    # Pas de soucis
-    if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
-        echo
-        print_fancy --theme "ok" "Les variables locales sont validées"
-    fi
-fi
-
 
 
 ###############################################################################

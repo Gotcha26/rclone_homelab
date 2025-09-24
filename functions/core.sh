@@ -443,3 +443,82 @@ get_current_version() {
         APP_VERSION="-NC-"
     fi
 }
+
+
+###############################################################################
+# Fonction : Contrôle et validation des variables
+###############################################################################
+control_local_config() {
+    if ! print_table_vars_invalid VARS_TO_VALIDATE; then
+        # Problème
+        echo
+        print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
+        echo
+        read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+        echo
+        echo "----------------------------"
+        echo "  Configuration locale"
+        echo "----------------------------"
+        echo
+        echo "Voulez-vous :"
+        echo "[1] Appliquer la valeur par Défaut automatiquement."
+        echo "[2] Editer la configuration locale."
+        echo "[3] Quitter."
+        echo
+
+        read -rp "Votre choix [1-3] : " choice
+
+        case "$choice" in
+            1)
+                validate_vars
+                ;;
+            2)
+                mini_edit_local_config
+                control_local_config  # retour au menu principal après édition pour validation
+                ;;
+            3)
+                die 99 "Interruption par l’utilisateur"
+                ;;
+            *)
+                echo "❌  Choix invalide."
+                sleep 1
+                control_local_config
+                ;;
+        esac
+    fi
+    
+    # Pas de problèmes
+    display_msg "verbose|hard" --theme info "Configuration locale validée avec succès."
+
+}
+
+mini_edit_local_config() {
+    local candidates=(
+        "$DIR_CONF_LOCAL_FILE"
+        "$DIR_CONF_DEV_FILE"
+        "$DIR_SECRET_FILE"
+    )
+
+    echo
+    echo "Fichiers disponibles pour édition :"
+    echo
+    local i=1
+    for f in "${candidates[@]}"; do
+        [[ -f "$f" ]] && echo "[$i] $f" || echo "[$i] $f (absent)"
+        ((i++))
+    done
+    echo "[$i] Retour"
+    echo
+
+    read -rp "Choisir un fichier à éditer [1-$i] : " subchoice
+
+    if [[ "$subchoice" -ge 1 && "$subchoice" -lt "$i" ]]; then
+        local target="${candidates[$((subchoice-1))]}"
+        if [[ -f "$target" ]]; then
+            ${EDITOR:-nano} "$target"
+        else
+            echo "⚠️  Fichier absent : $target"
+            sleep 1
+        fi
+    fi
+}
