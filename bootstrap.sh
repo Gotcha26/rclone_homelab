@@ -9,10 +9,10 @@ source "$SCRIPT_DIR/update/updater.sh"
 
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"
-
+read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 # Surchage via configuration local
 load_optional_configs
-read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+
 # *** ↓↓ FONCTIONS PERSISTANTES (en cas de MAJ) ↓↓ ***
 
 ###############################################################################
