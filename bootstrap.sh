@@ -12,7 +12,7 @@ source "$SCRIPT_DIR/export/discord.sh"
 
 # Surchage via configuration local
 load_optional_configs
-
+read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 # *** ↓↓ FONCTIONS PERSISTANTES (en cas de MAJ) ↓↓ ***
 
 ###############################################################################
