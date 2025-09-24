@@ -387,10 +387,10 @@ validate_vars() {
                 0|false|no|off) value=0 ;;
                 '') value="${default:-0}" ;;  # si vide
                 *)
-                    print_fancy --theme "error" --align "center" \
-                        "Valeur invalide pour $var_name : '$value'.\n"\
-                        "Valeurs attendues : true/false, 1/0, yes/no, on/off.\n"\
-                        "Valeur par défaut appliquée : '$default'"
+                    print_fancy --fg red --style bold\
+                        "Donnée invalide pour $var_name : '$value'.\n"\
+                        "   Valeurs attendues : true/false, 1/0, yes/no, on/off.\n"\
+                        "   Valeur par défaut appliquée : '$default'"
                     value="${default:-0}"
                     ;;
             esac
@@ -429,10 +429,10 @@ validate_vars() {
         done
 
         if [[ "$valid" == false ]]; then
-            print_fancy --theme "error" --align "center" \
-                "Valeur invalide pour $var_name : '$value'.\n"\
-                "Valeurs attendues : ${allowed//|/, }.\n"\
-                "Valeur par défaut appliquée : '$default'"
+            print_fancy --fg red --style bold\
+                "Donnée invalide pour $var_name : '$value'.\n"\
+                "   Valeurs attendues : true/false, 1/0, yes/no, on/off.\n"\
+                "   Valeur par défaut appliquée : '$default'"
             export "$var_name"="$default"
         else
             export "$var_name"="$value"
