@@ -10,7 +10,7 @@ set -uo pipefail
 # === Initialisation minimale ===
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-
+read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration local incluse
 
 # === Initialisation du dispositif d'affichage ===
