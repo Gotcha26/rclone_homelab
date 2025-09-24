@@ -361,14 +361,15 @@ print_fancy() {
 
 ###############################################################################
 # Fonction : Valide et corrige des variables selon des valeurs autorisées
-# Utilisation :
+# Utilisation. Ne corrige que les valeurs à problème :
 #   VARS_TO_VALIDATE=(
 #       "MODE:hard|soft|verbose:hard"
 #       "OPTIONAL_CONF:file1|file2|:''"
 #       "RETRY_COUNT:0-5:3"
 #       "ENABLE_FEATURE:bool:0"
+#       ...
 #   )
-#   validate_vars VARS_TO_VALIDATE[@]
+#   validate_vars VARS_TO_VALIDATE
 ###############################################################################
 validate_vars() {
     local -n var_array=$1   # Passage du nom de l'array en référence
