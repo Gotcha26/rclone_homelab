@@ -8,10 +8,11 @@ set -uo pipefail
 
 
 # === Initialisation minimale ===
-cd / || exit 1  # se placer dans un répertoire sûr
-SCRIPT_PATH="$(readlink -f "$0")"
-SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+
+# --- GARDE-FOU getcwd + détection dossier script ---
+cd / 2>/dev/null || true   # si PWD invalide, se placer dans un répertoire sûr
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")" || exit 1
+
 source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration local incluse
 
 # === Initialisation du dispositif d'affichage ===
