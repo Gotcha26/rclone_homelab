@@ -15,6 +15,23 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")" || exit 1
 
 source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration local incluse
 
+# Tableau associatif : varaibles locales utilisateur avec les règles
+VARS_TO_VALIDATE=(
+    "DRY_RUN:bool:false"
+    "MAIL_TO:''"
+    "DISCORD_WEBHOOK_URL:''"
+    "FORCE_UPDATE:bool:false"
+    "FORCE_BRANCH:''"
+    "ACTION_MODE:auto|manu:auto"
+    "DISPLAY_MODE:soft|verbose|hard:verbose"
+    "TERM_WIDTH_DEFAULT:80-120:80"
+    "LOG_RETENTION_DAYS:1-15:14"
+    "LOG_LINE_MAX:100-10000:1000"
+    "EDITOR:nano|micro:nano"
+    "DEBUG_INFOS:bool:false"
+    "DEBUG_MODE:bool:false"
+)
+
 # Valeurs par défaut si les variables ne sont pas définies
 : "${DEBUG_INFOS:=false}"
 : "${DEBUG_MODE:=false}"
