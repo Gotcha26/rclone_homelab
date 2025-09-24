@@ -48,9 +48,8 @@ TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé �
 
 # === Tableau récatitulatif des variables locale avec correction
 
-print_table_vars VARS_TO_VALIDATE
-# [[ "$DEBUG_INFOS" == true ]] && print_table_vars VARS_TO_VALIDATE
-read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+[[ "$DEBUG_INFOS" == true ]] && print_table_vars VARS_TO_VALIDATE
+
 control_local_config
 
 # === Initialisation du dispositif d'affichage ===

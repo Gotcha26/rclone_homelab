@@ -430,15 +430,15 @@ control_local_config() {
         echo
         print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
         echo
-        read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
         echo
-        echo "----------------------------"
-        echo "  Configuration locale"
-        echo "----------------------------"
+        echo "-------------------------------------------"
+        echo "  Aide au débogage : Configuration locale"
+        echo "-------------------------------------------"
         echo
         echo "Voulez-vous :"
-        echo "[1] Appliquer la valeur par Défaut automatiquement."
-        echo "[2] Editer la configuration locale."
+        echo "[1] Appliquer la valeur ${BOLD}Défaut${RESET} automatiquement."
+        echo "${ITALIC}    => N'est valable que pour cette session.${RESET}"
+        echo "[2] Editer la configuration locale pour ${UNDERLINE}corriger${RESET}."
         echo "[3] Quitter."
         echo
 
@@ -464,7 +464,7 @@ control_local_config() {
     fi
     
     # Pas de problèmes
-    display_msg "verbose|hard" --theme info "Configuration locale validée avec succès."
+    display_msg "verbose|hard" --theme info "Configuration des variables locale validée."
 
 }
 
