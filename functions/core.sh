@@ -495,7 +495,7 @@ add_rclone_opts() {
 ###############################################################################
 get_current_version() {
     if [[ -s "$DIR_VERSION_FILE" ]]; then
-        APP_VERSION="$(<"$DIR_VERSION_FILE")"
+        APP_VERSION="$(<"$DIR_VERSION_FILE") "
     else
         APP_VERSION="-NC- "
     fi
