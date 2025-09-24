@@ -109,9 +109,9 @@ fetch_git_info() {
         remote_epoch=$(git show -s --format=%ct "$remote_commit" 2>/dev/null || echo 0)
     fi
 
-    # --- Dernier tag disponible ---
-    if [[ "$branch_real" != "(détaché)" && "$GIT_OFFLINE" == false ]]; then
-        latest_tag=$(git tag --merged "origin/$branch_real" 2>/dev/null | sort -V | tail -n1)
+    # --- Dernier tag disponible (uniquement pour main) ---
+    if [[ "$branch_real" == "main" && "$GIT_OFFLINE" == false ]]; then
+        latest_tag=$(git tag --merged "origin/main" 2>/dev/null | sort -V | tail -n1)
     fi
 
     if [[ -n "$latest_tag" ]]; then
@@ -395,11 +395,11 @@ update_to_latest_branch() {
         "Script mis à jour avec succès."
 
     # Mise à jour réussie → écrire la version appropriée
-    if [[ -n "$latest_tag" ]]; then
+    if [[ "$branch" == "main" && -n "$latest_tag" ]]; then
         write_version_file "$latest_tag"
     else
-        # Pas de tag → fallback avec infos de la branche
-        write_version_file "dev"
+        # Pour dev ou toute autre branche → HEAD direct
+        write_version_file ""
     fi
 
     return 0
