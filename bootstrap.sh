@@ -142,7 +142,7 @@ update_local_configs() {
         ["fichier1"]="${DIR_EXEMPLE_CONF_DEV_FILE};${DIR_CONF_DEV_FILE}"
         ["fichier1_local"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
         ["fichier2"]="${DIR_EXEMPLE_JOBS_FILE};${DIR_JOBS_FILE}"
-        ["fichier3"]="${DIR_EXEMPLE_SECRETS_FILE};${DIR_SECRETS_FILE}"
+        ["fichier3"]="${DIR_EXEMPLE_SECRET_FILE};${DIR_SECRET_FILE}"
         # Ajoutez d'autres fichiers ici
     )
 

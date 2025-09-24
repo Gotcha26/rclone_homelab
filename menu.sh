@@ -118,7 +118,7 @@ while true; do
     fi
     # Option pour installer/editer un fichier secrets.env
     if ! check_secrets_conf >/dev/null 2>&1; then
-        add_option "💻  Installer un fichier secrets.env pour vos mdp / tockens (optionnel)" "menu_add_secrets_file"
+        add_option "💻  Installer un fichier secrets.env pour vos mdp / tockens (optionnel)" "menu_add_secret_file"
     else
         add_option "✏️  Éditer la configuration secrète" "menu_edit_config_secrets"
     fi
@@ -253,7 +253,7 @@ while true; do
                 $EDITOR "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
-            menu_add_secrets_file)
+            menu_add_secret_file)
                 scroll_down
                 echo "▶️  Installation d'un fichier $SECRET_FILE (optionnel)."
                 echo "Le fichier sera préservé lors des mises à jours automatiques."

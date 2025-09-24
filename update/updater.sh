@@ -391,6 +391,9 @@ update_to_latest_branch() {
 
     make_scripts_executable
 
+    echo "🎉  Mise à jour réussie vers branche $branch"
+    echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
+
     print_fancy --align "center" --theme "success" \
         "Script mis à jour avec succès."
 
@@ -401,6 +404,10 @@ update_to_latest_branch() {
         # Pour dev ou toute autre branche → HEAD direct
         write_version_file ""
     fi
+
+    # Relance propre
+    print_fancy --theme success "✅ Mise à jour appliquée, redémarrage..."
+    exec "$SCRIPT_DIR/main.sh" "$@"
 
     return 0
 }
@@ -533,6 +540,10 @@ update_to_latest_tag() {
         fi
 
         return 0
+
+        # Relance propre
+        print_fancy --theme success "✅ Mise à jour appliquée, redémarrage..."
+        exec "$SCRIPT_DIR/main.sh" "$@"
 
     else
         print_fancy --theme "error" \
