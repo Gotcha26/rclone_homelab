@@ -8,6 +8,7 @@ set -uo pipefail
 
 
 # === Initialisation minimale ===
+cd / || exit 1  # se placer dans un répertoire sûr
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
