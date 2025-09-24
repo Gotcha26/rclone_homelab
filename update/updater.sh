@@ -42,7 +42,17 @@ get_local_version() {
 ###############################################################################
 write_version_file() {
     local tag="$1"
-    echo "$tag" > "$DIR_VERSION_FILE"
+
+    if [[ "$branch_real" == "main" ]]; then
+        # Cas stable → on garde uniquement le tag
+        echo "$tag" > "$DIR_VERSION_FILE"
+    else
+        # Cas branche dev ou autre → infos plus complètes
+        local short_commit="${head_commit:0:7}"
+        local date_commit
+        date_commit=$(date -d "@$head_epoch" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "date inconnue")
+        echo "$branch_real - $short_commit - $date_commit" > "$DIR_VERSION_FILE"
+    fi
 }
 
 
@@ -384,9 +394,12 @@ update_to_latest_branch() {
     print_fancy --align "center" --theme "success" \
         "Script mis à jour avec succès."
 
-    # Mise à jour réussie → écrire le tag si disponible
+    # Mise à jour réussie → écrire la version appropriée
     if [[ -n "$latest_tag" ]]; then
         write_version_file "$latest_tag"
+    else
+        # Pas de tag → fallback avec infos de la branche
+        write_version_file "dev"
     fi
 
     return 0
@@ -512,9 +525,11 @@ update_to_latest_tag() {
         echo "🎉  Mise à jour réussie vers $latest_tag"
         echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
 
-    # Mise à jour réussie → écrire le tag si disponible
+        # Mise à jour réussie → écrire la version
         if [[ -n "$latest_tag" ]]; then
             write_version_file "$latest_tag"
+        else
+            write_version_file "dev"
         fi
 
         return 0
