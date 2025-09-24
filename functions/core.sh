@@ -428,18 +428,18 @@ control_local_config() {
     if ! print_table_vars_invalid VARS_TO_VALIDATE; then
         # Problème
         echo
-        print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
+        print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales). ❌"
         echo
         echo
-        echo "-------------------------------------------"
-        echo "  Aide au débogage : Configuration locale"
-        echo "-------------------------------------------"
+        print_fancy --fg green "-------------------------------------------"
+        print_fancy --fg green style bold "  Aide au débogage : Configuration locale"
+        print_fancy --fg green "-------------------------------------------"
         echo
-        echo "Voulez-vous :"
-        echo "[1] Appliquer la valeur ${BOLD}Défaut${RESET} automatiquement."
-        echo "${ITALIC}    => N'est valable que pour cette session.${RESET}"
-        echo "[2] Editer la configuration locale pour ${UNDERLINE}corriger${RESET}."
-        echo "[3] Quitter."
+        echo -e"${UNDERLINE}Voulez-vous :${RESET}"
+        echo -e "[1] Appliquer la valeur ${BOLD}Défaut${RESET} automatiquement."
+        echo -e "${ITALIC}    => N'est valable que pour cette session.${RESET}"
+        echo -e "[2] Editer la configuration locale pour ${UNDERLINE}corriger${RESET}."
+        echo -e "[3] Quitter."
         echo
 
         read -rp "Votre choix [1-3] : " choice
