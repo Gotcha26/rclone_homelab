@@ -1,10 +1,27 @@
-#!/usr/bin/env bash
+set -uo pipefail
 
 # Sourcing global
 source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/functions/debug.sh"
 source "$SCRIPT_DIR/functions/dependances.sh"
 source "$SCRIPT_DIR/functions/core.sh"
+
+
+
+
+
+
+
+echo "DEBUG: core.sh bien sourcé ? $(type -t load_optional_configs)"
+echo "DEBUG: VARS_TO_VALIDATE=${VARS_TO_VALIDATE[*]}"
+
+
+
+
+
+
+
+
 source "$SCRIPT_DIR/update/updater.sh"
 
 source "$SCRIPT_DIR/export/mail.sh"

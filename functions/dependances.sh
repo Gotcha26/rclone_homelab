@@ -1,6 +1,3 @@
-#!/usr/bin/env bash
-
-
 # === Déclarations globales pour print_fancy() === 
 # Couleurs texte (FG) et fond (BG) intégrées et personnalisables
 # Compatible AUSSI avec echo -e (ne pas oublier le -e et le ${RESET} à la fin)

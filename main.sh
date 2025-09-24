@@ -15,6 +15,27 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")" || exit 1
 
 source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration local incluse
 
+
+
+
+
+echo "DEBUG: SCRIPT_DIR=$SCRIPT_DIR"
+echo "DEBUG: DIR_CONF_LOCAL_FILE=$DIR_CONF_LOCAL_FILE"
+echo "DEBUG: VARS_TO_VALIDATE=${VARS_TO_VALIDATE[*]}"
+declare -p DIR_CONF_LOCAL_FILE DIR_CONF_DEV_FILE DIR_SECRET_FILE VARS_TO_VALIDATE 2>/dev/null
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Valeurs par défaut si les variables ne sont pas définies
 : "${DEBUG_INFOS:=false}"
 : "${DEBUG_MODE:=false}"
@@ -29,36 +50,10 @@ TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé �
 
 # === Tableau récatitulatif des variables locale avec correction
 
-[[ $DEBUG_INFO == true ]] $$ print_table_vars
-
-controle_local_config
-
-# Appel de la fonction de validation des variables locales
-if ! print_table_vars_invalid VARS_TO_VALIDATE; then
-    # Problème
-    echo
-    print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
-    echo
-    read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
-    echo
-    echo "Voulez-vous :"
-    echo "[1] Appliquer la valeure par Défaut automatiquement."
-    echo "[2] Editer la configuration locale ?"
-    echo "[3] Quitter."
-
-
-    # Arrête le script si invalide ET si DEBUG_INFOS == "false"
-    if [[ "$DEBUG_INFOS" == "false" ]]; then
-        die 30 "Erreur : Configuration invalide. Vérifiez les variables (locales)."
-    else
-        print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales)."
-        echo
-        read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
-    fi
-else
-    # Pas de soucis
-    display_msg "verbose" --theme success "Configuration locale vérifiée."
-fi
+print_table_vars VARS_TO_VALIDATE
+# [[ "$DEBUG_INFOS" == true ]] && print_table_vars VARS_TO_VALIDATE
+read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
+control_local_config
 
 # === Initialisation du dispositif d'affichage ===
 
