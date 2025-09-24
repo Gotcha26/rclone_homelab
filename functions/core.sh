@@ -46,14 +46,14 @@ set_validation_vars() {
         "DISCORD_WEBHOOK_URL:''"
         "FORCE_UPDATE:bool:false"
         "FORCE_BRANCH:''"
-        "LAUNCH_MODE:hard|verbose:hard"
+        "ACTION_MODE:auto|manu:auto"
+        "DISPLAY_MODE:soft|verbose:soft"
         "TERM_WIDTH_DEFAULT:80-120:80"
         "LOG_RETENTION_DAYS:1-15:14"
         "LOG_LINE_MAX:100-10000:1000"
         "EDITOR:nano|micro:nano"
         "DEBUG_INFOS:bool:false"
         "DEBUG_MODE:bool:false"
-        "DISPLAY_MODE:none|simplified|verbose:simplified"
     )
 }
 
@@ -495,8 +495,8 @@ add_rclone_opts() {
 ###############################################################################
 get_current_version() {
     if [[ -s "$DIR_VERSION_FILE" ]]; then
-        APP_VERSION="$(<"$DIR_VERSION_FILE") "
+        APP_VERSION="$(<"$DIR_VERSION_FILE")"
     else
-        APP_VERSION="-NC- "
+        APP_VERSION="-NC-"
     fi
 }

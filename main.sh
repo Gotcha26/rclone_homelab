@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le code d'erreur d'un composant du pipeline, on retire -e pour éviter l'arrêt brutal, on gère les erreurs manuellement
+set -uo pipefail
 
 # ###############################################################################
 # 1. Initialisation par défaut
@@ -10,36 +10,36 @@ set -uo pipefail  # -u pour var non définie, -o pipefail pour récupérer le co
 # === Initialisation minimale ===
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-source "$SCRIPT_DIR/bootstrap.sh"
+
+source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration local incluse
 
 # === Initialisation du dispositif d'affichage ===
 # Valeurs par défaut si les variables ne sont pas définies
 : "${DEBUG_INFOS:=false}"
 : "${DEBUG_MODE:=false}"
-: "${DISPLAY_MODE:=hard}"
+: "${DISPLAY_MODE:=soft}"
+: "${ACTION_MODE:=auto}"
 
-# Mise à jour de DISPLAY_MODE si nécessaire
-if [ "$DEBUG_INFOS" = true ] || [ "$DEBUG_MODE" = true ]; then
-    DISPLAY_MODE="verbose"
-fi
+# Mise à jour des modes si nécessaire (DEBUG)
+[[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="verbose"
+[[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
+
 
 # Affichage pour vérification
 displayer_main1() {
-    display_msg "verbos|hard" "
-DEBUG_INFOS : $DEBUG_INFOS
-DEBUG_MODE : $DEBUG_MODE
-DISPLAY_MODE est défini à : $DISPLAY_MODE"
+    display_msg "verbose|hard" "
+    DEBUG_INFOS : $DEBUG_INFOS
+    DEBUG_MODE : $DEBUG_MODE
+    DISPLAY_MODE est défini à : $DISPLAY_MODE"
 }
 
-
-
 TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé à la fermeture.
-print_logo                   # Affichage du logo/bannière
-get_current_version          # On va chercher le numéro de version du script installé içi
-set_validation_vars          # Mise en tableau des variables locales
-make_scripts_executable      # Rendre le script update/standalone_updater.sh exécutable
 
-print_fancy --align "right" "${APP_VERSION}"
+print_logo                   # Affichage du logo/bannière suivi de la version installée
+print_fancy --align "right" "$(get_current_version)"
+
+set_validation_vars          # Mise en tableau des variables en vue de leur examen
+make_scripts_executable      # Rendre le script update/standalone_updater.sh exécutable
 
 # --- ↓ DEBUG ↓ ---
 

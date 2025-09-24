@@ -10,59 +10,63 @@
 # === Arguments de lancements ===
 
 DRY_RUN=false
-                               # <false|true>:false - ARGUMENT
-                               # Permet de lancer UNIQUEMENT rclone en mode
-                               # simulation seulement.
+                            # <false|true>:false - ARGUMENT
+                            # Permet de lancer UNIQUEMENT rclone en mode
+                            # simulation seulement.
 
 MAIL_TO=""
-                               # <texte>:"" - ARGUMENT
-                               # Adresse mail par défaut.
+                            # <texte>:"" - ARGUMENT
+                            # Adresse mail par défaut.
 
 DISCORD_WEBHOOK_URL=""
-                               # <texte>:"" - ARGUMENT
-                               # URL du webhook salon Discord.
+                            # <texte>:"" - ARGUMENT
+                            # URL du webhook salon Discord.
 
 FORCE_UPDATE=false
-                               # <false|true>:false - ARGUMENT
-                               # Force à faire les MAJ dès
-                               # le lancement. Sans argument = sécurité.
-                               #   Accèpte un switch sur une branche spécifique
-                               #   avec FORCE_BRANCH=<branche>
+                            # <false|true>:false - ARGUMENT
+                            # Force à faire les MAJ dès
+                            # le lancement. Sans argument = sécurité.
+                            #   Accèpte un switch sur une branche spécifique
+                            #   avec FORCE_BRANCH=<branche>
 
-LAUNCH_MODE=hard
-                               # <hard|verbose>:hard - ARGUMENT
-                               # Propose des interractions si besoin.
-                               #   hard = aucune interractions [auto : CRON]
-                               #   verbose = pauses si action requises [manuel]
+ACTION_MODE=auto
+                            # <auto|manu>:auto - ARGUMENT
+                            # Propose des interractions - SI BESOIN !
+                            #   auto = aucune interractions (CRON...)
+                            #   manu = interactivités possibles (questions)
+
+DISPLAY_MODE=soft
+                            # <soft|verbose>:soft
+                            # Affichage retour d'informations
 
 
 # === Variables globales techniques ===
 
 TERM_WIDTH_DEFAULT=80
-                               # <80-120>:80
-                               # Largeur par défaut pour les affichages fixes.
+                            # <80-120>:80
+                            # Largeur par défaut pour les affichages fixes.
 
 LOG_RETENTION_DAYS=15
-                               # <1:15>:14
-                               # Durée de conservation des logs.
+                            # <1:15>:14
+                            # Durée de conservation des logs.
 
 LOG_LINE_MAX=1000
-                               # <100-10000>:1000
-                               # Nombre de lignes maximales (en partant du bas)
-                               # à afficher dans le rapport par email.
+                            # <100-10000>:1000
+                            # Nombre de lignes maximales (en partant du bas)
+                            # à afficher dans le rapport par email.
 
 EDITOR=nano
-                               # <nano|micro>:nano
-                               # Editor des fichiers. Micro est proposé lors
-                               # de l'installation
+                            # <nano|micro>:nano
+                            # Editor des fichiers. Micro est proposé lors
+                            # de l'installation
 
 DEBUG_INFOS=false
-                               # <false|true>:false
-                               # Quelques informations pour le debugage
+                            # <false|true>:false
+                            # Quelques informations pour le debugage
 
 DEBUG_MODE=false
-                               # <false|true>:false
-                               # Action d'aides actives pour le débugage
+                            # <false|true>:false
+                            # Action d'aides actives pour le débugage
 
 
 # === Options SPECIFIQUES à : rclone ===

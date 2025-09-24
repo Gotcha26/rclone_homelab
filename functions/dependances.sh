@@ -708,7 +708,7 @@ print_table_vars_invalid() {
 ###############################################################################
 # EXPLICATIONS
 # Attend 3 arguments mais seuls 2 sont à préciser
-# - modes : <soft|verbose|hard>
+# - modes : <soft|verbose>
 # - msg : <votre texte>
 # Les modes sont commulatifs/communs
 # En cas d'appel sans précision, par défaut, la fonction prendre l'affichage "soft".
@@ -735,14 +735,12 @@ display_msg() {
     local caller="${3:-${FUNCNAME[1]:-main}}"
 
     # Valeurs par défaut pour les variables globales
-    local launch_mode="${LAUNCH_MODE:-soft}"     # si pas défini → soft
-    local debug_mode="${DEBUG_MODE:-false}"      # si pas défini → false
-    local debug_infos="${DEBUG_INFOS:-false}"    # si pas défini → false
+    local display_mode="${DISPLAY_MODE:-soft}"     # si pas défini → soft
 
     # Décalage si aucun mode explicite n’est fourni
     if [[ -z "$msg" ]]; then
         msg="$modes"
-        modes="$launch_mode"
+        modes="$display_mode"
     fi
 
     # Si msg reste vide → message par défaut
@@ -750,17 +748,12 @@ display_msg() {
         msg="$(print_fancy --theme "info" "[$caller] (no message provided)")"
     fi
 
-    # Si debug activé, forcer verbose
-    if [[ "$debug_mode" == true || "$debug_infos" == true ]]; then
-        modes="verbose"
-    fi
-
     # Découpe en liste si plusieurs modes (séparés par |)
     IFS="|" read -r -a mode_list <<< "$modes"
 
     for mode in "${mode_list[@]}"; do
         case "$mode" in
-            soft|verbose|hard)
+            soft|verbose)
                 # On n’applique aucun format ici, msg est déjà formaté si besoin
                 echo -e "$msg"
                 ;;
