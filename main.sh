@@ -23,7 +23,7 @@ source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration loca
 : "${ACTION_MODE:=auto}"
 
 # Mise à jour des modes si nécessaire (DEBUG)
-[[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="verbose"
+[[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
 [[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
 
 

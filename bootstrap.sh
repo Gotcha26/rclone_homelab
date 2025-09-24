@@ -20,7 +20,7 @@ load_optional_configs
 ###############################################################################
 make_scripts_executable() {
     local base_dir="${1:-$SCRIPT_DIR}"
-    local scripts=("main.sh" "update/standalone_updater.sh") # Ajouter des fichiers ici si besoin, chacun entre "".
+    local scripts=("update/standalone_updater.sh") # Ajouter des fichiers ici si besoin, chacun entre "".
 
     # Vérifier que base_dir est défini
     if [[ -z "$base_dir" ]]; then

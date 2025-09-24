@@ -703,65 +703,70 @@ print_table_vars_invalid() {
 
 
 ###############################################################################
-# Fonction : Gère l'affichage dans des fonctions.
-# https://chatgpt.com/share/68cfb520-cf24-8004-9dab-17a1cf40bae9
+# Fonction : display_msg
+#
+# Description :
+#   Centralise l'affichage des messages selon le DISPLAY_MODE courant.
+#   Compatible avec print_fancy (n'importe quel nombre d'arguments).
+#
+#   Le premier argument indique le(s) mode(s) d'affichage où le message
+#   doit apparaître. Plusieurs modes peuvent être combinés avec "|".
+#
+# Modes supportés :
+#   - "soft"    → affiché uniquement si DISPLAY_MODE=soft
+#   - "verbose" → affiché uniquement si DISPLAY_MODE=verbose
+#   - "hard"    → affiché uniquement si DISPLAY_MODE=hard
+#
+#   Si plusieurs modes sont passés (ex: "verbose|hard"), le message
+#   s'affiche si DISPLAY_MODE correspond à l'un d'eux.
+#
+# Comportement par défaut si aucun message fourni :
+#   - soft    → message vide (aucun affichage)
+#   - verbose → "[caller] (no message provided)"
+#   - hard    → "[caller] (no message provided)"
+#
+# Syntaxe :
+#   display_msg <modes> <...arguments de print_fancy>
+#
+# Exemples :
+#   display_msg "soft" "✔ Local config activée"
+#   display_msg "verbose" --theme "info" --align "center" "CONFIGURATION LOCALE"
+#   display_msg "verbose|hard" --theme "danger" "Erreur critique"
 ###############################################################################
-# EXPLICATIONS
-# Attend 3 arguments mais seuls 2 sont à préciser
-# - modes : <soft|verbose>
-# - msg : <votre texte>
-# Les modes sont commulatifs/communs
-# En cas d'appel sans précision, par défaut, la fonction prendre l'affichage "soft".
-# Un message par défaut est défini.
-# Sécurisation des varaibles si elles ne sont sont pas définies dans le code (set -u UNBOUND VARIABLE...)
-
-# EXEMPLE D'USAGE
-# my_function() {
-#     local file="/tmp/test"
-# 
-#     if [[ -f "$file" ]]; then
-        # Affiche en verbose ET arrête si nécessaire
-#         display_msg "verbose|hard" "Fichier trouvé : $file" "${FUNCNAME[0]}"
-#     else
-        # Juste verbose
-#         display_msg "verbose" "Pas de fichier : $file" "${FUNCNAME[0]}"
-#     fi
-# }
-###############################################################################
-
 display_msg() {
     local modes="$1"
-    local msg="$2"
-    local caller="${3:-${FUNCNAME[1]:-main}}"
+    shift
 
-    # Valeurs par défaut pour les variables globales
-    local display_mode="${DISPLAY_MODE:-soft}"     # si pas défini → soft
-
-    # Décalage si aucun mode explicite n’est fourni
-    if [[ -z "$msg" ]]; then
-        msg="$modes"
-        modes="$display_mode"
+    if [[ -z "$modes" ]]; then
+        echo "[display_msg] ERREUR : au moins un mode obligatoire (soft|verbose|hard)"
+        return 1
     fi
 
-    # Si msg reste vide → message par défaut
-    if [[ -z "$msg" ]]; then
-        msg="$(print_fancy --theme "info" "[$caller] (no message provided)")"
+    local caller="${FUNCNAME[1]:-main}"
+    local display_mode="${DISPLAY_MODE:-soft}"
+
+    # Aucun message fourni
+    if [[ "$#" -eq 0 ]]; then
+        case "$modes" in
+            *soft*) return 0 ;;  # soft = silencieux par défaut
+            *) set -- "[$caller] (no message provided)" ;;
+        esac
     fi
 
-    # Découpe en liste si plusieurs modes (séparés par |)
-    IFS="|" read -r -a mode_list <<< "$modes"
-
-    for mode in "${mode_list[@]}"; do
+    # Vérifie si DISPLAY_MODE correspond à un des modes demandés
+    IFS="|" read -ra wanted <<< "$modes"
+    for mode in "${wanted[@]}"; do
         case "$mode" in
-            soft|verbose)
-                # On n’applique aucun format ici, msg est déjà formaté si besoin
-                echo -e "$msg"
+            soft|verbose|hard)
+                if [[ "$display_mode" == "$mode" ]]; then
+                    print_fancy "$@"
+                    return 0
+                fi
                 ;;
             *)
-                # Cas d'affichage inconnu (appel non reconnu...)
-                print_fancy --theme "danger" "[$caller] - [UNKNOWN] : Cas d'affichage non communiqué."
+                echo "[display_msg] ERREUR : mode inconnu '$mode' (soft|verbose|hard)"
+                return 1
                 ;;
         esac
     done
 }
-

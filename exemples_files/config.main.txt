@@ -36,7 +36,7 @@ ACTION_MODE=auto
                             #   manu = interactivités possibles (questions)
 
 DISPLAY_MODE=soft
-                            # <soft|verbose>:soft
+                            # <soft|verbose|hard>:verbose
                             # Affichage retour d'informations
 
 
