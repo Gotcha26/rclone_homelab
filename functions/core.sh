@@ -453,7 +453,10 @@ control_local_config() {
                 ;;
             2)
                 echo
-                mini_edit_local_config
+                if ! mini_edit_local_config; then
+                    echo "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!"
+                    echo "Aucun fichier disponible, retour au menu principal."
+                fi
                 control_local_config  # retour au menu principal après édition pour validation
                 ;;
             3)
@@ -492,9 +495,7 @@ mini_edit_local_config() {
     done
 
     if [[ ${#existing[@]} -eq 0 ]]; then
-        echo
-        echo "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!"
-        die 50 "Aucun fichier de configuration optionnel trouvé."
+        return 1
     fi
 
     echo
