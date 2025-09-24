@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 
+# === Initialisation des variables globales (protège set -u) ===
+# Sinon les placer dans fetch_git_info()
+: "${branch_real:=}"
+: "${head_commit:=}"
+: "${head_epoch:=0}"
+: "${remote_commit:=}"
+: "${remote_epoch:=0}"
+: "${latest_tag:=}"
+: "${latest_tag_commit:=}"
+: "${latest_tag_epoch:=0}"
+: "${current_tag:=}"
+: "${GIT_OFFLINE:=false}"
+: "${LOCAL_VERSION:=}"
+
 ###############################################################################
 # Fonction principale : update_check
 # → Vérifie si une mise à jour est disponible et affiche le statut
@@ -14,7 +28,7 @@ update_check() {
 # Fonction : Juste pour lire le contenu de .version
 ###############################################################################
 get_local_version() {
-    local version_file="$DIR_LOCAL/.version"
+    local version_file="$DIR_VERSION_FILE"
     if [[ -f "$version_file" ]]; then
         cat "$version_file"
     else
@@ -24,22 +38,31 @@ get_local_version() {
 
 
 ###############################################################################
+# Fonction : Juste pour écrire le tag dans le fichier .version
+###############################################################################
+write_version_file() {
+    local tag="$1"
+    echo "$tag" > "$DIR_VERSION_FILE"
+}
+
+
+###############################################################################
+# Fonction : Récupère le dernier tag disponible sur le dépôt distant
+# → utilisable aussi bien en mode Git que standalone
+###############################################################################
+get_remote_latest_tag() {
+    if [[ -z "${REMOTE_VERSION_URL:-}" ]]; then
+        echo ""
+        return
+    fi
+    curl -s "$REMOTE_VERSION_URL" 2>/dev/null || echo ""
+}
+
+
+###############################################################################
 # Fonction : Récupère toutes les informations nécessaires sur Git
 ###############################################################################
 fetch_git_info() {
-
-    # --- Initialisation obligatoire à cause de set -u ---
-    branch_real=""
-    head_commit=""
-    head_epoch=0
-    remote_commit=""
-    remote_epoch=0
-    latest_tag=""
-    latest_tag_commit=""
-    latest_tag_epoch=0
-    current_tag=""
-    GIT_OFFLINE=false
-    LOCAL_VERSION=""
 
     cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
 
@@ -50,8 +73,8 @@ fetch_git_info() {
         LOCAL_VERSION=$(get_local_version)
         branch_real="(local-standalone-version)"
 
-        # Ici, on peut simuler un latest_tag distant si on veut comparer avec une version sur serveur
-        latest_tag=$(curl -s "${REMOTE_VERSION_URL:-}" 2>/dev/null || echo "")
+        # Récupération de la dernière version distante via API (ou fallback silencieux)
+        latest_tag=$(get_remote_latest_tag)
         return 0
     fi
 
@@ -102,6 +125,13 @@ analyze_update_status() {
     if [[ "$branch_real" == "(local-standalone-version)" ]]; then
         print_fancy --theme "info" --fg "blue" --align "center" \
             "Version locale installée : ${LOCAL_VERSION:-inconnue}"
+
+        if [[ -n "$latest_tag" && "$LOCAL_VERSION" != "$latest_tag" ]]; then
+            print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" \
+                "Nouvelle version disponible : $latest_tag"
+        else
+            print_fancy --theme "ok" --align "center" "À jour."
+        fi
         return 0
     fi
 
@@ -246,8 +276,13 @@ git_summary() {
 
     # Cas sans Git
     if [[ "${branch_real:-}" == "(local-standalone-version)" ]]; then
-        print_fancy --theme "info" --align "center" \
-            "Mode standalone → aucune mise à jour Git possible."
+        if [[ -n "$latest_tag" && "$LOCAL_VERSION" != "$latest_tag" ]]; then
+            print_fancy --theme "warning" --align "center" \
+                "Standalone → mise à jour disponible ($latest_tag)"
+        else
+            print_fancy --theme "success" --align "center" \
+                "Standalone → À jour"
+        fi
         return
     fi
 
@@ -348,6 +383,12 @@ update_to_latest_branch() {
 
     print_fancy --align "center" --theme "success" \
         "Script mis à jour avec succès."
+
+    # Mise à jour réussie → écrire le tag si disponible
+    if [[ -n "$latest_tag" ]]; then
+        write_version_file "$latest_tag"
+    fi
+
     return 0
 }
 
@@ -470,7 +511,14 @@ update_to_latest_tag() {
 
         echo "🎉  Mise à jour réussie vers $latest_tag"
         echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
+
+    # Mise à jour réussie → écrire le tag si disponible
+        if [[ -n "$latest_tag" ]]; then
+            write_version_file "$latest_tag"
+        fi
+
         return 0
+
     else
         print_fancy --theme "error" \
             "Échec lors du passage à $latest_tag"
