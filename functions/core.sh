@@ -494,9 +494,9 @@ add_rclone_opts() {
 # Fonction : Intérroger le numéro de version/tag/release (local ou git)
 ###############################################################################
 get_current_version() {
-    if [[ -s "DIR_VERSION_FILE" ]]; then
-        APP_VERSION="$(<"DIR_VERSION_FILE")"
+    if [[ -s "$DIR_VERSION_FILE" ]]; then
+        APP_VERSION="$(<"$DIR_VERSION_FILE")"
     else
-        APP_VERSION="-NC-"
+        APP_VERSION="-NC- "
     fi
 }
