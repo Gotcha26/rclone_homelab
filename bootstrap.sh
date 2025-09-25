@@ -65,22 +65,22 @@ update_local_configs() {
 
         # Vérification de l'existence des fichiers
         if [ ! -f "$ref_file" ]; then
-            echo "⚠️  Fichier de référence non présent : $ref_file"
+            display_msg "soft|verbose|hard" --theme error "Fichier de référence non présent : $ref_file"
             return 1
         fi
         if [ ! -f "$user_file" ]; then
-            echo "🔎  Fichier local non présent : $user_file"
+            display_msg "soft|verbose|hard" "🔎  Fichier local non présent : $user_file"
         fi
 
         # 1. Première exécution : sauvegarde de la version de référence
         if [ ! -f "$last_ref_backup" ]; then
             cp "$ref_file" "$last_ref_backup"
-            echo "✅  Première exécution pour $user_file : sauvegarde de la version de référence."
+            display_msg "soft|verbose|hard" --theme success "Première exécution pour $user_file : sauvegarde de la version de référence."
         fi
 
         # 2. Vérification des changements
         if ! diff -q "$last_ref_backup" "$ref_file" > /dev/null; then
-            echo "⚠️  Le fichier de référence $ref_file a été mis à jour. Voici les différences :"
+            display_msg "soft|verbose|hard" --theme flash "Le fichier de référence $ref_file a été mis à jour. Voici les différences :"
             if command -v colordiff &> /dev/null; then
                 colordiff -u "$last_ref_backup" "$ref_file"
             else
@@ -112,7 +112,7 @@ update_local_configs() {
                 # On marque que quelque chose a été traité
                 files_updated=true
             else
-                echo "❌  Mise à jour annulée pour $user_file."
+                print_fancy --theme error "Mise à jour annulée pour $user_file."
             fi
         else
             display_msg "verbose|hard" --theme success "$user_file est déjà à jour."
@@ -142,7 +142,7 @@ update_local_configs() {
     if [[ "$files_updated" == true ]]; then
         return 0
     else
-        echo "ℹ️  Aucun changement détecté sur les fichiers d'exemples."
+        display_msg "soft|verbose|hard" --theme info "Aucun changement détecté sur les fichiers d'exemples."
         return 2
     fi
 
