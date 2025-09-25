@@ -436,6 +436,7 @@ control_local_config() {
         print_fancy --fg green "-------------------------------------------"
         echo
         echo -e "${UNDERLINE}Voulez-vous :${RESET}"
+        echo
         echo -e "[1] Appliquer la valeur ${BOLD}Défaut${RESET} automatiquement."
         echo -e "${ITALIC}    => N'est valable que pour cette session.${RESET}"
         echo -e "[2] Editer la configuration locale pour ${UNDERLINE}corriger${RESET}."
@@ -454,8 +455,8 @@ control_local_config() {
             2)
                 echo
                 if ! mini_edit_local_config; then
-                    print_fancy --bg yellow --fg red "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!"
-                    print_fancy --bg yellow --fg red "Aucun fichier disponible, retour au menu principal."
+                    print_fancy --bg yellow --fg red --highlight "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!"
+                    print_fancy --bg yellow --fg red --highlight "Aucun fichier disponible, retour au menu principal."
                 fi
                 control_local_config  # retour au menu principal après édition pour validation
                 ;;
