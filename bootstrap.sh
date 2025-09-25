@@ -143,7 +143,6 @@ update_local_configs() {
         return 2
     else
         display_msg "soft|verbose|hard" --theme info "Aucun changement détecté sur les fichiers d'exemples."
-        echo "[DEBUG] test"
         return 0
     fi
 
