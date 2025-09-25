@@ -42,16 +42,16 @@ get_local_version() {
 # Fonction : Juste pour écrire le tag dans le fichier .version
 ###############################################################################
 write_version_file() {
-    local branch="${1:-main}"
+    local branch="${1:-main}"  # par défaut main
     local json latest_tag latest_date
 
-    # Appel à GitHub API
     if [[ -z "$GITHUB_API_URL" ]]; then
         echo "⚠️  GITHUB_API_URL non défini !" >&2
         echo "unknown" > "$DIR_VERSION_FILE"
         return 1
     fi
 
+    # Récupération depuis GitHub
     json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
     if [[ -z "$json" ]]; then
         echo "❌ Impossible de récupérer les informations de release depuis GitHub" >&2
@@ -68,10 +68,14 @@ write_version_file() {
         return 1
     fi
 
-    # Écriture dans le fichier .version
-    echo "$latest_tag - $branch - $latest_date" > "$DIR_VERSION_FILE"
+    if [[ "$branch" == "main" ]]; then
+        # Branche principale → seulement le tag
+        echo "$latest_tag" > "$DIR_VERSION_FILE"
+    else
+        # Dev ou autre → tag + branche + date
+        echo "$latest_tag - $branch - $latest_date" > "$DIR_VERSION_FILE"
+    fi
 }
-
 
 
 ###############################################################################
