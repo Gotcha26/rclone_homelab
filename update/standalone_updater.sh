@@ -228,7 +228,7 @@ for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
             else
                 $SUDO ln -sf "$file" "$symlink"
             fi
-            echo -e "${GREEN}   → Symlink créé : $symlink → $file ✓${RESET}"
+            echo -e "${GREEN}   ┕→ Son symlink associé : $symlink → $file ✓${RESET}"
         fi
     else
         echo -e "${YELLOW}⚠️  Fichier introuvable : $file${RESET}"
