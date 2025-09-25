@@ -171,11 +171,15 @@ scroll_down() {
 
 
 ###############################################################################
-# Fonction : supprime séquences ANSI (lecture d'argument)
+# Retire toutes les séquences ANSI CSI/OSC/SGR etc. (lecture depuis argument ou stdin)
 ###############################################################################
 strip_ansi() {
-    # usage: strip_ansi "string"
-    printf "%s" "$1" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g'
+    if [[ $# -gt 0 ]]; then
+        printf '%s' "$1" \
+            | sed -r "s/$(printf '\033')\\[[0-9;?]*[ -\\/]*[@-~]//g"
+    else
+        sed -r "s/$(printf '\033')\\[[0-9;?]*[ -\\/]*[@-~]//g"
+    fi
 }
 
 
