@@ -43,8 +43,8 @@ get_local_version() {
 # Fonction : Juste pour écrire le tag dans le fichier .version
 ###############################################################################
 write_version_file() {
-    local branch="${1:-main}"  # par défaut main
-    local json latest_tag latest_date commit date_commit
+    local branch="${1:-main}"  # main par défaut
+    local json latest_tag latest_date commit date_commit owner repo api_commits_url
 
     if [[ -z "$GITHUB_API_URL" ]]; then
         echo "⚠️  GITHUB_API_URL non défini !" >&2
@@ -52,38 +52,48 @@ write_version_file() {
         return 1
     fi
 
-    # Branche principale → récupérer le dernier tag GitHub
-    if [[ "$branch" == "main" ]]; then
-        json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
-        if [[ -z "$json" ]]; then
-            echo "❌ Impossible de récupérer les informations de release depuis GitHub" >&2
-            echo "unknown" > "$DIR_VERSION_FILE"
-            return 1
-        fi
+    # Extraire owner et repo depuis GITHUB_API_URL
+    # Exemple : https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest
+    if [[ "$GITHUB_API_URL" =~ /repos/([^/]+)/([^/]+)/ ]]; then
+        owner="${BASH_REMATCH[1]}"
+        repo="${BASH_REMATCH[2]}"
+    else
+        echo "❌ Impossible de parser GITHUB_API_URL" >&2
+        echo "unknown" > "$DIR_VERSION_FILE"
+        return 1
+    fi
 
+    if [[ "$branch" == "main" ]]; then
+        # Récupérer le dernier tag (release) depuis l'API
+        json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
         latest_tag=$(echo "$json" | jq -r '.tag_name // empty')
         if [[ -z "$latest_tag" ]]; then
             echo "❌ Impossible de récupérer le dernier tag depuis GitHub" >&2
             echo "unknown" > "$DIR_VERSION_FILE"
             return 1
         fi
-
-        # Écriture dans .version
         echo "$latest_tag" > "$DIR_VERSION_FILE"
         return 0
     fi
 
-    # Pour dev ou toute autre branche → HEAD distant
-    commit=$(git ls-remote origin "$branch" 2>/dev/null | awk '{print substr($1,1,7)}')
-    date_commit=$(git show -s --format="%ci" "$commit" 2>/dev/null | cut -d' ' -f1)
+    # Pour dev ou autre branche → HEAD distant via GitHub API
+    api_commits_url="https://api.github.com/repos/$owner/$repo/commits/$branch"
+    json=$(curl -s "$api_commits_url" 2>/dev/null)
+    if [[ -z "$json" ]]; then
+        echo "❌ Impossible de récupérer les infos de commit depuis GitHub pour la branche $branch" >&2
+        echo "$branch - unknown - unknown" > "$DIR_VERSION_FILE"
+        return 1
+    fi
 
-    # Fallback si impossible
+    commit=$(echo "$json" | jq -r '.sha // empty')
+    date_commit=$(echo "$json" | jq -r '.commit.committer.date // empty' | cut -d'T' -f1)
+
+    commit="${commit:0:7}"                # SHA court
     commit="${commit:-unknown}"
     date_commit="${date_commit:-date_inconnue}"
 
     echo "$branch - $commit - $date_commit" > "$DIR_VERSION_FILE"
 }
-
 
 
 ###############################################################################
