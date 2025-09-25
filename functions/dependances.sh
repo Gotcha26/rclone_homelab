@@ -188,29 +188,16 @@ strip_ansi() {
 ###############################################################################
 strwidth() {
     local str="${1:-}"
-    str="${str//[$'\033'][0-9;]*[m]/}"  # Supprimer séquences ANSI
-    local width=0 char i
-    for ((i=0; i<${#str}; i++)); do
-        char="${str:i:1}"
-        [[ "$char" =~ [^[:ascii:]] ]] && ((width+=2)) || ((width+=1))
-    done
-    echo "$width"
-}
+    # Supprimer toutes les séquences ANSI standards (CSI + SGR)
+    str=$(printf '%s' "$str" | sed -r "s/$(printf '\033')\\[[0-9;?]*[ -\\/]*[@-~]//g")
 
-
-###############################################################################
-# Fonction : calcul de la largeur "visible" d'une chaîne (sans séquences ANSI)
-###############################################################################
-strwidth() {
-    local str="${1:-}"
-    str="${str//$'\e'\[[0-9;]*m/}"  # Supprimer les séquences ANSI
-    local width=0
+    local width=0 char
     for ((i=0; i<${#str}; i++)); do
         char="${str:i:1}"
         if [[ "$char" =~ [^[:ascii:]] ]]; then
-            width=$((width+2))
+            ((width+=2))
         else
-            width=$((width+1))
+            ((width+=1))
         fi
     done
     echo "$width"
