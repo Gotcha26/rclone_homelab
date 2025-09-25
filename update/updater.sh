@@ -42,35 +42,36 @@ get_local_version() {
 # Fonction : Juste pour écrire le tag dans le fichier .version
 ###############################################################################
 write_version_file() {
-    local tag="$1"
-    local branch="$2"
-    local commit date_commit branch
+    local branch="$1"  # branche en cours (ou main/dev)
+    local json latest_tag latest_date
 
-    # Fallback si branch non fourni
-    branch="${branch:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")}"
-
-    # Si le dépôt existe, récupère les infos
-    if git rev-parse --git-dir >/dev/null 2>&1; then
-        # Récupération des infos depuis le remote, silencieuse
-        git fetch --all --tags --quiet 2>/dev/null || true
-
-        # Commit court
-        commit=$(git rev-parse --short "origin/$branch" 2>/dev/null || git rev-parse --short "$branch" 2>/dev/null || echo "unknown")
-        # Date du commit
-        date_commit=$(git show -s --format="%ci" "origin/$branch" 2>/dev/null || git show -s --format="%ci" "$branch" 2>/dev/null || echo "date inconnue")
-    else
-        commit="unknown"
-        date_commit="date inconnue"
-        branch="unknown"
+    # Appel à GitHub API
+    if [[ -z "$GITHUB_API_URL" ]]; then
+        echo "⚠️  GITHUB_API_URL non défini !" >&2
+        echo "unknown" > "$DIR_VERSION_FILE"
+        return 1
     fi
 
-    # Cas stable : branche main avec tag
-    if [[ "$branch" == "main" && -n "$tag" ]]; then
-        echo "$tag" > "$DIR_VERSION_FILE"
-    else
-        echo "$branch - $commit - $date_commit" > "$DIR_VERSION_FILE"
+    json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
+    if [[ -z "$json" ]]; then
+        echo "❌ Impossible de récupérer les informations de release depuis GitHub" >&2
+        echo "unknown" > "$DIR_VERSION_FILE"
+        return 1
     fi
+
+    latest_tag=$(echo "$json" | jq -r '.tag_name // empty')
+    latest_date=$(echo "$json" | jq -r '.published_at // empty' | cut -d'T' -f1)
+
+    if [[ -z "$latest_tag" ]]; then
+        echo "❌ Impossible de récupérer le dernier tag depuis GitHub" >&2
+        echo "unknown" > "$DIR_VERSION_FILE"
+        return 1
+    fi
+
+    # Écriture dans le fichier .version
+    echo "$latest_tag - $branch - $latest_date" > "$DIR_VERSION_FILE"
 }
+
 
 
 ###############################################################################
@@ -412,13 +413,8 @@ update_to_latest_branch() {
     echo -e "🎉  Mise à jour réussie depuis la branche ${UNDERLINE}$branch${RESET}"
 
     # Mise à jour réussie → écrire la version appropriée
-    if [[ "$branch" == "main" && -n "$latest_tag" ]]; then
-        write_version_file "$latest_tag" "$branch"
-    else
-        # Pour dev ou toute autre branche → HEAD direct
-        write_version_file "" "$branch_real"
-    fi
-
+    write_version_file "$branch"
+    
     echo
     print_fancy --align "center" --theme "success" "Script mis à jour avec succès."
 
