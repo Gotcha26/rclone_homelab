@@ -425,6 +425,7 @@ get_current_version() {
 # Fonction : Contrôle et validation des variables
 ###############################################################################
 control_local_config() {
+    echo
     if ! print_table_vars_invalid VARS_TO_VALIDATE; then
         # Problème
         echo
