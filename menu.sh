@@ -38,6 +38,13 @@ while true; do
         MENU_OPTIONS+=("$1")
         MENU_ACTIONS+=("$2")
     }
+
+    # --- Fonction pour ajouter séparateurs de sections ---
+    add_separator() {
+        MENU_OPTIONS+=("──────────────────────────────")
+        MENU_ACTIONS+=("__separator__")
+    }
+
     # Construction nécessaire pour l'affichage des MAJ (branche / release)
     fetch_git_info || { echo "⚠️  Impossible de récupérer l'état Git"; continue; }
     update_status_code=$(analyze_update_status)
@@ -61,10 +68,14 @@ while true; do
         fi
     fi
 
+    add_separator
+
     # 2) Jobs (lancement)
     if check_jobs_file soft; then
         add_option "🔂  Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
+
+    add_separator
 
     # 3) Configurations
     # Jobs
@@ -102,6 +113,8 @@ while true; do
         fi
     fi
 
+    add_separator
+
     # 4) Actions
     # Option de configuration locale
     if ! check_config_local >/dev/null 2>&1; then
@@ -120,6 +133,8 @@ while true; do
         add_option "✏️  Éditer la configuration secrète" "menu_edit_config_secrets"
     fi
 
+    add_separator
+
     # 5) Choix permanents
 
     add_option "📖  Afficher l'aide" "menu_show_help"
@@ -134,15 +149,25 @@ while true; do
     echo
 
     # --- Affichage des options ---
+    declare -A CHOICE_TO_INDEX=()
+    num=1
     for i in "${!MENU_OPTIONS[@]}"; do
-        echo "$((i+1))) ${MENU_OPTIONS[$i]}"
+        if [[ "${MENU_ACTIONS[$i]}" == "__separator__" ]]; then
+            echo "    ${MENU_OPTIONS[$i]}"
+        else
+            echo "$num) ${MENU_OPTIONS[$i]}"
+            CHOICE_TO_INDEX[$num]=$i
+            ((num++))
+        fi
     done
+
     echo
-    read -e -rp "Votre choix [1-${#MENU_OPTIONS[@]}] : " choice </dev/tty
+    read -e -rp "Votre choix [1-$((num-1))] : " choice </dev/tty
 
     # --- Validation et exécution ---
-    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#MENU_OPTIONS[@]} )); then
-        action="${MENU_ACTIONS[$((choice-1))]}"
+    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice < num )); then
+        idx="${CHOICE_TO_INDEX[$choice]}"
+        action="${MENU_ACTIONS[$idx]}"
         case "$action" in
             menu_update_to_latest_tag)
                 update_to_latest_tag
