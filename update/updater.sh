@@ -42,6 +42,9 @@ get_local_version() {
 # Fonction : Juste pour écrire le tag dans le fichier .version
 ###############################################################################
 write_version_file() {
+    echo "[DEBUG] - real_branch vaut : $branch_real"
+    echo "[DEBUG] - latest_tag vaut : $latest_tag"
+    sleep 5
     local tag="$1"
     local commit date_commit branch
 
