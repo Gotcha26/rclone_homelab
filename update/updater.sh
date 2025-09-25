@@ -383,7 +383,7 @@ update_to_latest_branch() {
         echo "♻️  ... Retour des fichiers personnalisables."
         tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
         rm -f /tmp/ignored_backup.tar.gz
-        echo "✅  Les fichiers personnalisables sont heureux de faire leur retour !"
+        echo "Les fichiers personnalisables sont heureux de faire leur retour !"
         echo
     fi
 
@@ -517,7 +517,7 @@ update_to_latest_tag() {
             echo "♻️  ... Retour des fichiers personnalisables."
             tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
             rm -f /tmp/ignored_backup.tar.gz
-            echo "✅  Les fichiers personnalisables sont heureux de faire leur retour !"
+            echo "Les fichiers personnalisables sont heureux de faire leur retour !"
             echo
         fi
 
