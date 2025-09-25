@@ -42,20 +42,33 @@ get_local_version() {
 ###############################################################################
 write_version_file() {
     local tag="$1"
-    local commit date_commit
+    local commit date_commit branch
 
-    if [[ "$branch_real" == "main" && -n "$tag" ]]; then
-        # Cas stable → on garde uniquement le tag
+    # Détermine la branche à utiliser
+    branch="${branch_real:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")}"
+
+    # Si le dépôt existe, récupère les infos
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+        # Récupération des infos depuis le remote, silencieuse
+        git fetch --all --tags --quiet 2>/dev/null || true
+
+        # Commit court
+        commit=$(git rev-parse --short "origin/$branch" 2>/dev/null || git rev-parse --short "$branch" 2>/dev/null || echo "unknown")
+        # Date du commit
+        date_commit=$(git show -s --format="%ci" "origin/$branch" 2>/dev/null || git show -s --format="%ci" "$branch" 2>/dev/null || echo "date inconnue")
+    else
+        commit="unknown"
+        date_commit="date inconnue"
+        branch="unknown"
+    fi
+
+    # Cas stable : branche main avec tag
+    if [[ "$branch" == "main" && -n "$tag" ]]; then
         echo "$tag" > "$DIR_VERSION_FILE"
     else
-        # Cas dev/branche → infos depuis le remote
-        # on force à récupérer le commit et date depuis origin/$branch_real
-        commit=$(git rev-parse --short "origin/$branch_real" 2>/dev/null || echo "unknown")
-        date_commit=$(git show -s --format="%ci" "origin/$branch_real" 2>/dev/null || echo "date inconnue")
-        echo "$branch_real - $commit - $date_commit" > "$DIR_VERSION_FILE"
+        echo "$branch - $commit - $date_commit" > "$DIR_VERSION_FILE"
     fi
 }
-
 
 
 ###############################################################################
@@ -393,11 +406,8 @@ update_to_latest_branch() {
 
     make_scripts_executable
 
-    echo -e "🎉  Mise à jour réussie vers branche ${UNDERLINE}$branch${RESET}"
-    echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
-
-    print_fancy --align "center" --theme "success" \
-        "Script mis à jour avec succès."
+    echo
+    echo -e "🎉  Mise à jour réussie depuis la branche ${UNDERLINE}$branch${RESET}"
 
     # Mise à jour réussie → écrire la version appropriée
     if [[ "$branch" == "main" && -n "$latest_tag" ]]; then
@@ -406,6 +416,9 @@ update_to_latest_branch() {
         # Pour dev ou toute autre branche → HEAD direct
         write_version_file "$branch_real"
     fi
+
+    echo
+    print_fancy --align "center" --theme "success" "Script mis à jour avec succès."
 
     return 0
 }
@@ -527,8 +540,8 @@ update_to_latest_tag() {
 
         make_scripts_executable
 
-        echo "🎉  Mise à jour réussie vers $latest_tag"
-        echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
+        echo
+        echo -e "🎉  Mise à jour réussie depuis le tag ${UNDERLINE}$latest_tag${RESET}"
 
         # Mise à jour réussie → écrire la version
         if [[ -n "$latest_tag" ]]; then
@@ -536,6 +549,9 @@ update_to_latest_tag() {
         else
             write_version_file "$branch_real"
         fi
+
+        echo
+        print_fancy --align "center" --theme "success" "Script mis à jour avec succès."
 
         return 0
 
