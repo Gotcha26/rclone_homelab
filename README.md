@@ -176,6 +176,6 @@ NotePad++ (avec plugin "Compare")
 https://dillinger.io (pour la rédaction du présent Readme)  
 https://stackedit.io (pour l'aide sur le markedown) Je pourrais me passer de dellinger en plus...  
 https://emojikeyboard.org/ (Pour les émojis)  
-https://www.desmoulins.fr (Pour ma bannière ASCII), aussi https://patorjk.com/software/taag/
+https://www.desmoulins.fr (Pour ma bannière ASCII), aussi https://patorjk.com/software/taag/ ou encore http://www.network-science.de/ascii/
 
 [^1]: Proposé lors de l'installation.

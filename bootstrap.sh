@@ -22,7 +22,7 @@ make_scripts_executable() {
 
     # Se placer dans un répertoire sûr pour éviter getcwd errors
     if cd /; then
-        display_msg "verbose|hard" --theme info "Changement de répertoire vers / réussi."
+        display_msg "hard" --theme info "Changement de répertoire vers / réussi."
     else
         display_msg "soft|verbose|hard" --theme error "Impossible de changer de répertoire vers / ."
         return 1
@@ -39,7 +39,7 @@ make_scripts_executable() {
         display_msg "soft|verbose|hard" --theme error "ERREUR: variable non défini $base_dir"
         return 1
     else
-        display_msg "verbose|hard" --theme info "base_dir correctement défini ou présent."
+        display_msg "hard" --theme info "base_dir correctement défini ou présent."
     fi
 
     # Vérifier que base_dir existe
@@ -47,22 +47,18 @@ make_scripts_executable() {
         display_msg "soft|verbose|hard" --theme error "ERREUR: le répertoire n'existe pas : $base_dir"
         return 1
     else
-        display_msg "verbose|hard" --theme info "Le répertoire validée : $base_dir"
+        display_msg "hard" --theme info "Le répertoire validée : $base_dir"
     fi
 
     for s in "${scripts[@]}"; do
         local f="$base_dir/$s"
         if [[ -f "$f" ]]; then
             chmod +x "$f"
-            if [[ "${DEBUG_INFOS}" == "true" ]]; then
-                display_msg "soft|verbose|hard" --theme info "chmod +x appliqué sur :"
-                display_msg "soft|verbose|hard" --align "right" --fg "light_blue" "$f"
-            fi
+            display_msg "soft|verbose|hard" --theme info "chmod +x correctement appliqué sur :"
+            display_msg "soft|verbose|hard" --align "right" --fg "light_blue" "$f"
         else
-            if [[ "${DEBUG_INFOS}" == "true" ]]; then
-                display_msg "verbose|hard"  --theme "warning" "[DEBUG_INFO] Fichier absent :"
-                display_msg "verbose|hard"  --align "right" --fg "red" "$f"
-            fi
+            display_msg "verbose|hard"  --theme "warning" "Fichier absent :"
+            display_msg "verbose|hard"  --align "right" --fg "red" "$f"
         fi
     done
 }
