@@ -140,9 +140,9 @@ update_local_configs() {
     # Format : ["nom_unique"]="référence;local"
     declare -A files=(
         ["fichier1"]="${DIR_EXEMPLE_CONF_DEV_FILE};${DIR_CONF_DEV_FILE}"
-        ["fichier1_local"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
-        ["fichier2"]="${DIR_EXEMPLE_JOBS_FILE};${DIR_JOBS_FILE}"
-        ["fichier3"]="${DIR_EXEMPLE_SECRET_FILE};${DIR_SECRET_FILE}"
+        ["fichier2"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
+        ["fichier3"]="${DIR_EXEMPLE_JOBS_FILE};${DIR_JOBS_FILE}"
+        ["fichier4"]="${DIR_EXEMPLE_SECRET_FILE};${DIR_SECRET_FILE}"
         # Ajoutez d'autres fichiers ici
     )
 
