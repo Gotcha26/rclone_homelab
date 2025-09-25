@@ -39,10 +39,12 @@ while true; do
         MENU_ACTIONS+=("$2")
     }
 
-    # --- Fonction pour ajouter séparateurs de sections ---
-    add_separator() {
-        MENU_OPTIONS+=("──────────────────────────────")
-        MENU_ACTIONS+=("__separator__")
+    # Ajoute un séparateur seulement si la dernière entrée n'est pas déjà un séparateur
+    add_separator_if_needed() {
+        if (( ${#MENU_OPTIONS[@]} > 0 )) && [[ "${MENU_ACTIONS[-1]}" != "__separator__" ]]; then
+            MENU_OPTIONS+=("──────────────────────────────")
+            MENU_ACTIONS+=("__separator__")
+        fi
     }
 
     # Construction nécessaire pour l'affichage des MAJ (branche / release)
