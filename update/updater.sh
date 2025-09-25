@@ -43,7 +43,7 @@ get_local_version() {
 ###############################################################################
 write_version_file() {
     local branch="${1:-main}"  # par défaut main
-    local json latest_tag latest_date
+    local json latest_tag latest_date commit date_commit
 
     if [[ -z "$GITHUB_API_URL" ]]; then
         echo "⚠️  GITHUB_API_URL non défini !" >&2
@@ -51,31 +51,38 @@ write_version_file() {
         return 1
     fi
 
-    # Récupération depuis GitHub
-    json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
-    if [[ -z "$json" ]]; then
-        echo "❌ Impossible de récupérer les informations de release depuis GitHub" >&2
-        echo "unknown" > "$DIR_VERSION_FILE"
-        return 1
-    fi
-
-    latest_tag=$(echo "$json" | jq -r '.tag_name // empty')
-    latest_date=$(echo "$json" | jq -r '.published_at // empty' | cut -d'T' -f1)
-
-    if [[ -z "$latest_tag" ]]; then
-        echo "❌ Impossible de récupérer le dernier tag depuis GitHub" >&2
-        echo "unknown" > "$DIR_VERSION_FILE"
-        return 1
-    fi
-
+    # Branche principale → récupérer le dernier tag GitHub
     if [[ "$branch" == "main" ]]; then
-        # Branche principale → seulement le tag
+        json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
+        if [[ -z "$json" ]]; then
+            echo "❌ Impossible de récupérer les informations de release depuis GitHub" >&2
+            echo "unknown" > "$DIR_VERSION_FILE"
+            return 1
+        fi
+
+        latest_tag=$(echo "$json" | jq -r '.tag_name // empty')
+        if [[ -z "$latest_tag" ]]; then
+            echo "❌ Impossible de récupérer le dernier tag depuis GitHub" >&2
+            echo "unknown" > "$DIR_VERSION_FILE"
+            return 1
+        fi
+
+        # Écriture dans .version
         echo "$latest_tag" > "$DIR_VERSION_FILE"
-    else
-        # Dev ou autre → tag + branche + date
-        echo "$latest_tag - $branch - $latest_date" > "$DIR_VERSION_FILE"
+        return 0
     fi
+
+    # Pour dev ou toute autre branche → HEAD distant
+    commit=$(git ls-remote origin "$branch" 2>/dev/null | awk '{print substr($1,1,7)}')
+    date_commit=$(git show -s --format="%ci" "$commit" 2>/dev/null | cut -d' ' -f1)
+
+    # Fallback si impossible
+    commit="${commit:-unknown}"
+    date_commit="${date_commit:-date_inconnue}"
+
+    echo "$branch - $commit - $date_commit" > "$DIR_VERSION_FILE"
 }
+
 
 
 ###############################################################################
