@@ -42,7 +42,7 @@ get_local_version() {
 # Fonction : Juste pour écrire le tag dans le fichier .version
 ###############################################################################
 write_version_file() {
-    local branch="$1"  # branche en cours (ou main/dev)
+    local branch="${1:-main}"
     local json latest_tag latest_date
 
     # Appel à GitHub API
