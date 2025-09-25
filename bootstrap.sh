@@ -77,11 +77,11 @@ update_local_configs() {
 
         # Vérification de l'existence des fichiers
         if [ ! -f "$ref_file" ]; then
-            echo "❓  Fichier non présent    : $ref_file"
+            echo "❓  Fichier de référence non présent : $ref_file"
             return 1
         fi
         if [ ! -f "$user_file" ]; then
-            echo "🔎  Fichier non mis à jour : $user_file"
+            echo "🔎  Fichier local non mis à jour     : $user_file"
             return 1
         fi
 
@@ -139,7 +139,7 @@ update_local_configs() {
     # Liste des fichiers à traiter (référence, local)
     # Format : ["nom_unique"]="référence;local"
     declare -A files=(
-        ["fichier1"]="${DIR_EXEMPLE_CONF_DEV_FILE};${DIR_CONF_DEV_FILE}"
+        ["fichier1"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_DEV_FILE}"
         ["fichier2"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
         ["fichier3"]="${DIR_EXEMPLE_JOBS_FILE};${DIR_JOBS_FILE}"
         ["fichier4"]="${DIR_EXEMPLE_SECRET_FILE};${DIR_SECRET_FILE}"
