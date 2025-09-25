@@ -60,7 +60,6 @@ load_optional_configs() {
     done
 
     if [[ "$any_loaded" == false ]]; then
-        display_msg "soft" --theme info "Aucun fichier chargé"
         display_msg "verbose" --theme info "Configuration par défaut uniquement."
         display_msg "hard" --theme info "Aucun fichier de configuration optionnel trouvé. Configuration par défaut uniquement."
     fi
