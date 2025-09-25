@@ -14,6 +14,7 @@
 : "${GIT_OFFLINE:=false}"
 : "${LOCAL_VERSION:=}"
 
+
 ###############################################################################
 # Fonction principale : update_check
 # → Vérifie si une mise à jour est disponible et affiche le statut
