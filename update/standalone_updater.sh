@@ -36,17 +36,30 @@ set -euo pipefail
 
 REPO_URL="https://github.com/Gotcha26/rclone_homelab.git"
 
-# Couleurs
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RESET='\033[0m'
+# Couleurs texte
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
+BLACK='\033[0;30m'; WHITE='\033[1;37m'
 
+# Couleurs de fond
+BG_WHITE='\033[47m'; BG_BLACK='\033[40m'
+
+# Styles
+RESET='\033[0m'; BOLD="\033[1m"; ITALIC="\033[3m"; UNDERLINE="\033[4m"
+
+
+clear
+echo "+------------------------------------------------------------------------------+"
+echo "|              Programme de mise à jour autonome pour le script :              |"
+echo "|                          rclone_homelab par GOTCHA !                         |"
+echo "+------------------------------------------------------------------------------+"
 echo
-echo "Programme de mise à jour autonome pour le script :"
-echo "rclone_homelab par GOTCHA !"
-echo "$REPO_URL"
+echo -e "${BLACK}${BG_WHITE} ▌║█║▌│║▌│║▌║▌█║ $REPO_URL ▌│║▌║▌│║║▌█║▌║█ ${RESET}"
 echo
+echo
+echo -e "  ${BOLD}Mise en garde${RESET} : Ne fonction que sur une installation clonée via GitHub !...   "
+echo
+echo
+sleep 2
 
 # --------------------------------------------------------------------------- #
 # 1. Lecture des arguments
