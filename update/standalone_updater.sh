@@ -49,8 +49,8 @@ RESET='\033[0m'; BOLD="\033[1m"; ITALIC="\033[3m"; UNDERLINE="\033[4m"
 
 clear
 echo "+------------------------------------------------------------------------------+"
-echo "|              Programme de mise à jour autonome pour le script :              |"
-echo "|                          rclone_homelab par GOTCHA !                         |"
+echo -e "|              ${BOLD}Programme de mise à jour autonome pour le script :${RESET}              |"
+echo -e "|                          ${BOLD}${UNDERLINE}rclone_homelab${RESET} par ${ITALIC}GOTCHA !${RESET}                         |"
 echo "+------------------------------------------------------------------------------+"
 echo
 echo -e "${BLACK}${BG_WHITE} ▌║█║▌│║▌│║▌║▌█║ $REPO_URL ▌│║▌║▌│║║▌█║▌║█ ${RESET}"
@@ -59,7 +59,7 @@ echo
 echo -e " ${BOLD}Mise en garde${RESET} : Ne fonctionne que sur une installation clonée via GitHub !..."
 echo
 echo
-sleep 2
+sleep 1
 
 # --------------------------------------------------------------------------- #
 # 1. Lecture des arguments
