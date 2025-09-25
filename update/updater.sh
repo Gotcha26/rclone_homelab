@@ -405,10 +405,6 @@ update_to_latest_branch() {
         write_version_file ""
     fi
 
-    # Relance propre
-    print_fancy --theme success "✅ Mise à jour appliquée, redémarrage..."
-    exec "$SCRIPT_DIR/main.sh" "$@"
-
     return 0
 }
 
@@ -540,10 +536,6 @@ update_to_latest_tag() {
         fi
 
         return 0
-
-        # Relance propre
-        print_fancy --theme success "✅ Mise à jour appliquée, redémarrage..."
-        exec "$SCRIPT_DIR/main.sh" "$@"
 
     else
         print_fancy --theme "error" \
