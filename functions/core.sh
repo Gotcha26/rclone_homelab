@@ -454,8 +454,8 @@ control_local_config() {
             2)
                 echo
                 if ! mini_edit_local_config; then
-                    print_fancy --bg yellow --fg red \
-                    "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!\n Aucun fichier disponible, retour au menu principal."
+                    print_fancy --bg yellow --fg red "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!"
+                    print_fancy --bg yellow --fg red "Aucun fichier disponible, retour au menu principal."
                 fi
                 control_local_config  # retour au menu principal après édition pour validation
                 ;;
