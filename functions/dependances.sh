@@ -321,7 +321,7 @@ print_fancy() {
             ((pad_right<0)) && pad_right=0
             ;;
         right)
-            pad_left=$((TERM_WIDTH_DEFAULT - visible_len + 1))
+            pad_left=$((TERM_WIDTH_DEFAULT - visible_len - 1)) # Compensation du décallage à l'écran
             ((pad_left<0)) && pad_left=0
             ;;
         left)
