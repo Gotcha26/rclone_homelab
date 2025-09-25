@@ -70,14 +70,14 @@ while true; do
         fi
     fi
 
-    add_separator
+    add_separator_if_needed
 
     # 2) Jobs (lancement)
     if check_jobs_file soft; then
         add_option "🔂  Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
 
-    add_separator
+    add_separator_if_needed
 
     # 3) Configurations
     # Jobs
@@ -115,7 +115,7 @@ while true; do
         fi
     fi
 
-    add_separator
+    add_separator_if_needed
 
     # 4) Actions
     # Option de configuration locale
@@ -135,7 +135,7 @@ while true; do
         add_option "✏️  Éditer la configuration secrète" "menu_edit_config_secrets"
     fi
 
-    add_separator
+    add_separator_if_needed
 
     # 5) Choix permanents
 
