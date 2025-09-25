@@ -43,14 +43,12 @@ get_local_version() {
 # Fonction : Juste pour écrire le tag dans le fichier .version
 ###############################################################################
 write_version_file() {
-    echo "[DEBUG] - real_branch vaut : $branch_real"
-    echo "[DEBUG] - latest_tag vaut : $latest_tag"
-    sleep 5
     local tag="$1"
+    local branch="$2"
     local commit date_commit branch
 
-    # Détermine la branche à utiliser
-    branch="${branch_real:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")}"
+    # Fallback si branch non fourni
+    branch="${branch:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")}"
 
     # Si le dépôt existe, récupère les infos
     if git rev-parse --git-dir >/dev/null 2>&1; then
@@ -416,10 +414,10 @@ update_to_latest_branch() {
 
     # Mise à jour réussie → écrire la version appropriée
     if [[ "$branch" == "main" && -n "$latest_tag" ]]; then
-        write_version_file "$latest_tag"
+        write_version_file "$latest_tag" "$branch"
     else
         # Pour dev ou toute autre branche → HEAD direct
-        write_version_file "$branch_real"
+        write_version_file "" "$branch_real"
     fi
 
     echo
