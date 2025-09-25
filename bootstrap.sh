@@ -137,7 +137,7 @@ update_local_configs() {
                 echo "❌  Mise à jour annulée pour $user_file."
             fi
         else
-            echo "✅  $user_file est déjà à jour."
+            display_msg "verbose|hard" --theme success "$user_file est déjà à jour."
         fi
     }
 

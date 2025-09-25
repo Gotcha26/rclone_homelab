@@ -150,7 +150,7 @@ install_rclone() {
             ;;
         verbose)
             echo "⚠️  rclone n'est pas installé."
-            read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+            read -e -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
             REPLY=${REPLY,,}
             if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
                 die 11 "rclone est requis mais n'a pas été installé."
@@ -218,7 +218,7 @@ check_jobs_file() {
 ###############################################################################
 prompt_install_msmtp() {
     echo "⚠️  msmtp n'est pas installé."
-    read -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+    read -e -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
     REPLY=${REPLY,,}
     if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
         install_msmtp
@@ -442,7 +442,7 @@ control_local_config() {
         echo -e "[3] Quitter."
         echo
 
-        read -rp "Votre choix [1-3] : " choice
+        read -e -rp "Votre choix [1-3] : " choice
 
         case "$choice" in
             1)
@@ -509,7 +509,7 @@ mini_edit_local_config() {
     echo "[$i] Retour"
     echo
 
-    read -rp "Choisir un fichier à éditer [1-$i] : " subchoice
+    read -e -rp "Choisir un fichier à éditer [1-$i] : " subchoice
 
     if [[ "$subchoice" -ge 1 && "$subchoice" -lt "$i" ]]; then
         local target="${existing[$((subchoice-1))]}"
