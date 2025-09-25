@@ -19,39 +19,49 @@ load_optional_configs
 # Fonction : Rendre des scripts exécutables (utile après une MAJ notamment)
 ###############################################################################
 make_scripts_executable() {
+
+    # Se placer dans un répertoire sûr pour éviter getcwd errors
+    if cd /; then
+        display_msg "verbose|hard" --theme info "Changement de répertoire vers / réussi."
+    else
+        display_msg "soft|verbose|hard" --theme error "Impossible de changer de répertoire vers / ."
+        return 1
+    fi
+
     local base_dir="${1:-$SCRIPT_DIR}"
-    local scripts=("update/standalone_updater.sh") # Ajouter des fichiers ici si besoin, chacun entre "".
+    local scripts=(
+        "$SCRIPT_DIR/main.sh"
+        "$SCRIPT_DIR/update/standalone_updater.sh"
+    )
 
     # Vérifier que base_dir est défini
     if [[ -z "$base_dir" ]]; then
-        print_fancy --theme "error" "ERREUR: base_dir non défini et SCRIPT_DIR absent."
+        display_msg "soft|verbose|hard" --theme error "ERREUR: variable non défini $base_dir"
         return 1
+    else
+        display_msg "verbose|hard" --theme info "base_dir correctement défini ou présent."
     fi
 
     # Vérifier que base_dir existe
     if [[ ! -d "$base_dir" ]]; then
-        print_fancy --theme "error" "ERREUR: le répertoire n'existe pas : $base_dir"
+        display_msg "soft|verbose|hard" --theme error "ERREUR: le répertoire n'existe pas : $base_dir"
         return 1
+    else
+        display_msg "verbose|hard" --theme info "Le répertoire validée : $base_dir"
     fi
-
-    # Se placer dans un répertoire sûr pour éviter getcwd errors
-    cd / || {
-        print_fancy --theme "error" "Impossible de changer de répertoire vers /"
-        return 1
-    }
 
     for s in "${scripts[@]}"; do
         local f="$base_dir/$s"
         if [[ -f "$f" ]]; then
             chmod +x "$f"
             if [[ "${DEBUG_INFOS}" == "true" ]]; then
-                print_fancy --theme "debug_info" "chmod +x appliqué sur :"
-                print_fancy --align "right" --fg "light_blue" "$f"
+                display_msg "soft|verbose|hard" --theme info "chmod +x appliqué sur :"
+                display_msg "soft|verbose|hard" --align "right" --fg "light_blue" "$f"
             fi
         else
             if [[ "${DEBUG_INFOS}" == "true" ]]; then
-                print_fancy --theme "warning" "[DEBUG_INFO] Fichier absent :"
-                print_fancy --align "right" --fg "red" "$f"
+                display_msg "verbose|hard"  --theme "warning" "[DEBUG_INFO] Fichier absent :"
+                display_msg "verbose|hard"  --align "right" --fg "red" "$f"
             fi
         fi
     done
@@ -77,19 +87,17 @@ update_local_configs() {
 
         # Vérification de l'existence des fichiers
         if [ ! -f "$ref_file" ]; then
-            echo "❓  Fichier de référence non présent : $ref_file"
+            echo "⚠️  Fichier de référence non présent : $ref_file"
             return 1
         fi
         if [ ! -f "$user_file" ]; then
-            echo "🔎  Fichier local non mis à jour     : $user_file"
-            return 1
+            echo "🔎  Fichier local non présent : $user_file"
         fi
 
         # 1. Première exécution : sauvegarde de la version de référence
         if [ ! -f "$last_ref_backup" ]; then
             cp "$ref_file" "$last_ref_backup"
             echo "✅  Première exécution pour $user_file : sauvegarde de la version de référence."
-            return 0
         fi
 
         # 2. Vérification des changements
