@@ -59,7 +59,7 @@ echo
 echo -e " ${BOLD}Mise en garde${RESET} : Ne fonctionne que sur une installation clonée via GitHub !..."
 echo
 echo
-sleep 1
+sleep 0.5
 
 # --------------------------------------------------------------------------- #
 # 1. Lecture des arguments
@@ -197,52 +197,44 @@ fi
 # --------------------------------------------------------------------------- #
 # 8. Ré-application des permissions essentielles
 # --------------------------------------------------------------------------- #
-echo -e "🔧  Vérification des permissions...${RESET}"
+echo -e "🔧  Vérification et mise en place des scripts...${RESET}"
 
 for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
     if [[ -f "$file" ]]; then
+        # Rendre exécutable
         if [[ -w "$file" ]]; then
-            chmod +x "$file"
-        else
             $SUDO chmod +x "$file"
+        else
+            echo -e "${RED}❌  Problème pour rendre $file exécutable"
         fi
-        echo -e "${GREEN}   → $file rendu exécutable ✅${RESET}"
+        echo -e "${GREEN}   → Est rendu exécutable : $file ✓${RESET}"
+
+        # Déterminer le symlink associé
+        case "$file" in
+            "$SCRIPT_DIR/main.sh")
+                symlink="/usr/local/bin/rclone_homelab"
+                ;;
+            "$SCRIPT_DIR/update/standalone_updater.sh")
+                symlink="/usr/local/bin/rclone_homelab-updater"
+                ;;
+            *) symlink=""
+                ;;
+        esac
+
+        # Création du symlink si défini
+        if [[ -n "$symlink" ]]; then
+            if [[ -w "$(dirname "$symlink")" ]]; then
+                ln -sf "$file" "$symlink"
+            else
+                $SUDO ln -sf "$file" "$symlink"
+            fi
+            echo -e "${GREEN}   → Symlink créé : $symlink → $file ✓${RESET}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Fichier introuvable : $file${RESET}"
     fi
 done
 
-# --------------------------------------------------------------------------- #
-# 9. Création symlink principal
-# --------------------------------------------------------------------------- #
-create_symlink() {
-    SYMLINK="/usr/local/bin/rclone_homelab"
-    if [ -w "$(dirname "$SYMLINK")" ]; then
-        ln -sf "$SCRIPT_DIR/main.sh" "$SYMLINK"
-    else
-        $SUDO ln -sf "$SCRIPT_DIR/main.sh" "$SYMLINK"
-    fi
-    chmod +x "$SCRIPT_DIR/main.sh"
-    echo -e "${GREEN}✅  Symlink créé : $SYMLINK → $SCRIPT_DIR/main.sh${RESET}"
-}
-
-# --------------------------------------------------------------------------- #
-# 10. Création symlink updater
-# --------------------------------------------------------------------------- #
-create_updater_symlink() {
-    UPDATER_SCRIPT="$SCRIPT_DIR/update/standalone_updater.sh"
-    UPDATER_SYMLINK="/usr/local/bin/rclone_homelab-updater"
-
-    if [ -f "$UPDATER_SCRIPT" ]; then
-        chmod +x "$UPDATER_SCRIPT"
-        if [ -w "$(dirname "$UPDATER_SYMLINK")" ]; then
-            ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
-        else
-            $SUDO ln -sf "$UPDATER_SCRIPT" "$UPDATER_SYMLINK"
-        fi
-        echo -e "${GREEN}✅  Updater exécutable et symlink créé : $UPDATER_SYMLINK → $UPDATER_SCRIPT${RESET}"
-    else
-        echo -e "${YELLOW}⚠️  Fichier $UPDATER_SCRIPT introuvable.${RESET}"
-    fi
-}
 
 echo -e "\n✅  Mise à jour terminée. Vous pouvez maintenant relancer le projet via :${RESET}"
 echo -e "   ${BLUE}rclone_homelab${RESET}\n"
