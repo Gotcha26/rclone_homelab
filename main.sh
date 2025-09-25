@@ -23,7 +23,7 @@ VARS_TO_VALIDATE=(
     "FORCE_UPDATE:bool:false"
     "FORCE_BRANCH:''"
     "ACTION_MODE:auto|manu:auto"
-    "DISPLAY_MODE:soft|verbose|hard:verbose"
+    "DISPLAY_MODE:soft|verbose|hard:soft"
     "TERM_WIDTH_DEFAULT:80-120:80"
     "LOG_RETENTION_DAYS:1-15:14"
     "LOG_LINE_MAX:100-10000:1000"
