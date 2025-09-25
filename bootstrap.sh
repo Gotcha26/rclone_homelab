@@ -23,46 +23,24 @@ make_scripts_executable() {
     # Se placer dans un répertoire sûr pour éviter getcwd errors
     if cd /; then
         display_msg "hard" --theme info "Changement de répertoire vers / réussi."
-        return 0
     else
         display_msg "soft|verbose|hard" --theme error "Impossible de changer de répertoire vers / ."
         return 1
     fi
 
-    local base_dir="${1:-$SCRIPT_DIR}"
     local scripts=(
         "$SCRIPT_DIR/main.sh"
         "$SCRIPT_DIR/update/standalone_updater.sh"
     )
 
-    # Vérifier que base_dir est défini
-    if [[ -z "$base_dir" ]]; then
-        display_msg "soft|verbose|hard" --theme error "ERREUR: variable non défini $base_dir"
-        return 1
-    else
-        display_msg "hard" --theme info "base_dir correctement défini ou présent."
-        return 0
-    fi
-
-    # Vérifier que base_dir existe
-    if [[ ! -d "$base_dir" ]]; then
-        display_msg "soft|verbose|hard" --theme error "ERREUR: le répertoire n'existe pas : $base_dir"
-        return 1
-    else
-        display_msg "hard" --theme info "Le répertoire validée : $base_dir"
-        return 0
-    fi
-
     for s in "${scripts[@]}"; do
-        local f="$base_dir/$s"
-        if [[ -f "$f" ]]; then
-            chmod +x "$f"
+        if [[ -f "$s" ]]; then
+            chmod +x "$s"
             display_msg "soft|verbose|hard" --theme info "chmod +x correctement appliqué sur :"
-            display_msg "soft|verbose|hard" --align "right" --fg "light_blue" "$f"
-            return 0
+            display_msg "soft|verbose|hard" --align "right" --fg "light_blue" "$s"
         else
             display_msg "verbose|hard"  --theme "warning" "Fichier absent :"
-            display_msg "verbose|hard"  --align "right" --fg "red" "$f"
+            display_msg "verbose|hard"  --align "right" --fg "red" "$s"
             return 1
         fi
     done

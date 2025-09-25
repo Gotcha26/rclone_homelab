@@ -389,9 +389,7 @@ update_to_latest_branch() {
 
     update_local_configs
 
-    if make_scripts_executable; then
-        echo "✅  Scripts exécutables"
-    fi
+    make_scripts_executable
 
     echo -e "🎉  Mise à jour réussie vers branche ${UNDERLINE}$branch${RESET}"
     echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."
@@ -525,10 +523,7 @@ update_to_latest_tag() {
 
         update_local_configs
 
-        if make_scripts_executable; then
-            echo "✅  Scripts exécutables"
-        fi
-
+        make_scripts_executable
 
         echo "🎉  Mise à jour réussie vers $latest_tag"
         echo "ℹ️  Pour plus d’infos, utilisez rclone_homelab sans arguments pour afficher le menu."

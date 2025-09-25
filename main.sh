@@ -55,8 +55,6 @@ control_local_config
 print_logo                   # Affichage du logo/bannière suivi de la version installée
 print_fancy --align right "$(get_current_version)"
 
-make_scripts_executable      # Rendre le script update/standalone_updater.sh exécutable
-
 # --- ↓ DEBUG ↓ ---
 
 if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
