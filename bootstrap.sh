@@ -23,6 +23,7 @@ make_scripts_executable() {
     # Se placer dans un répertoire sûr pour éviter getcwd errors
     if cd /; then
         display_msg "hard" --theme info "Changement de répertoire vers / réussi."
+        return 0
     else
         display_msg "soft|verbose|hard" --theme error "Impossible de changer de répertoire vers / ."
         return 1
@@ -40,6 +41,7 @@ make_scripts_executable() {
         return 1
     else
         display_msg "hard" --theme info "base_dir correctement défini ou présent."
+        return 0
     fi
 
     # Vérifier que base_dir existe
@@ -48,6 +50,7 @@ make_scripts_executable() {
         return 1
     else
         display_msg "hard" --theme info "Le répertoire validée : $base_dir"
+        return 0
     fi
 
     for s in "${scripts[@]}"; do
@@ -56,9 +59,11 @@ make_scripts_executable() {
             chmod +x "$f"
             display_msg "soft|verbose|hard" --theme info "chmod +x correctement appliqué sur :"
             display_msg "soft|verbose|hard" --align "right" --fg "light_blue" "$f"
+            return 0
         else
             display_msg "verbose|hard"  --theme "warning" "Fichier absent :"
             display_msg "verbose|hard"  --align "right" --fg "red" "$f"
+            return 1
         fi
     done
 }
@@ -68,7 +73,6 @@ make_scripts_executable() {
 # Fonction : Mise à jour (upgrade) des fichiers exemples à destination des fichiers locaux (préférences utilisateurs)
 # https://chat.mistral.ai/chat/20d4c4a2-08ff-46bb-9920-3abb12adcaa6
 ###############################################################################
-
 # Fonction pour mettre à jour un fichier local
 update_local_configs() {
 
