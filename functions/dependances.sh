@@ -187,11 +187,21 @@ strip_ansi() {
 # Fonction : calcul de la largeur "visible" d'une chaîne (sans séquences ANSI)
 ###############################################################################
 strwidth() {
-    python3 -c 'import sys,unicodedata;from wcwidth import wcwidth
-s=sys.argv[1]
-print(sum(wcwidth(c) for c in s))' "$1"
-}
+    local str="${1:-}"
+    # Supprimer toutes les séquences ANSI standards (CSI + SGR)
+    str=$(printf '%s' "$str" | sed -r "s/$(printf '\033')\\[[0-9;?]*[ -\\/]*[@-~]//g")
 
+    local width=0 char
+    for ((i=0; i<${#str}; i++)); do
+        char="${str:i:1}"
+        if [[ "$char" =~ [^[:ascii:]] ]]; then
+            ((width+=2))
+        else
+            ((width+=1))
+        fi
+    done
+    echo "$width"
+}
 
 
 ###############################################################################
