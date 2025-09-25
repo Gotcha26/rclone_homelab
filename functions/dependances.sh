@@ -174,48 +174,42 @@ scroll_down() {
 # Fonction : supprime séquences ANSI (lecture d'argument)
 ###############################################################################
 strip_ansi() {
-    if [[ $# -gt 0 ]]; then
-        printf '%s' "$1" \
-            | sed -r "s/$(printf '\033')\\[[0-9;?]*[ -\\/]*[@-~]//g"
-    else
-        sed -r "s/$(printf '\033')\\[[0-9;?]*[ -\\/]*[@-~]//g"
-    fi
+    # usage: strip_ansi "string"
+    printf "%s" "$1" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g'
 }
 
 
 ###############################################################################
-# Fonction : Retourne la largeur "visible" en colonnes (approx. correcte)
-# - enlève d'abord les séquences ANSI
-# - puis utilise python+wcwidth si disponible (meilleur pour emojis/CJK)
-# - sinon tombe sur wc -m (nombre de caractères)
+# Fonction : calcul de la largeur "visible" d'une chaîne (sans séquences ANSI)
 ###############################################################################
 strwidth() {
-    local s="$1"
-    local clean
-    clean=$(printf '%s' "$s" | sed -r "s/$(printf '\033')\\[[0-9;?]*[ -\\/]*[@-~]//g")
+    local str="${1:-}"
+    str="${str//[$'\033'][0-9;]*[m]/}"  # Supprimer séquences ANSI
+    local width=0 char i
+    for ((i=0; i<${#str}; i++)); do
+        char="${str:i:1}"
+        [[ "$char" =~ [^[:ascii:]] ]] && ((width+=2)) || ((width+=1))
+    done
+    echo "$width"
+}
 
-    # Si python3 + module wcwidth dispo -> l'utiliser pour un comptage précis
-    if command -v python3 >/dev/null 2>&1; then
-        # essaie d'utiliser wcwidth si installé, sinnon fallback sur heuristique
-        local python_code
-        python_code='import sys
-s=sys.stdin.read()
-try:
-    from wcwidth import wcwidth
-    print(sum(max(wcwidth(ch),0) for ch in s))
-except Exception:
-    # fallback: approx. double-width for non-ascii
-    w=0
-    for ch in s:
-        w += 2 if ord(ch) > 127 else 1
-    print(w)
-'
-        printf '%s' "$clean" | python3 -c "$python_code"
-        return
-    fi
 
-    # Fallback simple : nombre de "caractères" (approx.), corrige le souci d'ANSI.
-    printf '%d' "$(printf '%s' "$clean" | wc -m)"
+###############################################################################
+# Fonction : calcul de la largeur "visible" d'une chaîne (sans séquences ANSI)
+###############################################################################
+strwidth() {
+    local str="${1:-}"
+    str="${str//$'\e'\[[0-9;]*m/}"  # Supprimer les séquences ANSI
+    local width=0
+    for ((i=0; i<${#str}; i++)); do
+        char="${str:i:1}"
+        if [[ "$char" =~ [^[:ascii:]] ]]; then
+            width=$((width+2))
+        else
+            width=$((width+1))
+        fi
+    done
+    echo "$width"
 }
 
 
@@ -324,12 +318,7 @@ print_fancy() {
 
     # Padding calculé sur largeur réelle
     local visible_len pad_left=0 pad_right=0
-
-    # construire la chaîne stylée complète (mais sans le RESET final si tu préfères)
-    local styled="${color}${bg}${style_seq}${text}${RESET}"
-
-    # mesurer la longueur visible sur la version "nettoyée"
-    visible_len=$(strwidth "$styled")
+    visible_len=$(strwidth "$text")
     visible_len=$((visible_len + offset))
 
     case "$align" in
