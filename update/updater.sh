@@ -42,18 +42,20 @@ get_local_version() {
 ###############################################################################
 write_version_file() {
     local tag="$1"
+    local commit date_commit
 
-    if [[ "$branch_real" == "main" ]]; then
+    if [[ "$branch_real" == "main" && -n "$tag" ]]; then
         # Cas stable → on garde uniquement le tag
         echo "$tag" > "$DIR_VERSION_FILE"
     else
-        # Cas branche dev ou autre → infos plus complètes
-        local short_commit="${head_commit:0:7}"
-        local date_commit
-        date_commit=$(date -d "@$head_epoch" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "date inconnue")
-        echo "$branch_real - $short_commit - $date_commit" > "$DIR_VERSION_FILE"
+        # Cas dev/branche → infos depuis le remote
+        # on force à récupérer le commit et date depuis origin/$branch_real
+        commit=$(git rev-parse --short "origin/$branch_real" 2>/dev/null || echo "unknown")
+        date_commit=$(git show -s --format="%ci" "origin/$branch_real" 2>/dev/null || echo "date inconnue")
+        echo "$branch_real - $commit - $date_commit" > "$DIR_VERSION_FILE"
     fi
 }
+
 
 
 ###############################################################################
@@ -402,7 +404,7 @@ update_to_latest_branch() {
         write_version_file "$latest_tag"
     else
         # Pour dev ou toute autre branche → HEAD direct
-        write_version_file ""
+        write_version_file "$branch_real"
     fi
 
     return 0
@@ -532,7 +534,7 @@ update_to_latest_tag() {
         if [[ -n "$latest_tag" ]]; then
             write_version_file "$latest_tag"
         else
-            write_version_file "dev"
+            write_version_file "$branch_real"
         fi
 
         return 0

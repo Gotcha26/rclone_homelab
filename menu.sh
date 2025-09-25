@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-first_time=true
-
 # === Initialisation minimale ===
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
@@ -15,12 +13,13 @@ source "$SCRIPT_DIR/functions/menu_f.sh"
 ###############################################################################
 # Si aucun argument fourni → affichage d’un menu interactif
 ###############################################################################
+first_time=true
 
 while true; do
 
     # Réaffichage de la bannière mais jamais au premier passage.
     if [ "$first_time" = false ]; then
-        load_optional_configs none # Venir recharger la configuration locale après une édition
+        load_optional_configs # Venir recharger la configuration locale après une édition
     fi
     first_time=false
     
@@ -195,6 +194,7 @@ while true; do
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
                     $EDITOR "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
+                    load_optional_configs
                 else
                     echo "⚠️  Aucun fichier de configuration rclone trouvé."
                 fi
@@ -222,6 +222,7 @@ while true; do
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
                     $EDITOR "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
+                    load_optional_configs
                 else
                     echo "⚠️  Aucun fichier de configuration msmtp trouvé."
                 fi
@@ -244,12 +245,14 @@ while true; do
                 echo "▶️  Édition du fichiers $CONF_LOCAL_FILE"
                 $EDITOR "$DIR_CONF_LOCAL_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
+                load_optional_configs
                 ;;
             menu_edit_config_dev)
                 scroll_down
                 echo "▶️  Édition du fichiers $CONF_DEV_FILE"
                 $EDITOR "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
+                load_optional_configs
                 ;;
             menu_add_secret_file)
                 scroll_down
@@ -263,6 +266,7 @@ while true; do
                 echo "▶️  Édition du fichiers $SECRET_FILE"
                 $EDITOR "$SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
+                load_optional_configs
                 ;;
             menu_show_help)
                 scroll_down

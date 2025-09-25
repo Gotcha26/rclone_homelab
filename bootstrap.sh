@@ -36,8 +36,8 @@ make_scripts_executable() {
     for s in "${scripts[@]}"; do
         if [[ -f "$s" ]]; then
             chmod +x "$s"
-            display_msg "soft|verbose|hard" --theme info "chmod +x correctement appliqué sur :"
-            display_msg "soft|verbose|hard" --align "right" --fg "light_blue" "$s"
+            display_msg "verbose|hard" --theme info "chmod +x correctement appliqué sur :"
+            display_msg "verbose|hard" --align "right" --fg "light_blue" "$s"
         else
             display_msg "verbose|hard"  --theme "warning" "Fichier absent :"
             display_msg "verbose|hard"  --align "right" --fg "red" "$s"
@@ -72,7 +72,7 @@ update_local_configs() {
             return 1
         fi
         if [ ! -f "$user_file" ]; then
-            display_msg "soft|verbose|hard" "🔎  Fichier local non présent : $user_file"
+            display_msg "verbose|hard" "🔎  Fichier local non présent : $user_file"
         fi
 
         # 1. Première exécution : sauvegarde de la version de référence
