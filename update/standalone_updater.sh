@@ -207,7 +207,7 @@ for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
         else
             echo -e "${RED}❌  Problème pour rendre $file exécutable"
         fi
-        echo -e "${GREEN}   → Est rendu exécutable : $file ✓${RESET}"
+        echo -e "${GREEN}   > Est rendu exécutable : $file ✓${RESET}"
 
         # Déterminer le symlink associé
         case "$file" in
@@ -228,7 +228,7 @@ for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
             else
                 $SUDO ln -sf "$file" "$symlink"
             fi
-            echo -e "${GREEN}   ┕→ Son symlink associé : $symlink → $file ✓${RESET}"
+            echo -e "${GREEN}   >> Son symlink associé : $symlink → $file ✓${RESET}"
         fi
     else
         echo -e "${YELLOW}⚠️  Fichier introuvable : $file${RESET}"
