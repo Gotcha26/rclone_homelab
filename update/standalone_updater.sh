@@ -56,7 +56,7 @@ echo
 echo -e "${BLACK}${BG_WHITE} ▌║█║▌│║▌│║▌║▌█║ $REPO_URL ▌│║▌║▌│║║▌█║▌║█ ${RESET}"
 echo
 echo
-echo -e "  ${BOLD}Mise en garde${RESET} : Ne fonction que sur une installation clonée via GitHub !...   "
+echo -e " ${BOLD}Mise en garde${RESET} : Ne fonctionne que sur une installation clonée via GitHub !..."
 echo
 echo
 sleep 2
@@ -244,6 +244,6 @@ create_updater_symlink() {
     fi
 }
 
-echo -e "\n✅  Mise à jour terminée. Vous pouvez maintenant relancer le projet avec :${RESET}"
-echo -e "   rclone_homelab${RESET}\n"
+echo -e "\n✅  Mise à jour terminée. Vous pouvez maintenant relancer le projet via :${RESET}"
+echo -e "   ${BLUE}rclone_homelab${RESET}\n"
 exit 0
