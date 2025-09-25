@@ -58,6 +58,9 @@ update_local_configs() {
     BACKUP_DIR="${DIR_LOCAL}/backups"
     mkdir -p "$BACKUP_DIR"
 
+    # Flag pour savoir si au moins un fichier a été traité
+    local files_updated=false
+
     update_user_file() {
         local ref_file="$1"
         local user_file="$2"
@@ -119,9 +122,6 @@ update_local_configs() {
         fi
     }
 
-    # Flag pour savoir si au moins un fichier a été traité
-    local files_updated=false
-
     # Liste des fichiers à traiter (référence, local)
     # Format : ["nom_unique"]="référence;local"
     declare -A files=(
@@ -140,10 +140,10 @@ update_local_configs() {
 
     # Code retour et message final
     if [[ "$files_updated" == true ]]; then
-        return 0
+        return 2
     else
         display_msg "soft|verbose|hard" --theme info "Aucun changement détecté sur les fichiers d'exemples."
-        return 2
+        return 0
     fi
 
 }
