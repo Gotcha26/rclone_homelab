@@ -321,8 +321,8 @@ print_fancy() {
             ((pad_right<0)) && pad_right=0
             ;;
         right)
-            pad_left=$((TERM_WIDTH_DEFAULT - visible_len))
-            ((pad_left<0)) && pad_left=-1
+            pad_left=$((TERM_WIDTH_DEFAULT - visible_len + 1))
+            ((pad_left<0)) && pad_left=0
             ;;
         left)
             pad_right=$((TERM_WIDTH_DEFAULT - visible_len))
