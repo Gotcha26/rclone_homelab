@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 first_time=true
-DISPLAY_MODE=simplified        # <verbose|simplified|none>
-                               # Utilisé pour l'affichage d'infos lors des MAJ
 
 # === Initialisation minimale ===
 SCRIPT_PATH="$(readlink -f "$0")"
