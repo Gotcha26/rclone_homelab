@@ -154,7 +154,7 @@ while true; do
                     --raw "Relancer le script pour appliquer la mise à jour !")
                 printf "%b\n" "$label"
                 echo
-                exec "$SCRIPT_DIR/main.sh" "$@"
+                exit 99
                 ;;
             menu_update_to_latest_branch)
                 update_to_latest_branch
@@ -163,7 +163,7 @@ while true; do
                     --raw "Relancer le script pour appliquer la mise à jour !")
                 printf "%b\n" "$label"
                 echo
-                exec "$SCRIPT_DIR/main.sh" "$@"
+                exit 99
                 ;;
             menu_run_all_jobs)
                 # On quitte la boucle, on quitte le sous-shell, pour renir à l'exécution normale de main.sh
