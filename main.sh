@@ -9,11 +9,13 @@ set -uo pipefail
 
 # === Initialisation minimale ===
 
-# --- GARDE-FOU getcwd + détection dossier script ---
+#  GARDE-FOU getcwd + détection dossier script
 cd / 2>/dev/null || true   # si PWD invalide, se placer dans un répertoire sûr
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")" || exit 1
 
 source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration local incluse
+
+# ===
 
 # Tableau associatif : varaibles locales utilisateur avec les règles
 VARS_TO_VALIDATE=(
@@ -32,36 +34,34 @@ VARS_TO_VALIDATE=(
     "DEBUG_MODE:bool:false"
 )
 
-# Valeurs par défaut si les variables ne sont pas définies
+# SECURITE - Arbitraire - Valeurs par défaut si les variables ne sont pas définies (avant le contrôle/correction)
 : "${DEBUG_INFOS:=false}"
 : "${DEBUG_MODE:=false}"
 : "${DISPLAY_MODE:=soft}"
 : "${ACTION_MODE:=auto}"
 
-# Mise à jour des modes si nécessaire (DEBUG)
+# Association des modes si nécessaire (DEBUG)
 [[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
 [[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
 
 TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé à la fermeture.
 
-# === Tableau récatitulatif des variables locale avec correction
-
-[[ "$DEBUG_INFOS" == true ]] && print_table_vars VARS_TO_VALIDATE
-
-control_local_config
-
 # === Initialisation du dispositif d'affichage ===
 
-print_logo                   # Affichage du logo/bannière suivi de la version installée
+print_banner  # Affichage du logo/bannière suivi de la version installée
 print_fancy --align right "$(get_current_version)"
 
-# --- ↓ DEBUG ↓ ---
-
+# Menu/infod DEBUG
 if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
     show_debug_header
 fi
 
-# --- ↑ DEBUG ↑ ---
+# Validation des variables locale
+if ! [[ $ACTION_MODE == "manu" ]]; then
+    validate_vars VARS_TO_VALIDATE   # Menu de correction (si détecté comme étant nécessaire)
+else
+    control_local_config             # Processus de correction automatique
+fi
 
 # === Mises à jour ===
 

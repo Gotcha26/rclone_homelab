@@ -92,7 +92,7 @@ get_bg_color() {
 # Fonction : Affiche le logo ASCII GOTCHA (uniquement en mode manuel)
 ###############################################################################
 
-print_logo() {
+print_banner() {
     echo
     echo
     local RED="$(get_fg_color red)"
