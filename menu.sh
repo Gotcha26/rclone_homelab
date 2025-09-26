@@ -145,10 +145,10 @@ while true; do
     # === Affichage du menu ===
 
     echo
-    print_fancy --align "center" "======================================="
-    print_fancy --align "center" "🚀  MENU INTERACTIF pour :"
-    print_fancy --align "center" "Rclone Homelab Manager"
-    print_fancy --align "center" "======================================="
+    print_fancy --align center "======================================="
+    print_fancy --align center "🚀  MENU INTERACTIF pour :"
+    print_fancy --align center --style "bold|underline" "Rclone Homelab Manager"
+    print_fancy --align center "======================================="
     echo
 
     # --- Affichage des options ---

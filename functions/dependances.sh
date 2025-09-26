@@ -298,7 +298,7 @@ print_fancy() {
     text="$icon$prefix$text"
 
     # Traduction des couleurs
-    [[ "$color" =~ ^\\e ]] || color=$(get_fg_color "${color:-white}")
+    [[ "$color" =~ ^\\e ]] || color=$(get_fg_color "${color:-bright_white}")
     [[ "$bg" =~ ^\\e ]] || bg=$(get_bg_color "$bg")
 
     # Style
