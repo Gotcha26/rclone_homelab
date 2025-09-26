@@ -399,7 +399,7 @@ create_temp_dirs() {
 
 
 ###############################################################################
-# Fonction : Ajouter des options à rclone
+# Fonction : Ajouter des options à rclone [OBSOLETE]
 ###############################################################################
 add_rclone_opts() {
     if [[ "${DRY_RUN:-false}" == true ]]; then

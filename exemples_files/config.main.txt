@@ -29,8 +29,8 @@ FORCE_UPDATE=false
                             #   Accèpte un switch sur une branche spécifique
                             #   avec FORCE_BRANCH=<branche>
 
-ACTION_MODE=auto
-                            # <auto|manu>:auto - ARGUMENT
+ACTION_MODE=manu
+                            # <auto|manu>:manu - ARGUMENT
                             # Propose des interractions - SI BESOIN !
                             #   auto = aucune interractions (CRON...)
                             #   manu = interactivités possibles (questions)

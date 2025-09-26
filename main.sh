@@ -24,7 +24,7 @@ VARS_TO_VALIDATE=(
     "DISCORD_WEBHOOK_URL:''"
     "FORCE_UPDATE:bool:false"
     "FORCE_BRANCH:''"
-    "ACTION_MODE:auto|manu:auto"
+    "ACTION_MODE:auto|manu:manu"
     "DISPLAY_MODE:soft|verbose|hard:soft"
     "TERM_WIDTH_DEFAULT:80-120:80"
     "LOG_RETENTION_DAYS:1-15:14"
@@ -38,7 +38,7 @@ VARS_TO_VALIDATE=(
 : "${DEBUG_INFOS:=false}"
 : "${DEBUG_MODE:=false}"
 : "${DISPLAY_MODE:=soft}"
-: "${ACTION_MODE:=auto}"
+: "${ACTION_MODE:=manu}"
 
 # Association des modes si nécessaire (DEBUG)
 [[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
@@ -149,12 +149,11 @@ if [[ $# -eq 0 ]]; then
         exit 0
     else
         scroll_down             # Pas de clear
-        [[ "${DEBUG_INFOS:-}" == "true" ]] && print_fancy --theme "debug_info" "Poursuite post-menu"
-        add_rclone_opts         # Ajouter des options à rclone (dry-run)
+        [[ $DEBUG_INFOS == true ]] && print_fancy --theme "debug_info" "Poursuite post-menu"
+        load_optional_configs   # Rappel des configurations locales (surcharge après le menu et/ou pour le mode full auto)
     fi
 fi
 
-load_optional_configs   # Rappel des configurations locales (surcharge après le menu et/ou pour le mode full auto)
 
 ###############################################################################
 # 4. Vérifications fonctionnelles
