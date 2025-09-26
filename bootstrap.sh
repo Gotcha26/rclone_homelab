@@ -56,71 +56,9 @@ update_local_configs() {
 
     # Répertoire pour les sauvegardes horodatées
     BACKUP_DIR="${DIR_LOCAL}/backups"
-    mkdir -p "$BACKUP_DIR"
 
     # Flag pour savoir si au moins un fichier a été traité
     local files_updated=false
-
-    update_user_file() {
-        local ref_file="$1"
-        local user_file="$2"
-        local last_ref_backup="$BACKUP_DIR/last_$(basename "$ref_file")"
-
-        # Vérification de l'existence des fichiers
-        if [ ! -f "$ref_file" ]; then
-            display_msg "soft|verbose|hard" --theme error "Fichier de référence non présent : $ref_file"
-            return 1
-        fi
-        if [ ! -f "$user_file" ]; then
-            display_msg "verbose|hard" "🔎  Fichier local non présent : $user_file"
-        fi
-
-        # 1. Première exécution : sauvegarde de la version de référence
-        if [ ! -f "$last_ref_backup" ]; then
-            cp "$ref_file" "$last_ref_backup"
-            display_msg "soft|verbose|hard" --theme success "Première exécution pour $user_file : sauvegarde de la version de référence."
-        fi
-
-        # 2. Vérification des changements
-        if ! diff -q "$last_ref_backup" "$ref_file" > /dev/null; then
-            display_msg "soft|verbose|hard" --theme flash "Le fichier de référence $ref_file a été mis à jour. Voici les différences :"
-            if command -v colordiff &> /dev/null; then
-                colordiff -u "$last_ref_backup" "$ref_file"
-            else
-                diff -u "$last_ref_backup" "$ref_file"
-            fi
-
-            # 3. Demande de confirmation
-            read -p "Souhaitez-vous appliquer ces changements à $user_file ? (o/n) " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Oo]$ ]]; then
-                # 4. Sauvegarde horodatée du fichier local
-                local backup_file="$BACKUP_DIR/$(basename "$user_file")_$(date +%Y%m%d_%H%M%S).bak"
-                cp "$user_file" "$backup_file"
-                echo "📦  Sauvegarde de $user_file : $backup_file"
-
-                # 5. Application du patch
-                diff -u "$last_ref_backup" "$ref_file" > "/tmp/$(basename "$user_file").patch"
-                if patch -p0 -i "/tmp/$(basename "$user_file").patch" "$user_file" -o "$user_file.tmp"; then
-                    mv "$user_file.tmp" "$user_file"
-                    echo "✅  Mises à jour appliquées à $user_file."
-                else
-                    echo "⚠️  Conflits détectés. Patch enregistré : /tmp/$(basename "$user_file").patch"
-                    mv "$backup_file" "$user_file"  # Restauration
-                    echo "🔄  $user_file restauré depuis la sauvegarde."
-                fi
-                # 6. Mise à jour du backup de référence
-                cp "$ref_file" "$last_ref_backup"
-
-                # On marque que quelque chose a été traité
-                files_updated=true
-            else
-                print_fancy --theme error "Mise à jour annulée pour $user_file."
-            fi
-        else
-            display_msg "verbose|hard" --theme success "$user_file est déjà à jour."
-        fi
-    }
 
     # Liste des fichiers à traiter (référence, local)
     # Format : ["nom_unique"]="référence;local"
@@ -136,6 +74,7 @@ update_local_configs() {
     for key in "${!files[@]}"; do
         IFS=';' read -r ref_file user_file <<< "${files[$key]}"
         update_user_file "$ref_file" "$user_file"
+        [[ $? -eq 2 ]] && files_updated=true
     done
 
     # Code retour et message final
@@ -146,4 +85,88 @@ update_local_configs() {
         return 0
     fi
 
+}
+
+
+###############################################################################
+# Fonction : Permet de mettre à jour les fichiers locaux en se basant sur les fichiers de références (exemples_files)
+# https://chatgpt.com/share/68d671af-f828-8004-adeb-9554a00d1382
+###############################################################################
+update_user_file() {
+    local ref_file="$1"
+    local user_file="$2"
+    local last_ref_backup="$BACKUP_DIR/last_$(basename "$ref_file")"
+
+    # Vérification de l'existence des fichiers
+    if [ ! -f "$ref_file" ]; then
+        display_msg "soft" --theme error "Fichier de référence non présent : $ref_file"
+        display_msg "verbose|hard" --theme error "Un problème sérieux → Fichier de référence non présent : $ref_file"
+        return 1
+    fi
+
+    # Cas où le fichier local n'existe pas → on ignore totalement → pas de suivi
+    if [ ! -f "$user_file" ]; then
+        display_msg "verbose|hard" "🔎  Fichier local absent, aucun suivi nécessaire : $user_file"
+        [ -f "$last_ref_backup" ] && rm -f "$last_ref_backup" \
+            && display_msg "verbose|hard" --theme warning "Backup inutile supprimé : $last_ref_backup"
+        return 0
+    fi
+
+    # 1. Première exécution : sauvegarde de la version de référence
+    if [ ! -f "$last_ref_backup" ]; then
+        mkdir -p "$BACKUP_DIR"
+        cp "$ref_file" "$last_ref_backup"
+        display_msg "soft|verbose|hard" --theme success "Première exécution pour $user_file : sauvegarde de la version de référence."
+    fi
+
+    # 2. Vérification des changements
+    if ! diff -q "$last_ref_backup" "$ref_file" > /dev/null; then
+        display_msg "soft|verbose|hard" --theme warning --bg orange --highlight "Le fichier de référence suivant à été mis à jour :"
+        display_msg "soft|verbose|hard" --bg orange --highlight align right --style italic "$ref_file"
+        display_msg "soft|verbose|hard" --bg orange --highlight align right ""
+        display_msg "soft|verbose|hard" --bg orange --style underline --highlight "Votre ancien fichier de référence a été sauvegardé et mis de coté."
+        display_msg "soft|verbose|hard" --bg orange --highlight align right "Voici les différences :"
+        if command -v colordiff &> /dev/null; then
+            colordiff -u "$last_ref_backup" "$ref_file"
+        else
+            diff -u "$last_ref_backup" "$ref_file"
+        fi
+
+        # 3. Demande de confirmation
+        display_msg "soft|verbose|hard" ""
+        display_msg "soft|verbose|hard" "Souhaitez-vous appliquer ces changements à votre propre fichier :"
+        display_msg "soft|verbose|hard" --align right --style italic "$user_file"
+        read -p "Réponse ? (o/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Oo]$ ]]; then
+            # 4. Sauvegarde horodatée du fichier local
+            local backup_file="$BACKUP_DIR/$(basename "$user_file")_$(date +%Y%m%d_%H%M%S).bak"
+            cp "$user_file" "$backup_file"
+            echo "📦  Sauvegarde de $user_file : $backup_file"
+
+            # 5. Application du patch
+            diff -u --label "$user_file" "$last_ref_backup" "$ref_file" > "/tmp/$(basename "$user_file").patch"
+            if patch -p0 -i "/tmp/$(basename "$user_file").patch" "$user_file" -o "$user_file.tmp"; then
+                mv "$user_file.tmp" "$user_file"
+                echo "✅  Mises à jour appliquées à $user_file."
+                return 2   # signaler qu’une maj a été appliquée
+            else
+                echo "⚠️  Conflits détectés. Patch enregistré : /tmp/$(basename "$user_file").patch"
+                mv "$backup_file" "$user_file"  # Restauration
+                echo "🔄  $user_file restauré depuis la sauvegarde."
+                return 1   # échec maj
+            fi
+            # 6. Mise à jour du backup de référence
+            cp "$ref_file" "$last_ref_backup"
+
+            # On marque que quelque chose a été traité
+            files_updated=true
+        else
+            print_fancy --theme error "Mise à jour annulée pour $user_file."
+            return 0
+        fi
+    else
+        display_msg "verbose|hard" --theme success "$user_file est déjà à jour."
+        return 0   # pas de modification
+    fi
 }
