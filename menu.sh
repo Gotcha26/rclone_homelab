@@ -146,7 +146,8 @@ while true; do
 
     echo
     print_fancy --align "center" "======================================="
-    print_fancy --align "center" "🚀  Rclone Homelab Manager"
+    print_fancy --align "center" "🚀  MENU INTERACTIF pour :"
+    print_fancy --align "center" "Rclone Homelab Manager"
     print_fancy --align "center" "======================================="
     echo
 

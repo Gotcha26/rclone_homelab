@@ -49,7 +49,7 @@ TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé �
 # === Initialisation du dispositif d'affichage ===
 
 print_banner  # Affichage du logo/bannière suivi de la version installée
-print_fancy --align right "$(get_current_version)"
+print_fancy --align right --style italic "$(get_current_version)"
 
 # Menu/infod DEBUG
 if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
@@ -77,8 +77,8 @@ analyze_update_status
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --verbose)
-            LAUNCH_MODE="verbose"
+        --auto)
+            ACTION_MODE="auto"
             shift
             ;;
         --mailto=*)
