@@ -283,7 +283,7 @@ analyze_update_status() {
                 print_fancy --theme "ok" --fg "blue" --style "bold" --align "right" \
                     "Votre branche '$branch_real' est à jour avec le dépôt."
             else
-                print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
+                print_fancy --theme "ok" --fg "blue" --align "right" "À jour. +++"
             fi
             result_code=0
 
