@@ -59,6 +59,7 @@ fi
 # Validation des variables locale
 if ! [[ $ACTION_MODE == "manu" ]]; then
     validate_vars VARS_TO_VALIDATE   # Menu de correction (si détecté comme étant nécessaire)
+    echo "..."
 else
     control_local_config             # Processus de correction automatique
 fi
@@ -216,7 +217,7 @@ if [[ -n "$MAIL_TO" ]]; then
         fi
     fi
 else
-    display_msg "soft|verbose|hard" --theme info "Aucun email fourni : pas besoin d'en envoyer un !"
+    display_msg "verbose|hard" --theme info "Aucun email fourni : pas besoin d'en envoyer un !"
 fi
         
 
