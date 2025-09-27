@@ -215,6 +215,8 @@ if [[ -n "$MAIL_TO" ]]; then
             fi
         fi
     fi
+else
+    display_msg "soft|verbose|hard" --theme info "Aucun email fourni : pas besoin d'en envoyer un !"
 fi
         
 

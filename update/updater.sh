@@ -179,7 +179,7 @@ analyze_update_status() {
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" \
                 "Nouvelle version disponible : $latest_tag"
         else
-            print_fancy --theme "ok" --align "center" "À jour."
+            print_fancy --theme "ok" --align "right" "À jour."
         fi
         return 0
     fi
@@ -229,7 +229,7 @@ analyze_update_status() {
     if [[ "$branch_real" == "main" ]]; then
         # --- Branche main : vérifier si on est à jour avec la dernière release ---
         if [[ -z "$latest_tag" ]]; then
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            [[ "${DEBUG_INFOS:-false}" == true ]]; then
             print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
                 "Impossible de vérifier les mises à jour (API GitHub muette ou mode offline)."
             result_code=1
@@ -262,7 +262,8 @@ analyze_update_status() {
             result_code=0
 
         else
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            [[ "${DEBUG_INFOS:-false}" == true ]]; then
+            echo ""
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
                 "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
             print_fancy --theme "info" --bg "blue" --align "center" --highlight \
@@ -272,7 +273,8 @@ analyze_update_status() {
     else
         # --- Branche dev ou autre ---
         if [[ -z "$remote_commit" ]]; then
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            [[ "${DEBUG_INFOS:-false}" == true ]]; then
+            echo ""
             print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
                 "Aucune branche distante détectée pour '$branch_real' (mode offline ou fetch échoué)."
             result_code=1
@@ -288,7 +290,8 @@ analyze_update_status() {
             result_code=0
 
         elif (( head_epoch < remote_epoch )); then
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            [[ "${DEBUG_INFOS:-false}" == true ]]; then
+            echo ""
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
                 "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
             print_fancy --bg "blue" --align "center" --highlight \
@@ -298,7 +301,8 @@ analyze_update_status() {
             result_code=1
 
         else
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            [[ "${DEBUG_INFOS:-false}" == true ]]; then
+            echo ""
             print_fancy --theme "warning" --bg "blue" --align "center" --style "bold" --highlight \
                 "Votre commit local est plus récent que origin/$branch_real"
             print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight \
