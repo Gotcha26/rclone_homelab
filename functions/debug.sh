@@ -60,7 +60,7 @@ debug_header_2() {
 
     echo
     if mkdir -p "$TMP_JOBS_DIR"; then
-        print_fancy --theme "success" "Répertoire temporaire créé avec succès : $TMP_JOBS_DIR"
+        print_fancy --theme "ok" "Répertoire temporaire créé avec succès : $TMP_JOBS_DIR"
     else
         print_fancy --theme "error" "Erreur lors de la création du répertoire : $TMP_JOBS_DIR" >&2
     fi

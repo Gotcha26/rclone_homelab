@@ -59,7 +59,6 @@ fi
 # Validation des variables locale
 if [[ $ACTION_MODE == "manu" ]]; then
     validate_vars VARS_TO_VALIDATE   # Menu de correction (si détecté comme étant nécessaire)
-    echo "..."
 else
     control_local_config             # Processus de correction automatique
 fi
@@ -172,14 +171,14 @@ if [[ -n "$MAIL_TO" ]]; then
     
     display_msg "verbose|hard" "☞  1/x Contrôle d'intégritation adresse email"
     if check_mail_format; then
-        display_msg "soft" --theme success "Email non validé."
+        display_msg "soft" --theme ok "Email non validé."
         display_msg "verbose|hard" --theme error "L'adresse email saisie ne satisfait pas aux exigences et est rejetée."
         die 12 "Adresse email saisie invalide : $MAIL_TO"
     else
-        display_msg "soft|verbose|hard" --theme success "Email validé."
+        display_msg "soft|verbose|hard" --theme ok "Email validé."
 
         display_msg "verbose|hard" "☞  2a/x Contrôle présence msmtp"
-        if check_msmtp; then
+        if ! check_msmtp; then
             if [[ $ACTION_MODE == auto ]]; then
                 display_msg "soft" --theme error "msmtp absent."
                 display_msg "verbose|hard" --theme error "L'outil msmtp est obligatoire mais n'est pas détecté comme étant installé sur le système."
@@ -189,16 +188,16 @@ if [[ -n "$MAIL_TO" ]]; then
 
                 display_msg "verbose|hard" "☞  2b/x Installation onlive de msmtp"
                 echo
-                read -e -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
+                read -e -rp "Voulez-vous installer msmtp maintenant (requis) ? [y/N] : " REPLY
                 REPLY=${REPLY,,}
                 if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
                     install_msmtp
                 else
-                    die 15 "❌  msmtp est requis mais n'a pas été installé."
+                    die 15 "msmtp est requis mais n'a pas été installé."
                 fi
             fi
         else
-            display_msg "soft|verbose|hard" --theme success "L'outil msmtp est installé."
+            display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est installé."
 
             display_msg "verbose|hard" "☞  3/x Lecture configuration msmtp"
             display_msg "verbose|hard" --theme warning "Ne garanti pas que le contenu soit correct !!!"
@@ -212,7 +211,7 @@ if [[ -n "$MAIL_TO" ]]; then
                     configure_msmtp
                 fi
             else
-                display_msg "soft|verbose|hard" --theme success "L'outil msmtp est configuré."
+                display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est configuré."
             fi
         fi
     fi
