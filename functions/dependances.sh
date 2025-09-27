@@ -94,7 +94,6 @@ get_bg_color() {
 
 print_banner() {
     echo
-    echo
     local RED="$(get_fg_color red)"
     local RESET="$(get_fg_color reset)"
 
