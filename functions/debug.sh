@@ -6,7 +6,7 @@
 ###############################################################################
 show_debug_header() {
     if [[ "${DEBUG_MODE,,}" == "true" ]]; then
-        debug_header_total
+        debug_header_complet
     elif [[ "${DEBUG_INFOS,,}" == "true" ]]; then
         debug_header_partial
     fi
