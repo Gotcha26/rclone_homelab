@@ -41,7 +41,7 @@ debug_common_1() {
 }
 
 debug_header_start() {
-    echo "================================================================================"
+    echo ""
     print_fancy --highlight --bg "green" --align "center" --style "bold" --fill "=" " DÉBUT DU DEBUG DE TÊTE "
 }
 
