@@ -75,6 +75,8 @@ analyze_update_status
 # Lecture des options du script
 ###############################################################################
 
+ORIG_ARGS=("$@")
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --auto)
@@ -139,7 +141,7 @@ if [[ "$FORCE_UPDATE" == true ]]; then
 fi
 
 # Si aucun argument → menu interactif
-if [[ $# -eq 0 ]]; then
+if [[ ${#ORIG_ARGS[@]} -eq 0 ]]; then
     bash "$SCRIPT_DIR/menu.sh"
     MENU_RESULT=$?
     if [[ $MENU_RESULT -eq 99 ]]; then
