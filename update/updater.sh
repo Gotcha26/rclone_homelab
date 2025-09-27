@@ -422,7 +422,7 @@ update_to_latest_branch() {
         echo "♻️  ... Retour des fichiers personnalisables."
         tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
         rm -f /tmp/ignored_backup.tar.gz
-        echo "Les fichiers personnalisables sont heureux de faire leur retour !"
+        print_fancy --theme ok --style itlaic "Les fichiers personnalisables sont heureux de faire leur retour !"
         echo
     fi
 
@@ -431,13 +431,13 @@ update_to_latest_branch() {
     make_scripts_executable
 
     echo
-    echo -e "🎉  Mise à jour réussie depuis la branche ${UNDERLINE}$branch${RESET}"
+    echo -e "🎉  Mise à jour réussie depuis la branche : ${UNDERLINE}$branch${RESET}"
 
     # Mise à jour réussie → écrire la version appropriée
     write_version_file "$branch"
     
     echo
-    print_fancy --align "center" --theme "success" "Script mis à jour avec succès."
+    print_fancy --align center --bg green --highliht "✌️  Script mis à jour avec succès. ✌️"
 
     return 0
 }
@@ -551,7 +551,7 @@ update_to_latest_tag() {
             echo "♻️  ... Retour des fichiers personnalisables."
             tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
             rm -f /tmp/ignored_backup.tar.gz
-            echo "Les fichiers personnalisables sont heureux de faire leur retour !"
+            print_fancy --theme ok --style itlaic "Les fichiers personnalisables sont heureux de faire leur retour !"
             echo
         fi
 
@@ -560,7 +560,7 @@ update_to_latest_tag() {
         make_scripts_executable
 
         echo
-        echo -e "🎉  Mise à jour réussie depuis le tag ${UNDERLINE}$latest_tag${RESET}"
+        echo -e "🎉  Mise à jour réussie depuis le tag : ${UNDERLINE}$latest_tag${RESET}"
 
         # Mise à jour réussie → écrire la version
         if [[ -n "$latest_tag" ]]; then
@@ -570,7 +570,7 @@ update_to_latest_tag() {
         fi
 
         echo
-        print_fancy --align "center" --theme "success" "Script mis à jour avec succès."
+        print_fancy --align center --bg green --highliht "✌️  Script mis à jour avec succès. ✌️"
 
         return 0
 

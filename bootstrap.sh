@@ -81,6 +81,7 @@ update_local_configs() {
     if [[ "$files_updated" == true ]]; then
         return 2
     else
+        echo
         display_msg "soft|verbose|hard" --theme info "Aucun changement détecté sur les fichiers d'exemples."
         return 0
     fi
@@ -116,7 +117,7 @@ update_user_file() {
     if [ ! -f "$last_ref_backup" ]; then
         mkdir -p "$BACKUP_DIR"
         cp "$ref_file" "$last_ref_backup"
-        display_msg "soft|verbose|hard" --theme success "Première exécution pour $user_file : sauvegarde de la version de référence."
+        display_msg "soft|verbose|hard" --theme ok "Première exécution pour $user_file : sauvegarde de la version de référence."
     fi
 
     # 2. Vérification des changements

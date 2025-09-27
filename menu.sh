@@ -174,18 +174,16 @@ while true; do
         case "$action" in
             menu_update_to_latest_tag)
                 update_to_latest_tag
-                label=$(print_fancy --theme "follow" --bg "white" --fg "red" \
-                    --style "bold italic underline" --align "center" --highlight \
-                    --raw "Relancer le script pour appliquer la mise à jour !")
+                label=$(print_fancy --theme "follow" --bg "green" --fg "red" --style "bold italic underline" --align "center" --highlight --raw \
+                "Relancer le script pour appliquer la mise à jour ! 👈")
                 printf "%b\n" "$label"
                 echo
                 exit 99
                 ;;
             menu_update_to_latest_branch)
                 update_to_latest_branch
-                label=$(print_fancy --theme "follow" --bg "white" --fg "red" \
-                    --style "bold italic underline" --align "center" --highlight \
-                    --raw "Relancer le script pour appliquer la mise à jour !")
+                label=$(print_fancy --theme "follow" --bg "green" --fg "red" --style "bold italic underline" --align "center" --highlight --raw \
+                "Relancer le script pour appliquer la mise à jour ! 👈")
                 printf "%b\n" "$label"
                 echo
                 exit 99
