@@ -237,7 +237,6 @@ analyze_update_status() {
 
         elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit" 2>/dev/null; then
             if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                echo ""
                 print_fancy --theme "ok" --fg "blue" --align "right" \
                     "Version actuelle ${current_tag:-dev} >> À jour"
             else
@@ -284,7 +283,6 @@ analyze_update_status() {
 
         elif [[ "$head_commit" == "$remote_commit" ]]; then
             if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                echo ""
                 print_fancy --theme "ok" --fg "blue" --style "bold" --align "right" \
                     "Votre branche '$branch_real' est à jour avec le dépôt."
             else
