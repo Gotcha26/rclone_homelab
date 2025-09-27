@@ -213,69 +213,6 @@ check_jobs_file() {
 
 
 ###############################################################################
-# Fonction : Vérification interactive (si absent propose l'installation)
-###############################################################################
-prompt_install_msmtp() {
-    echo "⚠️  msmtp n'est pas installé."
-    read -e -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-    REPLY=${REPLY,,}
-    if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-        install_msmtp
-    else
-        die 10 "❌  msmtp est requis mais n'a pas été installé."
-    fi
-}
-
-
-###############################################################################
-# Fonction : Installer msmtp (sans confirmation)
-###############################################################################
-install_msmtp() {
-    echo "📦  Installation de msmtp en cours..."
-    if sudo apt update && sudo apt install -y msmtp msmtp-mta; then
-        echo "✅  msmtp a été installé avec succès !"
-    else
-        die 10 "❌  Une erreur est survenue lors de l'installation de msmtp."
-    fi
-}
-
-
-###############################################################################
-# Fonction : Détecter le fichier de configuration msmtp réellement utilisé
-###############################################################################
-check_msmtp_configured() {
-    local candidates=()
-
-    # 1. Variable d'environnement MSMTPRC si définie
-    [[ -n "${MSMTPRC:-}" ]] && candidates+=("$MSMTPRC")
-
-    # 2. Fichier utilisateur
-    [[ -n "$HOME" ]] && candidates+=("$HOME/.msmtprc")
-
-    # 3. Fichier système
-    candidates+=("/etc/msmtprc")
-
-    # Parcours des candidats
-    for conf_file in "${candidates[@]}"; do
-        if [[ -f "$conf_file" && -r "$conf_file" ]]; then
-            local filesize
-            filesize=$(stat -c %s "$conf_file" 2>/dev/null || echo 0)
-            if (( filesize > 0 )); then
-                echo "$conf_file"
-                return 0
-            else
-                echo "⚠️  Fichier msmtp trouvé mais vide : $conf_file" >&2
-            fi
-        fi
-    done
-
-    # Aucun fichier valide trouvé
-    echo "❌  Aucun fichier msmtp valide trouvé." >&2
-    return 1
-}
-
-
-###############################################################################
 # Fonction : Edit ele bon fichier de configuration de msmtp (si installation atypique)
 ###############################################################################
 edit_msmtp_config() {
@@ -316,7 +253,7 @@ print_aligned_table() {
 
 
 ###############################################################################
-# Fonction : Affiche le résumé de la tâche
+# Fonction : Affiche le résumé de la tâche rclone
 ###############################################################################
 print_summary_table() {
     END_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
@@ -340,15 +277,15 @@ print_summary_table() {
     fi
 
     if [[ -n "${DISCORD_WEBHOOK_URL:-}" ]]; then
-        print_aligned_table "Notifs Discord" "$(safe_var "MSG_DISCORD_PROCESSED")"
+        print_aligned_table "Notifs Discord" "$(safe_var "Traitée(s)")"
     else
-        print_aligned_table "Notifs Discord" "$(safe_var "MSG_DISCORD_ABORDED")"
+        print_aligned_table "Notifs Discord" "$(safe_var "⚠️  Aucun webhook Discord de défini.")"
     fi
 
-    print_aligned_table "Simulation (dry-run)" "$(safe_var "MSG_DRYRUN")"
+    print_aligned_table "Simulation (dry-run)" "$(safe_var "✅  Oui : aucune modification de fichiers.")"
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
-    print_fancy --align "center" --bg "yellow" --fg "black" "$(safe_var "MSG_END_REPORT")"
+    print_fancy --align "center" --bg "yellow" --fg "black" "$(safe_var "--- Fin de rapport ---")"
     echo
 }
 
@@ -388,12 +325,12 @@ safe_count() {
 create_temp_dirs() {
     # DIR_TMP
     if [[ ! -d "$DIR_TMP" ]]; then
-        mkdir -p "$DIR_TMP" 2>/dev/null || die 1 "$MSG_DIR_TMP_CREATE_FAIL : $DIR_TMP"
+        mkdir -p "$DIR_TMP" 2>/dev/null || die 1 "Impossible de créer le dossier temporaire : $DIR_TMP"
     fi
 
     # DIR_LOG
     if [[ ! -d "$DIR_LOG" ]]; then
-        mkdir -p "$DIR_LOG" 2>/dev/null || die 2 "$MSG_DIR_LOG_CREATE_FAIL : $DIR_LOG"
+        mkdir -p "$DIR_LOG" 2>/dev/null || die 2 "Impossible de créer le dossier de logs : $DIR_LOG"
     fi
 }
 

@@ -1,28 +1,75 @@
-#!/usr/bin/env bash
-
 ###############################################################################
-# Fonctions de vérification de l'email (forme + installation + configuration msmtp)
+# Fonctions de vérification de l'email (forme)
 ###############################################################################
 
-check_mail_bundle() {
-    if [[ -n "$MAIL_TO" ]]; then
-        # Vérifie la syntaxe de l'email
-        if ! [[ "$MAIL_TO" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
-            die 12 "$MSG_MAIL_ERROR : $MAIL_TO"
-        fi
-
-        # Vérifie si msmtp est installé
-        if ! command -v msmtp >/dev/null 2>&1; then
-            die 10 "❌ msmtp n'est pas installé."
-        fi
-
-        # Vérifie la configuration msmtp via la fonction existante
-        if ! check_msmtp_configured >/dev/null; then
-            die 22 "❌ msmtp est requis mais aucune configuration valide n'a été trouvée."
-        fi
+check_mail_format() {
+    if [[ "$MAIL_TO" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        return 0
+    else
+        return 1
     fi
 }
 
+
+###############################################################################
+# Fonction : Détecter la présence de msmtp
+###############################################################################
+check_msmtp() {
+    if command -v msmtp >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+
+###############################################################################
+# Fonction : Installer msmtp (sans confirmation)
+###############################################################################
+install_msmtp() {
+    echo "📦  Installation de msmtp en cours..."
+    if sudo apt update && sudo apt install -y msmtp msmtp-mta; then
+        echo "✅  msmtp a été installé avec succès !"
+    else
+        die 14 "❌  Une erreur est survenue lors de l'installation de msmtp."
+    fi
+}
+
+
+###############################################################################
+# Fonction : Détecter le fichier de configuration msmtp réellement utilisé
+###############################################################################
+check_msmtp_configured() {
+    local candidates=()
+
+    # 1. Variable d'environnement MSMTPRC si définie
+    [[ -n "${MSMTPRC:-}" ]] && candidates+=("$MSMTPRC")
+
+    # 2. Fichier utilisateur
+    [[ -n "$HOME" ]] && candidates+=("$HOME/.msmtprc")
+
+    # 3. Fichier système
+    candidates+=("/etc/msmtprc")
+
+    # Parcours des candidats
+    for conf_file in "${candidates[@]}"; do
+        if [[ -f "$conf_file" && -r "$conf_file" ]]; then
+            local filesize
+            filesize=$(stat -c %s "$conf_file" 2>/dev/null || echo 0)
+            if (( filesize > 0 )); then
+                echo "$conf_file"
+                return 0
+            else
+                echo "⚠️  Fichier msmtp trouvé mais vide : $conf_file"
+                return 2
+            fi
+        fi
+    done
+
+    # Aucun fichier valide trouvé
+    echo "❌  Aucun fichier msmtp valide trouvé."
+    return 1
+}
 
 
 ###############################################################################
@@ -31,7 +78,7 @@ check_mail_bundle() {
 
 # Déterminer le sujet brut (SUBJECT_RAW) pour un job passé.
 # Valable pour un fichier concaténé ou job individuel
-# Evite les erreur lorsque aucun mail n'est saisie et est nécessaire pour notification Discord
+# Evite les erreur lorsque aucun mail n'est saisie MAIS est nécessaire pour notification Discord
 calculate_subject_raw_for_job() {
     local job_log_file="$1"
 

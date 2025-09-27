@@ -114,26 +114,26 @@ Si `--force-update main` (**BETA testeur**) le script vous demandera de confirme
 
 
 ## Debogage (ERROR_CODE)
-| E | Ligne / Bloc                                 | Cause                                         |
-| - | -------------------------------------------- | --------------------------------------------- |
-|  1| Création de `$DIR_TMP` échouée               | Impossible de créer le dossier temporaire     |
-|  2| Création de `$DIR_LOG` échouée               | Impossible de créer le dossier de logs        |
-|  3| `$JOBS_FILE` introuvable                     | Fichier jobs absent (*)                       |
-|  4| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible (*)       |
-|  5|                                              |                                               |
-|  6| Remote rclone invalide/mal configuré         | Remote mal écrit ou introuvalble              |
-|  7| `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              |
-|  8| Problème avec le processus PID rclone        | Sérieuse                                      |
-|  9|                                              |                                               |
-| 10| `msmtp` Vérification présence msmtp          | Installation de msmtp impossible              |
-| 11| `rclone` Vérification présence rclone        | rclone non présent ou injoignable             | 
-| 12| `RCLONE_CONFIG_FILE` Configuration rclone    | rclone non ou mal configuré                   | 
-| 13| Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            |
-| 14| Pb. de token pour Onedrive / Google Drive    | Token invalide, refaire la configuration      |
-| 20| `init_config_local` Copie imp. > $local_conf | Droits, blocage...                            |
-| 21| `init_config_local` Renommage imp.           | Droits, blocage...                            |
-| 22| `check_msmtp_config` Configuration           | Configuration absente (*)                     |
-| 23| `check_msmtp_config` Configuration           | Configuration absente (*)                     |
+| E | Ligne / Bloc                                 | Cause                                         | Ctrl
+| - | -------------------------------------------- | --------------------------------------------- |-----|
+|  1| Création de `$DIR_TMP` échouée               | Impossible de créer le dossier temporaire     |☑|
+|  2| Création de `$DIR_LOG` échouée               | Impossible de créer le dossier de logs        |☑|
+|  3| `$JOBS_FILE` introuvable                     | Fichier jobs absent (*)                       ||
+|  4| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible (*)       ||
+|  5|                                              |                                               ||
+|  6| Remote rclone invalide/mal configuré         | Remote mal écrit ou introuvalble              ||
+|  7| `$MSG_SRC_NOT_FOUND` non trouvé              | Dossier source (jobs) non trouvé              ||
+|  8| Problème avec le processus PID rclone        | Sérieuse                                      ||
+|  9|                                              |                                               ||
+| 10| `msmtp` Vérification présence msmtp          | Installation de msmtp impossible              ||
+| 11| `rclone` Vérification présence rclone        | rclone non présent ou injoignable             ||
+| 12| `RCLONE_CONFIG_FILE` Configuration rclone    | rclone non ou mal configuré                   ||
+| 13| Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            ||
+| 14| Pb. de token pour Onedrive / Google Drive    | Token invalide, refaire la configuration      ||
+| 20| `init_config_local` Copie imp. > $local_conf | Droits, blocage...                            ||
+| 21| `init_config_local` Renommage imp.           | Droits, blocage...                            ||
+| 22| `check_msmtp_config` Configuration           | Configuration absente (*)                     ||
+| 23| `check_msmtp_config` Configuration           | Configuration absente (*)                     ||
 
 
   
