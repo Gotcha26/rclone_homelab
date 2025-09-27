@@ -19,7 +19,7 @@ debug_header_complet () {
     debug_header_1
     debug_header_2
 
-    debuh_header_stop
+    debug_header_stop
     echo
     read -p "⏸ Pause : appuie sur Entrée pour continuer..." _
 }
