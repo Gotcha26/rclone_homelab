@@ -57,7 +57,7 @@ if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
 fi
 
 # Validation des variables locale
-if ! [[ $ACTION_MODE == "manu" ]]; then
+if [[ $ACTION_MODE == "manu" ]]; then
     validate_vars VARS_TO_VALIDATE   # Menu de correction (si détecté comme étant nécessaire)
     echo "..."
 else
