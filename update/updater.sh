@@ -229,7 +229,7 @@ analyze_update_status() {
     if [[ "$branch_real" == "main" ]]; then
         # --- Branche main : vérifier si on est à jour avec la dernière release ---
         if [[ -z "$latest_tag" ]]; then
-            [[ "${DEBUG_INFOS:-false}" == true ]] &&
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
             print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
                 "Impossible de vérifier les mises à jour (API GitHub muette ou mode offline)."
             result_code=1
@@ -272,7 +272,7 @@ analyze_update_status() {
     else
         # --- Branche dev ou autre ---
         if [[ -z "$remote_commit" ]]; then
-            [[ "${DEBUG_INFOS:-false}" == true ]] &&
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
             print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
                 "Aucune branche distante détectée pour '$branch_real' (mode offline ou fetch échoué)."
             result_code=1
