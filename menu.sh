@@ -19,7 +19,7 @@ while true; do
 
     # Réaffichage de la bannière mais jamais au premier passage.
     if [ "$first_time" = false ]; then
-        control_optional_configs # Venir recharger la configuration locale après une édition
+        load_optional_configs # Venir recharger la configuration locale après une édition
     fi
     first_time=false
     
