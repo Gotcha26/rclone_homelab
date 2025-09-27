@@ -179,7 +179,7 @@ analyze_update_status() {
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" \
                 "Nouvelle version disponible : $latest_tag"
         else
-            print_fancy --theme "ok" --align "right" "À jour."
+            print_fancy --theme "ok" --align "center" "À jour."
         fi
         return 0
     fi
@@ -229,14 +229,14 @@ analyze_update_status() {
     if [[ "$branch_real" == "main" ]]; then
         # --- Branche main : vérifier si on est à jour avec la dernière release ---
         if [[ -z "$latest_tag" ]]; then
-            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
-                    "Impossible de vérifier les mises à jour (API GitHub muette ou mode offline)."
-            fi
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
+                "Impossible de vérifier les mises à jour (API GitHub muette ou mode offline)."
             result_code=1
 
         elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit" 2>/dev/null; then
             if [[ "${DEBUG_INFOS:-false}" == true ]]; then
+                echo ""
                 print_fancy --theme "ok" --fg "blue" --align "right" \
                     "Version actuelle ${current_tag:-dev} >> À jour"
             else
@@ -262,27 +262,24 @@ analyze_update_status() {
             result_code=0
 
         else
-            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                echo ""
-                print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
-                    "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
-                print_fancy --theme "info" --bg "blue" --align "center" --highlight \
-                    "Pour mettre à jour : relancer le script sans arguments pour accéder au menu."
-            fi
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
+                "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
+            print_fancy --theme "info" --bg "blue" --align "center" --highlight \
+                "Pour mettre à jour : relancer le script sans arguments pour accéder au menu."
         fi
 
     else
         # --- Branche dev ou autre ---
         if [[ -z "$remote_commit" ]]; then
-            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                echo ""
-                print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
-                    "Aucune branche distante détectée pour '$branch_real' (mode offline ou fetch échoué)."
-            fi
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
+                "Aucune branche distante détectée pour '$branch_real' (mode offline ou fetch échoué)."
             result_code=1
 
         elif [[ "$head_commit" == "$remote_commit" ]]; then
             if [[ "${DEBUG_INFOS:-false}" == true ]]; then
+                echo ""
                 print_fancy --theme "ok" --fg "blue" --style "bold" --align "right" \
                     "Votre branche '$branch_real' est à jour avec le dépôt."
             else
@@ -291,34 +288,26 @@ analyze_update_status() {
             result_code=0
 
         elif (( head_epoch < remote_epoch )); then
-            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                echo ""
-                print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
-                    "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
-                print_fancy --bg "blue" --align "center" --highlight \
-                    "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
-                print_fancy --theme "warning" --bg "blue" --align "center" --style "underline" --highlight \
-                    "Les modifications (hors .gitignore) seront écrasées/perdues."
-            fi
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
+                "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
+            print_fancy --bg "blue" --align "center" --highlight \
+                "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
+            print_fancy --theme "warning" --bg "blue" --align "center" --style "underline" --highlight \
+                "Les modifications (hors .gitignore) seront écrasées/perdues."
             result_code=1
 
         else
-            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                echo ""
-                print_fancy --theme "warning" --bg "blue" --align "center" --style "bold" --highlight \
-                    "Votre commit local est plus récent que origin/$branch_real"
-                print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight \
-                    "Pas de mise à jour à faire sous peine de régressions/pertes."
-            fi
+            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
+            print_fancy --theme "warning" --bg "blue" --align "center" --style "bold" --highlight \
+                "Votre commit local est plus récent que origin/$branch_real"
+            print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight \
+                "Pas de mise à jour à faire sous peine de régressions/pertes."
             result_code=0
         fi
     fi
 
-    # --- Ligne finale de séparation en verbose/debug ---
-    if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-        print_fancy --align "center" --fill "#" "#"
-    fi
-
+    [[ "${DEBUG_INFOS:-false}" == true ]] && print_fancy --align "center" --fill "#" "#"
     return $result_code
 }
 
