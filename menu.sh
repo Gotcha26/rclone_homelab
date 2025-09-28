@@ -276,7 +276,7 @@ while true; do
                 $EDITOR "$DIR_CONF_LOCAL_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 load_optional_configs
-                menu_validation_local_variables
+                menu_validation_local_variables VARS_TO_VALIDATE
                 ;;
             menu_init_config_dev)
                 scroll_down
@@ -291,7 +291,7 @@ while true; do
                 $EDITOR "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 load_optional_configs
-                menu_validation_local_variables
+                menu_validation_local_variables VARS_TO_VALIDATE
                 ;;
             menu_init_secret_file)
                 scroll_down
@@ -306,7 +306,7 @@ while true; do
                 $EDITOR "$SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 load_optional_configs
-                menu_validation_local_variables
+                menu_validation_local_variables VARS_TO_VALIDATE
                 ;;
             menu_show_help)
                 scroll_down

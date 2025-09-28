@@ -43,7 +43,7 @@ fi
 if [[ $ACTION_MODE == "auto" ]]; then
     self_validation_local_variables VARS_TO_VALIDATE   # Processus de correction automatique
 else
-    menu_validation_local_variables             # Menu de correction (si détecté comme étant nécessaire)
+    menu_validation_local_variables VARS_TO_VALIDATE   # Menu de correction (si détecté comme étant nécessaire)
 fi
 
 # === Mises à jour ===
