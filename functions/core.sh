@@ -174,41 +174,39 @@ install_rclone() {
 
 
 ###############################################################################
-# Fonction : Vérifier l’existence, la lisibilité et le contenu du fichier jobs
+# Fonction : Vérifier l'existence, la lisibilité et le contenu du fichier jobs
+# Retour : 0 si OK, 1 si KO
 ###############################################################################
 check_jobs_file() {
 
-    # Vérifier la présence
+    # Vérifier présence
     if [[ ! -f "$DIR_JOBS_FILE" ]]; then
-        if [[ "$ACTION_MODE" == "auto" ]] then
+        if [[ "$ACTION_MODE" == "auto" ]]; then
             display_msg "verbose|hard" theme error "Fichier jobs introuvable : $DIR_JOBS_FILE"
             die 3 "Fichier jobs introuvable : $DIR_JOBS_FILE"
-        else
-            return 1
         fi
+        return 1
     fi
 
     # Vérifier lisibilité
     if [[ ! -r "$DIR_JOBS_FILE" ]]; then
-        if [[ "$ACTION_MODE" == "auto" ]] then
-            display_msg "verbose|hard" theme error "Aucun job valide trouvé dans $DIR_JOBS_FILE"
+        if [[ "$ACTION_MODE" == "auto" ]]; then
+            display_msg "verbose|hard" theme error "Fichier jobs non lisible : $DIR_JOBS_FILE"
             die 4 "Fichier jobs non lisible : $DIR_JOBS_FILE"
-        else
-            return 1
         fi
+        return 1
     fi
 
-    # Vérifier contenu
+    # Vérifier contenu (au moins une ligne non vide et non commentée)
     if ! grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE"; then
-        if [[ "$ACTION_MODE" == "auto" ]] then
+        if [[ "$ACTION_MODE" == "auto" ]]; then
             display_msg "verbose|hard" theme error "Aucun job valide trouvé dans $DIR_JOBS_FILE"
             die 5 "Aucun job valide trouvé dans $DIR_JOBS_FILE"
-        else
-            return 1
         fi
+        return 1
     fi
 
-    # Si tout est bon
+    # Tout est bon
     return 0
 }
 

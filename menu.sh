@@ -73,7 +73,7 @@ while true; do
     add_separator_if_needed
 
     # 2) Jobs (lancement)
-    if ! check_jobs_file; then
+    if check_jobs_file; then
         add_option "🔂  Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
 
@@ -81,10 +81,10 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    if ! check_jobs_file; then
-        add_option "✏️  Éditer la liste des jobs (rclone)" "menu_jobs"
-    else
+    if check_jobs_file; then
         add_option "⌨️  Configurer la liste des jobs (rclone)" "menu_jobs"
+    else
+        add_option "✏️  Éditer la liste des jobs (rclone)" "menu_jobs"
     fi
     # rclone
     if ! check_rclone_installed soft >/dev/null 2>&1; then
