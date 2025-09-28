@@ -125,7 +125,7 @@ while true; do
         add_option "✏️  Éditer la configuration locale - vos réglages personnels" "menu_edit_config_local"
     fi
     # Propose l'édition de configuration locale pour dev seulement si présente
-    if [[ -f "$DIR_CONF_DEV_FILE" ]]; then
+    if ! [[ -f "$DIR_CONF_DEV_FILE" ]]; then
         add_option "✏️  Éditer la configuration locale - orienté développeurs" "menu_edit_config_dev"
     fi
     # Option pour installer/editer un fichier secrets.env
