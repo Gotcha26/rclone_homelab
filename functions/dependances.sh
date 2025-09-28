@@ -358,9 +358,9 @@ self_validation_local_variables() {
     local -n var_array="$1"
     local key allowed default value valid
 
-    for key in "${!var_array[@]}"; do
+    for key in "${!1[@]}"; do
         # Split "allowed:default"
-        IFS=":" read -r allowed default <<< "${var_array[$key]}"
+        IFS=":" read -r allowed default <<< "${1[$key]}"
 
         # Valeur actuelle
         value="${!key:-$default}"
@@ -434,8 +434,7 @@ self_validation_local_variables() {
 menu_validation_local_variables() {
     local -n var_array="$1"
 
-    echo
-    if ! print_table_vars_invalid "$var_array"; then
+    if ! print_table_vars_invalid "$1"; then
         # Problème
         echo
         print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales) ❌"
@@ -460,7 +459,7 @@ menu_validation_local_variables() {
                 echo
                 echo "👉  Application de la correction automatique."
                 echo
-                self_validation_local_variables "$var_array"
+                self_validation_local_variables "$1"
                 ;;
             2)
                 echo
@@ -468,7 +467,7 @@ menu_validation_local_variables() {
                     print_fancy --bg yellow --fg red --highlight "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!"
                     print_fancy --bg yellow --fg red --highlight "Aucun fichier disponible, retour au menu principal."
                 fi
-                menu_validation_local_variables  "$var_array" # retour au menu principal après édition pour validation
+                menu_validation_local_variables  "$1" # retour au menu principal après édition pour validation
                 ;;
             3)
                 echo
@@ -478,7 +477,7 @@ menu_validation_local_variables() {
             *)
                 echo "❌  Choix invalide."
                 sleep 1
-                menu_validation_local_variables "$var_array"
+                menu_validation_local_variables "$1"
                 ;;
         esac
     fi
