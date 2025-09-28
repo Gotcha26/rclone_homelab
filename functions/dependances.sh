@@ -363,7 +363,7 @@ print_fancy() {
 #   validate_vars VARS_TO_VALIDATE
 ###############################################################################
 validate_vars() {
-    local -n var_array=$1   # Passage du nom de l'array en référence
+    local -n var_array="$1"   # Passage du nom de l'array en référence
 
     for entry in "${var_array[@]}"; do
         IFS=":" read -r var_name allowed default <<<"$entry"
