@@ -358,6 +358,88 @@ get_current_version() {
 
 
 ###############################################################################
+# Fonction : Valide et corrige des variables selon des valeurs autorisées
+# Utilisation. Ne corrige que les valeurs à problème :
+#   VARS_TO_VALIDATE=(
+#       "MODE:hard|soft|verbose:hard"
+#       "OPTIONAL_CONF:file1|file2|:''"
+#       "RETRY_COUNT:0-5:3"
+#       "ENABLE_FEATURE:bool:0"
+#       ...
+#   )
+#   self_validation_local_variables VARS_TO_VALIDATE
+###############################################################################
+self_validation_local_variables() {
+    local key allowed default value valid
+
+    for key in "${!VARS_TO_VALIDATE[@]}"; do
+        # Split "allowed:default"
+        IFS=":" read -r allowed default <<< "${VARS_TO_VALIDATE[$key]}"
+
+        # Valeur actuelle
+        value="${!key:-$default}"
+
+        # Gestion spéciale booléen
+        if [[ "$allowed" == "bool" ]]; then
+            case "${value,,}" in
+                1|true|yes|on) value=1 ;;
+                0|false|no|off) value=0 ;;
+                '') value="${default:-0}" ;;  # si vide
+                *)
+                    print_fancy --fg red --style bold \
+                        "Donnée invalide pour $key : '$value'.\n" \
+                        "- Valeurs attendues : true/false, 1/0, yes/no, on/off.\n" \
+                        "-> Valeur par défaut appliquée : '$default'"
+                    value="${default:-0}"
+                    ;;
+            esac
+            export "$key"="$value"
+            continue
+        fi
+
+        # Liste de valeurs ou intervalle (allowed)
+        IFS="|" read -ra allowed_arr <<<"$allowed"
+        valid=false
+
+        for v in "${allowed_arr[@]}"; do
+            if [[ "$v" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+                # Cas intervalle numérique : 1-5
+                min=${BASH_REMATCH[1]}
+                max=${BASH_REMATCH[2]}
+                if [[ "$value" =~ ^[0-9]+$ ]] && (( value >= min && value <= max )); then
+                    valid=true
+                    break
+                fi
+            elif [[ "$v" =~ ^[0-9]+$ ]]; then
+                # Cas valeur exacte numérique
+                if [[ "$value" == "$v" ]]; then
+                    valid=true
+                    break
+                fi
+            else
+                # Cas valeur littérale (y compris vide '')
+                [[ "$v" == "''" ]] && v=""
+                if [[ "$value" == "$v" ]]; then
+                    valid=true
+                    break
+                fi
+            fi
+        done
+
+        if [[ "$valid" == false ]]; then
+            print_fancy --fg red --style bold \
+                "Donnée invalide pour $key : '$value'.\n" \
+                "- Valeurs attendues : ${allowed//|/, }.\n" \
+                "-> Valeur par défaut appliquée : '$default'"
+            export "$key"="$default"
+        else
+            export "$key"="$value"
+        fi
+    done
+}
+
+
+###############################################################################
 # Fonction : Contrôle et validation des variables
 ###############################################################################
 menu_validation_local_variables() {

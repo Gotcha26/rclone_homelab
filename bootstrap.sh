@@ -16,20 +16,20 @@ load_optional_configs
 # *** ↓↓ Déclarations ↓↓ ***
 
 # Tableau associatif : varaibles locales utilisateur avec les règles
-declare -a VARS_TO_VALIDATE=(
-    "DRY_RUN:bool:false"
-    "MAIL_TO:''"
-    "DISCORD_WEBHOOK_URL:''"
-    "FORCE_UPDATE:bool:false"
-    "FORCE_BRANCH:''"
-    "ACTION_MODE:auto|manu:manu"
-    "DISPLAY_MODE:soft|verbose|hard:soft"
-    "TERM_WIDTH_DEFAULT:80-120:80"
-    "LOG_RETENTION_DAYS:1-15:14"
-    "LOG_LINE_MAX:100-10000:1000"
-    "EDITOR:nano|micro:nano"
-    "DEBUG_INFOS:bool:false"
-    "DEBUG_MODE:bool:false"
+declare -A VARS_TO_VALIDATE=(
+    [DRY_RUN]="bool:false"
+    [MAIL_TO]="''"
+    [DISCORD_WEBHOOK_URL]="''"
+    [FORCE_UPDATE]="bool:false"
+    [FORCE_BRANCH]="''"
+    [ACTION_MODE]="auto|manu:manu"
+    [DISPLAY_MODE]="soft|verbose|hard:soft"
+    [TERM_WIDTH_DEFAULT]="80-120:80"
+    [LOG_RETENTION_DAYS]="1-15:14"
+    [LOG_LINE_MAX]="100-10000:1000"
+    [EDITOR]="nano|micro:nano"
+    [DEBUG_INFOS]="bool:false"
+    [DEBUG_MODE]="bool:false"
 )
 
 # Tableau couple fichier exemple : fichier local

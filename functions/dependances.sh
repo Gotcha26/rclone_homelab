@@ -351,88 +351,6 @@ print_fancy() {
 
 
 ###############################################################################
-# Fonction : Valide et corrige des variables selon des valeurs autorisées
-# Utilisation. Ne corrige que les valeurs à problème :
-#   VARS_TO_VALIDATE=(
-#       "MODE:hard|soft|verbose:hard"
-#       "OPTIONAL_CONF:file1|file2|:''"
-#       "RETRY_COUNT:0-5:3"
-#       "ENABLE_FEATURE:bool:0"
-#       ...
-#   )
-#   self_validation_local_variables VARS_TO_VALIDATE
-###############################################################################
-self_validation_local_variables() {
-    local -n var_array="$1"   # Passage du nom de l'array en référence
-
-    for entry in "${var_array[@]}"; do
-        IFS=":" read -r var_name allowed default <<<"$entry"
-
-        # Valeur actuelle de la variable
-        local value="${!var_name:-$default}"
-
-        # Gestion spéciale booléen
-        if [[ "$allowed" == "bool" ]]; then
-            case "${value,,}" in
-                1|true|yes|on) value=1 ;;
-                0|false|no|off) value=0 ;;
-                '') value="${default:-0}" ;;  # si vide
-                *)
-                    print_fancy --fg red --style bold\
-                        "Donnée invalide pour $var_name : '$value'.\n"\
-                        "- Valeurs attendues : true/false, 1/0, yes/no, on/off.\n"\
-                        "-> Valeur par défaut appliquée : '$default'"
-                    value="${default:-0}"
-                    ;;
-            esac
-            export "$var_name"="$value"
-            continue
-        fi
-
-        # Conversion allowed en tableau
-        IFS="|" read -ra allowed_arr <<<"$allowed"
-        local valid=false
-
-        for v in "${allowed_arr[@]}"; do
-            # Cas intervalle numérique : 1-5
-            if [[ "$v" =~ ^([0-9]+)-([0-9]+)$ ]]; then
-                local min=${BASH_REMATCH[1]}
-                local max=${BASH_REMATCH[2]}
-                if [[ "$value" =~ ^[0-9]+$ ]] && (( value >= min && value <= max )); then
-                    valid=true
-                    break
-                fi
-            # Cas valeur exacte numérique
-            elif [[ "$v" =~ ^[0-9]+$ ]]; then
-                if [[ "$value" == "$v" ]]; then
-                    valid=true
-                    break
-                fi
-            # Cas valeur littérale (y compris vide)
-            else
-                # Si vide indiqué par '', on le transforme en chaîne vide
-                [[ "$v" == "''" ]] && v=""
-                if [[ "$value" == "$v" ]]; then
-                    valid=true
-                    break
-                fi
-            fi
-        done
-
-        if [[ "$valid" == false ]]; then
-            print_fancy --fg red --style bold\
-                "Donnée invalide pour $var_name : '$value'.\n"\
-                "- Valeurs attendues : ${allowed//|/, }.\n"\
-                "-> Valeur par défaut appliquée : '$default'"
-            export "$var_name"="$default"
-        else
-            export "$var_name"="$value"
-        fi
-    done
-}
-
-
-###############################################################################
 # Fonction : Affiche un contenu (avec ANSI) correctement aligné dans une colonne
 # Arguments :
 #   $1 = contenu (ANSI autorisé)
@@ -563,6 +481,7 @@ print_table() {
 # Fonction : calculer la valeur affichée "Autorisé" et si la valeur est valide
 # Entrée  : var_name, allowed, default
 # Sortie  : display_allowed, value, valid
+# Sortie  : COMPUTE_DISPLAY_ALLOWED, COMPUTE_VALUE, COMPUTE_VALID
 ###############################################################################
 compute_var_status() {
     local var_name=$1
@@ -575,7 +494,7 @@ compute_var_status() {
 
     if [[ "$allowed" == "bool" ]]; then
         display_allowed="false|true"
-        [[ "$value" =~ ^(0|1|true|false)$ ]] || valid=false
+        [[ "$value" =~ ^(0|1|true|false|yes|no|on|off)$ ]] || valid=false
     elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
         display_allowed="$allowed"
         IFS="-" read -r min max <<< "$allowed"
@@ -595,53 +514,29 @@ compute_var_status() {
         [[ -z "$value" && (-z "$allowed" || "$allowed" == "any" || "$allowed" == "''") ]] && valid=true
     fi
 
-    # Retour via variables globales (ou ref si tu veux)
     COMPUTE_VALUE="$value"
     COMPUTE_DISPLAY_ALLOWED="$display_allowed"
     COMPUTE_VALID="$valid"
 }
 
 
-###############################################################################
-# Fonction : Affiche un tableau de valeurs passé en arguments
-###############################################################################
-print_table_vars() {
-    local -n var_array=$1
-    local rows=()
-
-    for entry in "${var_array[@]}"; do
-        local var_name="${entry%%:*}"
-        local rest="${entry#*:}"
-        local allowed="${rest%:*}"
-        local default="${rest##*:}"
-
-        compute_var_status "$var_name" "$allowed" "$default"
-
-        rows+=("$var_name¤$COMPUTE_DISPLAY_ALLOWED¤$default¤$COMPUTE_VALUE¤$COMPUTE_VALID")
-    done
-
-    print_table rows
-}
-
 
 ###############################################################################
-# Fonction : Affiche un tableau de valeurs hors de la plage de référence donnée
+# Fonction : Affiche un tableau des variables invalides seulement
+# Entrée : nom du tableau associatif
 ###############################################################################
 print_table_vars_invalid() {
-    local -n var_array=$1
+    local -n var_array="$1"
     local invalid_rows=()
+    local key allowed default
     local has_invalid=false
 
-    for entry in "${var_array[@]}"; do
-        local var_name="${entry%%:*}"
-        local rest="${entry#*:}"
-        local allowed="${rest%:*}"
-        local default="${rest##*:}"
-
-        compute_var_status "$var_name" "$allowed" "$default"
+    for key in "${!var_array[@]}"; do
+        IFS=":" read -r allowed default <<< "${var_array[$key]}"
+        compute_var_status "$key" "$allowed" "$default"
 
         if [[ "$COMPUTE_VALID" == "false" ]]; then
-            invalid_rows+=("$var_name¤$COMPUTE_DISPLAY_ALLOWED¤$default¤$COMPUTE_VALUE¤false")
+            invalid_rows+=("$key¤$COMPUTE_DISPLAY_ALLOWED¤$default¤$COMPUTE_VALUE¤false")
             has_invalid=true
         fi
     done
@@ -656,6 +551,27 @@ print_table_vars_invalid() {
     return 0
 }
 
+
+###############################################################################
+# Fonction : Affiche un tableau de valeurs passé en arguments
+# Entrée : nom du tableau associatif
+###############################################################################
+print_table_vars() {
+    local -n var_array="$1"   # référence au tableau associatif
+    local rows=()
+    local key allowed default
+
+    for key in "${!var_array[@]}"; do
+        # Split "allowed:default"
+        IFS=":" read -r allowed default <<< "${var_array[$key]}"
+
+        compute_var_status "$key" "$allowed" "$default"
+
+        rows+=("$key¤$COMPUTE_DISPLAY_ALLOWED¤$default¤$COMPUTE_VALUE¤$COMPUTE_VALID")
+    done
+
+    print_table rows
+}
 
 # L'ARGUMENT dans le code d'appel de la fonciton PRIME sur la variable global
 #
