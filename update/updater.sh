@@ -387,10 +387,9 @@ update_to_latest_branch() {
             "Mise à jour forcée sur HEAD de main ! Les commits locaux peuvent être écrasés."
     fi
 
-    MSG_MAJ_UPDATE_BRANCH=$(printf "$MSG_MAJ_UPDATE_BRANCH_TEMPLATE" "$branch")
     echo
     print_fancy --align "center" --bg "green" --style "italic" --highlight \
-        "$MSG_MAJ_UPDATE_BRANCH"
+        "⚡  Mécanisme automatique de mise à jour forcée sur la branche : $branch. ⚡ "
 
     # Liste des fichiers ignorés (d'après .gitignore)
     local ignored_files
@@ -423,21 +422,19 @@ update_to_latest_branch() {
         tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
         rm -f /tmp/ignored_backup.tar.gz
         print_fancy --theme ok --style itlaic "Les fichiers personnalisables sont heureux de faire leur retour !"
-        echo
     fi
 
     update_local_configs
 
     make_scripts_executable
 
-    echo
     echo -e "🎉  Mise à jour réussie depuis la branche : ${UNDERLINE}$branch${RESET}"
 
     # Mise à jour réussie → écrire la version appropriée
     write_version_file "$branch"
     
     echo
-    print_fancy --align center --bg green --highliht "✌️  Script mis à jour avec succès. ✌️"
+    print_fancy --align center --bg green --highlight "✌️  Script mis à jour avec succès. ✌️ "
 
     return 0
 }
@@ -531,7 +528,9 @@ update_to_latest_tag() {
         return 0
     fi
 
-    echo "⚡ Nouvelle release détectée : $latest_tag (actuellement ${current_tag:-dev})"
+    echo
+    print_fancy --align "center" --bg "green" --style "italic" --highlight \
+        "⚡  Mécanisme automatique de mise à jour vers la release : $latest_tag ⚡ "
 
     # --- Sauvegarde des fichiers ignorés ---
     local ignored_files
@@ -552,14 +551,12 @@ update_to_latest_tag() {
             tar xzf /tmp/ignored_backup.tar.gz -C "$SCRIPT_DIR"
             rm -f /tmp/ignored_backup.tar.gz
             print_fancy --theme ok --style itlaic "Les fichiers personnalisables sont heureux de faire leur retour !"
-            echo
         fi
 
         update_local_configs
 
         make_scripts_executable
 
-        echo
         echo -e "🎉  Mise à jour réussie depuis le tag : ${UNDERLINE}$latest_tag${RESET}"
 
         # Mise à jour réussie → écrire la version
@@ -570,7 +567,7 @@ update_to_latest_tag() {
         fi
 
         echo
-        print_fancy --align center --bg green --highliht "✌️  Script mis à jour avec succès. ✌️"
+        print_fancy --align center --bg green --highlight "✌️  Script mis à jour avec succès. ✌️ "
 
         return 0
 

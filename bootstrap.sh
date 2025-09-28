@@ -81,7 +81,6 @@ update_local_configs() {
     if [[ "$files_updated" == true ]]; then
         return 2
     else
-        echo
         display_msg "soft|verbose|hard" --theme info "Aucun changement détecté sur les fichiers d'exemples."
         return 0
     fi
