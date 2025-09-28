@@ -358,9 +358,9 @@ self_validation_local_variables() {
     local -n var_array="$1"
     local key allowed default value valid
 
-    for key in "${!1[@]}"; do
+    for key in "${!var_array[@]}"; do
         # Split "allowed:default"
-        IFS=":" read -r allowed default <<< "${1[$key]}"
+        IFS=":" read -r allowed default <<< "${var_array[$key]}"
 
         # Valeur actuelle
         value="${!key:-$default}"
