@@ -16,7 +16,7 @@ load_optional_configs
 # *** ↓↓ Déclarations ↓↓ ***
 
 # Tableau associatif : varaibles locales utilisateur avec les règles
-declare -A VARS_TO_VALIDATE=(
+declare -a VARS_TO_VALIDATE=(
     "DRY_RUN:bool:false"
     "MAIL_TO:''"
     "DISCORD_WEBHOOK_URL:''"
