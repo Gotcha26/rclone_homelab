@@ -136,7 +136,7 @@ while true; do
     if [[ -f "$DIR_SECRET_FILE" ]]; then
         add_option "✏️  Éditer la configuration secrète   - pour vos mdp / tockens [optionnel]" "menu_edit_config_secrets"
     else
-        add_option "💻  Installer un fichier secrets.env   - pour vos mdp / tockens [optionnel]" "menu_add_secret_file"
+        add_option "💻  Installer un fichier secrets.env   - pour vos mdp / tockens [optionnel]" "menu_init_secret_file"
     fi
 
     add_separator_if_needed
@@ -267,14 +267,7 @@ while true; do
                 scroll_down
                 echo "▶️  Installation la configuration locale."
                 echo "Le fichier sera préservé lors des mises à jours automatiques."
-                init_config_local
-                echo "✅  ... Installation terminée > retour au menu."
-                ;;
-            menu_init_config_dev)
-                scroll_down
-                echo "▶️  Installation la configuration pour développeurs."
-                echo "Le fichier sera préservé lors des mises à jours automatiques."
-                init_config_dev
+                init_file "conf_local"
                 echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_edit_config_local)
@@ -283,6 +276,14 @@ while true; do
                 $EDITOR "$DIR_CONF_LOCAL_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 load_optional_configs
+                menu_validation_local_variables
+                ;;
+            menu_init_config_dev)
+                scroll_down
+                echo "▶️  Installation de la configuration pour développeurs."
+                echo "Le fichier sera préservé lors des mises à jours automatiques."
+                init_file "conf_dev"
+                echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_edit_config_dev)
                 scroll_down
@@ -290,12 +291,13 @@ while true; do
                 $EDITOR "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 load_optional_configs
+                menu_validation_local_variables
                 ;;
-            menu_add_secret_file)
+            menu_init_secret_file)
                 scroll_down
                 echo "▶️  Installation d'un fichier $SECRET_FILE (optionnel)."
                 echo "Le fichier sera préservé lors des mises à jours automatiques."
-                init_secrets_local
+                init_file "conf_secret"
                 echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_edit_config_secrets)
@@ -304,6 +306,7 @@ while true; do
                 $EDITOR "$SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 load_optional_configs
+                menu_validation_local_variables
                 ;;
             menu_show_help)
                 scroll_down

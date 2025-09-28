@@ -351,6 +351,143 @@ print_fancy() {
 
 
 ###############################################################################
+# Fonction : Valide et corrige des variables selon des valeurs autorisées
+# Entrée : nom du tableau associatif à traiter
+###############################################################################
+self_validation_local_variables() {
+    local -n var_array="$1"
+    local key allowed default value valid
+
+    for key in "${!var_array[@]}"; do
+        # Split "allowed:default"
+        IFS=":" read -r allowed default <<< "${var_array[$key]}"
+
+        # Valeur actuelle
+        value="${!key:-$default}"
+
+        # Gestion spéciale booléen
+        if [[ "$allowed" == "bool" ]]; then
+            case "${value,,}" in
+                1|true|yes|on) value=1 ;;
+                0|false|no|off) value=0 ;;
+                '') value="${default:-0}" ;;  # si vide
+                *)
+                    print_fancy --fg red --style bold \
+                        "Donnée invalide pour $key : '$value'.\n" \
+                        "- Valeurs attendues : true/false, 1/0, yes/no, on/off.\n" \
+                        "-> Valeur par défaut appliquée : '$default'"
+                    value="${default:-0}"
+                    ;;
+            esac
+            export "$key"="$value"
+            continue
+        fi
+
+        # Liste de valeurs ou intervalle (allowed)
+        IFS="|" read -ra allowed_arr <<<"$allowed"
+        valid=false
+
+        for v in "${allowed_arr[@]}"; do
+            if [[ "$v" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+                # Cas intervalle numérique : 1-5
+                min=${BASH_REMATCH[1]}
+                max=${BASH_REMATCH[2]}
+                if [[ "$value" =~ ^[0-9]+$ ]] && (( value >= min && value <= max )); then
+                    valid=true
+                    break
+                fi
+            elif [[ "$v" =~ ^[0-9]+$ ]]; then
+                # Cas valeur exacte numérique
+                if [[ "$value" == "$v" ]]; then
+                    valid=true
+                    break
+                fi
+            else
+                # Cas valeur littérale (y compris vide '')
+                [[ "$v" == "''" ]] && v=""
+                if [[ "$value" == "$v" ]]; then
+                    valid=true
+                    break
+                fi
+            fi
+        done
+
+        if [[ "$valid" == false ]]; then
+            print_fancy --fg red --style bold \
+                "Donnée invalide pour $key : '$value'.\n" \
+                "- Valeurs attendues : ${allowed//|/, }.\n" \
+                "-> Valeur par défaut appliquée : '$default'"
+            export "$key"="$default"
+        else
+            export "$key"="$value"
+        fi
+    done
+}
+
+
+###############################################################################
+# Fonction : Contrôle et validation des variables avec menu
+# Entrée : nom du tableau associatif
+###############################################################################
+menu_validation_local_variables() {
+    local -n var_array="$1"
+
+    echo
+    if ! print_table_vars_invalid "$var_array"; then
+        # Problème
+        echo
+        print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales) ❌"
+        echo
+        echo
+        print_fancy --fg green "-------------------------------------------"
+        print_fancy --fg green --style bold "  Aide au débogage : Configuration locale"
+        print_fancy --fg green "-------------------------------------------"
+        echo
+        echo -e "${UNDERLINE}Voulez-vous :${RESET}"
+        echo
+        echo -e "[1] Appliquer la valeur ${BOLD}Défaut${RESET} automatiquement."
+        echo -e "${ITALIC}    => N'est valable que pour cette session.${RESET}"
+        echo -e "[2] Editer la configuration locale pour ${UNDERLINE}corriger${RESET}."
+        echo -e "[3] Quitter."
+        echo
+
+        read -e -rp "Votre choix [1-3] : " choice
+
+        case "$choice" in
+            1)
+                echo
+                echo "👉  Application de la correction automatique."
+                echo
+                self_validation_local_variables "$var_array"
+                ;;
+            2)
+                echo
+                if ! mini_edit_local_config; then
+                    print_fancy --bg yellow --fg red --highlight "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!"
+                    print_fancy --bg yellow --fg red --highlight "Aucun fichier disponible, retour au menu principal."
+                fi
+                menu_validation_local_variables  "$var_array" # retour au menu principal après édition pour validation
+                ;;
+            3)
+                echo
+                die 99 "Interruption par l’utilisateur"
+                echo
+                ;;
+            *)
+                echo "❌  Choix invalide."
+                sleep 1
+                menu_validation_local_variables "$var_array"
+                ;;
+        esac
+    fi
+    
+    # Pas de problèmes
+    display_msg "verbose|hard" --theme info "Configuration des variables locale : passée."
+
+}
+
+
+###############################################################################
 # Fonction : Affiche un contenu (avec ANSI) correctement aligné dans une colonne
 # Arguments :
 #   $1 = contenu (ANSI autorisé)
