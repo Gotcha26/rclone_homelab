@@ -125,8 +125,12 @@ while true; do
         add_option "✏️  Éditer la configuration locale - vos réglages personnels" "menu_edit_config_local"
     fi
     # Propose l'édition de configuration locale pour dev seulement si présente
-    if ! [[ -f "$DIR_CONF_DEV_FILE" ]]; then
-        add_option "✏️  Éditer la configuration locale - orienté développeurs" "menu_edit_config_dev"
+    if [[ "$branch_real" != "main" ]]; then
+        if ! [[ -f "$DIR_CONF_DEV_FILE" ]]; then
+            add_option "💻  Installer une configuration locale- orienté développeurs" "menu_init_config_dev"
+        else
+            add_option "✏️  Éditer la configuration locale - orienté développeurs" "menu_edit_config_dev"
+        fi
     fi
     # Option pour installer/editer un fichier secrets.env
     if [[ -f "$DIR_SECRET_FILE" ]]; then
@@ -264,6 +268,13 @@ while true; do
                 echo "▶️  Installation la configuration locale."
                 echo "Le fichier sera préservé lors des mises à jours automatiques."
                 init_config_local
+                echo "✅  ... Installation terminée > retour au menu."
+                ;;
+            menu_init_config_dev)
+                scroll_down
+                echo "▶️  Installation la configuration pour développeurs."
+                echo "Le fichier sera préservé lors des mises à jours automatiques."
+                init_config_dev
                 echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_edit_config_local)

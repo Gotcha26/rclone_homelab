@@ -31,7 +31,59 @@ init_config_local() {
 
     echo
     echo
-    print_fancy --style "underline" "⚙️  Création de $CONF_LOCAL_FILE"
+    print_fancy --style "underline" "⚙️  Création de $conf_file"
+    print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
+    print_fancy --fg "blue" -n "Fichier d'origine : ";
+        print_fancy "$main_conf"
+    print_fancy --fg "blue" -n "Fichier à créer   : ";
+        print_fancy "$conf_file"
+    echo
+    read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
+    REPLY=${REPLY,,}
+    if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+        print_fancy --theme "info" \
+            "Création ignorée pour : $conf_file"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$conf_file")" || {
+        print_fancy --theme "error" \
+            "Impossible de créer le dossier cible $(dirname "$conf_file")";
+        return 1;
+    }
+
+    cp "$main_conf" "$conf_file" || {
+        print_fancy --theme "error" \
+            "Impossible de copier $main_conf vers $conf_file";
+        return 1;
+    }
+
+    print_fancy --theme "success" \
+        "Fichier installé : $conf_file"
+
+    # --- Proposer l'édition immédiate avec nano ---
+    echo
+    read -rp "✏️  Voulez-vous éditer le fichier maintenant avec $EDITOR ? [Y/n] : " EDIT_REPLY
+    EDIT_REPLY=${EDIT_REPLY,,}
+    if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
+        $EDITOR "$conf_file"
+    else
+        print_fancy --theme "info" \
+            "Édition ignorée pour : $conf_file"
+    fi
+}
+
+
+###############################################################################
+# Fonction : Initialiser config.dev.conf si absent
+###############################################################################
+init_config_dev() {
+    local main_conf="$DIR_EXEMPLE_CONF_LOCAL_FILE"
+    local conf_file="$DIR_CONF_DEV_FILE"
+
+    echo
+    echo
+    print_fancy --style "underline" "⚙️  Création de $conf_file"
     print_fancy --theme "info" "Vous êtes sur le point de créer un fichier personnalisable de configuration."
     print_fancy --fg "blue" -n "Fichier d'origine : ";
         print_fancy "$main_conf"
