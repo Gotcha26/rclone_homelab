@@ -434,7 +434,8 @@ update_to_latest_branch() {
     write_version_file "$branch"
     
     echo
-    print_fancy --align center --bg green --highlight "✌️  Script mis à jour avec succès. ✌️ "
+    print_fancy --align "center" --bg "green" --style "italic" --highlight \
+        "✌️  Script mis à jour avec succès. ✌️ "
 
     return 0
 }
@@ -567,7 +568,8 @@ update_to_latest_tag() {
         fi
 
         echo
-        print_fancy --align center --bg green --highlight "✌️  Script mis à jour avec succès. ✌️ "
+    print_fancy --align "center" --bg "green" --style "italic" --highlight \
+        "✌️  Script mis à jour avec succès. ✌️ "
 
         return 0
 
