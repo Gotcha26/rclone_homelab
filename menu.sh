@@ -81,7 +81,7 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    if check_jobs_file soft; then
+    if ! check_jobs_file; then
         add_option "✏️  Éditer la liste des jobs (rclone)" "menu_jobs"
     else
         add_option "⌨️  Configurer la liste des jobs (rclone)" "menu_jobs"
