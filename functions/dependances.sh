@@ -372,11 +372,11 @@ self_validation_local_variables() {
                 0|false|no|off) value=0 ;;
                 '') value="${default:-0}" ;;  # si vide
                 *)
-                    echo
                     print_fancy --fg red --style bold \
                         "Donnée invalide pour $key : '$value'.\n" \
                         "- Valeurs attendues : true/false, 1/0, yes/no, on/off.\n" \
-                        "-> Valeur par défaut appliquée : '$default'"
+                        "-> Valeur par défaut appliquée : '$default'" \
+                        "\n" \
                     value="${default:-0}"
                     ;;
             esac
@@ -414,11 +414,11 @@ self_validation_local_variables() {
         done
 
         if [[ "$valid" == false ]]; then
-            echo
             print_fancy --fg red --style bold \
                 "Donnée invalide pour $key : '$value'.\n" \
                 "- Valeurs attendues : ${allowed//|/, }.\n" \
-                "-> Valeur par défaut appliquée : '$default'"
+                "-> Valeur par défaut appliquée : '$default'" \
+                "\n"
             export "$key"="$default"
         else
             export "$key"="$value"
