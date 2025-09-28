@@ -175,36 +175,37 @@ install_rclone() {
 
 ###############################################################################
 # Fonction : Vérifier l’existence, la lisibilité et le contenu du fichier jobs
-# Usage    : check_jobs_file [soft|verbose|hard]
 ###############################################################################
 check_jobs_file() {
-    local mode="${1:-${LAUNCH_MODE:-hard}}" # argument : variable:<defaut> (l'argument prime sur la variable)
 
-    # Vérifier existence
+    # Vérifier la présence
     if [[ ! -f "$DIR_JOBS_FILE" ]]; then
-        case "$mode" in
-            soft)    return 1 ;;
-            verbose) echo "❌ $MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE" >&2; return 1 ;;
-            hard)    die 3 "$MSG_FILE_NOT_FOUND : $DIR_JOBS_FILE" ;;
-        esac
+        if [[ "$ACTION_MODE" == "auto" ]] then
+            display_msg "verbose|hard" theme error "Fichier jobs introuvable : $DIR_JOBS_FILE"
+            die 3 "Fichier jobs introuvable : $DIR_JOBS_FILE"
+        else
+            return 1
+        fi
     fi
 
     # Vérifier lisibilité
     if [[ ! -r "$DIR_JOBS_FILE" ]]; then
-        case "$mode" in
-            soft)    return 1 ;;
-            verbose) echo "❌ $MSG_FILE_NOT_READ : $DIR_JOBS_FILE" >&2; return 1 ;;
-            hard)    die 4 "$MSG_FILE_NOT_READ : $DIR_JOBS_FILE" ;;
-        esac
+        if [[ "$ACTION_MODE" == "auto" ]] then
+            display_msg "verbose|hard" theme error "Aucun job valide trouvé dans $DIR_JOBS_FILE"
+            die 4 "Fichier jobs non lisible : $DIR_JOBS_FILE"
+        else
+            return 1
+        fi
     fi
 
     # Vérifier contenu
     if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
-        case "$mode" in
-            soft)    return 1 ;;
-            verbose) echo "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE" >&2; return 1 ;;
-            hard)    die 31 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE" ;;
-        esac
+        if [[ "$ACTION_MODE" == "auto" ]] then
+            display_msg "verbose|hard" theme error "Aucun job valide trouvé dans $DIR_JOBS_FILE"
+            hard)    die 5 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE" ;;
+        else
+            return 1
+        fi
     fi
 
     # Si tout est bon

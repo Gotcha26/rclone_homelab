@@ -73,7 +73,7 @@ while true; do
     add_separator_if_needed
 
     # 2) Jobs (lancement)
-    if check_jobs_file soft; then
+    if ! check_jobs_file; then
         add_option "🔂  Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
 
@@ -127,14 +127,14 @@ while true; do
     # Propose l'édition de configuration locale pour dev seulement si présente
     if [[ "$branch_real" != "main" ]]; then
         if [[ -f "$DIR_CONF_DEV_FILE" ]]; then
-            add_option "✏️  Éditer la configuration pour dev  - orienté développeurs" "menu_edit_config_dev"
+            add_option "✏️  Éditer la configuration pour dev   - orienté développeurs" "menu_edit_config_dev"
         else
             add_option "💻  Installer une configuration "dev"  - orienté pour les développeurs" "menu_init_config_dev"
         fi
     fi
     # Option pour installer/editer un fichier secrets.env
     if [[ -f "$DIR_SECRET_FILE" ]]; then
-        add_option "✏️  Éditer la configuration secrète   - pour vos mdp / tockens [optionnel]" "menu_edit_config_secrets"
+        add_option "✏️  Éditer la configuration secrète    - pour vos mdp / tockens [optionnel]" "menu_edit_config_secrets"
     else
         add_option "💻  Installer un fichier secrets.env   - pour vos mdp / tockens [optionnel]" "menu_init_secret_file"
     fi
