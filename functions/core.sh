@@ -199,7 +199,7 @@ check_jobs_file() {
     fi
 
     # Vérifier contenu
-    if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
+    if ! grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE"; then
         if [[ "$ACTION_MODE" == "auto" ]] then
             display_msg "verbose|hard" theme error "Aucun job valide trouvé dans $DIR_JOBS_FILE"
             die 5 "Aucun job valide trouvé dans $DIR_JOBS_FILE"
