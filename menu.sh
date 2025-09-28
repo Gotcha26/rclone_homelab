@@ -65,7 +65,7 @@ while true; do
     else
         # Branche dev ou expérimentale
         if (( head_epoch < remote_epoch )); then
-            label=$(print_fancy --fg "blue" "↗️  Mettre à jour la branche '$branch_real' (force branch)")
+            label=$(print_fancy --bg "blue" "↗️  Mettre à jour depuis la branche '$branch_real' (FORCE_BRANCH)")
             add_option "$label" "menu_update_to_latest_branch"
         fi
     fi
@@ -125,7 +125,7 @@ while true; do
         add_option "✏️  Éditer la configuration locale - vos réglages personnels" "menu_edit_config_local"
     fi
     # Propose l'édition de configuration locale pour dev seulement si présente
-    if check_config_dev >/dev/null 2>&1; then
+    if ! check_config_dev >/dev/null 2>&1; then
         add_option "✏️  Éditer la configuration locale - orienté développeurs" "menu_edit_config_dev"
     fi
     # Option pour installer/editer un fichier secrets.env
