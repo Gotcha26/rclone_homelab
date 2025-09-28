@@ -202,7 +202,7 @@ check_jobs_file() {
     if ! grep -qE '^[[:space:]]*[^#[:space:]]' "$DIR_JOBS_FILE"; then
         if [[ "$ACTION_MODE" == "auto" ]] then
             display_msg "verbose|hard" theme error "Aucun job valide trouvé dans $DIR_JOBS_FILE"
-            hard)    die 5 "❌ Aucun job valide trouvé dans $DIR_JOBS_FILE" ;;
+            die 5 "Aucun job valide trouvé dans $DIR_JOBS_FILE"
         else
             return 1
         fi
