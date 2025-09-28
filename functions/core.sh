@@ -360,7 +360,7 @@ get_current_version() {
 ###############################################################################
 # Fonction : Contrôle et validation des variables
 ###############################################################################
-control_local_config() {
+menu_validation_local_variables() {
     echo
     if ! print_table_vars_invalid VARS_TO_VALIDATE; then
         # Problème
@@ -387,7 +387,7 @@ control_local_config() {
                 echo
                 echo "👉  Application de la correction automatique."
                 echo
-                validate_vars VARS_TO_VALIDATE
+                self_validation_local_variables VARS_TO_VALIDATE
                 ;;
             2)
                 echo
@@ -395,7 +395,7 @@ control_local_config() {
                     print_fancy --bg yellow --fg red --highlight "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!"
                     print_fancy --bg yellow --fg red --highlight "Aucun fichier disponible, retour au menu principal."
                 fi
-                control_local_config  # retour au menu principal après édition pour validation
+                menu_validation_local_variables  # retour au menu principal après édition pour validation
                 ;;
             3)
                 echo
@@ -405,7 +405,7 @@ control_local_config() {
             *)
                 echo "❌  Choix invalide."
                 sleep 1
-                control_local_config
+                menu_validation_local_variables
                 ;;
         esac
     fi

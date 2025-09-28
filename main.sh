@@ -40,10 +40,10 @@ if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
 fi
 
 # Validation des variables locale
-if [[ $ACTION_MODE == "manu" ]]; then
-    validate_vars VARS_TO_VALIDATE   # Menu de correction (si détecté comme étant nécessaire)
+if [[ $ACTION_MODE == "auto" ]]; then
+    self_validation_local_variables VARS_TO_VALIDATE   # Processus de correction automatique
 else
-    control_local_config             # Processus de correction automatique
+    menu_validation_local_variables             # Menu de correction (si détecté comme étant nécessaire)
 fi
 
 # === Mises à jour ===
@@ -146,9 +146,9 @@ fi
 # 4. Vérifications fonctionnelles
 ###############################################################################
 
-# Correction arbitraire des variables utilisateurs (locales) par défaut
-validate_vars VARS_TO_VALIDATE[@]
+self_validation_local_variables VARS_TO_VALIDATE[@] # Correction arbitraire des variables utilisateurs (locales) par défaut
 
+# Boucle pour email
 if [[ -n "$MAIL_TO" ]]; then
     display_msg "verbose|hard" "☛  Adresse email détectée, envoie d'un mail requis !"
     

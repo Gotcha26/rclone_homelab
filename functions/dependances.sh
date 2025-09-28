@@ -360,9 +360,9 @@ print_fancy() {
 #       "ENABLE_FEATURE:bool:0"
 #       ...
 #   )
-#   validate_vars VARS_TO_VALIDATE
+#   self_validation_local_variables VARS_TO_VALIDATE
 ###############################################################################
-validate_vars() {
+self_validation_local_variables() {
     local -n var_array="$1"   # Passage du nom de l'array en référence
 
     for entry in "${var_array[@]}"; do
