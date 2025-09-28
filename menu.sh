@@ -82,36 +82,36 @@ while true; do
     # 3) Configurations
     # Jobs
     if check_jobs_file; then
-        add_option "⌨️  Configurer la liste des jobs (rclone)" "menu_jobs"
+        add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_jobs"
     else
-        add_option "✏️  Éditer la liste des jobs (rclone)" "menu_jobs"
+        add_option "✏️  Éditer la liste des jobs (rclone)     → fichier à compléter" "menu_jobs"
     fi
     # rclone
     if ! check_rclone_installed soft >/dev/null 2>&1; then
         # Cas 1 : rclone absent
-        add_option "📦  Installer rclone" "menu_install_rclone"
+        add_option "📦  Installer rclone                       → [OBLIGATOIRE]" "menu_install_rclone"
     else
         # Mode "soft" pour le menu : pas de die
         if ! check_rclone_configured soft >/dev/null 2>&1; then
             # Cas 2 : rclone présent → vérifier la config
-            add_option "⚙️  Configurer rclone" "menu_config_rclone"
+            add_option "⚙️  Configurer rclone                     → Configuration vierge" "menu_config_rclone"
         else
             # Config OK ou vide
-            add_option "✏️  Éditer la configuration rclone" "menu_show_rclone_config"
+            add_option "✏️  Éditer la configuration rclone        → Modification manuelle" "menu_show_rclone_config"
         fi
     fi
     # msmtp
     if ! command -v msmtp >/dev/null 2>&1; then
         # Cas 1 : msmtp absent → proposer l'installation
-        add_option "📦  Installer msmtp" "menu_install_msmtp"
+        add_option "📦  Installer msmtp                        → outil d'envoi mails [optionnel]" "menu_install_msmtp"
     else
         # Cas 2 : msmtp présent → vérifier la configuration
         if conf_file=$(check_msmtp_configured 2>/dev/null); then
             # Fichier valide trouvé → afficher/éditer
-            add_option "✏️  Éditer la configuration msmtp" "menu_show_msmtp_config"
+            add_option "✏️  Éditer la configuration msmtp         → Modification manuelle" "menu_show_msmtp_config"
         else
             # Aucun fichier valide → configurer
-            add_option "⚙️  Configurer msmtp" "menu_config_msmtp"
+            add_option "⚙️  Configurer msmtp                      → fichier à compléter" "menu_config_msmtp"
         fi
     fi
 
@@ -120,23 +120,23 @@ while true; do
     # 4) Actions
     # Option de configuration locale
     if [[ -f "$DIR_CONF_LOCAL_FILE" ]]; then
-        add_option "✏️  Éditer la configuration locale     - vos réglages personnels" "menu_edit_config_local"
+        add_option "✏️  Éditer la configuration locale        → vos réglages personnels" "menu_edit_config_local"
     else
-        add_option "💻  Installer une configuration locale - vos réglages personnels" "menu_init_config_local"
+        add_option "💻  Installer une configuration locale    → vos réglages personnels" "menu_init_config_local"
     fi
     # Propose l'édition de configuration locale pour dev seulement si présente
     if [[ "$branch_real" != "main" ]]; then
         if [[ -f "$DIR_CONF_DEV_FILE" ]]; then
-            add_option "✏️  Éditer la configuration pour dev   - orienté développeurs" "menu_edit_config_dev"
+            add_option "✏️  Éditer la configuration pour dev      → orienté développeurs" "menu_edit_config_dev"
         else
-            add_option "💻  Installer une configuration \"dev\"  - orienté pour les développeurs" "menu_init_config_dev"
+            add_option "💻  Installer une configuration \"dev\"        → orienté pour les développeurs" "menu_init_config_dev"
         fi
     fi
     # Option pour installer/editer un fichier secrets.env
     if [[ -f "$DIR_SECRET_FILE" ]]; then
-        add_option "✏️  Éditer la configuration secrète    - pour vos mdp / tockens [optionnel]" "menu_edit_config_secrets"
+        add_option "✏️  Éditer la configuration secrète       → pour vos mdp/tockens [optionnel]" "menu_edit_config_secrets"
     else
-        add_option "💻  Installer un fichier secrets.env   - pour vos mdp / tockens [optionnel]" "menu_init_secret_file"
+        add_option "💻  Installer un fichier secrets.env      → pour vos mdp/tockens [optionnel]" "menu_init_secret_file"
     fi
 
     add_separator_if_needed
