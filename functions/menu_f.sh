@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 ###############################################################################
 # Fonction : Vérifie la présence de jobs.txt et initialise à partir de jobs.txt.exemple si absent
 ###############################################################################
@@ -77,61 +75,6 @@ init_config_local() {
 
 
 ###############################################################################
-# Fonction : Recherche la présence eventuelle du fichier config.local.conf
-###############################################################################
-check_config_local_bak () {
-    local mode="${1:-${DEBUG_INFO:-false}}" # argument : variable:<defaut> (l'argument prime sur la variable)
-
-    # Vérifier existence
-    if [[ ! -f "$DIR_CONF_LOCAL_FILE" ]]; then
-        case "$mode" in
-            false)    return 1 ;;
-            true) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_CONF_LOCAL_FILE" >&2; return 1 ;;
-        esac
-    fi
-
-    # Si tout est bon
-    return 0
-}
-
-
-###############################################################################
-# Fonction : Recherche la présence eventuelle du fichier config.local.conf
-###############################################################################
-check_config_local () {
-    if [[ ! -f "$DIR_CONF_LOCAL_FILE" ]] then
-        return 1 # absent
-}
-
-
-###############################################################################
-# Fonction : Recherche la présence eventuelle du fichier config.dev.conf
-###############################################################################
-check_config_dev_bak () {
-    local mode="${1:-${DEBUG_INFO:-false}}" # argument : variable:<defaut> (l'argument prime sur la variable)
-
-    # Vérifier existence
-    if [[ ! -f "$DIR_CONF_DEV_FILE" ]]; then
-        case "$mode" in
-            false)    return 1 ;;
-            true) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_CONF_DEV_FILE" >&2; return 1 ;;
-        esac
-    fi
-
-    # Si tout est bon
-    return 0
-}
-
-
-###############################################################################
-# Fonction : Recherche la présence eventuelle du fichier config.dev.conf
-###############################################################################
-check_config_dev () {
-    if [[ ! -f "$DIR_CONF_DEV_FILE" ]] then
-        return 1
-}
-
-###############################################################################
 # Fonction : Initialiser config.local.sh si absent
 ###############################################################################
 init_secrets_local() {
@@ -180,23 +123,4 @@ init_secrets_local() {
         print_fancy --theme "info" \
             "Édition ignorée pour : $secret_file"
     fi
-}
-
-
-###############################################################################
-# Fonction : Recherche la présence eventuelle du fichier secret.env
-###############################################################################
-check_secrets_conf () {
-    local mode="${1:-${DEBUG_INFO:-false}}" # argument : variable:<defaut> (l'argument prime sur la variable)
-
-    # Vérifier existence
-    if [[ ! -f "$DIR_SECRET_FILE" ]]; then
-        case "$mode" in
-            false)    return 1 ;;
-            true) print_fancy --theme "error" "$MSG_FILE_NOT_FOUND : $DIR_SECRET_FILE" >&2; return 1 ;;
-        esac
-    fi
-
-    # Si tout est bon
-    return 0
 }
