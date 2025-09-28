@@ -99,7 +99,7 @@ check_config_local_bak () {
 # Fonction : Recherche la présence eventuelle du fichier config.local.conf
 ###############################################################################
 check_config_local () {
-    if [[ ! -f "$DIR_CONF_LOCAL_FILE" ]]; then
+    if [[ ! -f "$DIR_CONF_LOCAL_FILE" ]] then
         return 1 # absent
 }
 
@@ -127,7 +127,7 @@ check_config_dev_bak () {
 # Fonction : Recherche la présence eventuelle du fichier config.dev.conf
 ###############################################################################
 check_config_dev () {
-    if [[ ! -f "$DIR_CONF_DEV_FILE" ]]; then
+    if [[ ! -f "$DIR_CONF_DEV_FILE" ]] then
         return 1
 }
 
