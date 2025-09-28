@@ -126,7 +126,7 @@ while true; do
     fi
     # Propose l'édition de configuration locale pour dev seulement si présente
     if [[ "$branch_real" != "main" ]]; then
-        if ! [[ -f "$DIR_CONF_DEV_FILE" ]]; then
+        if [[ -f "$DIR_CONF_DEV_FILE" ]]; then
             add_option "✏️  Éditer la configuration locale - orienté développeurs" "menu_edit_config_dev"
         else
             add_option "💻  Installer une configuration locale - orienté développeurs" "menu_init_config_dev"

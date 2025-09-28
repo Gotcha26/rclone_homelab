@@ -13,6 +13,36 @@ source "$SCRIPT_DIR/export/discord.sh"
 # Surchage via configuration local
 load_optional_configs
 
+# *** ↓↓ Déclarations ↓↓ ***
+
+# Tableau associatif : varaibles locales utilisateur avec les règles
+declare -A VARS_TO_VALIDATE=(
+    "DRY_RUN:bool:false"
+    "MAIL_TO:''"
+    "DISCORD_WEBHOOK_URL:''"
+    "FORCE_UPDATE:bool:false"
+    "FORCE_BRANCH:''"
+    "ACTION_MODE:auto|manu:manu"
+    "DISPLAY_MODE:soft|verbose|hard:soft"
+    "TERM_WIDTH_DEFAULT:80-120:80"
+    "LOG_RETENTION_DAYS:1-15:14"
+    "LOG_LINE_MAX:100-10000:1000"
+    "EDITOR:nano|micro:nano"
+    "DEBUG_INFOS:bool:false"
+    "DEBUG_MODE:bool:false"
+)
+
+# Tableau couple fichier exemple : fichier local
+# Format : ["nom_unique"]="référence;local"
+declare -A VARS_LOCAL_FILES=(
+    ["conf_local"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_DEV_FILE}"
+    ["conf_dev"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
+    ["jobs"]="${DIR_EXEMPLE_JOBS_FILE};${DIR_JOBS_FILE}"
+    ["conf_secret"]="${DIR_EXEMPLE_SECRET_FILE};${DIR_SECRET_FILE}"
+    # Ajoutez d'autres fichiers ici
+
+)
+
 # *** ↓↓ FONCTIONS PERSISTANTES (en cas de MAJ) ↓↓ ***
 
 ###############################################################################
@@ -60,19 +90,9 @@ update_local_configs() {
     # Flag pour savoir si au moins un fichier a été traité
     local files_updated=false
 
-    # Liste des fichiers à traiter (référence, local)
-    # Format : ["nom_unique"]="référence;local"
-    declare -A files=(
-        ["fichier1"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_DEV_FILE}"
-        ["fichier2"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
-        ["fichier3"]="${DIR_EXEMPLE_JOBS_FILE};${DIR_JOBS_FILE}"
-        ["fichier4"]="${DIR_EXEMPLE_SECRET_FILE};${DIR_SECRET_FILE}"
-        # Ajoutez d'autres fichiers ici
-    )
-
     # Boucle pour traiter chaque fichier
-    for key in "${!files[@]}"; do
-        IFS=';' read -r ref_file user_file <<< "${files[$key]}"
+    for key in "${!VARS_LOCAL_FILES[@]}"; do
+        IFS=';' read -r ref_file user_file <<< "${VARS_LOCAL_FILES[$key]}"
         update_user_file "$ref_file" "$user_file"
         [[ $? -eq 2 ]] && files_updated=true
     done
