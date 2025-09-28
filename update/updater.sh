@@ -435,7 +435,7 @@ update_to_latest_branch() {
     
     echo
     print_fancy --align "center" --bg "green" --style "italic" --highlight \
-        "✌️  Script mis à jour avec succès. ✌️ "
+        "Script mis à jour avec succès."
 
     return 0
 }
@@ -569,7 +569,7 @@ update_to_latest_tag() {
 
         echo
     print_fancy --align "center" --bg "green" --style "italic" --highlight \
-        "✌️  Script mis à jour avec succès. ✌️ "
+        "Script mis à jour avec succès."
 
         return 0
 
