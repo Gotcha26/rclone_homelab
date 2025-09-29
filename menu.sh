@@ -20,9 +20,13 @@ while true; do
     # Réaffichage de la bannière mais jamais au premier passage.
     if [ "$first_time" = false ]; then
         load_optional_configs                        # Venir recharger la configuration locale après une édition
-        print_table_vars_invalid VARS_TO_VALIDATE && \
-            display_msg "soft|verbose|hard" "";
-            display_msg "soft|verbose|hard" --theme follow --fg yellow "Vous êtes invité à revoir/corriger votre configuration locale."   # Affichage si nécessaire
+        if print_table_vars_invalid VARS_TO_VALIDATE; then 
+            display_msg "soft|verbose|hard" ""
+            display_msg "soft|verbose|hard" --theme follow --fg yellow \
+                "Vous êtes invité à revoir/corriger votre configuration locale."   # Affichage si nécessaire
+        else
+            display_msg "verbose|hard" --theme ok "Variables locales passées !"
+        fi
     fi
     first_time=false
     

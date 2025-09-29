@@ -480,11 +480,10 @@ menu_validation_local_variables() {
                 menu_validation_local_variables "$1"
                 ;;
         esac
+        return 1
     fi
-    
+    return 0
     # Pas de problèmes
-    display_msg "verbose|hard" --theme info "Configuration des variables locale : passée."
-
 }
 
 

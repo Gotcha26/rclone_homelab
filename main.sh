@@ -42,9 +42,11 @@ fi
 
 # Validation des variables locale
 if [[ $ACTION_MODE == "auto" ]]; then
-    self_validation_local_variables VARS_TO_VALIDATE   # Processus de correction automatique
-else
-    menu_validation_local_variables VARS_TO_VALIDATE   # Menu de correction (si détecté comme étant nécessaire)
+    self_validation_local_variables VARS_TO_VALIDATE    # Processus de correction automatique
+else                                                    # Menu de correction (si détecté comme étant nécessaire)
+    if ! menu_validation_local_variables VARS_TO_VALIDATE; then 
+        display_msg "verbose|hard" --theme info "Configuration des variables locale : passée."
+    fi
 fi
 
 
