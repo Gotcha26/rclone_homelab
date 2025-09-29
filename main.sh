@@ -143,65 +143,7 @@ fi
 # 4. Vérifications fonctionnelles
 ###############################################################################
 
-# Boucle pour email
-if [[ -n "$MAIL_TO" ]]; then
-    display_msg "verbose|hard" "☛  Adresse email détectée, envoie d'un mail requis !"
-    
-    display_msg "verbose|hard" "☞  1/x Contrôle d'intégritation adresse email"
-    if check_mail_format; then
-        display_msg "soft" --theme ok "Email non validé."
-        display_msg "verbose|hard" --theme error "L'adresse email saisie ne satisfait pas aux exigences et est rejetée."
-        die 12 "Adresse email saisie invalide : $MAIL_TO"
-    else
-        display_msg "soft|verbose|hard" --theme ok "Email validé."
-
-        display_msg "verbose|hard" "☞  2a/x Contrôle présence msmtp"
-        if ! check_msmtp; then
-            if [[ $ACTION_MODE == auto ]]; then
-                display_msg "soft" --theme error "msmtp absent."
-                display_msg "verbose|hard" --theme error "L'outil msmtp est obligatoire mais n'est pas détecté comme étant installé sur le système."
-                die 13 "L'outil msmtp obligatoire mais détecté absent..."
-            else
-                display_msg "soft|verbose|hard" --theme warning "msmtp absent, proposition d'installation"
-
-                display_msg "verbose|hard" "☞  2b/x Installation onlive de msmtp"
-                echo
-                read -e -rp "Voulez-vous installer msmtp maintenant (requis) ? [y/N] : " REPLY
-                REPLY=${REPLY,,}
-                if [[ "$REPLY" == "y" || "$REPLY" == "yes" ]]; then
-                    install_msmtp
-                else
-                    die 15 "msmtp est requis mais n'a pas été installé."
-                fi
-            fi
-        else
-            display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est installé."
-
-            display_msg "verbose|hard" "☞  3/x Lecture configuration msmtp"
-            display_msg "verbose|hard" --theme warning "Ne garanti pas que le contenu soit correct !!!"
-            if check_msmtp_configured; then
-                if [[ $ACTION_MODE == auto ]]; then
-                    display_msg "soft" --theme error "msmtp non ou mal configuré."
-                    display_msg "verbose|hard" --theme error "L'outil msmtp semble être mal configuré ou son fichier de configuration absent/vide."
-                    die 14 "L'outil msmtp non ou mal configuré."
-                else
-                    display_msg "soft|verbose|hard" --theme warning "msmtp absent, proposition de configuration"
-                    configure_msmtp
-                fi
-            else
-                display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est configuré."
-            fi
-        fi
-    fi
-else
-    display_msg "verbose|hard" --theme info "Aucun email fourni : pas besoin d'en envoyer un !"
-fi
-        
-
-    
-
-
-
+check_and_prepare_email "$MAIL_TO"
 check_rclone_installed
 check_rclone_configured
 create_temp_dirs
