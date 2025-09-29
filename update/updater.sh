@@ -111,7 +111,7 @@ get_remote_latest_tag() {
 ###############################################################################
 fetch_git_info() {
 
-    cd "$SCRIPT_DIR" || { echo "$MSG_MAJ_ACCESS_ERROR" >&2; return 1; }
+    cd "$SCRIPT_DIR" || { echo "Erreur : impossible d'accéder au répertoire du script"; return 1; }
 
     # --- Vérifier si .git existe ---
     if [[ ! -d ".git" ]]; then
@@ -122,7 +122,7 @@ fetch_git_info() {
 
         # Récupération de la dernière version distante via API (ou fallback silencieux)
         latest_tag=$(get_remote_latest_tag)
-        return 0
+        return 1
     fi
 
     # --- Git normal ---
