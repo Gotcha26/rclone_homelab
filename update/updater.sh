@@ -107,69 +107,83 @@ get_remote_latest_tag() {
 
 
 ###############################################################################
-# Fonction : Récupère toutes les informations nécessaires sur Git
+# Fonction : collecte les infos Git / remote / tags
+# - N'affiche quasiment rien (sauf erreur cd). Met en place des flags/variables.
+# - Retourne 1 seulement si cd échoue (impossible d'accéder au répertoire).
 ###############################################################################
 fetch_git_info() {
+    # reset / defaults
+    HAS_GIT=false
+    GIT_OFFLINE=false
+    LOCAL_VERSION=""
+    head_commit=""
+    head_epoch=0
+    branch_real=""
+    remote_commit=""
+    remote_epoch=0
+    latest_tag=""
+    latest_tag_commit=""
+    latest_tag_epoch=0
+    current_tag=""
 
     cd "$SCRIPT_DIR" || { echo "Erreur : impossible d'accéder au répertoire du script"; return 1; }
 
-    # --- Vérifier si .git existe ---
-    if [[ ! -d ".git" ]]; then
-        print_fancy --theme "warning" --fg "yellow" \
-            "⚠️  Pas de dépôt Git détecté. Mode version locale activé."
+    if [[ -d ".git" ]]; then
+        HAS_GIT=true
+        
+        # --- Git normal ---
+        # --- Récupération des dernières infos du remote avec fallback ---
+        # try fetch (non fatal ici : on signale offline mais on continue à remplir ce qu'on peut)
+        if ! git fetch origin --tags --prune --quiet; then
+            GIT_OFFLINE=true
+        fi
+
+        # --- Commit et date HEAD local ---
+        head_commit=$(git rev-parse HEAD 2>/dev/null || echo "")
+        head_epoch=$(git show -s --format=%ct "$head_commit" 2>/dev/null || echo 0)
+
+        # --- Détection de la branche locale réelle ---
+        branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
+
+        # --- Commit et date HEAD distant ---
+        if [[ "$branch_real" != "(détaché)" && "$GIT_OFFLINE" == false ]]; then
+            remote_commit=$(git rev-parse "origin/$branch_real" 2>/dev/null || echo "")
+            remote_epoch=$(git show -s --format=%ct "$remote_commit" 2>/dev/null || echo 0)
+        fi
+
+        # --- Dernier tag disponible (uniquement pour main) ---
+        if [[ "$branch_real" == "main" && "$GIT_OFFLINE" == false ]]; then
+            latest_tag=$(git tag --merged "origin/main" 2>/dev/null | sort -V | tail -n1 || echo "")
+        fi
+
+        if [[ -n "$latest_tag" ]]; then
+            latest_tag_commit=$(git rev-parse "$latest_tag" 2>/dev/null || echo "")
+            latest_tag_epoch=$(git show -s --format=%ct "$latest_tag_commit" 2>/dev/null || echo 0)
+        fi
+
+        current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+    else
+        # pas de repo Git : on reste en "local standalone"
+        HAS_GIT=false
         LOCAL_VERSION=$(get_local_version)
         branch_real="(local-standalone-version)"
-
-        # Récupération de la dernière version distante via API (ou fallback silencieux)
-        latest_tag=$(get_remote_latest_tag)
-        return 1
+        # optionnel : tenter de récupérer le dernier tag distant via API (fallback non bloquant)
+        latest_tag=$(get_remote_latest_tag 2>/dev/null || echo "")
     fi
 
-    # --- Git normal ---
-    # --- Récupération des dernières infos du remote avec fallback ---
-    if ! git fetch origin --tags --prune --quiet; then
-        print_fancy --theme "warning" --fg "yellow" \
-            "Impossible de contacter GitHub ou le remote. Mode offline activé."
-        GIT_OFFLINE=true
-        return 1
-    fi
-
-    # --- Commit et date HEAD local ---
-    head_commit=$(git rev-parse HEAD 2>/dev/null || echo "")
-    head_epoch=$(git show -s --format=%ct "$head_commit" 2>/dev/null || echo 0)
-
-    # --- Détection de la branche locale réelle ---
-    branch_real=$(git symbolic-ref --short HEAD 2>/dev/null || echo "(détaché)")
-
-    # --- Commit et date HEAD distant ---
-    if [[ "$branch_real" != "(détaché)" && "$GIT_OFFLINE" == false ]]; then
-        remote_commit=$(git rev-parse "origin/$branch_real" 2>/dev/null || echo "")
-        remote_epoch=$(git show -s --format=%ct "$remote_commit" 2>/dev/null || echo 0)
-    fi
-
-    # --- Dernier tag disponible (uniquement pour main) ---
-    if [[ "$branch_real" == "main" && "$GIT_OFFLINE" == false ]]; then
-        latest_tag=$(git tag --merged "origin/main" 2>/dev/null | sort -V | tail -n1)
-    fi
-
-    if [[ -n "$latest_tag" ]]; then
-        latest_tag_commit=$(git rev-parse "$latest_tag" 2>/dev/null || echo "")
-        latest_tag_epoch=$(git show -s --format=%ct "$latest_tag_commit" 2>/dev/null || echo 0)
-    fi
-
-    current_tag=$(git describe --tags --exact-match 2>/dev/null || echo "")
+    return 0
 }
 
 
 ##############################################################################
-# Fonction : Affichage des informations Git issues de fetch_git_info()
-# → Affichage basé sur DEBUG_INFOS (true = verbose, false = simplified)
-# → Protège contre les erreurs si GitHub/remote indisponible
+# Fonction : responsable de tout l'affichage / diagnostic
+# - S'appuie sur les variables mises par fetch_git_info()
+# - Retourne 0/1 selon la logique que tu veux (ici 0 = OK / 1 = échec de vérification)
 ##############################################################################
 analyze_update_status() {
     local result_code=0
 
-    # === Mode sans Git : on affiche juste la version locale ===
+    # --- Mode sans Git : on affiche la version locale et (éventuellement) annonce d'une release ---
     if [[ "$branch_real" == "(local-standalone-version)" ]]; then
         print_fancy --theme "info" --fg "blue" --align "center" \
             "Version locale installée : ${LOCAL_VERSION:-inconnue}"
@@ -183,125 +197,69 @@ analyze_update_status() {
         return 0
     fi
 
-    # === Mode Git normal ===
+    # --- Si on a Git mais fetch a échoué (offline) ---
+    if [[ "$HAS_GIT" == true && "$GIT_OFFLINE" == true ]]; then
+        print_fancy --theme "warning" --fg "yellow" --align "center" \
+            "Impossible de contacter le remote Git. Mode offline activé. Informations incomplètes."
+        # On peut afficher des infos locales partielles :
+        print_fancy "📌  Branche locale : $branch_real"
+        print_fancy "📌  Commit local   : ${head_commit:-inconnu}"
+        result_code=1   # on considère que la vérification n'est pas complète
+        return $result_code
+    fi
 
-    # --- Mode verbose : affichage complet si DEBUG_INFOS=true ---
+    # --- Mode Git normal (fetch ok) ---
+    # affichages DEBUG si demandé
     if [[ "${DEBUG_INFOS:-false}" == true ]]; then
         print_fancy --align "center" --fill "#" "#"
         print_fancy --align "center" --style "bold" "INFOS GIT"
-        echo ""  # Ligne vide pour espacement
-
-        # Branche locale
-        text=""
-        text+=$(print_fancy --raw "📌  Branche locale   : ")
-        text+=$(print_fancy --fg "red" --style "bold" --raw "$branch_real")
-        print_fancy "$text"
         echo ""
-
-        # Commit local
+        print_fancy "📌  Branche locale   : $branch_real"
         print_fancy "📌  Commit local     : $head_commit"
-        print_fancy --align "right" --style "italic" \
-            "($(date -d "@$head_epoch" 2>/dev/null || echo "date inconnue"))"
-
-        # Commit distant
-        if [[ -n "$remote_commit" ]]; then
-            print_fancy "🕒  Commit distant   : $remote_commit"
-            print_fancy --align "right" --style "italic" \
-                "($(date -d "@$remote_epoch" 2>/dev/null || echo "date inconnue"))"
-        fi
-
-        # Dernière release
-        if [[ -n "$latest_tag" ]]; then
-            print_fancy "🏷️  Dernière release : $latest_tag"
-            print_fancy --align "right" --style "italic" \
-                "($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
-        fi
-
-        # Mode offline
-        if [[ "$GIT_OFFLINE" == true ]]; then
-            print_fancy --theme "warning" --fg "yellow" --align "center" \
-                "Mode offline : informations GitHub incomplètes."
-        fi
+        [[ -n "$remote_commit" ]] && print_fancy "🕒  Commit distant   : $remote_commit"
+        [[ -n "$latest_tag" ]] && print_fancy "🏷️  Dernière release : $latest_tag"
     fi
 
-    # --- Analyse des commits / branches ---
+    # --- Analyse des branches / tags ---
     if [[ "$branch_real" == "main" ]]; then
-        # --- Branche main : vérifier si on est à jour avec la dernière release ---
         if [[ -z "$latest_tag" ]]; then
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
             print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
-                "Impossible de vérifier les mises à jour (API GitHub muette ou mode offline)."
+                "Impossible de vérifier les mises à jour (API GitHub muette ou tag manquant)."
             result_code=1
-
         elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit" 2>/dev/null; then
-            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                echo ""
-                print_fancy --theme "ok" --fg "blue" --align "right" \
-                    "Version actuelle ${current_tag:-dev} >> À jour"
-            else
-                print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
-            fi
+            print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
             result_code=0
-
         elif (( latest_tag_epoch < head_epoch )); then
-            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                echo ""
-                print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold" \
-                    --highlight "Des nouveautés existent mais ne sont pas encore officialisées."
-                print_fancy --theme "follow" --bg "yellow" --align "center" --style "bold underline" \
-                    --highlight "La mise à jour automatisée n'est pas proposée pour garantir la stabilité."
-                print_fancy --bg "yellow" --align "center" --style "italic" \
-                    --highlight "Forcer la mise à jour (possible) pourrait avoir des effets indésirables."
-                print_fancy --bg "yellow" --align "center" --style "italic" \
-                    --highlight "Vous êtes bien sur la dernière release stable : ${current_tag:-dev}"
-            else
-                print_fancy --theme "ok" --fg "yellow" --align "right" --style "underline" \
-                    "Votre version est à jour..."
-            fi
+            print_fancy --theme "ok" --fg "yellow" --align "right" --style "underline" \
+                "Votre version est à jour (commit plus récent que la dernière release)."
             result_code=0
-
         else
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
                 "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
             print_fancy --theme "info" --bg "blue" --align "center" --highlight \
                 "Pour mettre à jour : relancer le script sans arguments pour accéder au menu."
+            result_code=0
         fi
-
     else
-        # --- Branche dev ou autre ---
+        # branches non-main
         if [[ -z "$remote_commit" ]]; then
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
             print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
                 "Aucune branche distante détectée pour '$branch_real' (mode offline ou fetch échoué)."
             result_code=1
-
         elif [[ "$head_commit" == "$remote_commit" ]]; then
-            if [[ "${DEBUG_INFOS:-false}" == true ]]; then
-                echo ""
-                print_fancy --theme "ok" --fg "blue" --style "bold" --align "right" \
-                    "Votre branche '$branch_real' est à jour avec le dépôt."
-            else
-                print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
-            fi
+            print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
             result_code=0
-
         elif (( head_epoch < remote_epoch )); then
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
-                "Mise à jour disponible : Des nouveautés sur le dépôt sont apparues."
-            print_fancy --bg "blue" --align "center" --highlight \
+                "Mise à jour disponible : des commits distants existent."
+            print_fancy --bg "blue" --align "center" \
                 "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
-            print_fancy --theme "warning" --bg "blue" --align "center" --style "underline" --highlight \
-                "Les modifications (hors .gitignore) seront écrasées/perdues."
+            print_fancy --theme "warning" --bg "blue" --align "center" \
+                "Les modifications locales (hors .gitignore) seront écrasées."
             result_code=1
-
         else
-            [[ "${DEBUG_INFOS:-false}" == true ]] && echo ""
-            print_fancy --theme "warning" --bg "blue" --align "center" --style "bold" --highlight \
-                "Votre commit local est plus récent que origin/$branch_real"
-            print_fancy --theme "warning" --bg "blue" --align "center" --style "italic underline" --highlight \
-                "Pas de mise à jour à faire sous peine de régressions/pertes."
+            print_fancy --theme "warning" --bg "blue" --align "center" \
+                "Votre commit local est plus récent que origin/$branch_real — attention aux régressions."
             result_code=0
         fi
     fi
