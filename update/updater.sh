@@ -20,6 +20,7 @@
 update_check() {
     fetch_git_info || return 1
     analyze_update_status
+    return 0
 }
 
 
@@ -181,6 +182,7 @@ fetch_git_info() {
 # - Retourne 0/1 selon la logique que tu veux (ici 0 = OK / 1 = échec de vérification)
 ##############################################################################
 analyze_update_status() {
+    local result_code=0
 
     # --- Mode sans Git : on affiche la version locale et (éventuellement) annonce d'une release ---
     if [[ "$branch_real" == "(local-standalone-version)" ]]; then
@@ -193,6 +195,7 @@ analyze_update_status() {
         else
             print_fancy --theme "ok" --align "right" "À jour."
         fi
+        return 0
     fi
 
     # --- Si on a Git mais fetch a échoué (offline) ---
@@ -202,6 +205,8 @@ analyze_update_status() {
         # On peut afficher des infos locales partielles :
         print_fancy "📌  Branche locale : $branch_real"
         print_fancy "📌  Commit local   : ${head_commit:-inconnu}"
+        result_code=1   # on considère que la vérification n'est pas complète
+        return $result_code
     fi
 
     # --- Mode Git normal (fetch ok) ---
@@ -221,24 +226,30 @@ analyze_update_status() {
         if [[ -z "$latest_tag" ]]; then
             print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
                 "Impossible de vérifier les mises à jour (API GitHub muette ou tag manquant)."
+            result_code=1
         elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit" 2>/dev/null; then
             print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
+            result_code=0
         elif (( latest_tag_epoch < head_epoch )); then
             print_fancy --theme "ok" --fg "yellow" --align "right" --style "underline" \
                 "Votre version est à jour (commit plus récent que la dernière release)."
+            result_code=0
         else
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
                 "Nouvelle release disponible : $latest_tag ($(date -d "@$latest_tag_epoch" 2>/dev/null || echo "date inconnue"))"
             print_fancy --theme "info" --bg "blue" --align "center" --highlight \
                 "Pour mettre à jour : relancer le script sans arguments pour accéder au menu."
+            result_code=0
         fi
     else
         # branches non-main
         if [[ -z "$remote_commit" ]]; then
             print_fancy --theme "error" --fg "red" --bg "white" --style "bold underline" \
                 "Aucune branche distante détectée pour '$branch_real' (mode offline ou fetch échoué)."
+            result_code=1
         elif [[ "$head_commit" == "$remote_commit" ]]; then
             print_fancy --theme "ok" --fg "blue" --align "right" "À jour."
+            result_code=0
         elif (( head_epoch < remote_epoch )); then
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
                 "Mise à jour disponible : des commits distants existent."
@@ -246,13 +257,16 @@ analyze_update_status() {
                 "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
             print_fancy --theme "warning" --bg "blue" --align "center" --highlight \
                 "Les modifications locales (hors .gitignore) seront écrasées."
+            result_code=1
         else
             print_fancy --theme "warning" --bg "blue" --align "center" --highlight \
                 "Votre commit local est plus récent que origin/$branch_real — attention aux régressions."
+            result_code=0
         fi
     fi
 
     [[ "${DEBUG_INFOS:-false}" == true ]] && print_fancy --align "center" --fill "#" "#"
+    return $result_code
 }
 
 
