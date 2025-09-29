@@ -131,6 +131,7 @@ fetch_git_info() {
         print_fancy --theme "warning" --fg "yellow" \
             "Impossible de contacter GitHub ou le remote. Mode offline activé."
         GIT_OFFLINE=true
+        return 1
     fi
 
     # --- Commit et date HEAD local ---

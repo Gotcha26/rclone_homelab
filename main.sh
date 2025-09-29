@@ -49,7 +49,7 @@ fi
 # === Mises à jour ===
 
 # Exécuter directement l’analyse (affichage immédiat au lancement)
-update_check && display_msg "soft|verbose|hard" --theme warning "Impossible de récupérer l'état Git"
+update_check || display_msg "soft|verbose|hard" --theme warning "Impossible de récupérer l'état Git"
 
 
 ###############################################################################
