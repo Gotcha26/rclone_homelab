@@ -245,7 +245,7 @@ analyze_update_status() {
             print_fancy --bg "blue" --align "center" --highlight \
                 "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
             print_fancy --theme "warning" --bg "blue" --align "center" --highlight \
-                "Les modifications locales (hors .gitignore) seront écrasées."
+                "Les modifications hors .gitignore (./local/*) seront écrasées."
             result_code=1
         else
             print_fancy --theme "warning" --bg "blue" --align "center" --highlight \

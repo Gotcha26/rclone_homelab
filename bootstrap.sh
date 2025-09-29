@@ -136,7 +136,8 @@ update_user_file() {
     if [ ! -f "$last_ref_backup" ]; then
         mkdir -p "$BACKUP_DIR"
         cp "$ref_file" "$last_ref_backup"
-        display_msg "soft|verbose|hard" --theme ok "Première exécution pour $user_file : sauvegarde de la version de référence."
+        display_msg "soft|verbose|hard" --theme ok "Première exécution pour : $user_file"
+        display_msg "soft|verbose|hard" "   → Sauvegarde de      : $ref_file"
     fi
 
     # 2. Vérification des changements

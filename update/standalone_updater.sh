@@ -154,25 +154,25 @@ if [[ "$FORCE_MODE" == true ]]; then
     }
     rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
     rm -rf "$TMP_DIR"
-    echo -e "${GREEN}✅  Réinstallation complète effectuée.${RESET}"
+    echo "✅  Réinstallation complète effectuée."
     echo "$(git -C "$SCRIPT_DIR" describe --tags --abbrev=0 2>/dev/null || echo "unknown")" > "$LOCAL_VERSION_FILE"
 
 else
     if [[ "$MODE" == "git" ]]; then
-        echo -e "🔄  Vérification des mises à jour Git...${RESET}"
+        echo "🔄  Vérification des mises à jour Git..."
         git fetch --all --tags
         LOCAL_HASH=$(git rev-parse HEAD)
         REMOTE_HASH=$(git rev-parse "origin/$CURRENT_BRANCH")
         if [[ "$LOCAL_HASH" != "$REMOTE_HASH" ]]; then
-            echo -e "📥  Mise à jour vers la dernière révision de $CURRENT_BRANCH...${RESET}"
+            echo -e "📥  Mise à jour vers la dernière révision de ${GREEN}$CURRENT_BRANCH${RESET}..."
             git reset --hard "origin/$CURRENT_BRANCH"
-            echo -e "${GREEN}✅  Mise à jour terminée.${RESET}"
+            echo "✅  Clonage terminée."
         else
-            echo -e "${GREEN}✅  Aucune mise à jour disponible.${RESET}"
+            echo "✅  Aucune mise à jour disponible."
         fi
 
     elif [[ "$MODE" == "standalone" ]]; then
-        echo -e "🔄  Vérification des nouvelles releases GitHub...${RESET}"
+        echo "🔄  Vérification des nouvelles releases GitHub..."
         REMOTE_VERSION=$(curl -s "https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest" \
                          | grep -oP '"tag_name": "\K(.*)(?=")')
         if [[ -z "$REMOTE_VERSION" ]]; then
@@ -181,15 +181,15 @@ else
         fi
 
         if [[ "$REMOTE_VERSION" != "$LOCAL_VERSION" ]]; then
-            echo -e "📥  Nouvelle release disponible : $REMOTE_VERSION (actuelle : $LOCAL_VERSION)"
+            echo -e "📥  Nouvelle release disponible : ${GREEN}$REMOTE_VERSION${RESET} (actuelle : ${RED}$LOCAL_VERSION${RESET})"
             TMP_DIR=$(mktemp -d)
             git clone --branch "$CURRENT_BRANCH" "$REPO_URL" "$TMP_DIR"
             rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
             rm -rf "$TMP_DIR"
             echo "$REMOTE_VERSION" > "$LOCAL_VERSION_FILE"
-            echo -e "${GREEN}✅  Mise à jour standalone terminée.${RESET}"
+            echo "✅  Mise à jour standalone terminée."
         else
-            echo -e "${GREEN}✅  Aucune mise à jour disponible (version $LOCAL_VERSION).${RESET}"
+            echo -e "✅  Aucune mise à jour disponible (version ${GREEN}$LOCAL_VERSION${RESET})."
         fi
     fi
 fi
@@ -205,9 +205,9 @@ for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
         if [[ -w "$file" ]]; then
             $SUDO chmod +x "$file"
         else
-            echo -e "${RED}❌  Problème pour rendre $file exécutable"
+            echo -e "${RED}❌  Un problème est survenu pour rendre exécutable : $file${RESET}"
         fi
-        echo -e "${GREEN}   > Est rendu exécutable : $file ✓${RESET}"
+        echo "   > Est rendu exécutable : $file ✓"
 
         # Déterminer le symlink associé
         case "$file" in
@@ -228,7 +228,8 @@ for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
             else
                 $SUDO ln -sf "$file" "$symlink"
             fi
-            echo -e "${GREEN}   >> Son symlink associé : $symlink → $file ✓${RESET}"
+            echo "   >> Son symlink associé : $symlink"
+            echo "                          → $file ✓"
         fi
     else
         echo -e "${YELLOW}⚠️  Fichier introuvable : $file${RESET}"
@@ -236,6 +237,6 @@ for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
 done
 
 
-echo -e "\n✅  Mise à jour terminée. Vous pouvez maintenant relancer le projet via :${RESET}"
-echo -e "   ${BLUE}rclone_homelab${RESET}\n"
+echo -e "\n${GREEN}🎉  Mise à jour complète !${RESET}"
+echo -e "Vous pouvez maintenant relancer le projet via : ${BLUE}${BOLD}rclone_homelab${RESET}\n"
 exit 0

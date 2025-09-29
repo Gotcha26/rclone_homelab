@@ -85,7 +85,7 @@ while true; do
     if check_jobs_file; then
         add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_jobs"
     else
-        add_option "✏️  Éditer la liste des jobs (rclone)     → fichier à compléter" "menu_jobs"
+        add_option "✏️  Éditer la liste des jobs (rclone)     → compléter le fichier" "menu_jobs"
     fi
     # rclone
     if ! check_rclone_installed soft >/dev/null 2>&1; then
