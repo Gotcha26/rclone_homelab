@@ -182,7 +182,7 @@ analyze_update_status() {
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" \
                 "Nouvelle version disponible : $latest_tag"
         else
-            print_fancy --fg "blue" --align "right" "$(get_current_version) ✅ "
+            print_fancy --fg "blue" --align "right" "$(get_current_version) ☑"
         fi
         return 0
     fi
@@ -217,7 +217,7 @@ analyze_update_status() {
                 "Impossible de vérifier les mises à jour (API GitHub muette ou tag manquant)."
             result_code=1
         elif [[ "$head_commit" == "$latest_tag_commit" ]] || git merge-base --is-ancestor "$latest_tag_commit" "$head_commit" 2>/dev/null; then
-            print_fancy --fg "blue" --align "right" "$(get_current_version) ✅ "
+            print_fancy --fg "blue" --align "right" "$(get_current_version) ☑"
             result_code=0
         elif (( latest_tag_epoch < head_epoch )); then
             print_fancy --theme "ok" --fg "yellow" --align "right" --style "underline" \
@@ -237,7 +237,7 @@ analyze_update_status() {
                 "Aucune branche distante détectée pour '$branch_real' (mode offline ou fetch échoué)."
             result_code=1
         elif [[ "$head_commit" == "$remote_commit" ]]; then
-            print_fancy --fg "blue" --align "right" "$(get_current_version) ✅ "
+            print_fancy --fg "blue" --align "right" "$(get_current_version) ☑"
             result_code=0
         elif (( head_epoch < remote_epoch )); then
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \

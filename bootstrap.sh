@@ -137,7 +137,7 @@ update_user_file() {
         mkdir -p "$BACKUP_DIR"
         cp "$ref_file" "$last_ref_backup"
         display_msg "soft|verbose|hard" --theme ok "Première exécution pour : $user_file"
-        display_msg "soft|verbose|hard" "   → Sauvegarde de      : $ref_file"
+        display_msg "soft|verbose|hard" "   → Sauvegarde de         : $ref_file"
     fi
 
     # 2. Vérification des changements
