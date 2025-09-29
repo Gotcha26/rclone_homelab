@@ -19,8 +19,8 @@ while true; do
 
     # Réaffichage de la bannière mais jamais au premier passage.
     if [ "$first_time" = false ]; then
-        load_optional_configs                               # Venir recharger la configuration locale après une édition
-        menu_validation_local_variables VARS_TO_VALIDATE    # Contrôle des variables
+        load_optional_configs                        # Venir recharger la configuration locale après une édition
+        print_table_vars_invalid VARS_TO_VALIDATE    # Affichage si nécessaire
     fi
     first_time=false
     
