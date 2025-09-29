@@ -175,6 +175,7 @@ fetch_git_info() {
 }
 
 
+
 ##############################################################################
 # Fonction : responsable de tout l'affichage / diagnostic
 # - S'appuie sur les variables mises par fetch_git_info()
