@@ -243,12 +243,12 @@ analyze_update_status() {
         elif (( head_epoch < remote_epoch )); then
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" --highlight \
                 "Mise à jour disponible : des commits distants existent."
-            print_fancy --bg "blue" --align "center" \
+            print_fancy --bg "blue" --align "center" --highlight \
                 "Vous pouvez forcer la MAJ ou utiliser le menu pour mettre à jour."
-            print_fancy --theme "warning" --bg "blue" --align "center" \
+            print_fancy --theme "warning" --bg "blue" --align "center" --highlight \
                 "Les modifications locales (hors .gitignore) seront écrasées."
         else
-            print_fancy --theme "warning" --bg "blue" --align "center" \
+            print_fancy --theme "warning" --bg "blue" --align "center" --highlight \
                 "Votre commit local est plus récent que origin/$branch_real — attention aux régressions."
         fi
     fi
