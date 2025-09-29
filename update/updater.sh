@@ -1,3 +1,18 @@
+# === Initialisation des variables globales (protège set -u) ===
+# Sinon les placer dans fetch_git_info()
+: "${branch_real:=}"
+: "${head_commit:=}"
+: "${head_epoch:=0}"
+: "${remote_commit:=}"
+: "${remote_epoch:=0}"
+: "${latest_tag:=}"
+: "${latest_tag_commit:=}"
+: "${latest_tag_epoch:=0}"
+: "${current_tag:=}"
+: "${GIT_OFFLINE:=false}"
+: "${LOCAL_VERSION:=}"
+
+
 ###############################################################################
 # Fonction principale : update_check
 # → Vérifie si une mise à jour est disponible et affiche le statut
@@ -100,17 +115,6 @@ get_remote_latest_tag() {
 fetch_git_info() {
     # reset / defaults
     HAS_GIT=false
-    GIT_OFFLINE=false
-    LOCAL_VERSION=""
-    head_commit=""
-    head_epoch=0
-    branch_real=""
-    remote_commit=""
-    remote_epoch=0
-    latest_tag=""
-    latest_tag_commit=""
-    latest_tag_epoch=0
-    current_tag=""
 
     cd "$SCRIPT_DIR" || { echo "Erreur : impossible d'accéder au répertoire du script"; return 1; }
 
