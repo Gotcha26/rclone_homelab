@@ -166,7 +166,7 @@ else
         if [[ "$LOCAL_HASH" != "$REMOTE_HASH" ]]; then
             echo -e "📥  Mise à jour vers la dernière révision de ${GREEN}$CURRENT_BRANCH${RESET}..."
             git reset --hard "origin/$CURRENT_BRANCH"
-            echo "✅  Clonage terminée."
+            echo "✅  Clonage terminé."
         else
             echo "✅  Aucune mise à jour disponible."
         fi
@@ -229,7 +229,7 @@ for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
                 $SUDO ln -sf "$file" "$symlink"
             fi
             echo "   >> Son symlink associé : $symlink"
-            echo "                          → $file ✓"
+            echo "                          → $file"
         fi
     else
         echo -e "${YELLOW}⚠️  Fichier introuvable : $file${RESET}"
