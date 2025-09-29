@@ -97,7 +97,7 @@ while true; do
             add_option "⚙️  Configurer rclone                     → Configuration vierge" "menu_config_rclone"
         else
             # Config OK ou vide
-            add_option "✏️  Éditer la configuration rclone        → Modification manuelle" "menu_show_rclone_config"
+            add_option "✏️  Éditer la configuration rclone        → modification manuelle" "menu_show_rclone_config"
         fi
     fi
     # msmtp
@@ -108,7 +108,7 @@ while true; do
         # Cas 2 : msmtp présent → vérifier la configuration
         if conf_file=$(check_msmtp_configured 2>/dev/null); then
             # Fichier valide trouvé → afficher/éditer
-            add_option "✏️  Éditer la configuration msmtp         → Modification manuelle" "menu_show_msmtp_config"
+            add_option "✏️  Éditer la configuration msmtp         → modification manuelle" "menu_show_msmtp_config"
         else
             # Aucun fichier valide → configurer
             add_option "⚙️  Configurer msmtp                      → fichier à compléter" "menu_config_msmtp"
@@ -129,7 +129,7 @@ while true; do
         if [[ -f "$DIR_CONF_DEV_FILE" ]]; then
             add_option "✏️  Éditer la configuration pour dev      → orienté développeurs" "menu_edit_config_dev"
         else
-            add_option "💻  Installer une configuration \"dev\"        → orienté pour les développeurs" "menu_init_config_dev"
+            add_option "💻  Installer une configuration \"dev\"      → orienté pour les développeurs" "menu_init_config_dev"
         fi
     fi
     # Option pour installer/editer un fichier secrets.env

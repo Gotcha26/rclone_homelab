@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # === Initialisation des variables globales (protège set -u) ===
 # Sinon les placer dans fetch_git_info()
 : "${branch_real:=}"

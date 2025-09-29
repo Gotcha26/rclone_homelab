@@ -34,7 +34,7 @@ TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé �
 print_banner  # Affichage du logo/bannière suivi de la version installée
 print_fancy --align right --style italic "$(get_current_version)"
 
-# Menu/infod DEBUG
+# Menu/info DEBUG
 if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
     show_debug_header
 fi
@@ -49,8 +49,7 @@ fi
 # === Mises à jour ===
 
 # Exécuter directement l’analyse (affichage immédiat au lancement)
-fetch_git_info || { echo "⚠️ Impossible de récupérer l'état Git"; }
-analyze_update_status
+update_check && display_msg "soft|verbose|hard" theme warning "Impossible de récupérer l'état Git"
 
 
 ###############################################################################
@@ -136,17 +135,16 @@ if [[ ${#ORIG_ARGS[@]} -eq 0 ]]; then
         scroll_down             # Pas de clear
         [[ $DEBUG_INFOS == true ]] && print_fancy --theme "debug_info" "Poursuite post-menu"
         load_optional_configs   # Rappel des configurations locales (surcharge après le menu et/ou pour le mode full auto)
+        self_validation_local_variables VARS_TO_VALIDATE   # Processus de correction automatique
     fi
 else
-    display_msg "verbose|hard" theme success "Pas d'appel au menu interactif."
+    display_msg "verbose|hard" theme info "Pas d'appel au menu interactif."
 fi
 
 
 ###############################################################################
 # 4. Vérifications fonctionnelles
 ###############################################################################
-
-self_validation_local_variables VARS_TO_VALIDATE[@] # Correction arbitraire des variables utilisateurs (locales) par défaut
 
 # Boucle pour email
 if [[ -n "$MAIL_TO" ]]; then
