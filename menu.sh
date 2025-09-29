@@ -129,7 +129,7 @@ while true; do
         if [[ -f "$DIR_CONF_DEV_FILE" ]]; then
             add_option "✏️  Éditer la configuration pour dev      → orienté développeurs" "menu_edit_config_dev"
         else
-            add_option "💻  Installer une configuration \"dev\"      → orienté pour les développeurs" "menu_init_config_dev"
+            add_option "💻  Installer une configuration \"dev\"     → orienté pour les développeurs" "menu_init_config_dev"
         fi
     fi
     # Option pour installer/editer un fichier secrets.env
