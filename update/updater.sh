@@ -11,6 +11,7 @@
 : "${current_tag:=}"
 : "${GIT_OFFLINE:=false}"
 : "${LOCAL_VERSION:=}"
+: "${HAS_GIT:=false}"
 
 
 ###############################################################################
@@ -113,8 +114,6 @@ get_remote_latest_tag() {
 # - Retourne 1 seulement si cd échoue (impossible d'accéder au répertoire).
 ###############################################################################
 fetch_git_info() {
-    # reset / defaults
-    HAS_GIT=false
 
     cd "$SCRIPT_DIR" || { echo "Erreur : impossible d'accéder au répertoire du script"; return 1; }
 
