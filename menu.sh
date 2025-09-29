@@ -48,7 +48,7 @@ while true; do
     }
 
     # Construction nécessaire pour l'affichage des MAJ (branche / release)
-    # fetch_git_info || { echo "⚠️  Impossible de récupérer l'état Git"; continue; }
+    fetch_git_info
     update_status_code=$(analyze_update_status)
 
     # === Options transmises à la fonciton précédente pour une mises à jour dynamiques ===
