@@ -67,33 +67,78 @@ load_optional_configs() {
 
 
 ###############################################################################
-# Fonction : Vérifier si rclone est installé
-# Mode : soft    = retour 1 si absent
-#        verbose = interactif, propose l'installation
-#        hard    = die si absent
+# Fonction : Cycle de vérifications pour rclone
 ###############################################################################
-check_rclone_installed() {
-    local mode="${1:-${LAUNCH_MODE:-hard}}" # argument : variable:<defaut> (l'argument prime sur la variable)
+check_rclone() {
+    local status=0
 
-    if ! command -v rclone >/dev/null 2>&1; then
-        case "$mode" in
-            soft) return 1 ;;
-            verbose) install_rclone verbose ;;
-            hard) die 11 "rclone n'est pas installé. Le script va s'arrêter." ;;
+    # Vérif binaire rclone
+    if ! check_rclone_installed; then
+        if [[ "$ACTION_MODE" == "manu" ]]; then
+            display_msg "soft|verbose|hard" "❗  rclone n'est pas installé, proposition d'installation."
+            install_rclone || return 11
+        else
+            status=11
+        fi
+    else
+        check_rclone_configured
+        case $? in
+            0)  status=0  ;;   # OK
+            1)  status=31 ;;   # Config vide/inutilisable
+            2)  status=32 ;;   # Aucun fichier trouvé
         esac
     fi
 
-    return 0
+    # Tableau : code -> "thème¤message"
+    declare -A MSGS=(
+        [11]="warning¤rclone n'est pas installé. Le script va s'arrêter."
+        [31]="error¤Fichier rclone détecté mais inutilisable."
+        [32]="warning¤Aucun fichier rclone.conf trouvé."
+    )
+
+    case $status in
+        0)
+            display_msg "verbose|hard" --theme ok "Fichier rclone valide trouvé."
+            return 0
+            ;;
+        11|31|32)
+            IFS="¤" read -r theme message <<< "${MSGS[$status]}"
+            if [[ "$ACTION_MODE" == "auto" ]]; then
+                die "$status" "$message"
+            else
+                # Affichage principal
+                display_msg "soft|verbose|hard" --theme "$theme" "$message"
+                # Saut de ligne + message supplémentaire
+                display_msg "soft|verbose|hard" ""  # ligne vide
+                display_msg "soft|verbose|hard" --theme follow "Utilisez le menu interactif pour éditer/reconfigurer rclone."
+                return "$status"
+            fi
+            ;;
+    esac
+}
+
+
+###############################################################################
+# Fonction : Vérifier si rclone est installé
+###############################################################################
+check_rclone_installed() {
+    command -v rclone >/dev/null 2>&1
 }
 
 
 ###############################################################################
 # Vérifie si rclone est configuré
-# Paramètre optionnel : "soft" -> ne pas die, juste retourner 1 si non configuré
+# Retour :
+#   0 -> fichier valide trouvé (chemin émis sur stdout)
+#   1 -> fichier trouvé mais vide/inutilisable
+#   2 -> aucun fichier trouvé
+# Usage :
+#   conf_file="$(check_rclone_configured 2>/dev/null)" ; rc=$?
+#   if (( rc == 0 )); then ... use "$conf_file" ... fi
 ###############################################################################
 check_rclone_configured() {
     local candidates=()
-    local mode="${1:-${LAUNCH_MODE:-hard}}"   # ordre de priorité : arg > var globale > défaut hard
+    local conf_file
     local found=0
 
     # 1. Variable d'environnement RCLONE_CONFIG si définie
@@ -110,65 +155,43 @@ check_rclone_configured() {
             local filesize
             filesize=$(stat -c %s "$conf_file" 2>/dev/null || echo 0)
             if (( filesize > 0 )); then
-                [[ "$mode" == "verbose" ]] && print_fancy --theme "sucess" "Fichier rclone valide trouvé : $conf_file" >&2
+                # succès : on émet le chemin sur stdout (pour capture) et return 0
+                printf '%s\n' "$conf_file"
                 return 0
             else
-                [[ "$mode" == "verbose" ]] && print_fancy --theme "warning" "Fichier rclone trouvé mais vide : $conf_file" >&2
+                # trouvé mais vide
                 found=1
             fi
         fi
     done
 
     if (( found == 1 )); then
-        case "$mode" in
-            soft)   return 1 ;;
-            verbose) print_fancy --theme "error" "Fichier rclone détecté mais inutilisable." >&2; return 1 ;;
-            hard)   die 30 "Fichier rclone détecté mais inutilisable." >&2; exit 1 ;;
-        esac
+        return 1
     fi
 
-    # Aucun fichier trouvé
-    case "$mode" in
-        soft)   return 2 ;;
-        verbose) print_fancy --theme "info" "Aucun fichier rclone.conf trouvé." >&2; return 2 ;;
-        hard)   die 30 "Aucun fichier rclone.conf trouvé — arrêt immédiat." >&2; exit 2 ;;
-    esac
+    return 2
 }
 
 
 ###############################################################################
-# Fonction : Installer rclone selon le mode choisi
-# Usage    : install_rclone [soft|verbose|hard]
+# Fonction : Installer rclone si absent
 ###############################################################################
 install_rclone() {
-    local mode="${1:-${LAUNCH_MODE:-hard}}" # argument : variable:<defaut> (l'argument prime sur la variable)
-
-    case "$mode" in
-        soft)
-            echo "📦  Installation de rclone en mode silencieux..."
-            ;;
-        verbose)
-            echo "⚠️  rclone n'est pas installé."
-            read -e -rp "Voulez-vous l'installer maintenant ? [y/N] : " REPLY
-            REPLY=${REPLY,,}
-            if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
-                die 11 "rclone est requis mais n'a pas été installé."
-            fi
-            ;;
-        hard)
-            die 11 "rclone est requis mais n'est pas installé."
-            ;;
-    esac
+    # Cas ACTION_MODE=manu → on demande confirmation
+    echo
+    read -e -rp "📦  Voulez-vous installer rclone maintenant ? [y/N] : " REPLY
+    REPLY=${REPLY,,}
+    if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+        die 11 "Installation de rclone refusée par l'utilisateur."
+    fi
 
     # Tentative d’installation
-    echo "📦  Installation de rclone en cours..."
+    display_msg "verbose|hard" --theme follow "Installation de rclone en cours..."
     if sudo apt update && sudo apt install -y rclone; then
+        display_msg "soft|verbose|hard" --theme ok "rclone a été installé avec succès."
         return 0
     else
-        case "$mode" in
-            verbose) die 11 "Une erreur est survenue lors de l'installation de rclone." ;;
-            soft)    return 1 ;;
-        esac
+        die 11 "Une erreur est survenue lors de l'installation de rclone."
     fi
 }
 

@@ -141,12 +141,11 @@ fi
 
 
 ###############################################################################
-# 4. Vérifications fonctionnelles
+# 4. Vérifications fonctionnelles, pre-traitement
 ###############################################################################
 
 check_and_prepare_email "$MAIL_TO"
-check_rclone_installed
-check_rclone_configured
+check_rclone
 create_temp_dirs
 check_jobs_file hard
 

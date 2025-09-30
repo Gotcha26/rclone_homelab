@@ -226,9 +226,11 @@ while true; do
             menu_show_rclone_config)
                 scroll_down
                 # Détecte le fichier configuré
-                if conf_file=$(check_rclone_configured 2>/dev/null); then
-                    echo -e "▶️  Affichage du fichier de configuration rclone : ${GREEN}$conf_file${RESET}"
-                    # Utilisation de nano pour visualiser/éditer sans polluer le log
+                conf_file="$(check_rclone_configured 2>/dev/null)"
+                rc=$?
+                if (( rc == 0 )); then
+                    echo -e "▶️  Affichage du fichier de configuration rclone : ${GREEN}${conf_file}${RESET}"
+                    # ouvrir avec EDITOR sans polluer les logs
                     $EDITOR "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
                 else
