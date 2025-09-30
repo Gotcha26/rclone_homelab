@@ -136,7 +136,7 @@ if [[ ${#ORIG_ARGS[@]} -eq 0 ]]; then
         self_validation_local_variables VARS_TO_VALIDATE   # Processus de correction automatique
     fi
 else
-    display_msg "verbose|hard" theme info "Pas d'appel au menu interactif."
+    display_msg "verbose|hard" --theme info "Pas d'appel au menu interactif."
 fi
 
 

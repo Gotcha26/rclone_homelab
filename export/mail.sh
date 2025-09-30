@@ -5,7 +5,7 @@ check_and_prepare_email() {
     local mail_to="$1"
 
     if [[ -z "$mail_to" ]]; then
-        display_msg "verbose|hard" --theme info "Aucun email fourni : pas besoin d'en envoyer un !"
+        display_msg "verbose|hard" --theme info "Aucun email fourni : pas besoin de chercher à en envoyer un !"
         return 0
     fi
 

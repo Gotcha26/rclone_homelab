@@ -71,6 +71,7 @@ load_optional_configs() {
 ###############################################################################
 check_rclone() {
     local status=0
+    local conf_file=""
 
     # Vérif binaire rclone
     if ! check_rclone_installed; then
@@ -81,12 +82,15 @@ check_rclone() {
             status=11
         fi
     else
-        check_rclone_configured
-        case $? in
-            0)  status=0  ;;   # OK
-            1)  status=31 ;;   # Config vide/inutilisable
-            2)  status=32 ;;   # Aucun fichier trouvé
-        esac
+        # Vérif configuration et capture chemin du fichier valide
+        if conf_file="$(check_rclone_configured 2>/dev/null)"; then
+            status=0
+        else
+            case $? in
+                1) status=31 ;;   # Config vide/inutilisable
+                2) status=32 ;;   # Aucun fichier trouvé
+            esac
+        fi
     fi
 
     # Tableau : code -> "thème¤message"
@@ -98,19 +102,29 @@ check_rclone() {
 
     case $status in
         0)
-            display_msg "verbose|hard" --theme ok "Fichier rclone valide trouvé."
+            # Affichage succès avec chemin et précision de provenance
+            local source_type="inconnu"
+            if [[ -n "$RCLONE_CONFIG" && "$RCLONE_CONFIG" == "$conf_file" ]]; then
+                source_type="variable d'environnement"
+            elif [[ "$conf_file" == "$HOME/.config/rclone/rclone.conf" ]]; then
+                source_type="dossier utilisateur"
+            elif [[ "$conf_file" == "/etc/rclone.conf" ]]; then
+                source_type="configuration globale"
+            fi
+
+            display_msg "verbose|hard" --theme ok \
+                "Fichier rclone valide trouvé : $conf_file ($source_type)."
             return 0
             ;;
         11|31|32)
-            IFS="¤" read -r theme message <<< "${MSGS[$status]}"
+            IFS="¤" read -r --theme message <<< "${MSGS[$status]}"
             if [[ "$ACTION_MODE" == "auto" ]]; then
                 die "$status" "$message"
             else
-                # Affichage principal
                 display_msg "soft|verbose|hard" --theme "$theme" "$message"
-                # Saut de ligne + message supplémentaire
                 display_msg "soft|verbose|hard" ""  # ligne vide
-                display_msg "soft|verbose|hard" --theme follow "Utilisez le menu interactif pour éditer/reconfigurer rclone."
+                display_msg "soft|verbose|hard" --theme follow \
+                    "Utilisez le menu interactif pour éditer/reconfigurer rclone."
                 return "$status"
             fi
             ;;
@@ -205,7 +219,7 @@ check_jobs_file() {
     # Vérifier présence
     if [[ ! -f "$DIR_JOBS_FILE" ]]; then
         if [[ "$ACTION_MODE" == "auto" ]]; then
-            display_msg "verbose|hard" theme error "Fichier jobs introuvable : $DIR_JOBS_FILE"
+            display_msg "verbose|hard" --theme error "Fichier jobs introuvable : $DIR_JOBS_FILE"
             die 3 "Fichier jobs introuvable : $DIR_JOBS_FILE"
         fi
         return 1
@@ -214,7 +228,7 @@ check_jobs_file() {
     # Vérifier lisibilité
     if [[ ! -r "$DIR_JOBS_FILE" ]]; then
         if [[ "$ACTION_MODE" == "auto" ]]; then
-            display_msg "verbose|hard" theme error "Fichier jobs non lisible : $DIR_JOBS_FILE"
+            display_msg "verbose|hard" --theme error "Fichier jobs non lisible : $DIR_JOBS_FILE"
             die 4 "Fichier jobs non lisible : $DIR_JOBS_FILE"
         fi
         return 1
@@ -223,7 +237,7 @@ check_jobs_file() {
     # Vérifier contenu (au moins une ligne non vide et non commentée)
     if ! grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE"; then
         if [[ "$ACTION_MODE" == "auto" ]]; then
-            display_msg "verbose|hard" theme error "Aucun job valide trouvé dans $DIR_JOBS_FILE"
+            display_msg "verbose|hard" --theme error "Aucun job valide trouvé dans $DIR_JOBS_FILE"
             die 5 "Aucun job valide trouvé dans $DIR_JOBS_FILE"
         fi
         return 1
