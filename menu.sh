@@ -177,20 +177,23 @@ while true; do
     max_len=0
     for i in "${!MENU_OPTIONS[@]}"; do
         [[ "${MENU_ACTIONS[$i]}" == "__separator__" || "${MENU_ACTIONS[$i]}" == "quit" ]] && continue
-        text="${MENU_OPTIONS[$i]%%[*]}"
-        (( ${#text} > max_len )) && max_len=${#text}
+        # Si option contient crochets, on aligne sur le début du crochet
+        if [[ "${MENU_OPTIONS[$i]}" =~ \[(.*)\] ]]; then
+            len=${#BASH_REMATCH[0]}
+            text_len=$((${#MENU_OPTIONS[$i]} - ${#BASH_REMATCH[0]}))
+        else
+            text_len=${#MENU_OPTIONS[$i]}
+        fi
+        (( text_len > max_len )) && max_len=$text_len
     done
 
     for i in "${!MENU_OPTIONS[@]}"; do
         if [[ "${MENU_ACTIONS[$i]}" == "__separator__" ]]; then
             echo "    ${MENU_OPTIONS[$i]}"
         elif [[ "${MENU_ACTIONS[$i]}" == "quit" ]]; then
-            # Affichage final hors numérotation
-            echo "q) $(printf "%-${max_len}s" "${MENU_OPTIONS[$i]%%[*]}")${MENU_OPTIONS[$i]#*[^[:space:]]}"
+            printf "q) %-${max_len}s\n" "${MENU_OPTIONS[$i]}"
         else
-            # Alignement du texte et des crochets
-            text="${MENU_OPTIONS[$i]}"
-            echo "$num) $(printf "%-${max_len}s" "${text%%[*]}")${text#*[^[:space:]]}"
+            printf "%d) %-${max_len}s\n" "$num" "${MENU_OPTIONS[$i]}"
             CHOICE_TO_INDEX[$num]=$i
             ((num++))
         fi
