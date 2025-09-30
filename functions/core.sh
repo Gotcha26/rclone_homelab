@@ -337,7 +337,7 @@ safe_var() {
 # Fonction : Pour les tableaux : renvoie la taille, ou 0 si non défini
 ###############################################################################
 safe_count() {
-    local -n arr=$1 2>/dev/null || { echo 0; return; }
+    local -n arr="${1:-}" 2>/dev/null || { echo 0; return; }
     echo "${#arr[@]}"
 }
 
