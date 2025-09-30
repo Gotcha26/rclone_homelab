@@ -89,9 +89,9 @@ while true; do
     # 3) Configurations
     # Jobs
     if check_jobs_file; then
-        add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_jobs"
+        add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_init_jobs"
     else
-        add_option "✏️  Éditer la liste des jobs (rclone)     → compléter le fichier" "menu_jobs"
+        add_option "✏️  Éditer la liste des jobs (rclone)     → compléter le fichier" "menu_edit_jobs"
     fi
     # rclone
     if ! check_rclone_installed soft >/dev/null 2>&1; then
@@ -231,14 +231,16 @@ while true; do
                 # On quitte la boucle, on quitte le sous-shell, pour renir à l'exécution normale de main.sh
                 break
                 ;;
-            menu_jobs)
+            menu_init_jobs)
                 scroll_down
-                echo "▶️  Edition de la liste des jobs pour rclone."
-                if ! init_jobs_file; then
-                    echo "❌  Impossible de créer $DIR_JOBS_FILE, édition annulée."
-                    continue
-                fi
-                echo "▶️  Ouverture de $JOBS_FILE..."
+                echo "▶️  Installation du fichier des jobs pour rclone."
+                echo "Le fichier sera préservé lors des mises à jours automatiques."
+                init_file "jobs"
+                echo "✅  ... Installation terminée > retour au menu."
+                ;;
+            menu_edit_jobs)
+                scroll_down
+                echo "▶️  Edition du fichier $DIR_JOBS_FILE"
                 $EDITOR "$DIR_JOBS_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;

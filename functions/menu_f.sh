@@ -1,47 +1,5 @@
 ###############################################################################
-# Fonction : Vérifie la présence de jobs.txt et initialise à partir de jobs.txt.exemple si absent
-###############################################################################
-init_jobs_file() {
-    # Si jobs.conf existe, rien à faire
-    if [[ -f "$DIR_JOBS_FILE" ]]; then
-        print_fancy --theme "info" "Fichier déjà présent : $DIR_JOBS_FILE"
-        return 0
-    fi
-
-    # Sinon, on tente de copier le fichier exemple
-    if [[ -f "$DIR_EXEMPLE_JOBS_FILE" ]]; then
-        mkdir -p "$(dirname "$DIR_JOBS_FILE")" || {
-            print_fancy --theme "error" "Impossible de créer le dossier cible $(dirname "$DIR_JOBS_FILE")"
-            return 1
-        }
-
-        if cp "$DIR_EXEMPLE_JOBS_FILE" "$DIR_JOBS_FILE"; then
-            print_fancy --theme "success" "Copie de $DIR_EXEMPLE_JOBS_FILE → $DIR_JOBS_FILE réalisée"
-            
-            # Sauvegarde du fichier de référence dans BACKUP_DIR
-            if mkdir -p "$BACKUP_DIR" && cp -f "$DIR_EXEMPLE_JOBS_FILE" "$BACKUP_DIR/$(basename "$DIR_EXEMPLE_JOBS_FILE")"; then
-                print_fancy --theme "success" \
-                    "Backup de référence mis à jour : $BACKUP_DIR/$(basename "$DIR_EXEMPLE_JOBS_FILE")"
-            else
-                print_fancy --theme "error" \
-                    "Échec de la sauvegarde du fichier de référence ($DIR_EXEMPLE_JOBS_FILE → $BACKUP_DIR)"
-                return 1
-            fi
-
-            return 0
-        else
-            print_fancy --theme "error" "Erreur dans la copie de $DIR_EXEMPLE_JOBS_FILE → $DIR_JOBS_FILE"
-            return 1
-        fi
-    else
-        print_fancy --theme "error" "Fichier exemple introuvable : $DIR_EXEMPLE_JOBS_FILE"
-        return 1
-    fi
-}
-
-
-###############################################################################
-# Fonction : Initialiser un fichier si absent (config ou secrets)
+# Fonction : Initialiser un fichier si absent (config ou secrets, ex: jobs)
 # Usage : init_file <ID>
 # Fonctionne avec le tableau VARS_LOCAL_FILES
 ###############################################################################
@@ -94,12 +52,12 @@ init_file() {
     print_fancy --theme "success" "Fichier installé : $user_file"
 
     # Sauvegarde de la référence actuelle pour suivi des mises à jour
-    if mkdir -p "$BACKUP_DIR" && cp -f "$main_file" "$BACKUP_DIR/$(basename "$main_file")"; then
+    if mkdir -p "$BACKUP_DIR" && cp -f "$ref_file" "$last_ref_backup"; then
         print_fancy --theme "success" \
-            "Backup de référence mis à jour : $BACKUP_DIR/$(basename "$main_file")"
+            "Backup de référence mis à jour : $last_ref_backup"
     else
         print_fancy --theme "error" \
-            "Échec de la sauvegarde du fichier de référence ($main_file → $BACKUP_DIR)"
+            "Échec de la sauvegarde du fichier de référence ($ref_file → $last_ref_backup)"
         return 1
     fi
 
