@@ -17,16 +17,6 @@ source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration loca
 
 # ===
 
-# SECURITE - Arbitraire - Valeurs par défaut si les variables ne sont pas définies (avant le contrôle/correction)
-: "${DEBUG_INFOS:=false}"
-: "${DEBUG_MODE:=false}"
-: "${DISPLAY_MODE:=soft}"
-: "${ACTION_MODE:=manu}"
-
-# Association des modes si nécessaire (DEBUG)
-[[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
-[[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
-
 TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé à la fermeture.
 
 # === Initialisation du dispositif d'affichage ===

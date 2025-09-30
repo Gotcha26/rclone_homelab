@@ -51,6 +51,16 @@ else
     SUDO=""
 fi
 
+# SECURITE - Arbitraire - Valeurs par défaut si les variables ne sont pas définies (avant le contrôle/correction)
+: "${DEBUG_INFOS:=false}"
+: "${DEBUG_MODE:=false}"
+: "${DISPLAY_MODE:=soft}"
+: "${ACTION_MODE:=manu}"
+
+# Association des modes si nécessaire (DEBUG)
+[[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
+[[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
+
 # *** ↓↓ FONCTIONS PERSISTANTES (en cas de MAJ) ↓↓ ***
 
 ###############################################################################
@@ -135,8 +145,6 @@ update_user_file() {
     # Cas où le fichier local n'existe pas → on ignore totalement → pas de suivi
     if [ ! -f "$user_file" ]; then
         display_msg "verbose|hard" "🔎  Fichier local absent, aucun suivi nécessaire : $user_file"
-        [ -f "$last_ref_backup" ] && rm -f "$last_ref_backup" \
-            && display_msg "verbose|hard" --theme warning "Backup inutile supprimé : $last_ref_backup"
         return 0
     fi
 
