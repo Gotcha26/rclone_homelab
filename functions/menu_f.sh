@@ -29,7 +29,7 @@ init_jobs_file() {
 ###############################################################################
 init_file() {
     local id="$1"
-
+    
     # Vérifier que l'ID existe dans le tableau
     if [[ -z "${VARS_LOCAL_FILES[$id]}" ]]; then
         print_fancy --theme "error" "ID inconnu : $id"

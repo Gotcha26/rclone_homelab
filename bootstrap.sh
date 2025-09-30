@@ -44,6 +44,7 @@ declare -A VARS_LOCAL_FILES=(
 )
 
 # *** Action(s) global(s) ***
+
 # Détection du sudo
 if [[ $(id -u) -ne 0 ]]; then
     SUDO="sudo"
@@ -60,6 +61,9 @@ fi
 # Association des modes si nécessaire (DEBUG)
 [[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
 [[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
+
+# Répertoire pour les sauvegardes horodatées (MAJ fichiers locaux)
+BACKUP_DIR="${DIR_LOCAL}/backups"
 
 # *** ↓↓ FONCTIONS PERSISTANTES (en cas de MAJ) ↓↓ ***
 
@@ -101,9 +105,6 @@ make_scripts_executable() {
 ###############################################################################
 # Fonction pour mettre à jour un fichier local
 update_local_configs() {
-
-    # Répertoire pour les sauvegardes horodatées
-    BACKUP_DIR="${DIR_LOCAL}/backups"
 
     # Flag pour savoir si au moins un fichier a été traité
     local files_updated=false
