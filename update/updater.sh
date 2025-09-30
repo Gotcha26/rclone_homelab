@@ -16,10 +16,10 @@
 
 
 ###############################################################################
-# Fonction principale : update_check
+# Fonction principale : check_update
 # → Vérifie si une mise à jour est disponible et affiche le statut
 ###############################################################################
-update_check() {
+check_update() {
     fetch_git_info || return 1
     analyze_update_status
     return 0

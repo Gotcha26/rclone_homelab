@@ -32,7 +32,7 @@ TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé �
 # === Initialisation du dispositif d'affichage ===
 
 print_banner  # Affichage du logo/bannière suivi de la version installée
-update_check || display_msg "soft|verbose|hard" --theme warning "Impossible de récupérer l'état Git";
+check_update || display_msg "soft|verbose|hard" --theme warning "Impossible de récupérer l'état Git";
 
 
 # Menu/info DEBUG
