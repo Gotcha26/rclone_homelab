@@ -159,7 +159,6 @@ while true; do
     # 6) Choix permanents
 
     add_option "📖  Afficher l'aide" "menu_show_help"
-    add_option "👋  Quitter" "menu_exit_script"
 
     # === Affichage du menu ===
 
@@ -173,21 +172,39 @@ while true; do
     # --- Affichage des options ---
     declare -A CHOICE_TO_INDEX=()
     num=1
+
+    # Calcul largeur max pour aligner crochets si besoin
+    max_len=0
+    for i in "${!MENU_OPTIONS[@]}"; do
+        [[ "${MENU_ACTIONS[$i]}" == "__separator__" || "${MENU_ACTIONS[$i]}" == "quit" ]] && continue
+        text="${MENU_OPTIONS[$i]%%[*]}"
+        (( ${#text} > max_len )) && max_len=${#text}
+    done
+
     for i in "${!MENU_OPTIONS[@]}"; do
         if [[ "${MENU_ACTIONS[$i]}" == "__separator__" ]]; then
             echo "    ${MENU_OPTIONS[$i]}"
+        elif [[ "${MENU_ACTIONS[$i]}" == "quit" ]]; then
+            # Affichage final hors numérotation
+            echo "q) $(printf "%-${max_len}s" "${MENU_OPTIONS[$i]%%[*]}")${MENU_OPTIONS[$i]#*[^[:space:]]}"
         else
-            echo "$num) ${MENU_OPTIONS[$i]}"
+            # Alignement du texte et des crochets
+            text="${MENU_OPTIONS[$i]}"
+            echo "$num) $(printf "%-${max_len}s" "${text%%[*]}")${text#*[^[:space:]]}"
             CHOICE_TO_INDEX[$num]=$i
             ((num++))
         fi
     done
 
     echo
-    read -e -rp "Votre choix [1-$((num-1))] : " choice </dev/tty
+    read -e -rp "Votre choix [1-$((num-1)) ou q pour quitter] : " choice </dev/tty
 
     # --- Validation et exécution ---
-    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice < num )); then
+    if [[ "$choice" == "q" ]]; then
+        scroll_down
+        echo "👋  Quitter."
+        exit 99
+    elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice < num )); then
         idx="${CHOICE_TO_INDEX[$choice]}"
         action="${MENU_ACTIONS[$idx]}"
         case "$action" in
@@ -332,9 +349,6 @@ while true; do
             menu_show_help)
                 scroll_down
                 show_help
-                ;;
-            menu_exit_script)
-                exit 99
                 ;;
             *)
                 scroll_down
