@@ -202,7 +202,7 @@ install_rclone() {
 
     # Tentative d’installation
     display_msg "verbose|hard" --theme follow "Installation de rclone en cours..."
-    if sudo apt update && sudo apt install -y rclone; then
+    if $SUDO apt update && sudo apt install -y rclone; then
         display_msg "soft|verbose|hard" --theme ok "rclone a été installé avec succès."
         return 0
     else
@@ -436,23 +436,30 @@ dev_uninstall() {
         echo
         echo "📦  Sélectionne le logiciel à désinstaller :"
         echo
+
+        # Calcul largeur max des noms pour aligner le statut
+        local max_len=0
+        for item in "${supported[@]}"; do
+            (( ${#item} > max_len )) && max_len=${#item}
+        done
+
+        # Affichage menu
         local i=1
         for item in "${supported[@]}"; do
-            if command -v "$item" >/dev/null 2>&1; then
-                local status="installé"
-            else
-                local status="absent"
-            fi
-            printf "  %d) %s [%s]\n" "$i" "$item" "$status"
+            local status="absent"
+            [[ -x "$(command -v "$item" 2>/dev/null)" ]] && status="installé"
+            printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
             ((i++))
         done
         printf "  q) Quitter\n"
+        echo
 
         read -rp "👉  Ton choix : " choice
+        echo
         if [[ "$choice" == "q" ]]; then
             echo "❌  Abandon."
             return 0
-        elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice>=1 && choice<=${#supported[@]} )); then
+        elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#supported[@]} )); then
             binary_name="${supported[$((choice-1))]}"
         else
             echo "❌  Choix invalide."
@@ -490,14 +497,14 @@ dev_uninstall() {
         if dpkg -S "$path" >/dev/null 2>&1; then
             print_fancy --theme ok "Installation via paquet Debian détectée."
             print_fancy --theme info "Exécution de : apt remove --purge -y $debian_pkgs && apt autoremove -y"
-            sudo apt remove --purge -y $debian_pkgs
-            sudo apt autoremove -y
+            $SUDO apt remove --purge -y $debian_pkgs
+            $SUDO apt autoremove -y
             print_fancy --theme success "$binary_name a été désinstallé avec apt."
             return 0
         else
             print_fancy --theme ok "Installation manuelle détectée (binaire copié directement)."
             print_fancy --theme info "Suppression du fichier : $path"
-            sudo rm -f "$path"
+            $SUDO rm -f "$path"
             print_fancy --theme success "$binary_name (binaire manuel) supprimé."
         fi
     done
@@ -509,7 +516,7 @@ dev_uninstall() {
         print_fancy "🔍 msmtpq détecté à : $msmtpq_path"
         if ! dpkg -S "$msmtpq_path" >/dev/null 2>&1; then
             print_fancy --theme info "Suppression du fichier : $msmtpq_path"
-            sudo rm -f "$msmtpq_path"
+            $SUDO rm -f "$msmtpq_path"
             print_fancy --theme success "msmtpq (binaire manuel) supprimé."
         fi
     fi
@@ -532,23 +539,30 @@ dev_install() {
         echo
         echo "📦  Sélectionne le logiciel à installer :"
         echo
+
+        # Calcul largeur max des noms pour aligner le statut
+        local max_len=0
+        for item in "${supported[@]}"; do
+            (( ${#item} > max_len )) && max_len=${#item}
+        done
+
+        # Affichage menu
         local i=1
         for item in "${supported[@]}"; do
-            if command -v "$item" >/dev/null 2>&1; then
-                local status="installé"
-            else
-                local status="absent"
-            fi
-            printf "  %d) %s [%s]\n" "$i" "$item" "$status"
+            local status="absent"
+            [[ -x "$(command -v "$item" 2>/dev/null)" ]] && status="installé"
+            printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
             ((i++))
         done
         printf "  q) Quitter\n"
+        echo
 
         read -rp "👉  Ton choix : " choice
+        echo
         if [[ "$choice" == "q" ]]; then
             echo "❌  Abandon."
             return 0
-        elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice>=1 && choice<=${#supported[@]} )); then
+        elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#supported[@]} )); then
             binary_name="${supported[$((choice-1))]}"
         else
             echo "❌  Choix invalide."
@@ -577,7 +591,7 @@ dev_install() {
 
     print_fancy "🔍 Installation de $binary_name via apt..."
     print_fancy --theme info "Exécution : sudo apt update && sudo apt install -y $debian_pkgs"
-    sudo apt update
-    sudo apt install -y $debian_pkgs
+    $SUDO apt update
+    $SUDO apt install -y $debian_pkgs
     print_fancy --theme success "$binary_name installé avec succès !"
 }
