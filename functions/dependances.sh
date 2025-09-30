@@ -150,7 +150,10 @@ spinner() {
 die() {
     local code=$1
     shift
-    print_fancy --theme "error" "$*" >&2
+    echo
+    print_fancy --align center --bg red --fg black_pure --style bold --highlight "Le script a rencontré une erreur fatale !"
+    print_fancy --theme error "$*" >&2
+    print_fancy --align center --bg red --fg black_pure --style bold --highlight "--- Veuillez corriger et/ou utiliser le menu interractif ---"
     echo
     exit "$code"
 }
