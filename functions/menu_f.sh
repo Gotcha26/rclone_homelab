@@ -25,6 +25,7 @@ init_jobs_file() {
 ###############################################################################
 # Fonction : Initialiser un fichier si absent (config ou secrets)
 # Usage : init_file <ID>
+# Fonctionne avec le tableau VARS_LOCAL_FILES
 ###############################################################################
 init_file() {
     local id="$1"
@@ -35,8 +36,9 @@ init_file() {
         return 1
     fi
 
-    # Récupérer les chemins source et destination
-    IFS=';' read -r main_file target_file <<< "${VARS_LOCAL_FILES[$id]}"
+    # Récupérer les chemins source (ref_file) et destination (user_file)
+    IFS=';' read -r ref_file user_file <<< "${VARS_LOCAL_FILES[$id]}"
+    local last_ref_backup="$BACKUP_DIR/last_$(basename "$ref_file")"
 
     # Message spécifique si secrets
     local info_msg="Vous êtes sur le point de créer un fichier personnalisable de configuration."
@@ -46,41 +48,50 @@ init_file() {
 
     echo
     echo
-    print_fancy --style "underline" "⚙️  Création de $target_file"
+    print_fancy --style "underline" "⚙️  Création de $user_file"
     print_fancy --theme "info" "$info_msg"
-    print_fancy --fg "blue" -n "Fichier d'origine : "; print_fancy "$main_file"
-    print_fancy --fg "blue" -n "Fichier à créer   : "; print_fancy "$target_file"
+    print_fancy --fg "blue" -n "Fichier d'origine : "; print_fancy "$ref_file"
+    print_fancy --fg "blue" -n "Fichier à créer   : "; print_fancy "$user_file"
     echo
 
     # Confirmation utilisateur
     read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
     REPLY=${REPLY,,}
     if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
-        print_fancy --theme "info" "Création ignorée pour : $target_file"
+        print_fancy --theme "info" "Création ignorée pour : $user_file"
         return 1
     fi
 
     # Création du dossier si nécessaire
-    mkdir -p "$(dirname "$target_file")" || {
-        print_fancy --theme "error" "Impossible de créer le dossier cible $(dirname "$target_file")"
+    mkdir -p "$(dirname "$user_file")" || {
+        print_fancy --theme "error" "Impossible de créer le dossier cible $(dirname "$user_file")"
         return 1
     }
 
-    # Copier le fichier
-    cp "$main_file" "$target_file" || {
-        print_fancy --theme "error" "Impossible de copier $main_file vers $target_file"
+    # Copier le fichier d'exemple -> fichier utilisateur
+    cp "$ref_file" "$user_file" || {
+        print_fancy --theme "error" "Impossible de copier $ref_file vers $user_file"
         return 1
     }
+    print_fancy --theme "success" "Fichier installé : $user_file"
 
-    print_fancy --theme "success" "Fichier installé : $target_file"
+    # Sauvegarde de la référence actuelle pour suivi des mises à jour
+    if mkdir -p "$BACKUP_DIR" && cp -f "$main_file" "$BACKUP_DIR/$(basename "$main_file")"; then
+        print_fancy --theme "success" \
+            "Backup de référence mis à jour : $BACKUP_DIR/$(basename "$main_file")"
+    else
+        print_fancy --theme "error" \
+            "Échec de la sauvegarde du fichier de référence ($main_file → $BACKUP_DIR)"
+        return 1
+    fi
 
     # Proposer l'édition immédiate
     echo
     read -rp "✏️  Voulez-vous éditer le fichier maintenant avec $EDITOR ? [Y/n] : " EDIT_REPLY
     EDIT_REPLY=${EDIT_REPLY,,}
     if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
-        $EDITOR "$target_file"
+        $EDITOR "$user_file"
     else
-        print_fancy --theme "info" "Édition ignorée pour : $target_file"
+        print_fancy --theme "info" "Édition ignorée pour : $user_file"
     fi
 }

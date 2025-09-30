@@ -150,10 +150,16 @@ update_user_file() {
 
     # 1. Première exécution : sauvegarde de la version de référence
     if [ ! -f "$last_ref_backup" ]; then
-        mkdir -p "$BACKUP_DIR"
-        cp "$ref_file" "$last_ref_backup"
-        display_msg "soft|verbose|hard" --theme ok "Première exécution pour : $user_file"
-        display_msg "soft|verbose|hard" "   → Sauvegarde de         : $ref_file"
+        if mkdir -p "$BACKUP_DIR" && cp "$ref_file" "$last_ref_backup"; then
+            display_msg "soft|verbose|hard" --theme ok \
+                "Initialisation du suivi pour : $user_file"
+            display_msg "soft|verbose|hard" \
+                "   → Référence sauvegardée : $last_ref_backup"
+        else
+            display_msg "soft|verbose|hard" --theme error \
+                "Échec de la sauvegarde initiale ($ref_file → $last_ref_backup)"
+            return 1
+        fi
     fi
 
     # 2. Vérification des changements
