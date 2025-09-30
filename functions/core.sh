@@ -104,7 +104,7 @@ check_rclone() {
         0)
             # Affichage succès avec chemin et précision de provenance
             local source_type="inconnu"
-            if [[ -n "$RCLONE_CONFIG" && "$RCLONE_CONFIG" == "$conf_file" ]]; then
+            if [[ -n "${RCLONE_CONFIG:-}" && "$RCLONE_CONFIG" == "$conf_file" ]]; then
                 source_type="variable d'environnement"
             elif [[ "$conf_file" == "$HOME/.config/rclone/rclone.conf" ]]; then
                 source_type="dossier utilisateur"
