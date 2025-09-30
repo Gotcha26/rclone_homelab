@@ -82,6 +82,7 @@ check_rclone() {
             status=11
         fi
     else
+        display_msg "verbose|hard" --theme ok "rclone est installé."
         # Vérif configuration et capture chemin du fichier valide
         if conf_file="$(check_rclone_configured 2>/dev/null)"; then
             status=0
@@ -215,35 +216,21 @@ install_rclone() {
 # Retour : 0 si OK, 1 si KO
 ###############################################################################
 check_jobs_file() {
-
     # Vérifier présence
-    if [[ ! -f "$DIR_JOBS_FILE" ]]; then
-        if [[ "$ACTION_MODE" == "auto" ]]; then
-            display_msg "verbose|hard" --theme error "Fichier jobs introuvable : $DIR_JOBS_FILE"
-            die 3 "Fichier jobs introuvable : $DIR_JOBS_FILE"
-        fi
-        return 1
-    fi
+    [[ -f "$DIR_JOBS_FILE" ]] || { [[ "$ACTION_MODE" == "auto" ]] && \
+        die 3 "Fichier jobs introuvable : $DIR_JOBS_FILE"; return 1; }
 
     # Vérifier lisibilité
-    if [[ ! -r "$DIR_JOBS_FILE" ]]; then
-        if [[ "$ACTION_MODE" == "auto" ]]; then
-            display_msg "verbose|hard" --theme error "Fichier jobs non lisible : $DIR_JOBS_FILE"
-            die 4 "Fichier jobs non lisible : $DIR_JOBS_FILE"
-        fi
-        return 1
-    fi
+    [[ -r "$DIR_JOBS_FILE" ]] || { [[ "$ACTION_MODE" == "auto" ]] && \
+        die 4 "Fichier jobs non lisible : $DIR_JOBS_FILE"; return 1; }
 
     # Vérifier contenu (au moins une ligne non vide et non commentée)
-    if ! grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE"; then
-        if [[ "$ACTION_MODE" == "auto" ]]; then
-            display_msg "verbose|hard" --theme error "Aucun job valide trouvé dans $DIR_JOBS_FILE"
-            die 5 "Aucun job valide trouvé dans $DIR_JOBS_FILE"
-        fi
-        return 1
-    fi
+    grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE" || { [[ "$ACTION_MODE" == "auto" ]] && \
+        die 5 "Aucun job valide trouvé dans $DIR_JOBS_FILE"; return 1; }
 
-    # Tout est bon
+    # Tout est bon si on arrive jusqu'içi
+    [[ "$ACTION_MODE" == "auto" ]] && display_msg "verbose|hard" --theme ok "Consultation des jobs : passée"
+
     return 0
 }
 

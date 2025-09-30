@@ -144,9 +144,9 @@ fi
 # 4. Vérifications fonctionnelles, pre-traitement
 ###############################################################################
 
+create_temp_dirs
 check_and_prepare_email "$MAIL_TO"
 check_rclone
-create_temp_dirs
 check_jobs_file hard
 
 
