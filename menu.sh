@@ -148,7 +148,15 @@ while true; do
 
     add_separator_if_needed
 
-    # 5) Choix permanents
+    # 5) Options pour la branche dev
+    if [[ "$branch_real" != "main" ]]; then
+        add_option "🔓  Installer  un composant               → Qui ne serait pas déjà présent..." "menu_dev_install"
+        add_option "🔓  Désinstaller un composant             → Irréversible !" "menu_dev_uninstall"
+    fi
+
+    add_separator_if_needed
+
+    # 6) Choix permanents
 
     add_option "📖  Afficher l'aide" "menu_show_help"
     add_option "👋  Quitter" "menu_exit_script"
@@ -308,6 +316,18 @@ while true; do
                 echo "▶️  Édition du fichiers $SECRET_FILE"
                 $EDITOR "$SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
+                ;;
+            menu_dev_install)
+                scroll_down
+                echo "▶️  Menu de d'installation de composants..."
+                dev_install
+                echo "✅  ... Désinstallation terminée > retour au menu."
+                ;;
+            menu_dev_uninstall)
+                scroll_down
+                echo "▶️  Menu de désinstallation..."
+                dev_uninstall
+                echo "✅  ... Désinstallation terminée > retour au menu."
                 ;;
             menu_show_help)
                 scroll_down
