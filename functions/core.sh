@@ -425,7 +425,7 @@ mini_edit_local_config() {
 # Usage    : dev_uninstall [binaire]
 ###############################################################################
 dev_uninstall() {
-    local binary_name="$1"
+    local binary_name="${1:-}"
     local debian_pkgs=""
 
     # Liste supportée
@@ -521,7 +521,7 @@ dev_uninstall() {
 # Usage    : dev_install [binaire]
 ###############################################################################
 dev_install() {
-    local binary_name="$1"
+    local binary_name="${1:-}"
     local debian_pkgs=""
 
     # Liste supportée
