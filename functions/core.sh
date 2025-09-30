@@ -422,9 +422,9 @@ mini_edit_local_config() {
 
 ###############################################################################
 # Fonction : Désinstallation générique d'un binaire/paquet avec menu et état
-# Usage    : uninstall_dev [binaire]
+# Usage    : dev_uninstall [binaire]
 ###############################################################################
-uninstall_dev() {
+dev_uninstall() {
     local binary_name="$1"
     local debian_pkgs=""
 
@@ -518,9 +518,9 @@ uninstall_dev() {
 
 ###############################################################################
 # Fonction : Installation générique d'un binaire/paquet avec menu
-# Usage    : install_dev [binaire]
+# Usage    : dev_install [binaire]
 ###############################################################################
-install_dev() {
+dev_install() {
     local binary_name="$1"
     local debian_pkgs=""
 
