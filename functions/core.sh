@@ -113,8 +113,8 @@ check_rclone() {
                 source_type="configuration globale"
             fi
 
-            display_msg "verbose|hard" --theme ok \
-                "Fichier rclone valide trouvé : $conf_file ($source_type)."
+            display_msg "verbose|hard" --theme ok "Fichier rclone valide trouvé ($source_type) : "
+            display_msg "verbose|hard" --align right --fg blue "$conf_file"
             return 0
             ;;
         11|31|32)
