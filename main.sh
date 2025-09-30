@@ -17,13 +17,6 @@ source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration loca
 
 # ===
 
-# Détection du sudo
-if [[ $(id -u) -ne 0 ]]; then
-    SUDO="sudo"
-else
-    SUDO=""
-fi
-
 # SECURITE - Arbitraire - Valeurs par défaut si les variables ne sont pas définies (avant le contrôle/correction)
 : "${DEBUG_INFOS:=false}"
 : "${DEBUG_MODE:=false}"

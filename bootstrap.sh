@@ -43,6 +43,14 @@ declare -A VARS_LOCAL_FILES=(
 
 )
 
+# *** Action(s) global(s) ***
+# Détection du sudo
+if [[ $(id -u) -ne 0 ]]; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
+
 # *** ↓↓ FONCTIONS PERSISTANTES (en cas de MAJ) ↓↓ ***
 
 ###############################################################################

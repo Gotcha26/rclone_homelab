@@ -49,7 +49,7 @@ while true; do
     # Ajoute un séparateur seulement si la dernière entrée n'est pas déjà un séparateur
     add_separator_if_needed() {
         if (( ${#MENU_OPTIONS[@]} > 0 )) && [[ "${MENU_ACTIONS[-1]}" != "__separator__" ]]; then
-            MENU_OPTIONS+=("──────────────────────────────")
+            MENU_OPTIONS+=("────────────────────────────────────")
             MENU_ACTIONS+=("__separator__")
         fi
     }
@@ -205,7 +205,7 @@ while true; do
     # --- Validation et exécution ---
     if [[ "$choice" == "q" ]]; then
         scroll_down
-        echo "👋  Quitter."
+        echo "Vous partez déjà..."
         exit 99
     elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice < num )); then
         idx="${CHOICE_TO_INDEX[$choice]}"
