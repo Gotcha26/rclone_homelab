@@ -456,6 +456,7 @@ menu_validation_local_variables() {
         echo
 
         read -e -rp "Votre choix [1-3] : " choice
+        echo
 
         case "$choice" in
             1)

@@ -194,15 +194,15 @@ check_rclone_configured() {
 install_rclone() {
     # Cas ACTION_MODE=manu → on demande confirmation
     echo
-    read -e -rp "📦  Voulez-vous installer rclone maintenant ? [y/N] : " REPLY
-    REPLY=${REPLY,,}
-    if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+    read -e -rp "📦  Voulez-vous installer rclone maintenant ? [O/n] : " yn
+    echo
+    if [[ "$yn" =~ ^([Nn])$ ]]; then
         die 11 "Installation de rclone refusée par l'utilisateur."
     fi
 
     # Tentative d’installation
     display_msg "verbose|hard" --theme follow "Installation de rclone en cours..."
-    if $SUDO apt update && sudo apt install -y rclone; then
+    if $SUDO apt update && $SUDO apt install -y rclone; then
         display_msg "soft|verbose|hard" --theme ok "rclone a été installé avec succès."
         return 0
     else
@@ -412,6 +412,7 @@ mini_edit_local_config() {
     echo
 
     read -e -rp "Choisir un fichier à éditer [1-$i] : " subchoice
+    echo
 
     if [[ "$subchoice" -ge 1 && "$subchoice" -lt "$i" ]]; then
         local target="${existing[$((subchoice-1))]}"

@@ -180,9 +180,9 @@ update_user_file() {
         display_msg "soft|verbose|hard" ""
         display_msg "soft|verbose|hard" "Souhaitez-vous appliquer ces changements à votre propre fichier :"
         display_msg "soft|verbose|hard" --align right --style italic "$user_file"
-        read -p "Réponse ? (o/n) " -n 1 -r
+        read -e -p "Réponse ? (O/n) " -n 1 -r
         echo
-        if [[ $REPLY =~ ^[Oo]$ ]]; then
+        if [[ $REPLY =~ ^[OoYy]$ ]]; then
             # 4. Sauvegarde horodatée du fichier local
             local backup_file="$BACKUP_DIR/$(basename "$user_file")_$(date +%Y%m%d_%H%M%S).bak"
             cp "$user_file" "$backup_file"

@@ -30,9 +30,13 @@ check_and_prepare_email() {
             die 13 "msmtp absent..."
         else
             display_msg "soft|verbose|hard" --theme warning "msmtp absent, proposition d'installation"
-            read -e -rp "Voulez-vous installer msmtp maintenant (requis) ? [y/N] : " REPLY
-            REPLY=${REPLY,,}
-            [[ "$REPLY" == "y" || "$REPLY" == "yes" ]] && install_msmtp || die 15 "msmtp requis non installé."
+            read -e -rp "Voulez-vous installer msmtp maintenant (requis) ? [O/n] : " yn
+            echo
+            if [[ "$yn" =~ ^([OoYy])$ ]]; then
+                install_msmtp
+            else
+                die 15 "msmtp requis non installé."
+            fi
         fi
     else
         display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est installé."

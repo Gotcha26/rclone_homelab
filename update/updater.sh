@@ -611,7 +611,8 @@ update_forced() {
         print_fancy --theme "warning" --bg "yellow" --align "center" --style "bold underline" \
             "Attention : vous forcez la mise à jour sur HEAD de la branche 'main'."
         echo
-        read -rp "Confirmez-vous la mise à jour sur HEAD de main ? (y/N) : " user_confirm
+        read -e -rp "Confirmez-vous la mise à jour sur HEAD de main ? (Y/n) : " user_confirm
+        echo
         case "$user_confirm" in
             y|Y|yes|YES)
                 echo "🔄 Mise à jour en cours..."
