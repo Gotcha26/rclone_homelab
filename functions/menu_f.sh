@@ -1,4 +1,24 @@
 ###############################################################################
+# Fonction : Ajout des options (affichage) pour le menu interactif
+###############################################################################
+add_option() {
+    MENU_OPTIONS+=("$1")
+    MENU_ACTIONS+=("$2")
+}
+
+
+###############################################################################
+# Fonction : Ajoute un séparateur seulement si la dernière entrée n'est pas déjà un séparateur
+###############################################################################
+add_separator_if_needed() {
+    if (( ${#MENU_OPTIONS[@]} > 0 )) && [[ "${MENU_ACTIONS[-1]}" != "__separator__" ]]; then
+        MENU_OPTIONS+=("────────────────────────────────────")
+        MENU_ACTIONS+=("__separator__")
+    fi
+}
+
+
+###############################################################################
 # Fonction : Initialiser un fichier si absent (config ou secrets, ex: jobs)
 # Usage : init_file <ID>
 # Fonctionne avec le tableau VARS_LOCAL_FILES

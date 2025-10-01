@@ -40,20 +40,6 @@ while true; do
     MENU_OPTIONS=()
     MENU_ACTIONS=()
 
-    # --- Fonction pour ajouter des options ---
-    add_option() {
-        MENU_OPTIONS+=("$1")
-        MENU_ACTIONS+=("$2")
-    }
-
-    # Ajoute un séparateur seulement si la dernière entrée n'est pas déjà un séparateur
-    add_separator_if_needed() {
-        if (( ${#MENU_OPTIONS[@]} > 0 )) && [[ "${MENU_ACTIONS[-1]}" != "__separator__" ]]; then
-            MENU_OPTIONS+=("────────────────────────────────────")
-            MENU_ACTIONS+=("__separator__")
-        fi
-    }
-
     # Construction nécessaire pour l'affichage des MAJ (branche / release), lancement de menu.sh via bash !
     fetch_git_info
     update_status_code=$(analyze_update_status)
