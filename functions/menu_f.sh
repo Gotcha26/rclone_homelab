@@ -142,7 +142,7 @@ dev_uninstall() {
     # Si pas d’argument → afficher menu
     if [[ -z "${binary_name:-}" ]]; then
         echo
-        echo "📦  Sélectionne le logiciel à désinstaller :"
+        echo "📦  Sélectionne le composant à désinstaller :"
         echo
 
         # Calcul largeur max des noms pour aligner le statut
@@ -159,7 +159,7 @@ dev_uninstall() {
             printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
             ((i++))
         done
-        printf "  q) Quitter\n"
+        printf "  q) Retour\n"
         echo
 
         read -e -rp "👉  Ton choix : " choice
@@ -245,7 +245,7 @@ dev_install() {
     # Si pas d’argument → afficher menu
     if [[ -z "${binary_name:-}" ]]; then
         echo
-        echo "📦  Sélectionne le logiciel à installer :"
+        echo "📦  Sélectionne le composant à installer :"
         echo
 
         # Calcul largeur max des noms pour aligner le statut
@@ -262,7 +262,7 @@ dev_install() {
             printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
             ((i++))
         done
-        printf "  q) Quitter\n"
+        printf "  q) Retour\n"
         echo
 
         read -e -rp "👉  Ton choix : " choice
