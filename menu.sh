@@ -158,32 +158,7 @@ while true; do
     # --- Affichage des options ---
     declare -A CHOICE_TO_INDEX=()
     num=1
-
-    # Calcul largeur max pour aligner crochets si besoin
-    max_len=0
-    for i in "${!MENU_OPTIONS[@]}"; do
-        [[ "${MENU_ACTIONS[$i]}" == "__separator__" || "${MENU_ACTIONS[$i]}" == "quit" ]] && continue
-        # Si option contient crochets, on aligne sur le début du crochet
-        if [[ "${MENU_OPTIONS[$i]}" =~ \[(.*)\] ]]; then
-            len=${#BASH_REMATCH[0]}
-            text_len=$((${#MENU_OPTIONS[$i]} - ${#BASH_REMATCH[0]}))
-        else
-            text_len=${#MENU_OPTIONS[$i]}
-        fi
-        (( text_len > max_len )) && max_len=$text_len
-    done
-
-    for i in "${!MENU_OPTIONS[@]}"; do
-        if [[ "${MENU_ACTIONS[$i]}" == "__separator__" ]]; then
-            echo "    ${MENU_OPTIONS[$i]}"
-        elif [[ "${MENU_ACTIONS[$i]}" == "quit" ]]; then
-            printf "q) %-${max_len}s\n" "${MENU_OPTIONS[$i]}"
-        else
-            printf "%d) %-${max_len}s\n" "$num" "${MENU_OPTIONS[$i]}"
-            CHOICE_TO_INDEX[$num]=$i
-            ((num++))
-        fi
-    done
+    num=$(print_menu MENU_OPTIONS MENU_ACTIONS CHOICE_TO_INDEX "$num")
 
     echo
     read -e -rp "Votre choix [1-$((num-1)) ou q pour quitter] : " choice </dev/tty
