@@ -86,7 +86,7 @@ init_file() {
     echo
 
     # Confirmation utilisateur
-    read -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
+    read -e -rp "❓  Voulez-vous créer ce fichier ? [y/N] : " REPLY
     REPLY=${REPLY,,}
     if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
         print_fancy --theme "info" "Création ignorée pour : $user_file"
@@ -118,7 +118,7 @@ init_file() {
 
     # Proposer l'édition immédiate
     echo
-    read -rp "✏️  Voulez-vous éditer le fichier maintenant avec $EDITOR ? [Y/n] : " EDIT_REPLY
+    read -e -rp "✏️  Voulez-vous éditer le fichier maintenant avec $EDITOR ? [Y/n] : " EDIT_REPLY
     EDIT_REPLY=${EDIT_REPLY,,}
     if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
         $EDITOR "$user_file"
@@ -162,7 +162,7 @@ dev_uninstall() {
         printf "  q) Quitter\n"
         echo
 
-        read -rp "👉  Ton choix : " choice
+        read -e -rp "👉  Ton choix : " choice
         echo
         if [[ "$choice" == "q" ]]; then
             echo "❌  Abandon."
@@ -265,7 +265,7 @@ dev_install() {
         printf "  q) Quitter\n"
         echo
 
-        read -rp "👉  Ton choix : " choice
+        read -e -rp "👉  Ton choix : " choice
         echo
         if [[ "$choice" == "q" ]]; then
             echo "❌  Abandon."
