@@ -126,3 +126,180 @@ init_file() {
         print_fancy --theme "info" "Édition ignorée pour : $user_file"
     fi
 }
+
+
+###############################################################################
+# Fonction : Désinstallation générique d'un binaire/paquet avec menu et état
+# Usage    : dev_uninstall [binaire]
+###############################################################################
+dev_uninstall() {
+    local binary_name="${1:-}"
+    local debian_pkgs=""
+
+    # Liste supportée
+    local supported=("rclone" "msmtp" "colordiff" "git" "curl" "unzip" "perl" "jq")
+
+    # Si pas d’argument → afficher menu
+    if [[ -z "${binary_name:-}" ]]; then
+        echo
+        echo "📦  Sélectionne le logiciel à désinstaller :"
+        echo
+
+        # Calcul largeur max des noms pour aligner le statut
+        local max_len=0
+        for item in "${supported[@]}"; do
+            (( ${#item} > max_len )) && max_len=${#item}
+        done
+
+        # Affichage menu
+        local i=1
+        for item in "${supported[@]}"; do
+            local status="absent"
+            [[ -x "$(command -v "$item" 2>/dev/null)" ]] && status="installé"
+            printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
+            ((i++))
+        done
+        printf "  q) Quitter\n"
+        echo
+
+        read -rp "👉  Ton choix : " choice
+        echo
+        if [[ "$choice" == "q" ]]; then
+            echo "❌  Abandon."
+            return 0
+        elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#supported[@]} )); then
+            binary_name="${supported[$((choice-1))]}"
+        else
+            echo "❌  Choix invalide."
+            return 1
+        fi
+    fi
+
+    # Table de correspondance binaire → paquet(s) Debian
+    case "$binary_name" in
+        rclone)    debian_pkgs="rclone" ;;
+        msmtp)     debian_pkgs="msmtp msmtp-mta" ;;
+        colordiff) debian_pkgs="colordiff" ;;
+        git)       debian_pkgs="git" ;;
+        curl)      debian_pkgs="curl" ;;
+        unzip)     debian_pkgs="unzip" ;;
+        perl)      debian_pkgs="perl" ;;
+        jq)        debian_pkgs="jq" ;;
+        *)
+            print_fancy --theme error "'$binary_name' n'est pas géré par ce script."
+            return 1
+            ;;
+    esac
+
+    if ! command -v "$binary_name" >/dev/null 2>&1; then
+        print_fancy --theme error "$binary_name n'est pas installé ou pas dans le PATH."
+        return 0
+    fi
+
+    local paths
+    mapfile -t paths < <(type -aP "$binary_name" | sort -u)
+
+    for path in "${paths[@]}"; do
+        print_fancy "🔍 $binary_name détecté à : $path"
+
+        if dpkg -S "$path" >/dev/null 2>&1; then
+            print_fancy --theme ok "Installation via paquet Debian détectée."
+            print_fancy --theme info "Exécution de : apt remove --purge -y $debian_pkgs && apt autoremove -y"
+            $SUDO apt remove --purge -y $debian_pkgs
+            $SUDO apt autoremove -y
+            print_fancy --theme success "$binary_name a été désinstallé avec apt."
+            return 0
+        else
+            print_fancy --theme ok "Installation manuelle détectée (binaire copié directement)."
+            print_fancy --theme info "Suppression du fichier : $path"
+            $SUDO rm -f "$path"
+            print_fancy --theme success "$binary_name (binaire manuel) supprimé."
+        fi
+    done
+
+    # Cas particulier : msmtpq à supprimer si présent et manuel
+    if [[ "$binary_name" == "msmtp" ]] && command -v msmtpq >/dev/null 2>&1; then
+        local msmtpq_path
+        msmtpq_path="$(command -v msmtpq)"
+        print_fancy "🔍 msmtpq détecté à : $msmtpq_path"
+        if ! dpkg -S "$msmtpq_path" >/dev/null 2>&1; then
+            print_fancy --theme info "Suppression du fichier : $msmtpq_path"
+            $SUDO rm -f "$msmtpq_path"
+            print_fancy --theme success "msmtpq (binaire manuel) supprimé."
+        fi
+    fi
+}
+
+
+###############################################################################
+# Fonction : Installation générique d'un binaire/paquet avec menu
+# Usage    : dev_install [binaire]
+###############################################################################
+dev_install() {
+    local binary_name="${1:-}"
+    local debian_pkgs=""
+
+    # Liste supportée
+    local supported=("colordiff" "git" "curl" "unzip" "perl" "jq")
+
+    # Si pas d’argument → afficher menu
+    if [[ -z "${binary_name:-}" ]]; then
+        echo
+        echo "📦  Sélectionne le logiciel à installer :"
+        echo
+
+        # Calcul largeur max des noms pour aligner le statut
+        local max_len=0
+        for item in "${supported[@]}"; do
+            (( ${#item} > max_len )) && max_len=${#item}
+        done
+
+        # Affichage menu
+        local i=1
+        for item in "${supported[@]}"; do
+            local status="absent"
+            [[ -x "$(command -v "$item" 2>/dev/null)" ]] && status="installé"
+            printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
+            ((i++))
+        done
+        printf "  q) Quitter\n"
+        echo
+
+        read -rp "👉  Ton choix : " choice
+        echo
+        if [[ "$choice" == "q" ]]; then
+            echo "❌  Abandon."
+            return 0
+        elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#supported[@]} )); then
+            binary_name="${supported[$((choice-1))]}"
+        else
+            echo "❌  Choix invalide."
+            return 1
+        fi
+    fi
+
+    # Table de correspondance binaire → paquet(s) Debian
+    case "$binary_name" in
+        colordiff) debian_pkgs="colordiff" ;;
+        git)       debian_pkgs="git" ;;
+        curl)      debian_pkgs="curl" ;;
+        unzip)     debian_pkgs="unzip" ;;
+        perl)      debian_pkgs="perl" ;;
+        jq)        debian_pkgs="jq" ;;
+        *)
+            print_fancy --theme error "'$binary_name' n'est pas géré par ce script."
+            return 1
+            ;;
+    esac
+
+    if command -v "$binary_name" >/dev/null 2>&1; then
+        print_fancy --theme ok "$binary_name est déjà installé."
+        return 0
+    fi
+
+    print_fancy "🔍 Installation de $binary_name via apt..."
+    print_fancy --theme info "Exécution : sudo apt update && sudo apt install -y $debian_pkgs"
+    $SUDO apt update
+    $SUDO apt install -y $debian_pkgs
+    print_fancy --theme success "$binary_name installé avec succès !"
+}
