@@ -165,11 +165,13 @@ update_user_file() {
 
     # 2. Vérification des changements
     if ! diff -q "$last_ref_backup" "$ref_file" > /dev/null; then
+        echo
         display_msg "soft|verbose|hard" --theme warning --bg orange --highlight "Le fichier de référence suivant à été mis à jour :"
-        display_msg "soft|verbose|hard" --bg orange --highlight align right --style italic "$ref_file"
-        display_msg "soft|verbose|hard" --bg orange --highlight align right ""
-        display_msg "soft|verbose|hard" --bg orange --style underline --highlight "Votre ancien fichier de référence a été sauvegardé et mis de coté."
-        display_msg "soft|verbose|hard" --bg orange --highlight align right "Voici les différences :"
+        display_msg "soft|verbose|hard" --bg orange --highlight --align right --style italic "$ref_file"
+        display_msg "soft|verbose|hard" --bg orange --highlight --align right ""
+        display_msg "soft|verbose|hard" --bg orange --style "underline|bold" --highlight "Votre ancien fichier de référence a été sauvegardé et mis de coté."
+        echo
+        display_msg "soft|verbose|hard" --bg orange --highlight --align right "Voici les différences à reporter sur votre installation :"
         if command -v colordiff &> /dev/null; then
             colordiff -u "$last_ref_backup" "$ref_file"
         else
@@ -177,9 +179,12 @@ update_user_file() {
         fi
 
         # 3. Demande de confirmation
-        display_msg "soft|verbose|hard" ""
-        display_msg "soft|verbose|hard" "Souhaitez-vous appliquer ces changements à votre propre fichier :"
-        display_msg "soft|verbose|hard" --align right --style italic "$user_file"
+        echo
+        display_msg "soft|verbose|hard" "❓  Souhaitez-vous répercuter ces changements sur le fichier :"
+        display_msg "soft|verbose|hard" --align right --style bold "$user_file"
+        echo
+        display_msg "soft|verbose|hard" --theme follow --style italic "☝️  Sachant qu'une sauvegarde a déjà été faite..."
+        echo
         read -e -p "Réponse ? (O/n) " -n 1 -r
         echo
         if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
@@ -206,7 +211,8 @@ update_user_file() {
             # On marque que quelque chose a été traité
             files_updated=true
         else
-            print_fancy --theme error "Mise à jour annulée pour $user_file."
+            print_fancy --theme error "Mise à jour annulée par l'utilisateur pour le fichier :"
+            print_fancy --fg red --style bold --align right "$user_file"
             return 0
         fi
     else
