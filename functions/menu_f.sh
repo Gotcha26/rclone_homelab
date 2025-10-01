@@ -25,10 +25,10 @@ print_menu() {
     local -n options=$1
     local -n actions=$2
     local -n choice_to_index=$3
-    local num=$4
+    local -n num_ref=$4   # référence vers la variable num
 
-    # Calcul largeur max pour aligner crochets si besoin
-    local max_len=0
+    local max_len=0 text_len
+
     for i in "${!options[@]}"; do
         [[ "${actions[$i]}" == "__separator__" || "${actions[$i]}" == "quit" ]] && continue
         if [[ "${options[$i]}" =~ \[(.*)\] ]]; then
@@ -45,15 +45,12 @@ print_menu() {
         elif [[ "${actions[$i]}" == "quit" ]]; then
             printf "q) %-${max_len}s\n" "${options[$i]}"
         else
-            printf "%d) %-${max_len}s\n" "$num" "${options[$i]}"
-            choice_to_index[$num]=$i
-            ((num++))
+            printf "%d) %-${max_len}s\n" "$num_ref" "${options[$i]}"
+            choice_to_index[$num_ref]=$i
+            ((num_ref++))
         fi
     done
-
-    echo "$num" # on renvoie la nouvelle valeur de num
 }
-
 
 
 ###############################################################################

@@ -158,7 +158,7 @@ while true; do
     # --- Affichage des options ---
     declare -A CHOICE_TO_INDEX=()
     num=1
-    num=$(print_menu MENU_OPTIONS MENU_ACTIONS CHOICE_TO_INDEX "$num")
+    print_menu MENU_OPTIONS MENU_ACTIONS CHOICE_TO_INDEX num
 
     echo
     read -e -rp "Votre choix [1-$((num-1)) ou q pour quitter] : " choice </dev/tty
