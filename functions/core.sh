@@ -36,8 +36,6 @@ EOF
 
 ###############################################################################
 # Fonction : Surcharger global.conf < config.local.conf < config.dev.conf < secrets.env (si présents)
-# Utilise display_msg() pour tout affichage
-# DISPLAY_MODE possible : soft (aucun affichage) | verbose (messages détaillés)
 ###############################################################################
 load_optional_configs() {
     local any_loaded=false

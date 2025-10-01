@@ -15,11 +15,11 @@ DRY_RUN=false
                             # simulation seulement.
 
 MAIL_TO=""
-                            # <texte>:"" - ARGUMENT
+                            # <texte>:"" - ARGUMENT (entre "")
                             # Adresse mail par défaut.
 
 DISCORD_WEBHOOK_URL=""
-                            # <texte>:"" - ARGUMENT
+                            # <texte>:"" - ARGUMENT (entre "")
                             # URL du webhook salon Discord.
 
 FORCE_UPDATE=false
@@ -36,7 +36,7 @@ ACTION_MODE=manu
                             #   manu = interactivités possibles (questions)
 
 DISPLAY_MODE=soft
-                            # <soft|verbose|hard>:verbose
+                            # <soft|verbose|hard>:soft
                             # Affichage retour d'informations
 
 
