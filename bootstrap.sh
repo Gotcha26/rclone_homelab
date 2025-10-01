@@ -182,7 +182,7 @@ update_user_file() {
         display_msg "soft|verbose|hard" --align right --style italic "$user_file"
         read -e -p "Réponse ? (O/n) " -n 1 -r
         echo
-        if [[ $REPLY =~ ^[OoYy]$ ]]; then
+        if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
             # 4. Sauvegarde horodatée du fichier local
             local backup_file="$BACKUP_DIR/$(basename "$user_file")_$(date +%Y%m%d_%H%M%S).bak"
             cp "$user_file" "$backup_file"

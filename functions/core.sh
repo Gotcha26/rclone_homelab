@@ -194,19 +194,19 @@ check_rclone_configured() {
 install_rclone() {
     # Cas ACTION_MODE=manu → on demande confirmation
     echo
-    read -e -rp "📦  Voulez-vous installer rclone maintenant ? [O/n] : " yn
+    read -e -rp "📦  Voulez-vous installer rclone maintenant ? [O/n] : " -n 1 -r
     echo
-    if [[ "$yn" =~ ^([Nn])$ ]]; then
-        die 11 "Installation de rclone refusée par l'utilisateur."
-    fi
-
-    # Tentative d’installation
-    display_msg "verbose|hard" --theme follow "Installation de rclone en cours..."
-    if $SUDO apt update && $SUDO apt install -y rclone; then
-        display_msg "soft|verbose|hard" --theme ok "rclone a été installé avec succès."
-        return 0
+    if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
+        # Tentative d’installation
+        display_msg "verbose|hard" --theme follow "Installation de rclone en cours..."
+        if $SUDO apt update && $SUDO apt install -y rclone; then
+            display_msg "soft|verbose|hard" --theme ok "rclone a été installé avec succès."
+            return 0
+        else
+            die 11 "Une erreur est survenue lors de l'installation de rclone."
+        fi
     else
-        die 11 "Une erreur est survenue lors de l'installation de rclone."
+        die 11 "Installation de rclone refusée par l'utilisateur."
     fi
 }
 

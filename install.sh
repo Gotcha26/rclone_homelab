@@ -192,9 +192,9 @@ check_rclone() {
         echo -e "⚠️  ${RED}L'outil ${UNDERLINE}rclone${RESET}${RED} n'est pas encore installé, il est ${BOLD}indispensable${RESET}."
         echo "Plus d'infos sur rclone : https://rclone.org/"
         echo ""
-        read -e -rp "Voulez-vous installer rclone maintenant ? (O/n) : " yn
+        read -e -rp "Voulez-vous installer rclone maintenant ? (O/n) : " -n 1 -r
         echo
-        if [[ "$yn" =~ ^([OoYy])$ ]]; then
+        if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
             install_rclone
         else
             echo -e "${RED}${BOLD}Impossible de continuer sans rclone.${RESET}"
@@ -229,9 +229,9 @@ check_rclone() {
         echo ""
         echo "ℹ️  Nouvelle version rclone disponible : $latest_version"
         echo ""
-        read -e -rp "Voulez-vous mettre à jour rclone ? (O/n) : " yn
+        read -e -rp "Voulez-vous mettre à jour rclone ? (O/n) : " -n 1 -r SUB_REPLY
         echo ""
-        if [[ "$yn" =~ ^([OoYy])$ ]]; then
+        if [[ -z "$SUB_REPLY" || "$SUB_REPLY" =~ ^[OoYy]$ ]]; then
             install_rclone
         else
             echo "👉  Vous gardez la version existante."
@@ -297,19 +297,17 @@ check_msmtp() {
         echo -e "⚠️  ${YELLOW}Le composant ${UNDERLINE}msmtp${RESET}${YELLOW} non détecté (optionnel).${RESET}"
         echo -e "ℹ️  msmtp est nécessaire pour l'envoi de rapports par email."
         echo ""
-        read -e -rp "Voulez-vous installer msmtp ? (O/n) : " yn
+        read -e -rp "Voulez-vous installer msmtp ? (O/n) : " -n 1 -r
         echo ""
-        case "$yn" in
-            [YyOo]*)
-                echo "📥  Installation de msmtp..."
-                safe_exec "✅  msmtp installé." \
-                          "❗  Échec de l'installation de msmtp, ce n'est pas bloquant." "--no-exit" \
-                          bash -c "apt update && apt install -y msmtp"
-                return
-                ;;
-            *) echo "👌  msmtp (optionnel) ne sera pas installé." ;;
-        esac
+        if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
+            echo "📥  Installation de msmtp..."
+            safe_exec "✅  msmtp installé." \
+                        "❗  Échec de l'installation de msmtp, ce n'est pas bloquant." "--no-exit" \
+                        bash -c "apt update && apt install -y msmtp"
+        else
+            echo "👌  msmtp (optionnel) ne sera pas installé."
         return
+        fi
     fi
 
     # Version locale
@@ -334,17 +332,16 @@ check_msmtp() {
         echo ""
         echo "ℹ️  Nouvelle version de msmtp disponible : $latest_version"
         echo ""
-        read -e -rp "Voulez-vous mettre à jour msmtp ? (O/n) : " yn
+        read -e -rp "Voulez-vous mettre à jour msmtp ? (O/n) : " -n 1 -r SUB_REPLY
         echo ""
-        case "$yn" in
-            [YyOo]*)
-                echo "📥  Mise à jour de msmtp vers $latest_version..."
-                safe_exec "✅  msmtp mis à jour." \
-                          "❗  Échec de la mise à jour de msmtp, ce n'est pas bloquant." "--no-exit" \
-                          bash -c "apt update && apt install -y msmtp"
-                ;;
-            *) echo "👌  Vous gardez la version existante." ;;
-        esac
+        if [[ -z "$SUB_REPLY" || "$SUB_REPLY" =~ ^[OoYy]$ ]]; then
+            echo "📥  Mise à jour de msmtp vers $latest_version..."
+            safe_exec "✅  msmtp mis à jour." \
+                        "❗  Échec de la mise à jour de msmtp, ce n'est pas bloquant." "--no-exit" \
+                        bash -c "apt update && apt install -y msmtp"
+        else
+            echo "👌  Vous gardez la version existante."
+        fi
     fi
 }
 
@@ -361,13 +358,14 @@ check_micro() {
         echo -e "⚠️  ${YELLOW}Le composant ${UNDERLINE}micro${RESET}${YELLOW} non détecté (éditeur ${BOLD}optionnel${RESET}${YELLOW}).${RESET}"
         echo -e "Il s'agit d'une alternative plus fournie à l'éditeur ${BOLD}nano${RESET}."
         echo ""
-        read -e -rp "Voulez-vous installer micro ? (Y/n) : " yn
+        read -e -rp "Voulez-vous installer micro ? (O/n) : " -n 1 -r
         echo ""
-        case "$yn" in
-            [YyOo]*) install_micro ;;
-            *) echo "👌  micro (optionnel) ne sera pas installé." ;;
-        esac
+        if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
+            install_micro
+        else
+            echo "👌  micro (optionnel) ne sera pas installé."
         return
+        fi
     fi
 
     # Récupération version locale
@@ -394,12 +392,13 @@ check_micro() {
         echo ""
         echo "ℹ️  Nouvelle version de micro disponible : $latest_version"
         echo ""
-        read -e -rp "Voulez-vous mettre à jour micro ? (Y/n) : " yn
+        read -e -rp "Voulez-vous mettre à jour micro ? (O/n) : " -n 1 -r SUB_REPLY
         echo ""
-        case "$yn" in
-            [YyOo]*) install_micro "$latest_version" ;;
-            *) echo "👌  Vous gardez la version existante." ;;
-        esac
+        if [[ -z "$SUB_REPLY" || "$SUB_REPLY" =~ ^[OoYy]$ ]]; then
+            install_micro "$latest_version" ;;
+        else
+            echo "👌  Vous gardez la version existante."
+        fi
     fi
 }
 
@@ -459,12 +458,13 @@ install_micro() {
     if command -v micro >/dev/null 2>&1; then
         echo ""
         echo "Souhaitez-vous utiliser micro comme éditeur par défaut"
-        read -e -rp "${BOLD}(UNIQUEMENT pour l'utilisation au sein de ${UNDERLINE}rclone_homelab${UNDERLINE}${BOLD}) ?${RESET} (Y/n) : " yn
+        read -e -rp "${BOLD}(UNIQUEMENT pour l'utilisation au sein de ${UNDERLINE}rclone_homelab${UNDERLINE}${BOLD}) ?${RESET} (O/n) : " -n 1 -r
         echo ""
-        case "$yn" in
-            [YyOo]*) update_editor_choice "micro" ;;
-            *) update_editor_choice "nano"  ;;
-        esac
+        if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
+            update_editor_choice "micro"
+        else
+            update_editor_choice "nano"
+        fi
     fi
 }
 
@@ -588,9 +588,9 @@ handle_existing_dir() {
         echo -e "  [2] Installer 'par-dessus' le contenu existant (risque de conflits)"
         echo -e "  [3] Ne rien faire et quitter"
         echo ""
-        read -e -rp "Choix (1/2/3) : " choice
+        read -e -rp "Choix (1/2/3) : " sub_choice
         echo ""
-        case "$choice" in
+        case "$sub_choice" in
             1)
                 safe_exec "✅  Ancien dossier "$INSTALL_DIR" supprimé avec succès." \
                           "❌  Impossible de supprimer $INSTALL_DIR" \
@@ -734,9 +734,9 @@ update_minimal_if_needed() {
         echo ""
         echo "ℹ️  Mise à jour disponible : $installed_tag → $LATEST_TAG"
         echo ""
-        read -e -rp "Voulez-vous mettre à jour vers $LATEST_TAG ? (O/n) : " yn
+        read -e -rp "Voulez-vous mettre à jour vers $LATEST_TAG ? (O/n) : " -n 1 -r
         echo ""
-        if [[ "$yn" =~ ^[YyOo] ]]; then
+        if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
             safe_exec "✅  Mise à jour vers $LATEST_TAG terminée." \
                       "❌  Échec de la mise à jour vers $LATEST_TAG" \
                       install_minimal "$LATEST_TAG"

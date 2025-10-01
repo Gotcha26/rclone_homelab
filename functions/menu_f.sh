@@ -86,9 +86,9 @@ init_file() {
     echo
 
     # Confirmation utilisateur
-    read -e -rp "❓  Voulez-vous créer ce fichier ? [Y/n] : " REPLY
-    REPLY=${REPLY,,}
-    if [[ "$REPLY" != "y" && "$REPLY" != "yes" ]]; then
+    read -e -rp "❓  Voulez-vous créer ce fichier ? [O/n] : " -n 1 -r
+    echo
+    if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
         print_fancy --theme "info" "Création ignorée pour : $user_file"
         return 1
     fi
@@ -118,9 +118,9 @@ init_file() {
 
     # Proposer l'édition immédiate
     echo
-    read -e -rp "✏️  Voulez-vous éditer le fichier maintenant avec $EDITOR ? [Y/n] : " EDIT_REPLY
-    EDIT_REPLY=${EDIT_REPLY,,}
-    if [[ -z "$EDIT_REPLY" || "$EDIT_REPLY" == "y" || "$EDIT_REPLY" == "yes" ]]; then
+    read -e -rp "✏️  Voulez-vous éditer le fichier maintenant avec $EDITOR ? [O/n] : " -n 1 -r SUB_REPLY
+    echo
+    if [[ -z "$SUB_REPLY" || "$SUB_REPLY" =~ ^[OoYy]$ ]]; then
         $EDITOR "$user_file"
     else
         print_fancy --theme "info" "Édition ignorée pour : $user_file"
