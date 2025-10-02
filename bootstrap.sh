@@ -366,4 +366,3 @@ update_user_file() {
     files_updated=true
     return 2
 }
-
