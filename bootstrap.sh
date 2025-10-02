@@ -177,8 +177,14 @@ update_user_file() {
     echo
     print_fancy --theme warning --bg orange --highlight "Le fichier de référence suivant est à mettre à jour :"
     print_fancy --bg orange --highlight --align right --style italic "$ref_file"
+    print_fancy --bg orange --highlight --align center "Puisque vous possédez une fichier local personnalisé calqué sur"
+    print_fancy --bg orange --highlight --align center "ce précédent fichier, il faut reportez sur votre fichier local :"
+    print_fancy --bg orange --highlight --align right --style italic "$user_file"
+    print_fancy --bg orange --highlight --align center "... les même changement pour refléter au plus juste les fonctionnalités"
+    print_fancy --bg orange --highlight --align center "qui utilisent ce biais de configuration personnalisable."
+    print_fancy --bg orange --highlight "Vous êtes ainsi invité à reporter les ajustement via le mécanisme qui suit."
     print_fancy --bg orange --highlight --fill " " " "
-    print_fancy --bg orange --highlight --align center --style bold "Voici les différences :"
+    print_fancy --bg orange --highlight --align center --style bold "ℹ️  Voici les différences trouvées :"
     echo
     if command -v colordiff &> /dev/null; then
         colordiff -u "$last_ref_backup" "$ref_file"
@@ -194,7 +200,8 @@ update_user_file() {
     print_fancy "Une montée de version automatique (upgrade) est possible ci-après."
     print_fancy "Le procédé va préserver les clés ainsi que leurs valeurs associées."
     print_fancy --style "underline|bold" --align center "Tout le reste sera écrasé !"
-    print_fancy --style italic --align center "(Une sauvegarde préalable sera faite avant toute intervention...)"
+    print_fancy --style italic --align center "(Une sauvegarde préalable sera faite avant toute intervention..."
+    print_fancy --style italic --align center "... de sorte que votre fichier personnel sera sanctuarisé.)"
     echo
     print_fancy "❓  Voulez-vous procéder à ce remplacement ?"
     read -e -p "Réponse ? (O/n) " -n 1 -r
@@ -202,6 +209,9 @@ update_user_file() {
     if [[ -n "$REPLY" && ! "$REPLY" =~ ^[OoYy]$ ]]; then
         print_fancy --theme error "Mise à jour annulée par l'utilisateur pour :"
         print_fancy --align right --fg red --style bold "$user_file"
+        echo
+        print_fancy "Pour supprimer ce message : Accéptez les modifications proposées."
+        print_fancy "- "
         return 0
     fi
 
