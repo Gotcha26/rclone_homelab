@@ -186,7 +186,7 @@ update_user_file() {
         diff -u "$last_ref_backup" "$ref_file"
     fi
     echo
-    print_fancy --bg orange --highlight --fill "#" --align center --fg yellow  --style bold " ↑ FIN DES DIFFERENCES ↑ "
+    print_fancy --bg orange --highlight --align center --fg yellow  --style bold "############################ ↑ FIN DES DIFFERENCES ↑ ###########################"
 
     # 5. Confirmation utilisateur
     echo
