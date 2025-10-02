@@ -6,7 +6,7 @@
 # Fichier de référence : config.global.conf                                   #
 # =========================================================================== #
 
-
+TEST_VARS=true
 # === Arguments de lancements ===
 
 DRY_RUN=false
