@@ -274,7 +274,7 @@ update_user_file() {
 
     # 3.Vérification changements
     if diff -q "$last_ref_backup" "$ref_file" > /dev/null; then
-        display_msg "verbose|hard" --theme ok "Fichier déjà à jour et passé :"
+        display_msg "verbose|hard" --theme ok "Fichier présent et déjà à jour (donc ignoré) :"
         display_msg "verbose|hard" --align right "$user_file"
         return 0
     fi
