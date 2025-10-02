@@ -344,9 +344,14 @@ print_fancy() {
     # Highlight
     if [[ -n "$highlight" ]]; then
         local full_line
+        # Ligne remplie avec le fill
         full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
-        full_line="${full_line:0:pad_left}${color}${bg}${style_seq}${text}${RESET}${bg}${full_line:$((pad_left + visible_len))}"
-        output="${bg}${full_line}${RESET}"
+
+        # Injection texte coloré au bon endroit
+        full_line="${full_line:0:pad_left}${color}${bg}${style_seq}${text}${RESET}${color}${bg}${style_seq}${full_line:$((pad_left + visible_len))}${RESET}"
+
+        # Rendu complet
+        output="$full_line"
     fi
 
     if [[ -n "$raw_mode" ]]; then
