@@ -196,8 +196,8 @@ update_user_file() {
     # 5. Confirmation utilisateur
     echo
     echo
-    print_fancy "Une montée de version automatique (upgrade) est possible ci-après."
-    print_fancy "Le procédé va préserver les clés ainsi que leurs valeurs associées."
+    print_fancy --align center "Une montée de version automatique (upgrade) est possible ci-après."
+    print_fancy --align center "Le procédé va préserver les clés ainsi que leurs valeurs associées."
     print_fancy --style "underline|bold" --align center "Tout le reste sera écrasé !"
     print_fancy --fg green --style italic --align center "(Une sauvegarde préalable sera faite avant toute intervention..."
     print_fancy --fg green --style italic --align center "... de sorte que votre fichier personnel sera sanctuarisé.)"
@@ -217,8 +217,10 @@ update_user_file() {
     # 5.1. Sauvegarde horodatée du fichier utilisateur
     local backup_file="$BACKUP_DIR/$(basename "$user_file")_$(date +%Y%m%d_%H%M%S).bak"
     cp "$user_file" "$backup_file"
-    print_fancy "📦  Sauvegarde de : $user_file"
-    print_fancy "   Vers →        : $backup_file"
+    print_fancy "📦  Sauvegarde de :"
+    print_fancy --style italic "$user_file"
+    print_fancy "   Vers →        :"
+    print_fancy "$backup_file"
 
     # 5.2. Extraction des valeurs existantes pour les clés connues
     declare -A user_values
