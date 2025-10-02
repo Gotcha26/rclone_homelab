@@ -255,8 +255,7 @@ update_user_file() {
 
     # 5.5. Remplacement du fichier utilisateur
     mv "$tmp_file" "$user_file"
-    print_fancy "✅  Le fichier utilisateur (local) 'user_file' A été mis à jour avec succès !"
-    print_fancy "   Fichier traité :"
+    print_fancy "✅  Le fichier 'user_file' ci-dessous a été mis à jour avec succès !"
     print_fancy --fg "light_blue" --align right "$user_file"
     
 
