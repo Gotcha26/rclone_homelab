@@ -371,9 +371,9 @@ update_to_latest_branch() {
         print_fancy --theme ok --style itlaic "Les fichiers personnalisables sont heureux de faire leur retour !"
     fi
 
-    update_local_configs
-
     make_scripts_executable
+
+    update_local_configs
 
     echo -e "🎉  Mise à jour réussie depuis la branche : ${UNDERLINE}$branch${RESET}"
 
@@ -501,9 +501,9 @@ update_to_latest_tag() {
             print_fancy --theme ok --style itlaic "Les fichiers personnalisables sont heureux de faire leur retour !"
         fi
 
-        update_local_configs
-
         make_scripts_executable
+
+        update_local_configs
 
         echo -e "🎉  Mise à jour réussie depuis le tag : ${UNDERLINE}$latest_tag${RESET}"
 
