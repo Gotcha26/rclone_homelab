@@ -88,7 +88,7 @@ make_scripts_executable() {
     for s in "${scripts[@]}"; do
         if [[ -f "$s" ]]; then
             chmod +x "$s"
-            display_msg "verbose|hard" --theme info "chmod +x correctement appliqué sur :"
+            display_msg "verbose|hard" --theme ok "chmod +x correctement appliqué sur :"
             display_msg "verbose|hard" --align "right" --fg "light_blue" "$s"
         else
             display_msg "verbose|hard"  --theme "warning" "Fichier absent :"
@@ -149,7 +149,7 @@ update_user_file() {
     # user_file - Cas où le fichier local n'existe pas → on ignore totalement → pas de suivi
     if [ ! -f "$user_file" ]; then
         display_msg "verbose|hard" "🔎  Fichier local absent, aucun suivi nécessaire pour :"
-        display_msg "verbose|hard" --align right "$user_file"
+        display_msg "verbose|hard" --fg "light_blue" --align right "$user_file"
         return 0
     fi
 
@@ -169,7 +169,7 @@ update_user_file() {
     # 3.Vérification changements
     if diff -q "$last_ref_backup" "$ref_file" > /dev/null; then
         display_msg "verbose|hard" --theme ok "Fichier présent et déjà à jour (donc ignoré) :"
-        display_msg "verbose|hard" --align right "$user_file"
+        display_msg "verbose|hard" --fg "light_blue" --align right "$user_file"
         return 0
     fi
 
@@ -178,7 +178,7 @@ update_user_file() {
     print_fancy --theme warning --bg orange --highlight "Le fichier de référence suivant est à mettre à jour :"
     print_fancy --bg orange --highlight --align right --style italic "$ref_file"
     echo
-    print_fancy --bg orange --highlight --align right "Voici les différences :"
+    print_fancy --bg orange --highlight --align center --style bold "Voici les différences :"
     if command -v colordiff &> /dev/null; then
         colordiff -u "$last_ref_backup" "$ref_file"
     else
@@ -257,7 +257,7 @@ update_user_file() {
     mv "$tmp_file" "$user_file"
     print_fancy "✅  Le fichier utilisateur (local) 'user_file' A été mis à jour avec succès !"
     print_fancy "   Fichier traité :"
-    print_fancy --align right "$user_file"
+    print_fancy --fg "light_blue" --align right "$user_file"
     
 
     # 5.6. Mise à jour du backup de référence
