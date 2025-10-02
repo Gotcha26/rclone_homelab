@@ -291,8 +291,11 @@ update_user_file() {
         diff -u "$last_ref_backup" "$ref_file"
     fi
     echo
+    print_fancy --fill "#" --align center " FIN DES DIFFERENCES "
 
     # 5. Confirmation utilisateur
+    echo
+    echo
     print_fancy "Une montée de version automatique (upgrade) est possible ci-après."
     print_fancy "Le procédé va préserver les clés ainsi que leurs valeurs associées."
     print_fancy --style "underline|bold" --align center "Tout le reste sera écrasé !"
@@ -314,7 +317,7 @@ update_user_file() {
 
     # 5.2. Extraction des valeurs existantes pour les clés connues
     declare -A user_values
-    while IFS='=' read -r key value; do
+    while IFS='=' read -r key value || [[ -n "$key" ]]; do
         # Nettoyage espaces en début/fin
         key="${key#"${key%%[![:space:]]*}"}"
         key="${key%"${key##*[![:space:]]}"}"
@@ -325,7 +328,7 @@ update_user_file() {
 
     # 5.3. Extraction de toutes les clés étrangères pour les conserver
     declare -A foreign_values
-    while IFS='=' read -r key value; do
+    while IFS='=' read -r key value || [[ -n "$key" ]]; do
         # Nettoyage espaces en début/fin
         key="${key#"${key%%[![:space:]]*}"}"
         key="${key%"${key##*[![:space:]]}"}"
@@ -358,9 +361,8 @@ update_user_file() {
 
     # 5.5. Remplacement du fichier utilisateur
     mv "$tmp_file" "$user_file"
-    print_fancy "✅  Mise à jour effectuée :"
-    print_fancy "Valeurs clés conservées, reste remplacé par la référence, clés étrangères préservées."
-    print_fancy "Fichier traité :"
+    print_fancy "✅  Le fichier utilisateur (local) 'user_file' A été mis à jour avec succès !"
+    print_fancy "   Fichier traité :"
     print_fancy --align right "$user_file"
     
 
