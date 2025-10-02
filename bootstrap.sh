@@ -176,11 +176,10 @@ update_user_file() {
     # 4. Affichage des différences
     echo
     print_fancy --theme warning --bg orange --highlight "Le fichier de référence suivant est à mettre à jour :"
-    print_fancy --bg orange --highlight --align right --style italic "$ref_file"
+    print_fancy --bg orange --highlight --align right --style italic --fg blue "$ref_file"
     print_fancy --bg orange --highlight --align center "Puisque vous possédez une fichier local personnalisé calqué sur"
-    print_fancy --bg orange --highlight --align center "ce précédent fichier, il faut reportez sur votre fichier local :"
-    print_fancy --bg orange --highlight --align right --style italic "$user_file"
-    print_fancy --bg orange --highlight --align center "... les même changement pour refléter au plus juste les fonctionnalités"
+    print_fancy --bg orange --highlight --align center "ce précédent fichier, il faut reportez sur votre fichier local"
+    print_fancy --bg orange --highlight --align center "les même changements pour refléter au plus juste les fonctionnalités"
     print_fancy --bg orange --highlight --align center "qui utilisent ce biais de configuration personnalisable."
     print_fancy --bg orange --highlight "Vous êtes ainsi invité à reporter les ajustement via le mécanisme qui suit."
     print_fancy --bg orange --highlight --fill " " " "
@@ -200,8 +199,8 @@ update_user_file() {
     print_fancy "Une montée de version automatique (upgrade) est possible ci-après."
     print_fancy "Le procédé va préserver les clés ainsi que leurs valeurs associées."
     print_fancy --style "underline|bold" --align center "Tout le reste sera écrasé !"
-    print_fancy --style italic --align center "(Une sauvegarde préalable sera faite avant toute intervention..."
-    print_fancy --style italic --align center "... de sorte que votre fichier personnel sera sanctuarisé.)"
+    print_fancy --fg green --style italic --align center "(Une sauvegarde préalable sera faite avant toute intervention..."
+    print_fancy --fg green --style italic --align center "... de sorte que votre fichier personnel sera sanctuarisé.)"
     echo
     print_fancy "❓  Voulez-vous procéder à ce remplacement ?"
     read -e -p "Réponse ? (O/n) " -n 1 -r
