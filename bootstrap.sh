@@ -152,12 +152,12 @@ update_user_file() {
     # 1. Première exécution : sauvegarde de la version de référence
     if [ ! -f "$last_ref_backup" ]; then
         if mkdir -p "$BACKUP_DIR" && cp "$ref_file" "$last_ref_backup"; then
-            display_msg "soft|verbose|hard" --theme ok \
+            print_fancy --theme ok \
                 "Initialisation du suivi pour : $user_file"
-            display_msg "soft|verbose|hard" \
+            print_fancy \
                 "   → Référence sauvegardée : $last_ref_backup"
         else
-            display_msg "soft|verbose|hard" --theme error \
+            print_fancy --theme error \
                 "Échec de la sauvegarde initiale ($ref_file → $last_ref_backup)"
             return 1
         fi
@@ -166,24 +166,23 @@ update_user_file() {
     # 2. Vérification des changements
     if ! diff -q "$last_ref_backup" "$ref_file" > /dev/null; then
         echo
-        display_msg "soft|verbose|hard" --theme warning --bg orange --highlight "Le fichier de référence suivant à été mis à jour :"
-        display_msg "soft|verbose|hard" --bg orange --highlight --align right --style italic "$ref_file"
-        display_msg "soft|verbose|hard" --bg orange --highlight --align right ""
-        display_msg "soft|verbose|hard" --bg orange --style "underline|bold" --highlight "Votre ancien fichier de référence a été sauvegardé et mis de coté."
+        print_fancy --theme warning --bg orange --highlight "Le fichier de référence suivant à été mis à jour :"
+        print_fancy --bg orange --highlight --align right --style italic "$ref_file"
+        print_fancy --bg orange --highlight --align right ""
+        print_fancy --bg orange --style "underline|bold" --highlight "Votre ancien fichier de référence a été sauvegardé et mis de coté."
         echo
-        display_msg "soft|verbose|hard" --bg orange --highlight --align right "Voici les différences à reporter sur votre installation :"
+        print_fancy --bg orange --highlight --align right "Voici les différences à reporter sur votre installation :"
         if command -v colordiff &> /dev/null; then
-            colordiff -u "$last_ref_backup" "$ref_file"
+            colordiff -u "$last_ref_backup" "$ref_file" | less -R
         else
-            diff -u "$last_ref_backup" "$ref_file"
+            diff -u "$last_ref_backup" "$ref_file" | less
         fi
 
         # 3. Demande de confirmation
         echo
-        display_msg "soft|verbose|hard" "❓  Souhaitez-vous répercuter ces changements sur le fichier :"
-        display_msg "soft|verbose|hard" --align right --style bold "$user_file"
-        echo
-        display_msg "soft|verbose|hard" --theme follow --style italic "☝️  Sachant qu'une sauvegarde a déjà été faite..."
+        print_fancy "❓  Souhaitez-vous répercuter automatiquement ces changements sur le fichier :"
+        print_fancy --align right --style bold "$user_file"
+        print_fancy --theme follow --style italic "☝️  Sachant qu'une sauvegarde a déjà été faite..."
         echo
         read -e -p "Réponse ? (O/n) " -n 1 -r
         echo
@@ -191,32 +190,47 @@ update_user_file() {
             # 4. Sauvegarde horodatée du fichier local
             local backup_file="$BACKUP_DIR/$(basename "$user_file")_$(date +%Y%m%d_%H%M%S).bak"
             cp "$user_file" "$backup_file"
-            echo "📦  Sauvegarde de $user_file : $backup_file"
+            print_fancy "📦  Sauvegarde de : $user_file"
+            print_fancy " →  Vers         : $backup_file"
 
-            # 5. Application du patch
-            diff -u --label "$user_file" "$last_ref_backup" "$ref_file" > "/tmp/$(basename "$user_file").patch"
-            if patch -p0 -i "/tmp/$(basename "$user_file").patch" "$user_file" -o "$user_file.tmp"; then
-                mv "$user_file.tmp" "$user_file"
-                echo "✅  Mises à jour appliquées à $user_file."
-                return 2   # signaler qu’une maj a été appliquée
-            else
-                echo "⚠️  Conflits détectés. Patch enregistré : /tmp/$(basename "$user_file").patch"
-                mv "$backup_file" "$user_file"  # Restauration
-                echo "🔄  $user_file restauré depuis la sauvegarde."
-                return 1   # échec maj
-            fi
-            # 6. Mise à jour du backup de référence
-            cp "$ref_file" "$last_ref_backup"
+            # 5. Application du patch : Merge à 3 voies avec git
+            git merge-file -p "$user_file" "$last_ref_backup" "$ref_file" >"$user_file.merged"
+            merge_status=$?
 
-            # On marque que quelque chose a été traité
+            case $merge_status in
+                0)
+                    # merge clean
+                    mv "$user_file.merged" "$user_file"
+                    cp "$ref_file" "$last_ref_backup"
+                    print_fancy "✅  Mise à jour appliquée automatiquement à $user_file"
+                    return 2
+                    ;;
+                1)
+                    # conflits détectés
+                    print_fancy "⚠️  Conflits détectés lors de la fusion :"
+                    print_fancy "👉  Voir et résoudre manuellement dans : $user_file.merged"
+                    print_fancy "    (votre ancien fichier reste inchangé : $user_file)"
+                    return 1
+                    ;;
+                2)
+                    # erreur fatale
+                    print_fancy --theme error "❌  Erreur fatale lors de la fusion"
+                    return 1
+                    ;;
+            esac
+
+            #  6. On marque que quelque chose a été traité. Drapeau pour update_local_configs()
             files_updated=true
         else
             print_fancy --theme error "Mise à jour annulée par l'utilisateur pour le fichier :"
             print_fancy --fg red --style bold --align right "$user_file"
+            echo
+            print_fancy "La demande sera réitérée à chaque mise à jour :"
+            print_fancy "garantissant une uniformtité des fichiers."
             return 0
         fi
     else
-        display_msg "verbose|hard" --theme success "$user_file est déjà à jour."
+        print_fancy "verbose|hard" --theme success "$user_file est déjà à jour."
         return 0   # pas de modification
     fi
 }
