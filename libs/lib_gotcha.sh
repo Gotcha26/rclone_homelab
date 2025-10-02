@@ -351,7 +351,7 @@ print_fancy() {
         full_line="${bg}${full_line}${RESET}"
 
         # Réinjection du texte coloré par-dessus au bon endroit
-        full_line="${full_line:0:$((pad_left+len_escape "$bg"))}${color}${bg}${style_seq}${text}${RESET}${bg}${full_line:$((pad_left+visible_len+len_escape "$bg"))}"
+        full_line="${full_line:0:$pad_left}${color}${bg}${style_seq}${text}${RESET}${bg}${full_line:$((pad_left+visible_len))}"
 
         # Sortie finale
         output="$full_line${RESET}"
