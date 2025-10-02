@@ -55,19 +55,19 @@ for idx in "${!JOBS_LIST[@]}"; do
     init_job_logs "$JOB_ID"
 
     # === Affichage d’attente coté terminal ===
-    print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING1"
-    print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING2"
-    print_fancy --bg "blue" --fill "=" --align "center" --highlight "$MSG_WAITING3"
+    print_fancy --bg "blue" --fill "=" --align "center" --highlight " SOYEZ PATIENT... "
+    print_fancy --bg "blue" --fill "=" --align "center" --highlight " Mise à jour seulement à fin du traitement du JOB. "
+    print_fancy --bg "blue" --fill "=" --align "center" --highlight " Pour interrompre : CTRL + C "
     echo
 
     # === Header Job ===
     print_fancy --style "bold" --align "center" "[$JOB_ID] $src → $dst"
-    print_fancy --style "bold" --align "center" "$MSG_TASK_LAUNCH ${NOW}"
+    print_fancy --style "bold" --align "center" "Tâche lancée le ${NOW}"
     echo
 
     {
         echo "[$JOB_ID] $src → $dst"
-        echo "$MSG_TASK_LAUNCH ${NOW}"
+        echo "Tâche lancée le ${NOW}"
         echo
     } > "$TMP_JOB_LOG_RAW"
 

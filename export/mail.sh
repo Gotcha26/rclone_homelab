@@ -141,18 +141,27 @@ check_msmtp_configured() {
 # Déterminer le sujet brut (SUBJECT_RAW) pour un job passé.
 # Valable pour un fichier concaténé ou job individuel
 # Evite les erreur lorsque aucun mail n'est saisie MAIS est nécessaire pour notification Discord
+
+###############################################################################
+# Fonction Détermine le sujet individuel issue du traitement d'un job.
+# Est utilisée aussi par Discord
+###############################################################################
 calculate_subject_raw_for_job() {
     local job_log_file="$1"
 
     if grep -iqE "(error|failed|unexpected|io error|io errors|not deleting)" "$job_log_file"; then
-        echo "$MSG_EMAIL_FAIL"
+        echo "❌  Des erreurs lors des sauvegardes vers le cloud"
     elif grep -q "There was nothing to transfer" "$job_log_file"; then
-        echo "$MSG_EMAIL_SUSPECT"
+        echo "⚠️  Synchronisation réussie mais aucun fichier transféré"
     else
-        echo "$MSG_EMAIL_SUCCESS"
+        echo "✅  Sauvegardes vers le cloud réussies"
     fi
 }
 
+
+###############################################################################
+# Fonction prépare le contenu de l'email. Assemble et colorise.
+###############################################################################
 prepare_mail_html() {
     local file="$1"
 
@@ -222,14 +231,20 @@ prepare_mail_html() {
 }
 
 
-# Encodage MIME UTF-8 Base64 du sujet
+###############################################################################
+# Fonction Encodage MIME UTF-8 Base64 du sujet
+###############################################################################
 encode_subject_for_email() {
     local log_file="$1"
     SUBJECT_RAW="$(calculate_subject_raw_for_job "$log_file")"
     SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
 }
 
-assemble_and_send_mail() {
+
+###############################################################################
+# Fonction Assemblage des différents élements pour constituer un email complet (entête, corps...)
+###############################################################################
+assemble_mail_file() {
     local log_file="$1"        # Fichier log utilisé pour calcul du résumé global (copied/updated/deleted)
     local html_block="$2"      # Bloc HTML global déjà préparé (tous les jobs), facultatif
     local MAIL="${DIR_TMP}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
@@ -297,7 +312,7 @@ assemble_and_send_mail() {
 <tr><td><b>Fichiers supprimés&nbsp;</b></td>
     <td style="text-align:right;">: $deleted</td></tr>
 </table>
-<p>$MSG_EMAIL_END</p>
+<p>– Fin du message automatique –</p>
 </body></html>
 HTML
 
@@ -319,28 +334,19 @@ HTML
 
     # --- Fermeture finale ---
     echo "--MIXED_BOUNDARY--" >> "$MAIL"
+}
+
+send_email() {
+    local html_block="$1"
+
+    print_fancy --align "center" "📧  Préparation de l'email..."
+    encode_subject_for_email "$LOG_FILE_INFO"
+    assemble_mail_file "$TMP_JOB_LOG_HTML" "$html_block"
 
     # --- Envoi du mail ---
-    msmtp --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL" || echo "$MSG_MSMTP_ERROR" >> "$DIR_LOG_FILE_MAIL"
-    print_fancy --align "center" "$MSG_EMAIL_SENT"
+    msmtp --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL" || echo "⚠ Echec envoi email via msmtp" >> "$DIR_LOG_FILE_MAIL"
+    print_fancy --align "center" "... Email envoyé ✅ "
 
     # --- Nettoyage optionnel ---
     rm -f "$MAIL"
-}
-
-send_email_if_needed() {
-    local html_block="$1"
-    if [[ -z "$MAIL_TO" ]]; then
-        print_fancy --theme "warning" "$MAIL_TO_ABS" >&2
-    elif ! command -v msmtp >/dev/null 2>&1; then
-        print_fancy --theme "warning" "$MSG_MSMTP_NOT_FOUND" >&2
-        echo
-        ERROR_CODE=13
-    else
-        print_fancy --align "center" "$MSG_EMAIL_PREP"
-        encode_subject_for_email "$LOG_FILE_INFO"
-
-        # Ici : soit on a un bloc HTML préformaté, soit on laisse assemble_and_send_mail parser
-        assemble_and_send_mail "$TMP_JOB_LOG_HTML" "$html_block"
-    fi
 }

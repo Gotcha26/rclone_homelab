@@ -22,5 +22,5 @@ send_discord_notification() {
         > /dev/null
 
     # On considère qu’à partir du moment où la fonction est appelée, on annonce un succès
-    print_fancy --align "center" "$MSG_DISCORD_SENT"
+    print_fancy --theme ok --align "center" "Notification Discord envoyée."
 }

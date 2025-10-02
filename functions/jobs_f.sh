@@ -24,7 +24,7 @@ parse_jobs() {
 
         # Vérif source locale
         if [[ ! -d "$src" ]]; then
-            die 7 "$MSG_SRC_NOT_FOUND : $src"
+            die 7 "Dossier source introuvable ou inaccessible : $src"
         fi
 
         # Stocker la paire src|dst, sans statut

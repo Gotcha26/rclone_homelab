@@ -55,7 +55,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         --mailto=*)
             MAIL_TO="${1#*=}"
+            if [[ -z "$MAIL_TO" ]]; then
+                print_fancy --theme error "Option --mailto= fournie mais vide."
+                die 12 "Mauvaise formation de l'argument --mailto="
+            fi
             shift
+            ;;
+        --mailto)
+            print_fancy --theme error "Option --mailto requiert une adresse email (syntaxe: --mailto=adresse@domaine)."
+            die 12 "Mauvaise formation de l'argument --mailto="
             ;;
         --dry-run)
             DRY_RUN=true
@@ -137,7 +145,7 @@ fi
 create_temp_dirs
 check_and_prepare_email "$MAIL_TO"
 check_rclone
-check_jobs_file hard
+check_jobs_file
 
 
 ###############################################################################
@@ -151,7 +159,7 @@ source "$SCRIPT_DIR/jobs.sh"
 # 6. Traitement des emails
 ###############################################################################
 
-[[ -n "$MAIL_TO" ]] && send_email_if_needed "$GLOBAL_HTML_BLOCK"
+[[ -n "$MAIL_TO" ]] && send_email "$GLOBAL_HTML_BLOCK"
 
 
 ###############################################################################
