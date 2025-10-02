@@ -131,7 +131,7 @@ update_local_configs() {
 # Fonction : Permet de mettre à jour les fichiers locaux en se basant sur les fichiers de références (exemples_files)
 # https://chatgpt.com/share/68d671af-f828-8004-adeb-9554a00d1382
 ###############################################################################
-update_user_file() {
+update_user_file_old() {
     local ref_file="$1"
     local user_file="$2"
     local last_ref_backup="$BACKUP_DIR/last_$(basename "$ref_file")"
@@ -191,7 +191,7 @@ update_user_file() {
             local backup_file="$BACKUP_DIR/$(basename "$user_file")_$(date +%Y%m%d_%H%M%S).bak"
             cp "$user_file" "$backup_file"
             print_fancy "📦  Sauvegarde de : $user_file"
-            print_fancy " →  Vers         : $backup_file"
+            print_fancy "   Vers →        : $backup_file"
 
             # 5. Application du patch : Merge à 3 voies avec git
             git merge-file -p "$user_file" "$last_ref_backup" "$ref_file" >"$user_file.merged"
@@ -234,3 +234,135 @@ update_user_file() {
         return 0   # pas de modification
     fi
 }
+
+
+
+update_user_file() {
+    local ref_file="$1"
+    local user_file="$2"
+    local last_ref_backup="$BACKUP_DIR/last_$(basename "$ref_file")"
+
+    # 1. Vérification de l'existence des fichiers
+    # ref_file (bloquand si absent)
+    if [ ! -f "$ref_file" ]; then
+        print_fancy --theme error "Un problème sérieux → Fichier de référence non présent :"
+        print_fancy --fg red --style bold --align right "$ref_file"
+        return 1
+    fi
+
+    # user_file - Cas où le fichier local n'existe pas → on ignore totalement → pas de suivi
+    if [ ! -f "$user_file" ]; then
+        display_msg "verbose|hard" "🔎  Fichier local absent, aucun suivi nécessaire pour :"
+        display_msg "verbose|hard" --align right "$user_file"
+        return 0
+    fi
+
+    # 2. Première exécution : sauvegarde de la version de référence
+    if [ ! -f "$last_ref_backup" ]; then
+        if mkdir -p "$BACKUP_DIR" && cp "$ref_file" "$last_ref_backup"; then
+            print_fancy --theme ok "Initialisation du suivi pour : $user_file"
+            print_fancy "   → Référence sauvegardée : $last_ref_backup"
+        else
+            print_fancy --theme error "Échec de la sauvegarde initiale, concerne :"
+            print_fancy --fb red --style bold "Fichier : $ref_file"
+            print_fancy --fb red --style bold "Pour    → $last_ref_backup"
+            return 1
+        fi
+    fi
+
+    # 3.Vérification changements
+    if diff -q "$last_ref_backup" "$ref_file" > /dev/null; then
+        print_fancy "verbose|hard" --theme success "$user_file est déjà à jour."
+        return 0
+    fi
+
+    # 4. Affichage des différences
+    echo
+    print_fancy --theme warning --bg orange --highlight "Le fichier de référence suivant est à mettre à jour :"
+    print_fancy --bg orange --highlight --align right --style italic "$ref_file"
+    echo
+    print_fancy --bg orange --highlight --align right "Voici les différences :"
+    if command -v colordiff &> /dev/null; then
+        colordiff -u "$last_ref_backup" "$ref_file"
+    else
+        diff -u "$last_ref_backup" "$ref_file"
+    fi
+    echo
+
+    # 5. Confirmation utilisateur
+    print_fancy "Une montée de version automatique (upgrade) est possible ci-après."
+    print_fancy "Le procédé va préserver les clés ainsi que leurs valeurs associées."
+    print_fancy --style "underline|bold" "Tout le reste sera écrasé !"
+    print_fancy --style italic "(Une sauvegarde préalable sera faite avant toute intervention...)"
+    echo
+    print_fancy "❓  Voulez-vous procéder à ce remplacement ?"
+    read -e -p "Réponse ? (O/n) " -n 1 -r
+    echo
+    if [[ -n "$REPLY" && ! "$REPLY" =~ ^[OoYy]$ ]]; then
+        print_fancy --theme error "Mise à jour annulée par l'utilisateur pour : $user_file"
+        return 0
+    fi
+
+    # 5.1. Sauvegarde horodatée du fichier utilisateur
+    local backup_file="$BACKUP_DIR/$(basename "$user_file")_$(date +%Y%m%d_%H%M%S).bak"
+    cp "$user_file" "$backup_file"
+    print_fancy "📦  Sauvegarde de : $user_file"
+    print_fancy "   Vers →        : $backup_file"
+
+    # 5.2. Extraction des valeurs existantes pour les clés connues
+    declare -A user_values
+    while IFS='=' read -r key value; do
+        key=$(echo "$key" | xargs)
+        value=$(echo "$value" | xargs)
+        [[ -n "$key" && -n "${VARS_TO_VALIDATE[$key]+_}" ]] && user_values[$key]="$value"
+    done < "$user_file"
+
+    # 5.3. Extraction de toutes les clés étrangères pour les conserver
+    declare -A foreign_values
+    while IFS='=' read -r key value; do
+        key=$(echo "$key" | xargs)
+        value=$(echo "$value" | xargs)
+        [[ -n "$key" && -z "${VARS_TO_VALIDATE[$key]+_}" ]] && foreign_values[$key]="$value"
+    done < "$user_file"
+
+    # 5.4. Génération du nouveau fichier basé sur la référence
+    local tmp_file
+    tmp_file="$(mktemp)"
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^([A-Za-z0-9_]+)=(.*) ]]; then
+            key="${BASH_REMATCH[1]}"
+            if [[ -n "${user_values[$key]+_}" ]]; then
+                # Clé connue → conserver valeur utilisateur
+                echo "$key=${user_values[$key]}" >> "$tmp_file"
+            elif [[ -n "${foreign_values[$key]+_}" ]]; then
+                # Clé étrangère → conserver valeur originale
+                echo "$key=${foreign_values[$key]}" >> "$tmp_file"
+            else
+                # Nouvelle clé → prendre la valeur de référence
+                echo "$line" >> "$tmp_file"
+            fi
+        else
+            # Lignes non key=value → copier
+            echo "$line" >> "$tmp_file"
+        fi
+    done < "$ref_file"
+
+    # 5.5. Remplacement du fichier utilisateur
+    mv "$tmp_file" "$user_file"
+    print_fancy "✅  Mise à jour effectuée :"
+    print_fancy "Valeurs clés conservées, reste remplacé par la référence, clés étrangères préservées."
+    print_fancy "Fichier traité :"
+    print_fancy --align right "$user_file"
+    
+
+    # 5.6. Mise à jour du backup de référence
+    if cp "$ref_file" "$last_ref_backup"; then
+        display_msg "verbose|hard" --theme ok "Mise à jour de la sauvegarde pour le fichier 'ref_file'"
+    else
+        print_fancy --theme error "Un problème en voulant mettre à jour la sauvegarde pour 'ref_file' !"
+
+    # 5.7. On marque que quelque chose a été traité. Drapeau pour update_local_configs()
+    files_updated=true
+    return 2
+}
+
