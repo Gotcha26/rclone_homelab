@@ -52,21 +52,23 @@ RESET='\e[0m'
 ###############################################################################
 # Fonctions pour interpréter les couleurs (support ANSI / 256 / RGB)
 ###############################################################################
-
 get_fg_color() {
     local c="$1"
     [[ -z "$c" ]] && return 0
 
-    if [[ "$c" =~ ^ansi: ]]; then
-        printf "\033[%sm" "${c#ansi:}"
-    elif [[ "$c" =~ ^256: ]]; then
-        printf "\033[38;5;%sm" "${c#256:}"
-    elif [[ "$c" =~ ^rgb: ]]; then
-        IFS=';' read -r r g b <<< "${c#rgb:}"
+    # Résolution via dictionnaire
+    local code="${FG_COLORS[$c]:-$c}"
+
+    if [[ "$code" =~ ^256: ]]; then
+        printf "\033[38;5;%sm" "${code#256:}"
+    elif [[ "$code" =~ ^rgb: ]]; then
+        IFS=';' read -r r g b <<< "${code#rgb:}"
         printf "\033[38;2;%s;%s;%sm" "$r" "$g" "$b"
+    elif [[ "$code" =~ ^[0-9]+$ ]]; then
+        printf "\033[%sm" "$code"
     else
-        # fallback : nom de couleur classique
-        printf "\033[%sm" "${FG_COLORS[$c]:-39}"
+        # fallback
+        printf "\033[39m"
     fi
 }
 
@@ -74,16 +76,18 @@ get_bg_color() {
     local c="$1"
     [[ -z "$c" || "$c" == "none" || "$c" == "transparent" ]] && return 0
 
-    if [[ "$c" =~ ^ansi: ]]; then
-        printf "\033[%sm" "${c#ansi:}"
-    elif [[ "$c" =~ ^256: ]]; then
-        printf "\033[48;5;%sm" "${c#256:}"
-    elif [[ "$c" =~ ^rgb: ]]; then
-        IFS=';' read -r r g b <<< "${c#rgb:}"
+    local code="${BG_COLORS[$c]:-$c}"
+
+    if [[ "$code" =~ ^256: ]]; then
+        printf "\033[48;5;%sm" "${code#256:}"
+    elif [[ "$code" =~ ^rgb: ]]; then
+        IFS=';' read -r r g b <<< "${code#rgb:}"
         printf "\033[48;2;%s;%s;%sm" "$r" "$g" "$b"
+    elif [[ "$code" =~ ^[0-9]+$ ]]; then
+        printf "\033[%sm" "$code"
     else
-        # fallback : nom de couleur classique
-        printf "\033[%sm" "${BG_COLORS[$c]:-49}"
+        # fallback
+        printf "\033[49m"
     fi
 }
 
