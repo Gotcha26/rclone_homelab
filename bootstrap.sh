@@ -183,7 +183,7 @@ update_user_file() {
     print_fancy --bg orange --highlight --align center "qui utilisent ce biais de configuration personnalisable."
     print_fancy --bg orange --highlight "Vous êtes ainsi invité à reporter les ajustement via le mécanisme qui suit."
     print_fancy --bg orange --highlight --fill " " " "
-    print_fancy --bg orange --highlight --align center --style bold "ℹ️  Voici les différences trouvées :"
+    print_fancy --bg orange --highlight --align center --style bold "ℹ  Voici les différences trouvées :"
     echo
     if command -v colordiff &> /dev/null; then
         colordiff -u "$last_ref_backup" "$ref_file"
@@ -210,7 +210,7 @@ update_user_file() {
         print_fancy --align right --fg red --style bold "$user_file"
         echo
         print_fancy "Pour supprimer ce message : Accéptez les modifications proposées."
-        print_fancy "- "
+        print_fancy "-"
         return 0
     fi
 
