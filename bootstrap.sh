@@ -176,7 +176,7 @@ update_user_file() {
     # 4. Affichage des différences
     echo
     print_fancy --theme warning --bg orange --highlight "Le fichier de référence suivant est à mettre à jour :"
-    print_fancy --bg orange --highlight --align right --style italic --fg light_blue "$ref_file"
+    print_fancy --bg orange --highlight --align right --style italic "$ref_file"
     print_fancy --bg orange --highlight --fill " " " "
     print_fancy --bg orange --highlight --align center --style bold "Voici les différences :"
     echo
