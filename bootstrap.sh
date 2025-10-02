@@ -200,7 +200,8 @@ update_user_file() {
     read -e -p "Réponse ? (O/n) " -n 1 -r
     echo
     if [[ -n "$REPLY" && ! "$REPLY" =~ ^[OoYy]$ ]]; then
-        print_fancy --theme error "Mise à jour annulée par l'utilisateur pour : $user_file"
+        print_fancy --theme error "Mise à jour annulée par l'utilisateur pour :"
+        print_fancy --align right --fg red --style bold "$user_file"
         return 0
     fi
 
