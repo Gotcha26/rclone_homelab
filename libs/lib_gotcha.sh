@@ -343,18 +343,9 @@ print_fancy() {
 
     # Highlight
     if [[ -n "$highlight" ]]; then
-        local full_line
-        # Ligne remplie entièrement avec le caractère de fond
-        full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
-
-        # Application du bg sur toute la ligne
-        full_line="${bg}${full_line}${RESET}"
-
-        # Réinjection du texte coloré par-dessus au bon endroit
-        full_line="${full_line:0:$pad_left}${color}${bg}${style_seq}${text}${RESET}${bg}${full_line:$((pad_left+visible_len))}"
-
-        # Sortie finale
-        output="$full_line${RESET}"
+        # on utilise pad_left_str / pad_right_str calculés plus haut (sans séquences ANSI)
+        # Composition : bg + left_fill | fg+bg+style+text+RESET | bg + right_fill + RESET
+        output="${bg}${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${bg}${pad_right_str}${RESET}"
     fi
 
     if [[ -n "$raw_mode" ]]; then
