@@ -109,6 +109,8 @@ update_local_configs() {
     # Flag pour savoir si au moins un fichier a été traité
     local files_updated=false
 
+    display_msg "verbose|hard" --theme info "Mise à jour des fichiers locaux..."
+
     # Boucle pour traiter chaque fichier
     for key in "${!VARS_LOCAL_FILES[@]}"; do
         IFS=';' read -r ref_file user_file <<< "${VARS_LOCAL_FILES[$key]}"
@@ -230,7 +232,7 @@ update_user_file_old() {
             return 0
         fi
     else
-        print_fancy "verbose|hard" --theme success "$user_file est déjà à jour."
+        print_fancy --theme success "$user_file est déjà à jour."
         return 0   # pas de modification
     fi
 }
@@ -272,7 +274,8 @@ update_user_file() {
 
     # 3.Vérification changements
     if diff -q "$last_ref_backup" "$ref_file" > /dev/null; then
-        print_fancy "verbose|hard" --theme success "$user_file est déjà à jour."
+        display_msg "verbose|hard" --theme ok "Fichier déjà à jour et passé :"
+        display_msg "verbose|hard" --align right "$user_file"
         return 0
     fi
 
@@ -292,8 +295,8 @@ update_user_file() {
     # 5. Confirmation utilisateur
     print_fancy "Une montée de version automatique (upgrade) est possible ci-après."
     print_fancy "Le procédé va préserver les clés ainsi que leurs valeurs associées."
-    print_fancy --style "underline|bold" "Tout le reste sera écrasé !"
-    print_fancy --style italic "(Une sauvegarde préalable sera faite avant toute intervention...)"
+    print_fancy --style "underline|bold" --align center "Tout le reste sera écrasé !"
+    print_fancy --style italic --align center "(Une sauvegarde préalable sera faite avant toute intervention...)"
     echo
     print_fancy "❓  Voulez-vous procéder à ce remplacement ?"
     read -e -p "Réponse ? (O/n) " -n 1 -r
@@ -312,16 +315,22 @@ update_user_file() {
     # 5.2. Extraction des valeurs existantes pour les clés connues
     declare -A user_values
     while IFS='=' read -r key value; do
-        key=$(echo "$key" | xargs)
-        value=$(echo "$value" | xargs)
+        # Nettoyage espaces en début/fin
+        key="${key#"${key%%[![:space:]]*}"}"
+        key="${key%"${key##*[![:space:]]}"}"
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
         [[ -n "$key" && -n "${VARS_TO_VALIDATE[$key]+_}" ]] && user_values[$key]="$value"
     done < "$user_file"
 
     # 5.3. Extraction de toutes les clés étrangères pour les conserver
     declare -A foreign_values
     while IFS='=' read -r key value; do
-        key=$(echo "$key" | xargs)
-        value=$(echo "$value" | xargs)
+        # Nettoyage espaces en début/fin
+        key="${key#"${key%%[![:space:]]*}"}"
+        key="${key%"${key##*[![:space:]]}"}"
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
         [[ -n "$key" && -z "${VARS_TO_VALIDATE[$key]+_}" ]] && foreign_values[$key]="$value"
     done < "$user_file"
 
