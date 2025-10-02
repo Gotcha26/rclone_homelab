@@ -173,9 +173,9 @@ update_user_file() {
         echo
         print_fancy --bg orange --highlight --align right "Voici les différences à reporter sur votre installation :"
         if command -v colordiff &> /dev/null; then
-            colordiff -u "$last_ref_backup" "$ref_file" | less -R
+            colordiff -u "$last_ref_backup" "$ref_file"
         else
-            diff -u "$last_ref_backup" "$ref_file" | less
+            diff -u "$last_ref_backup" "$ref_file"
         fi
 
         # 3. Demande de confirmation
