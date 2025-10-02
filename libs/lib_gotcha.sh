@@ -344,16 +344,11 @@ print_fancy() {
 
     # Highlight
     if [[ -n "$highlight" ]]; then
-        # On veut : fond sur toute la ligne, pads colorés en fg, texte fg+style,
-        # et RESET propre à la fin.
-        output="${bg}${color}${pad_left_str}"        # bg actif + pad gauche en fg
-        output+="${color}${style_seq}${text}${RESET}" # texte en fg+style, puis RESET
-        output+="${bg}${color}${pad_right_str}${RESET}" # réapplique bg+fg pour pad droit, puis RESET final
-    else
-        # comportement antérieur : pads neutres, texte coloré
-        output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
+        local full_line
+        full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
+        full_line="${full_line:0:pad_left}${color}${bg}${style_seq}${text}${RESET}${bg}${full_line:$((pad_left + visible_len))}"
+        output="${bg}${full_line}${RESET}"
     fi
-
 
     if [[ -n "$raw_mode" ]]; then
         printf "%b" "$output"
