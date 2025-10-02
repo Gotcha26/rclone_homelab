@@ -265,7 +265,7 @@ print_fancy() {
     local theme="" offset=0
     local icon="" prefix=""
 
-    # Séquences SGR "logiques" (utilisées en plus des get_*)
+    # Séquences ANSI
     local BOLD="\033[1m"
     local ITALIC="\033[3m"
     local UNDERLINE="\033[4m"
@@ -304,7 +304,7 @@ print_fancy() {
     esac
     text="$icon$prefix$text"
 
-    # Traduction des couleurs en séquences ANSI (get_fg_color/get_bg_color renvoient déjà des \033[...]m ou "" )
+   # Traduction des couleurs en séquences ANSI (get_fg_color/get_bg_color renvoient déjà des \033[...]m ou "" )
     [[ "$color" =~ ^\\e ]] || color=$(get_fg_color "${color:-bright_white}")
     [[ "$bg" =~ ^\\e ]] || bg=$(get_bg_color "$bg")
 
@@ -338,33 +338,18 @@ print_fancy() {
     esac
 
     # Pads purs (sans ANSI) — pas d'index sur eux, donc sûrs
-    local pad_left_str pad_right_str
-    pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
-    pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
+    local pad_left_str=$(printf '%*s' "$pad_left" '' | tr ' ' "$fill")
+    local pad_right_str=$(printf '%*s' "$pad_right" '' | tr ' ' "$fill")
+    local output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
 
-    # Cas normal (pas de highlight) — pad neutre, texte coloré
-    local output
-    if [[ -z "$highlight" ]]; then
-        output="${pad_left_str}${color}${bg}${style_seq}${text}${RESET}${pad_right_str}"
-    else
-        # Highlight demandé : peindre toute la ligne en bg (si bg fourni), et colorer les pads avec la même fg que le texte.
-        # Séquences à utiliser (peuvent être vides si get_* a retourné "")
-        local fg_seq="${color:-}"
-        local bg_seq="${bg:-}"
-
-        # Construire pads colorés : fg+bg + pad + RESET + bg (pour garder le bg sur la suite de la ligne)
-        local left_colored right_colored
-        left_colored="${fg_seq}${bg_seq}${pad_left_str}${RESET}${bg_seq}"
-        right_colored="${fg_seq}${bg_seq}${pad_right_str}${RESET}${bg_seq}"
-
-        # Construire la ligne complète :
-        # - on commence par bg_seq (pour s'assurer que si bg est vide le comportement est neutre)
-        # - left_colored contient fg+bg puis RESET puis bg_seq pour assurer continuité
-        # - texte avec fg+bg+style, puis RESET, puis bg_seq pour garder le fond
-        output="${bg_seq}${left_colored}${fg_seq}${bg_seq}${style_seq}${text}${RESET}${bg_seq}${right_colored}${RESET}"
+    # Highlight
+    if [[ -n "$highlight" ]]; then
+        local full_line
+        full_line=$(printf '%*s' "$TERM_WIDTH_DEFAULT" '' | tr ' ' "$fill")
+        full_line="${full_line:0:pad_left}${color}${bg}${style_seq}${text}${RESET}${bg}${full_line:$((pad_left + visible_len))}"
+        output="${bg}${full_line}${RESET}"
     fi
 
-    # raw or print
     if [[ -n "$raw_mode" ]]; then
         printf "%b" "$output"
     else
