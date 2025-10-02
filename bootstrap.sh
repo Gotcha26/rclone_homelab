@@ -360,6 +360,7 @@ update_user_file() {
         display_msg "verbose|hard" --theme ok "Mise à jour de la sauvegarde pour le fichier 'ref_file'"
     else
         print_fancy --theme error "Un problème en voulant mettre à jour la sauvegarde pour 'ref_file' !"
+    fi
 
     # 5.7. On marque que quelque chose a été traité. Drapeau pour update_local_configs()
     files_updated=true
