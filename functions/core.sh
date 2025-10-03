@@ -335,8 +335,13 @@ safe_var() {
 # Fonction : Pour les tableaux : renvoie la taille, ou 0 si non défini
 ###############################################################################
 safe_count() {
-    local -n arr="${1:-}" 2>/dev/null || { echo 0; return; }
-    echo "${#arr[@]:-0}"
+    # Vérifier si la variable existe et est bien un tableau
+    if [[ -n "$1" && "$(declare -p "$1" 2>/dev/null)" =~ "declare -a"|"declare -A" ]]; then
+        local -n arr="$1"
+        echo "${#arr[@]}"
+    else
+        echo 0
+    fi
 }
 
 
