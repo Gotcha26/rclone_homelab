@@ -36,7 +36,7 @@ check_and_prepare_email() {
             if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
                 install_msmtp
             else
-                die 15 "msmtp requis non installé."
+                die 15 "Annulé par l'utilisateur. msmtp est requis : non installé."
             fi
         fi
     else
@@ -44,9 +44,9 @@ check_and_prepare_email() {
     fi
 
     # 3/x : Vérification configuration msmtp
-    display_msg "verbose|hard" "☞  3/x Lecture configuration msmtp"
-    display_msg "verbose|hard" --theme warning "Ne garantit pas que le contenu soit correct !!!"
-    if check_msmtp_configured; then
+    display_msg "verbose|hard" "☞  3/x Lecture (sans garanties) de la configuration msmtp"
+    msmtp_conf=$(check_msmtp_configured)
+    if [[ -z "$msmtp_conf" ]]; then
         if [[ $ACTION_MODE == auto ]]; then
             display_msg "soft" --theme error "msmtp non ou mal configuré."
             display_msg "verbose|hard" --theme error "L'outil msmtp semble mal configuré ou absent."
@@ -116,14 +116,13 @@ check_msmtp_configured() {
     # Parcours des candidats
     for conf_file in "${candidates[@]}"; do
         if [[ -f "$conf_file" && -r "$conf_file" ]]; then
-            local filesize
-            filesize=$(stat -c %s "$conf_file" 2>/dev/null || echo 0)
-            if (( filesize > 0 )); then
-                echo "$conf_file"
-                return 0
+            if [[ -s "$conf_file" ]]; then
+                # fichier existe et non vide
+                echo "$conf_file"   # retourne le chemin
+                return 0            # succès
             else
                 echo "⚠️  Fichier msmtp trouvé mais vide : $conf_file"
-                return 2
+                return 1
             fi
         fi
     done
