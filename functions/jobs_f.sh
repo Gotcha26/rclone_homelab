@@ -123,6 +123,32 @@ check_remotes() {
 
             fi
 
+# --- Vérification dry-run uniquement pour la destination distante ---
+echo "DEBUG: RCLONE_OPTS = '${RCLONE_OPTS[*]}'"
+echo "DEBUG: dst = '$dst'"
+
+if [[ " ${RCLONE_OPTS[*]} " == *"--dry-run"* ]]; then
+    echo "DEBUG: Dry-run détecté pour $dst"
+    if ! check_dry_run_compat "$dst"; then
+        echo "DEBUG: Dry-run incompatible pour $dst"
+        JOB_STATUS[$idx]="PROBLEM"
+        JOB_ERR_REASON[$idx]="dry_run_incompatible"
+        JOB_ENDPOINT[$idx]="$dst"
+
+        local dryrun_remote="${dst%%:*}"   # sera vide si local
+        [[ -z "$dryrun_remote" ]] && dryrun_remote="$dst"
+        JOB_REMOTE[$idx]="$dryrun_remote"
+
+        REMOTE_STATUS["$dst"]="PROBLEM"
+        ERROR_CODE=20
+    fi
+else
+    echo "DEBUG: Pas de dry-run pour $dst"
+fi
+
+# Stop temporaire pour inspecter calmement
+read -p "DEBUG: appuyez sur Entrée pour continuer..."
+
             # --- Vérification dry-run uniquement pour la destination distante ---
             if [[ "$dst" == *:* ]] && [[ " ${RCLONE_OPTS[*]} " == *"--dry-run"* ]]; then
                 if ! check_dry_run_compat "$dst"; then
