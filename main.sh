@@ -120,7 +120,7 @@ fi
 
 # Si aucun argument → menu interactif
 if [[ ${#ORIG_ARGS[@]} -eq 0 ]]; then
-    bash "$SCRIPT_DIR/menu.sh"
+    source "$SCRIPT_DIR/menu.sh"
     MENU_RESULT=$?
     if [[ $MENU_RESULT -eq 99 ]]; then
         echo
@@ -131,8 +131,6 @@ if [[ ${#ORIG_ARGS[@]} -eq 0 ]]; then
         scroll_down             # Pas de clear
         [[ $DEBUG_INFOS == true ]] && print_fancy --theme "debug_info" "Poursuite post-menu"
         load_optional_configs   # Rappel des configurations locales (surcharge après le menu et/ou pour le mode full auto)
-echo "DEBUG_INFOS = '$DEBUG_INFOS'"
-echo "DEBUG_MODE = '$DEBUG_MODE'"
         self_validation_local_variables VARS_TO_VALIDATE   # Processus de correction automatique
     fi
 else
