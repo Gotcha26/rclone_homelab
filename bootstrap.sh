@@ -58,10 +58,6 @@ fi
 : "${DISPLAY_MODE:=soft}"
 : "${ACTION_MODE:=manu}"
 
-# Association des modes si nécessaire (DEBUG)
-[[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
-[[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
-
 # Répertoire pour les sauvegardes horodatées (MAJ fichiers locaux)
 BACKUP_DIR="${DIR_LOCAL}/backups"
 

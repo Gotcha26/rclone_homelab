@@ -61,6 +61,18 @@ load_optional_configs() {
         display_msg "verbose" --theme info "Configuration par défaut uniquement."
         display_msg "hard" --theme info "Aucun fichier de configuration optionnel trouvé. Configuration par défaut uniquement."
     fi
+
+    # --- Dépendances de la configuration locale ---
+
+    # Association des modes si nécessaire (DEBUG) 
+    [[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
+    [[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
+
+    # Application des flags issus de la config
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        RCLONE_OPTS+=("--dry-run")
+    fi
+
 }
 
 
