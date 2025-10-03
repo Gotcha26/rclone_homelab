@@ -62,12 +62,12 @@ for idx in "${!JOBS_LIST[@]}"; do
 
     # === Header Job ===
     print_fancy --style "bold" --align "center" "[$JOB_ID] $src → $dst"
-    print_fancy --style "bold" --align "center" "Tâche lancée le ${NOW}"
+    print_fancy --style "bold" --align "center" "Tâche lancée le $(date '+%Y-%m-%d %H:%M:%S')"
     echo
 
     {
         echo "[$JOB_ID] $src → $dst"
-        echo "Tâche lancée le ${NOW}"
+        echo "Tâche lancée le $(date '+%Y-%m-%d %H:%M:%S')"
         echo
     } > "$TMP_JOB_LOG_RAW"
 
