@@ -96,7 +96,7 @@ while true; do
     # msmtp
     if ! command -v msmtp >/dev/null 2>&1; then
         # Cas 1 : msmtp absent → proposer l'installation
-        add_option "📦  Installer msmtp                        → outil d'envoi mails [optionnel]" "menu_install_msmtp"
+        add_option "📦  Installer msmtp                       → outil d'envoi mails [optionnel]" "menu_install_msmtp"
     else
         # Cas 2 : msmtp présent → vérifier la configuration
         if conf_file=$(check_msmtp_configured 2>/dev/null); then
