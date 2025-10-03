@@ -62,7 +62,15 @@ check_and_prepare_email() {
             die 14 "msmtp non ou mal configuré (fichier vide)."
         else
             display_msg "soft|verbose|hard" --theme warning "Proposition de configuration"
-            configure_msmtp
+            echo
+            read -e -rp "Voulez-vous éditer la configuration de msmtp (requis) ? [O/n] : " -n 1 -r
+            echo
+            if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
+                edit_msmtp_config
+            else
+                die 16 "Annulé par l'utilisateur. msmtp n'est pas configuré."
+            fi
+            
         fi
 
     else
@@ -73,7 +81,14 @@ check_and_prepare_email() {
             die 14 "msmtp non ou mal configuré."
         else
             display_msg "soft|verbose|hard" --theme warning "Proposition de configuration"
-            configure_msmtp
+            echo
+            read -e -rp "Voulez-vous éditer la configuration de msmtp (requis) ? [O/n] : " -n 1 -r
+            echo
+            if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
+                edit_msmtp_config
+            else
+                die 16 "Annulé par l'utilisateur. msmtp n'est pas configuré."
+            fi
         fi
     fi
 
