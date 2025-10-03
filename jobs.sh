@@ -81,7 +81,6 @@ for idx in "${!JOBS_LIST[@]}"; do
     if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
         handle_job_problem "$idx"
         job_rc=1
-        continue
     else
         # === Exécution rclone ===
         # C'est parti mon kiki !!!
