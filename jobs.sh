@@ -51,10 +51,18 @@ for idx in "${!JOBS_LIST[@]}"; do
     IFS='|' read -r src dst <<< "$job"
     JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
 
+    # === Vérification préalable du statut du job ===
+    if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
+        handle_job_problem "$idx"
+        job_rc=1
+        (( JOB_COUNTER++ ))  # on incrémente quand même pour garder la numérotation unique
+        continue
+    fi
+
     # === Création des fichiers temporaires ===
     init_job_logs "$JOB_ID"
 
-    # === Affichage d’attente coté terminal ===
+    # === Affichage d’attente côté terminal ===
     print_fancy --bg "blue" --fill "=" --align "center" --highlight " SOYEZ PATIENT... "
     print_fancy --bg "blue" --fill "=" --align "center" --highlight " Mise à jour seulement à fin du traitement du JOB. "
     print_fancy --bg "blue" --fill "=" --align "center" --highlight " Pour interrompre : CTRL + C "
@@ -77,34 +85,29 @@ for idx in "${!JOBS_LIST[@]}"; do
         echo "$msg" >> "$TMP_JOB_LOG_RAW"
     }
 
-    # === Vérification du statut du job ===
-    if [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]]; then
-        handle_job_problem "$idx"
-        job_rc=1
-        continue
-    else
-        # === Exécution rclone ===
-        # C'est parti mon kiki !!!
-        rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
-        RCLONE_PID=$!
-        spinner $RCLONE_PID
-        wait $RCLONE_PID
-        job_rc=$?
+    # === Exécution rclone ===
+    rclone sync "$src" "$dst" "${RCLONE_OPTS[@]}" >> "$TMP_JOB_LOG_RAW" 2>&1 &
+    RCLONE_PID=$!
+    spinner $RCLONE_PID
+    wait $RCLONE_PID
+    job_rc=$?
 
-        # Détecter si le job a échoué
-        if (( job_rc != 0 )); then
-            ERROR_CODE=8
+    # === Détection et traitement des erreurs ===
+    if (( job_rc != 0 )); then
+        ERROR_CODE=8
 
-            # Analyse rapide du log pour détecter token expiré ou remote inaccessible
-            if grep -q -i "unauthenticated\|invalid_grant\|couldn't fetch token" "$TMP_JOB_LOG_RAW"; then
-                JOB_MSG_LIST[$idx]="token_expired"
-            else
-                JOB_MSG_LIST[$idx]="rclone_error"
-            fi
+        # Analyse rapide du log pour détecter token expiré ou remote inaccessible
+        if grep -q -i "unauthenticated\|invalid_grant\|couldn't fetch token" "$TMP_JOB_LOG_RAW"; then
+            JOB_MSG_LIST[$idx]="token_expired"
         else
-            JOB_STATUS[$idx]="OK"
-            JOB_MSG_LIST[$idx]="ok"
+            JOB_MSG_LIST[$idx]="rclone_error"
         fi
+        JOB_STATUS[$idx]="PROBLEM"
+        MAIL_SUBJECT_OK=false
+    else
+        JOB_STATUS[$idx]="OK"
+        JOB_MSG_LIST[$idx]="ok"
+        (( EXECUTED_JOBS++ ))   # Compte uniquement si succès
     fi
 
     # === Affichage colorisé à l'écran et génération logs ===
@@ -126,9 +129,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     echo
     send_discord_notification "$TMP_JOB_LOG_PLAIN"
 
-    # === Incrément compteur ===
-    (( job_rc == 0 )) && ((EXECUTED_JOBS++))   # Compte uniquement si succès
-    (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
-    ((JOB_COUNTER++))
+    # === Incrément compteur JOB_COUNTER (toujours) ===
+    (( JOB_COUNTER++ ))
     echo
 done

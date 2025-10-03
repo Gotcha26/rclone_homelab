@@ -234,7 +234,7 @@ check_jobs_file() {
 
 
 ###############################################################################
-# Fonction : Edit ele bon fichier de configuration de msmtp (si installation atypique)
+# Fonction : Edit le bon fichier de configuration de msmtp (si installation atypique)
 ###############################################################################
 edit_msmtp_config() {
     local conf_file
