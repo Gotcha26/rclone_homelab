@@ -151,6 +151,7 @@ check_remotes() {
                 fi
 
                 # Stop temporaire pour inspecter calmement
+                echo
                 read -p "DEBUG: appuyez sur Entrée pour continuer..."
             fi
 
