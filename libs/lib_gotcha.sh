@@ -644,16 +644,23 @@ compute_var_status() {
     local valid=true
     local display_allowed=""
 
+    # ===== Booléen =====
     if [[ "$allowed" == "bool" ]]; then
         display_allowed="false|true"
         [[ "$value" =~ ^(0|1|true|false|yes|no|on|off)$ ]] || valid=false
+
+    # ===== Intervalle numérique =====
     elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
         display_allowed="$allowed"
         IFS="-" read -r min max <<< "$allowed"
         (( value < min || value > max )) && valid=false
-    elif [[ -z "$allowed" || "$allowed" == "any" || "$allowed" == "''" ]]; then
+
+    # ===== Joker '*' =====
+    elif [[ "$allowed" == "*" ]]; then
         display_allowed="*"
         valid=true
+
+    # ===== Liste de valeurs =====
     else
         IFS="|" read -ra allowed_arr <<<"$allowed"
         valid=false
@@ -663,14 +670,12 @@ compute_var_status() {
             [[ -z "$display_allowed" ]] && display_allowed="$v" || display_allowed+="|$v"
             [[ "$value" == "$v" ]] && valid=true
         done
-        [[ -z "$value" && (-z "$allowed" || "$allowed" == "any" || "$allowed" == "''") ]] && valid=true
     fi
 
     COMPUTE_VALUE="$value"
     COMPUTE_DISPLAY_ALLOWED="$display_allowed"
     COMPUTE_VALID="$valid"
 }
-
 
 
 ###############################################################################
