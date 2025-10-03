@@ -45,7 +45,7 @@ check_and_prepare_email() {
 
     # 3/x : Vérification configuration msmtp
     display_msg "verbose|hard" "☞  3/x Lecture (sans garanties) de la configuration msmtp"
-    msmtp_conf=$(check_msmtp_configured)
+    check_msmtp_configured
     if [[ -z "$msmtp_conf" ]]; then
         if [[ $ACTION_MODE == auto ]]; then
             display_msg "soft" --theme error "msmtp non ou mal configuré."
@@ -56,8 +56,7 @@ check_and_prepare_email() {
             configure_msmtp
         fi
     else
-        display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est configuré :"
-        display_msg "soft|verbose|hard" --fg blue --align right "$msmtp_conf"
+        display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est configuré."
     fi
 }
 
