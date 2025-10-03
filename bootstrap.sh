@@ -19,9 +19,9 @@ load_optional_configs
 declare -A VARS_TO_VALIDATE=(
     [DRY_RUN]="bool:false"
     [MAIL_TO]="*:"
-    [DISCORD_WEBHOOK_URL]="*:*"
+    [DISCORD_WEBHOOK_URL]="*:"
     [FORCE_UPDATE]="bool:false"
-    [FORCE_BRANCH]="*:*"
+    [FORCE_BRANCH]="*:"
     [ACTION_MODE]="auto|manu:manu"
     [DISPLAY_MODE]="soft|verbose|hard:soft"
     [TERM_WIDTH_DEFAULT]="80-120:80"
