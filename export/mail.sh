@@ -13,7 +13,7 @@ check_and_prepare_email() {
 
     # 1/x : Contrôle du format
     display_msg "verbose|hard" "☞  1/x Contrôle d'intégrité adresse email"
-    if check_mail_format "$mail_to"; then
+    if ! check_mail_format "$mail_to"; then
         display_msg "soft" --theme ok "Email non validé."
         display_msg "verbose|hard" --theme error "L'adresse email saisie ne satisfait pas aux exigences et est rejetée."
         die 12 "Adresse email saisie invalide : $mail_to"
@@ -63,7 +63,6 @@ check_and_prepare_email() {
 ###############################################################################
 # Fonctions de vérification de l'email (forme)
 ###############################################################################
-
 check_mail_format() {
     if [[ "$MAIL_TO" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
         return 0
