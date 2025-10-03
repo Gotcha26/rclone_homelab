@@ -45,19 +45,38 @@ check_and_prepare_email() {
 
     # 3/x : Vérification configuration msmtp
     display_msg "verbose|hard" "☞  3/x Lecture (sans garanties) de la configuration msmtp"
-    check_msmtp_configured
-    if [[ -z "$msmtp_conf" ]]; then
+
+    # Capture sortie et code retour
+    msmtp_conf=$(check_msmtp_configured)
+    msmtp_ret=$?   # 0 = valide, 1 = absent, 2 = vide
+
+    if (( msmtp_ret == 0 )); then
+        # Fichier valide trouvé
+        display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est configuré : $msmtp_conf"
+
+    elif (( msmtp_ret == 2 )); then
+        # Fichier trouvé mais vide
+        display_msg "soft" --theme error "Fichier msmtp trouvé mais vide : $msmtp_conf"
+        display_msg "verbose|hard" --theme error "Configuration msmtp incorrecte"
         if [[ $ACTION_MODE == auto ]]; then
-            display_msg "soft" --theme error "msmtp non ou mal configuré."
-            display_msg "verbose|hard" --theme error "L'outil msmtp semble mal configuré ou absent."
-            die 14 "msmtp non ou mal configuré."
+            die 14 "msmtp non ou mal configuré (fichier vide)."
         else
-            display_msg "soft|verbose|hard" --theme warning "msmtp absent, proposition de configuration"
+            display_msg "soft|verbose|hard" --theme warning "Proposition de configuration"
             configure_msmtp
         fi
+
     else
-        display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est configuré."
+        # Aucun fichier valide
+        display_msg "soft" --theme error "Aucun fichier msmtp valide trouvé."
+        display_msg "verbose|hard" --theme error "L'outil msmtp semble absent ou mal configuré."
+        if [[ $ACTION_MODE == auto ]]; then
+            die 14 "msmtp non ou mal configuré."
+        else
+            display_msg "soft|verbose|hard" --theme warning "Proposition de configuration"
+            configure_msmtp
+        fi
     fi
+
 }
 
 
