@@ -39,6 +39,11 @@ else                                                    # Menu de correction (si
     fi
 fi
 
+# Application des flags issus de la config
+if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    RCLONE_OPTS+=("--dry-run")
+fi
+
 
 ###############################################################################
 # 2. Parsing complet des arguments
