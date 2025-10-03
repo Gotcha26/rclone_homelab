@@ -56,7 +56,8 @@ check_and_prepare_email() {
             configure_msmtp
         fi
     else
-        display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est configuré."
+        display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est configuré :"
+        display_msg "soft|verbose|hard" --fg blue --align right "$msmtp_conf"
     fi
 }
 
