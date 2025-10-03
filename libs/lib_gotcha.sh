@@ -370,7 +370,7 @@ self_validation_local_variables() {
         # Split "allowed:default"
         IFS=":" read -r allowed default <<< "${var_array[$key]}"
 
-        # Valeur actuelle
+        # Valeur actuelle (ou défaut)
         value="${!key:-$default}"
 
         # Gestion spéciale booléen
@@ -384,10 +384,16 @@ self_validation_local_variables() {
                         "Donnée invalide pour $key : '$value'.\n" \
                         "- Valeurs attendues : true/false, 1/0, yes/no, on/off.\n" \
                         "-> Valeur par défaut appliquée : '$default'" \
-                        "\n" \
+                        "\n"
                     value="${default:-0}"
                     ;;
             esac
+            export "$key"="$value"
+            continue
+        fi
+
+        # Cas joker "*"
+        if [[ "$allowed" == "*" ]]; then
             export "$key"="$value"
             continue
         fi

@@ -18,10 +18,10 @@ load_optional_configs
 # Tableau associatif : varaibles locales utilisateur avec les règles
 declare -A VARS_TO_VALIDATE=(
     [DRY_RUN]="bool:false"
-    [MAIL_TO]="''"
-    [DISCORD_WEBHOOK_URL]="''"
+    [MAIL_TO]="*:*"
+    [DISCORD_WEBHOOK_URL]="*:*"
     [FORCE_UPDATE]="bool:false"
-    [FORCE_BRANCH]="''"
+    [FORCE_BRANCH]="*:*"
     [ACTION_MODE]="auto|manu:manu"
     [DISPLAY_MODE]="soft|verbose|hard:soft"
     [TERM_WIDTH_DEFAULT]="80-120:80"
