@@ -14,12 +14,12 @@ DRY_RUN=false
                             # Permet de lancer UNIQUEMENT rclone en mode
                             # simulation seulement.
 
-MAIL_TO=""
-                            # <texte>:"" - ARGUMENT (entre "")
+MAIL_TO=
+                            # <texte>:"" - ARGUMENT (pas de "")
                             # Adresse mail par défaut.
 
-DISCORD_WEBHOOK_URL=""
-                            # <texte>:"" - ARGUMENT (entre "")
+DISCORD_WEBHOOK_URL=
+                            # <texte>:"" - ARGUMENT (pas de "")
                             # URL du webhook salon Discord.
 
 FORCE_UPDATE=false
