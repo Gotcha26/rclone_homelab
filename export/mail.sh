@@ -139,33 +139,35 @@ install_msmtp() {
 # Fonction : Détecter le fichier de configuration msmtp réellement utilisé
 ###############################################################################
 check_msmtp_configured() {
+    local explicit_path="$1"
     local candidates=()
 
-    # 1. Variable d'environnement MSMTPRC si définie
-    [[ -n "${MSMTPRC:-}" ]] && candidates+=("$MSMTPRC")
+    # 0. Paramètre explicite
+    [[ -n "$explicit_path" ]] && candidates+=("$explicit_path")
+
+    # 1. Variable d'environnement officielle
+    [[ -n "${MSMTP_CONFIG:-}" ]] && candidates+=("$MSMTP_CONFIG")
 
     # 2. Fichier utilisateur
     [[ -n "$HOME" ]] && candidates+=("$HOME/.msmtprc")
 
-    # 3. Fichier système
-    candidates+=("/etc/msmtprc")
+    # 3. Fichiers système possibles
+    candidates+=("/etc/msmtprc" "/etc/msmtp/msmtprc")
 
     # Parcours des candidats
     for conf_file in "${candidates[@]}"; do
         if [[ -f "$conf_file" && -r "$conf_file" ]]; then
             if [[ -s "$conf_file" ]]; then
-                # fichier existe et non vide
-                echo "$conf_file"   # retourne le chemin
-                return 0            # succès
+                echo "$conf_file"
+                return 0
             else
-                echo "⚠️  Fichier msmtp trouvé mais vide : $conf_file"
+                echo "⚠️  Fichier msmtp trouvé mais vide : $conf_file" >&2
                 return 1
             fi
         fi
     done
 
-    # Aucun fichier valide trouvé
-    echo "❌  Aucun fichier msmtp valide trouvé."
+    echo "❌  Aucun fichier msmtp valide trouvé." >&2
     return 1
 }
 
