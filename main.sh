@@ -171,7 +171,7 @@ source "$SCRIPT_DIR/jobs.sh"
 ###############################################################################
 
 # Purge inconditionnel des fichiers anciens (sous-dossiers inclus)
-find "$DIR_TMP" -type f -mtime +$LOG_RETENTION_DAYS -delete 2>/dev/null
+purge_old_files "$LOG_RETENTION_DAYS" "$DIR_TMP" "$DIR_LOG"
 
 print_summary_table
 
