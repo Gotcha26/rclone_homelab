@@ -319,7 +319,7 @@ print_summary_table() {
     fi
 
     if [[ -n "${DISCORD_WEBHOOK_URL:-}" ]]; then
-        print_aligned_table "Notifs Discord" "$(safe_var "Traitée(s)")"
+        print_aligned_table "Notifs Discord" "✅  Oui : Traitée(s)"
     else
         print_aligned_table "Notifs Discord" "⚠️  Aucun webhook Discord de défini."
     fi
