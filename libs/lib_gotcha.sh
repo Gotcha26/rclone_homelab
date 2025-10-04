@@ -426,12 +426,23 @@ display_msg() {
 ###############################################################################
 # Fonction : Bordures tableau
 ###############################################################################
+# Bordures robustes : répètent explicitement le caractère '─' n fois.
 draw_border() {
     local -n ref=$1
     printf "┌"
+    local i n
     for i in "${!ref[@]}"; do
-        printf '%*s' $((ref[i]+2)) '' | tr ' ' '─'
-        [[ $i -lt 3 ]] && printf "┬"
+        n=$(( ref[i] + 2 ))
+        (( n < 0 )) && n=0
+        if (( n > 0 )); then
+            if command -v seq >/dev/null 2>&1; then
+                printf '─%.0s' $(seq 1 $n)
+            else
+                # fallback si seq absent
+                for ((j=0; j<n; j++)); do printf '─'; done
+            fi
+        fi
+        [[ $i -lt $(( ${#ref[@]} - 1 )) ]] && printf "┬"
     done
     printf "┐\n"
 }
@@ -439,9 +450,18 @@ draw_border() {
 draw_separator() {
     local -n ref=$1
     printf "├"
+    local i n
     for i in "${!ref[@]}"; do
-        printf '%*s' $((ref[i]+2)) '' | tr ' ' '─'
-        [[ $i -lt 3 ]] && printf "┼"
+        n=$(( ref[i] + 2 ))
+        (( n < 0 )) && n=0
+        if (( n > 0 )); then
+            if command -v seq >/dev/null 2>&1; then
+                printf '─%.0s' $(seq 1 $n)
+            else
+                for ((j=0; j<n; j++)); do printf '─'; done
+            fi
+        fi
+        [[ $i -lt $(( ${#ref[@]} - 1 )) ]] && printf "┼"
     done
     printf "┤\n"
 }
@@ -449,9 +469,18 @@ draw_separator() {
 draw_bottom() {
     local -n ref=$1
     printf "└"
+    local i n
     for i in "${!ref[@]}"; do
-        printf '%*s' $((ref[i]+2)) '' | tr ' ' '─'
-        [[ $i -lt 3 ]] && printf "┴"
+        n=$(( ref[i] + 2 ))
+        (( n < 0 )) && n=0
+        if (( n > 0 )); then
+            if command -v seq >/dev/null 2>&1; then
+                printf '─%.0s' $(seq 1 $n)
+            else
+                for ((j=0; j<n; j++)); do printf '─'; done
+            fi
+        fi
+        [[ $i -lt $(( ${#ref[@]} - 1 )) ]] && printf "┴"
     done
     printf "┘\n"
 }
