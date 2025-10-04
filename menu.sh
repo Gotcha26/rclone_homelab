@@ -201,7 +201,7 @@ while true; do
                 ;;
             menu_edit_jobs)
                 scroll_down
-                echo "▶️  Edition du fichier ${BLUE}${DIR_JOBS_FILE}${RESET}"
+                echo -e "▶️  Edition du fichier ${BLUE}${DIR_JOBS_FILE}${RESET}"
                 $EDITOR "$DIR_JOBS_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
@@ -247,7 +247,7 @@ while true; do
                 scroll_down
                 # Détecte le fichier configuré
                 if conf_file=$(check_msmtp_configured 2>/dev/null); then
-                    echo "▶️  Affichage du fichier de configuration msmtp : ${BLUE}${conf_file}${RESET}"
+                    echo -e "▶️  Affichage du fichier de configuration msmtp : ${BLUE}${conf_file}${RESET}"
                     # Utilisation de nano pour visualiser/éditer sans polluer le log
                     $EDITOR "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
@@ -270,7 +270,7 @@ while true; do
                 ;;
             menu_edit_config_local)
                 scroll_down
-                echo "▶️  Édition du fichiers ${BLUE}${CONF_LOCAL_FILE}${RESET}"
+                echo -e "▶️  Édition du fichiers ${BLUE}${CONF_LOCAL_FILE}${RESET}"
                 $EDITOR "$DIR_CONF_LOCAL_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
@@ -283,20 +283,20 @@ while true; do
                 ;;
             menu_edit_config_dev)
                 scroll_down
-                echo "▶️  Édition du fichiers ${BLUE}${CONF_DEV_FILE}${RESET}"
+                echo -e "▶️  Édition du fichiers ${BLUE}${CONF_DEV_FILE}${RESET}"
                 $EDITOR "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_init_secret_file)
                 scroll_down
-                echo "▶️  Installation d'un fichier (optionnel) : ${BLUE}${SECRET_FILE}${RESET}"
+                echo -e "▶️  Installation d'un fichier (optionnel) : ${BLUE}${SECRET_FILE}${RESET}"
                 echo "Le fichier sera préservé lors des mises à jours automatiques."
                 init_file "conf_secret"
                 echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_edit_config_secrets)
                 scroll_down
-                echo "▶️  Édition du fichiers ${BLUE}${SECRET_FILE}${RESET}"
+                echo -e "▶️  Édition du fichiers ${BLUE}${SECRET_FILE}${RESET}"
                 $EDITOR "$SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
