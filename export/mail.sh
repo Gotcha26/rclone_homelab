@@ -363,9 +363,10 @@ HTML
 
         # --- Bloc update info ---
         local update_output update_status
-        update_output=$(check_update 2>&1)      # capture stdout/stderr
-        update_status=$?                         # récupère le vrai code de retour
-        update_output=$(strip_ansi "$update_output")  # suppression des codes ANSI
+        update_output=$(check_update 2>&1)
+        update_output=$(printf '%s\n' "$update_output" | strip_ansi)
+        update_status=$?
+
 
         if [[ $update_status -eq 0 ]]; then
             # Script à jour
