@@ -427,7 +427,7 @@ display_msg() {
 # Fonction : Bordures tableau
 ###############################################################################
 draw_border() {
-    local -n cols=$1  # utiliser un nom différent de 'w'
+    local -n cols=$1
     printf "┌"
     for i in "${!cols[@]}"; do
         printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
@@ -498,70 +498,57 @@ print_table() {
     local max_length="${2:-80}"
 
     local headers=("Variable" "Autorisé" "Défaut" "Valeur")
-    local w=(0 0 0 0)          # Largeurs des colonnes
+    local cols=(0 0 0 0)
     local min_width=5
 
     # Largeur minimale basée sur les headers
-    for i in $(seq 0 3); do
-        (( $(strwidth "${headers[i]}") > w[i] )) && w[i]=$(strwidth "${headers[i]}")
+    for i in "${!headers[@]}"; do
+        cols[$i]=$(strwidth "${headers[i]}")
     done
 
     # Largeur max des données
     for row in "${lines[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
-        (( $(strwidth "$c1") > w[0] )) && w[0]=$(strwidth "$c1")
-        (( $(strwidth "$c2") > w[1] )) && w[1]=$(strwidth "$c2")
-        (( $(strwidth "$c3") > w[2] )) && w[2]=$(strwidth "$c3")
-        (( $(strwidth "$c4") > w[3] )) && w[3]=$(strwidth "$c4")
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<< "$row"
+        (( $(strwidth "$c1") > cols[0] )) && cols[0]=$(strwidth "$c1")
+        (( $(strwidth "$c2") > cols[1] )) && cols[1]=$(strwidth "$c2")
+        (( $(strwidth "$c3") > cols[2] )) && cols[2]=$(strwidth "$c3")
+        (( $(strwidth "$c4") > cols[3] )) && cols[3]=$(strwidth "$c4")
     done
 
     # Ajuster si dépasse max_length
-    local total_width=$(( w[0]+w[1]+w[2]+w[3]+13 ))
+    local total_width=$(( cols[0]+cols[1]+cols[2]+cols[3]+3*3 + 2 )) # 3 séparateurs + 2 bordures
     if (( total_width > max_length )); then
         local excess=$(( total_width - max_length ))
         local cut=$(( (excess + 3) / 4 ))
-        for i in $(seq 0 3); do
-            w[i]=$(( w[i] - cut > min_width ? w[i] - cut : min_width ))
+        for i in 0 1 2 3; do
+            (( cols[i] > min_width )) && cols[i]=$(( cols[i] - cut > min_width ? cols[i]-cut : min_width ))
         done
     fi
 
     # Dessin bordure supérieure
-    draw_border w
+    draw_border cols
 
     # Entête
-    printf "│ "
-    for i in $(seq 0 3); do
-        print_cell "$(print_fancy --style bold --raw "${headers[i]}")" "${w[i]}"
-        printf " │ "
+    printf "│"
+    for i in 0 1 2 3; do
+        printf " %-${cols[i]}s │" "${headers[i]}"
     done
     printf "\n"
-    draw_separator w
+
+    draw_separator cols
 
     # Corps
     for row in "${lines[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<< "$row"
 
-        var_cell=$(print_fancy --style bold --raw "$c1")
-        auth_cell=$(print_fancy --style italic --raw "$c2")
-        def_cell="$c3"
-        if [[ "$valid_flag" == "false" ]]; then
-            val_cell=$(print_fancy --fg red --raw "$c4")
-        else
-            val_cell=$(print_fancy --fg green --raw "$c4")
-        fi
+        # Colorisation
+        [[ "$valid_flag" == "false" ]] && c4="\033[31m$c4\033[0m" || c4="\033[32m$c4\033[0m"
 
-        printf "│ "
-        print_cell "$var_cell" "${w[0]}"
-        printf " │ "
-        print_cell "$auth_cell" "${w[1]}"
-        printf " │ "
-        print_cell "$def_cell" "${w[2]}"
-        printf " │ "
-        print_cell "$val_cell" "${w[3]}"
-        printf " │\n"
+        printf "│ %-${cols[0]}s │ %-${cols[1]}s │ %-${cols[2]}s │ %-${cols[3]}s │\n" \
+            "$c1" "$c2" "$c3" "$c4"
     done
 
-    draw_bottom w
+    draw_bottom cols
 }
 
 
