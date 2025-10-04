@@ -50,7 +50,7 @@ check_src() {
             JOB_STATUS[$idx]="PROBLEM"
             JOB_ERR_REASON[$idx]="src_abs"
             JOB_REMOTE[$idx]=""  
-            JOB_ENDPOINT[$idx]=""
+            JOB_ENDPOINT[$idx]="$src"
             continue
         fi
 
@@ -299,10 +299,10 @@ Supprimer --dry-run ou le job de la liste."
             ;;
         src_abs)
             msg+="
-La source du job est injoignable ou non reconnu ou non accessible.
+La source du job '\e[1;94m$endpoint\e[0m' est \e[31minjoignable\e[0m ou \e[31mnon reconnu\e[0m ou \e[31mnon accessible\e[0m.
 Bref : problème !
 
-Le job est écarté pour ne pas entrainer plus d'erreur dans rclone."
+Les jobs ayant la même source sont \e[31mécartés\e[0m jusqu'à résolution."
             ;;
         *)
             msg+="
