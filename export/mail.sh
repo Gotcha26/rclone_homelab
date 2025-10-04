@@ -14,11 +14,11 @@ check_and_prepare_email() {
     # 1/x : Contrôle du format
     display_msg "verbose|hard" "☞  1/x Contrôle d'intégrité adresse email"
     if ! check_mail_format "$mail_to"; then
-        display_msg "soft" --theme ok "Email non validé."
+        display_msg "soft" --theme error "Adresse email non validée."
         display_msg "verbose|hard" --theme error "L'adresse email saisie ne satisfait pas aux exigences et est rejetée."
         die 12 "Adresse email saisie invalide : $mail_to"
     else
-        display_msg "soft|verbose|hard" --theme ok "Email validé."
+        display_msg "verbose|hard" --theme ok "Email validé."
     fi
 
     # 2a/x : Présence de msmtp
@@ -40,7 +40,7 @@ check_and_prepare_email() {
             fi
         fi
     else
-        display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est installé."
+        display_msg "verbose|hard" --theme ok "L'outil msmtp est installé."
     fi
 
     # 3/x : Vérification configuration msmtp
@@ -52,7 +52,7 @@ check_and_prepare_email() {
 
     if (( msmtp_ret == 0 )); then
         # Fichier valide trouvé
-        display_msg "soft|verbose|hard" --theme ok "L'outil msmtp est configuré : $msmtp_conf"
+        display_msg "verbose|hard" --theme ok "L'outil msmtp est configuré : $msmtp_conf"
 
     elif (( msmtp_ret == 2 )); then
         # Fichier trouvé mais vide
@@ -81,7 +81,7 @@ check_and_prepare_email() {
         display_msg "soft|verbose" --fg red "Supprimer l'adresse mail pour ne plus avoir besoin d'en envoyer un..."
         display_msg "hard" --theme error "L'outil msmtp semble absent ou mal configuré."
         if [[ $ACTION_MODE == auto ]]; then
-            die 14 "L'envoi d'un email nécessite que msmtp soit configuré."
+            die 14 "L'envoi d'un email nécessite que msmtp soit configuré correctement."
         else
             display_msg "soft|verbose|hard" --theme warning "Proposition de configuration"
             echo
@@ -376,12 +376,16 @@ send_email() {
     local html_block="$1"
 
     print_fancy --align "center" "📧  Préparation de l'email..."
-    encode_subject_for_email "$LOG_FILE_INFO"
+    encode_subject_for_email "$DIR_LOG_FILE_INFO"
     assemble_mail_file "$TMP_JOB_LOG_HTML" "$html_block"
 
     # --- Envoi du mail ---
-    msmtp --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL" || echo "⚠ Echec envoi email via msmtp" >> "$DIR_LOG_FILE_MAIL"
-    print_fancy --align "center" "... Email envoyé ✅ "
+    if msmtp --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL"; then
+        print_fancy --align "center" "... Email envoyé ✅ "
+    else
+        echo "⚠ Echec envoi email via msmtp" >> "$DIR_LOG_FILE_MAIL"
+        print_fancy --theme error --align "center" "Echec envoi email via msmtp"
+    fi
 
     # --- Nettoyage optionnel ---
     rm -f "$MAIL"
