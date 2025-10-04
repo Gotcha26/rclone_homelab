@@ -88,7 +88,7 @@ init_file() {
     # Confirmation utilisateur
     read -e -rp "❓  Voulez-vous créer ce fichier ? [O/n] : " -n 1 -r
     echo
-    if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
+    if [[ -n "$REPLY" && ! "$REPLY" =~ ^[OoYy]$ ]]; then
         print_fancy --theme "info" "Création ignorée pour : $user_file"
         return 1
     fi
