@@ -74,7 +74,7 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    if check_jobs_file; then
+    if ! check_jobs_file; then
         add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_init_jobs"
     else
         add_option "✏️  Éditer la liste des jobs (rclone)     → compléter le fichier" "menu_edit_jobs"
