@@ -522,7 +522,7 @@ print_cell() {
 # Chaque ligne doit être un tableau de colonnes : c1¤c2¤c3¤c4¤valid_flag
 # valid_flag est optionnel et sert à colorer la valeur
 ###############################################################################
-print_table() {
+print_table_old() {
     local -n lines=$1
     local max_length="${2:-80}"
 
@@ -592,6 +592,88 @@ print_table() {
 
     draw_bottom w
 }
+
+
+print_table() {
+    local -n lines=$1
+    local max_length="${2:-80}"
+
+    local headers=("Variable" "Autorisé" "Défaut" "Valeur")
+    local w=(0 0 0 0)          # Largeurs des colonnes
+    local min_width=5
+
+    # Largeur minimale basée sur les headers
+    for i in $(seq 0 3); do
+        (( $(strwidth "${headers[i]}") > w[i] )) && w[i]=$(strwidth "${headers[i]}")
+    done
+
+    # Largeur max des données
+    for row in "${lines[@]}"; do
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+        (( $(strwidth "$c1") > w[0] )) && w[0]=$(strwidth "$c1")
+        (( $(strwidth "$c2") > w[1] )) && w[1]=$(strwidth "$c2")
+        (( $(strwidth "$c3") > w[2] )) && w[2]=$(strwidth "$c3")
+        (( $(strwidth "$c4") > w[3] )) && w[3]=$(strwidth "$c4")
+    done
+
+    # Largeur totale calculée
+    local total_width=$(( w[0]+w[1]+w[2]+w[3]+13 ))
+
+    # Si dépassement → on ne réduit que la dernière colonne
+    if (( total_width > max_length )); then
+        local fixed=$(( w[0]+w[1]+w[2]+10 ))  # 10 = bordures/espaces
+        local avail=$(( max_length - fixed ))
+        w[3]=$(( avail > min_width ? avail : min_width ))
+    fi
+
+    # Petite fonction de troncature (dernière colonne)
+    truncate_cell() {
+        local str="$1" max="$2"
+        (( $(strwidth "$str") > max )) && str="${str:0:max-1}…"
+        printf "%s" "$str"
+    }
+
+    # Bordure supérieure
+    draw_border w
+
+    # Entête
+    printf "│ "
+    for i in $(seq 0 3); do
+        print_cell "$(print_fancy --style bold --raw "${headers[i]}")" "${w[i]}"
+        printf " │ "
+    done
+    printf "\n"
+    draw_separator w
+
+    # Corps
+    for row in "${lines[@]}"; do
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+
+        var_cell=$(print_fancy --style bold --raw "$c1")
+        auth_cell=$(print_fancy --style italic --raw "$c2")
+        def_cell="$c3"
+
+        if [[ "$valid_flag" == "false" ]]; then
+            val_cell=$(print_fancy --fg red --raw "$c4")
+        else
+            val_cell=$(print_fancy --fg green --raw "$c4")
+        fi
+
+        printf "│ "
+        print_cell "$var_cell" "${w[0]}"
+        printf " │ "
+        print_cell "$auth_cell" "${w[1]}"
+        printf " │ "
+        print_cell "$def_cell" "${w[2]}"
+        printf " │ "
+        # Tronquer seulement la dernière colonne
+        print_cell "$(truncate_cell "$val_cell" "${w[3]}")" "${w[3]}"
+        printf " │\n"
+    done
+
+    draw_bottom w
+}
+
 
 
 ###############################################################################
