@@ -92,7 +92,7 @@ for idx in "${!JOBS_LIST[@]}"; do
 
         # Détecter si le job a échoué
         if (( job_rc != 0 )); then
-            ERROR_CODE=8
+            ERROR_CODE=5
 
             # Analyse rapide du log pour détecter token expiré ou remote inaccessible
             if grep -q -i "unauthenticated\|invalid_grant\|couldn't fetch token" "$TMP_JOB_LOG_RAW"; then

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# Fonction pour parser et vérifier les jobs
+# Fonction pour déclarer le tableau global afin de stocker les jobs
 ###############################################################################
-# Déclarer le tableau global pour stocker les jobs
+
 declare -a JOBS_LIST    # Liste des jobs src|dst
 declare -A JOB_STATUS   # idx -> OK/PROBLEM
 
@@ -12,7 +12,7 @@ parse_jobs() {
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ -z "$line" || "$line" =~ ^# ]] && continue
 
-        # Nettoyage : trim + séparateurs
+        # Nettoyage : trim + remplacer espaces par |
         line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
         IFS='|' read -r src dst <<< "$line"
 
@@ -22,22 +22,39 @@ parse_jobs() {
         dst="${dst#"${dst%%[![:space:]]*}"}"
         dst="${dst%"${dst##*[![:space:]]}"}"
 
-        # Vérif source locale
-        if [[ ! -d "$src" ]]; then
-            die 7 "Dossier source introuvable ou inaccessible : $src"
-        fi
-
-        # Stocker la paire src|dst, sans statut
+        # Stocker la paire src|dst
         JOBS_LIST+=("$src|$dst")
-
     done < "$file"
 
-    # --- Initialiser tous les jobs à OK ---
-    # On les suposes OK avant de changer ce status.
+    # Initialiser tous les jobs à OK par défaut. On les présumes bon, on va vérifier plus tard.
     for idx in "${!JOBS_LIST[@]}"; do
         JOB_STATUS[$idx]="OK"
     done
 }
+
+
+###############################################################################
+# Fonction de validdation de la source d'un job
+###############################################################################
+declare -A JOB_ERR_REASON
+
+
+validate_jobs() {
+    local idx src dst remote
+
+    for idx in "${!JOBS_LIST[@]}"; do
+        IFS='|' read -r src dst <<< "${JOBS_LIST[$idx]}"
+        remote="$dst"  # si tu veux suivre le remote associé
+
+        if [[ ! -d "$src" ]]; then
+            JOB_STATUS[$idx]="PROBLEM"
+            JOB_ERR_REASON[$idx]="src_abs"
+            ERROR_CODE=91
+        fi
+
+    done
+}
+# warn_remote_problem "${JOB_REMOTE[$idx]}" "${ENDPOINT}" "${JOB_ERR_REASON[$idx]}" "$idx"
 
 
 ###############################################################################
@@ -70,14 +87,12 @@ remote_exists() {
 # Cumule les problèmes sans écraser les précédents
 ###############################################################################
 declare -A JOB_REMOTE   # idx -> remote problématique
-declare -A JOB_ERR_REASON
-declare -A JOB_ENDPOINT
 declare -A REMOTE_STATUS
+declare -A JOB_ENDPOINT
+
 
 check_remotes() {
     local timeout_duration="10s"
-									   
-    ERROR_CODE=${ERROR_CODE:-0}
 
     for idx in "${!JOBS_LIST[@]}"; do
         local job="${JOBS_LIST[$idx]}"
@@ -102,7 +117,7 @@ check_remotes() {
 					JOB_ERR_REASON[$idx]="missing"					   
                     JOB_REMOTE[$idx]="$remote"
                     REMOTE_STATUS["$remote"]="missing"
-                    ERROR_CODE=6   # remote manquant
+                    ERROR_CODE=91
                     break
                 fi						   
 
@@ -116,7 +131,7 @@ check_remotes() {
 						JOB_ERR_REASON[$idx]="$remote_type"							
                         JOB_REMOTE[$idx]="$remote"
                         REMOTE_STATUS["$remote"]="PROBLEM"
-                        ERROR_CODE=14
+                        ERROR_CODE=92
                         break
                     fi
                 fi
@@ -131,7 +146,7 @@ check_remotes() {
                     JOB_REMOTE[$idx]="$remote"
                     REMOTE_STATUS["$dst"]="PROBLEM"
                     JOB_ENDPOINT[$idx]="$dst"
-                    ERROR_CODE=20
+                    ERROR_CODE=93
                     break
                 fi
             fi
@@ -259,6 +274,13 @@ de préserver votre destination de toutes modifications induites.
 
 Le job sera \e[31mignoré\e[0m pour éviter toute suppression ou copie non désirée.
 Supprimer --dry-run ou le job de la liste."
+            ;;
+        src_abs)
+            msg+="
+La source du job est injoignable ou non reconnu ou non accessible.
+Bref : problème !
+
+Le job est écarté pour ne pas entrainer plus d'erreur dans rclone."
             ;;
         *)
             msg+="

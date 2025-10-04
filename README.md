@@ -160,10 +160,6 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 
 ## A faire / Ajouter
 - [] Internationnalisation : *wait and see...*
-- [x] Webhook discord à mettre en argument de lancement
-- [] Contrôle des dépendances colordiff git curl unzip perl jq
-- [] Mise à jour des dépendances (~~rclone~~, ~~msmtp~~, gotcha_lib)
-- [] Lors d'une MAJ en ligne de commande, faire cette dernière à la fin du processus normal pour ne rien bloquer.
 - [] Ne plus parler de "configuration locale" mais ed paramètres personnalisés
 - [] Réafecter correctement les codes DIE
 - [] Externaliser le débugage au démarrage.

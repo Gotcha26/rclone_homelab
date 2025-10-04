@@ -817,67 +817,6 @@ self_validation_local_variables() {
 
 
 ###############################################################################
-# Fonction : Contrôle et validation des variables avec menu
-# Entrée : nom du tableau associatif
-###############################################################################
-menu_validation_local_variables() {
-    local -n var_array="$1"
-
-    if ! print_table_vars_invalid "$1"; then
-        # Problème
-        echo
-        print_fancy --theme "error" "Configuration invalide. Vérifiez les variables (locales) ❌"
-        echo
-        echo
-        print_fancy --fg green "-------------------------------------------"
-        print_fancy --fg green --style bold "  Aide au débogage : Configuration locale"
-        print_fancy --fg green "-------------------------------------------"
-        echo
-        echo -e "${UNDERLINE}Voulez-vous :${RESET}"
-        echo
-        echo -e "[1] Appliquer la valeur ${BOLD}Défaut${RESET} automatiquement."
-        echo -e "${ITALIC}    => N'est valable que pour cette session.${RESET}"
-        echo -e "[2] Editer la configuration locale pour ${UNDERLINE}corriger${RESET}."
-        echo -e "[3] Quitter."
-        echo
-
-        read -e -rp "Votre choix [1-3] : " choice
-        echo
-
-        case "$choice" in
-            1)
-                echo
-                echo "👉  Application de la correction automatique."
-                echo
-                self_validation_local_variables "$1"
-                ;;
-            2)
-                echo
-                if ! mini_edit_local_config; then
-                    print_fancy --bg yellow --fg red --highlight "⚠️  Le mystère s’épaissit... où se trouve le soucis ?!"
-                    print_fancy --bg yellow --fg red --highlight "Aucun fichier disponible, retour au menu principal."
-                fi
-                menu_validation_local_variables  "$1" # retour au menu principal après édition pour validation
-                ;;
-            3)
-                echo
-                die 99 "Interruption par l’utilisateur"
-                echo
-                ;;
-            *)
-                echo "❌  Choix invalide."
-                sleep 1
-                menu_validation_local_variables "$1"
-                ;;
-        esac
-        return 1
-    fi
-    return 0
-    # Pas de problèmes
-}
-
-
-###############################################################################
 # Fonction : Affiche un tableau des variables invalides seulement
 # Entrée : nom du tableau associatif
 ###############################################################################
