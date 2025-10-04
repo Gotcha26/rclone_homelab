@@ -139,7 +139,7 @@ install_msmtp() {
 # Fonction : Détecter le fichier de configuration msmtp réellement utilisé
 ###############################################################################
 check_msmtp_configured() {
-    local explicit_path="$1"
+    local explicit_path="${1:-}"
     local candidates=()
 
     # 0. Paramètre explicite
