@@ -495,6 +495,7 @@ draw_bottom() {
 print_cell() {
     local content="$1" col_width="$2"
     local clean vis_len padding
+    local RESET="\033[0m"
 
     # Nettoyer ANSI pour calculer largeur visible
     clean=$(echo -e "$content" | strip_ansi)
@@ -502,9 +503,8 @@ print_cell() {
 
     # Tronquer si trop long
     if (( vis_len > col_width )); then
-        clean="${clean:0:col_width-1}…"   # un seul caractère '…'
-        # On reconstruit le contenu en gardant les ANSI initiaux
-        content="${content:0:${#clean}}…"
+        clean="${clean:0:col_width-3}..."
+        content="$clean"   # on tronque en supprimant l’ANSI
         vis_len=$(strwidth "$clean")
     fi
 
@@ -512,10 +512,9 @@ print_cell() {
     (( padding = col_width - vis_len ))
     (( padding<0 )) && padding=0
 
-    # Affichage : le contenu original + padding + reset final
-    printf "%s%*s\033[0m" "$content" "$padding" ""
+    # Toujours forcer RESET à la fin pour ne pas déborder sur la bordure
+    printf "%s%*s%s" "$content" "$padding" "" "$RESET"
 }
-
 
 ###############################################################################
 # Petite fonction de troncature (dernière colonne uniquement)
@@ -525,7 +524,7 @@ truncate_cell() {
     local RESET="\033[0m"
 
     # Retirer ANSI pour calcul
-    local clean=$(echo -e "$str" | sed 's/\x1b\[[0-9;]*m//g')
+    local clean=$(echo -e "$str" | strip_ansi)
     if (( $(strwidth "$clean") > max )); then
         clean="${clean:0:max-1}…"
         str="$clean"
@@ -570,6 +569,13 @@ print_table() {
         local avail=$(( max_length - fixed ))
         w[3]=$(( avail > min_width ? avail : min_width ))
     fi
+
+    # Petite fonction de troncature (dernière colonne)
+    truncate_cell() {
+        local str="$1" max="$2"
+        (( $(strwidth "$str") > max )) && str="${str:0:max-1}…"
+        printf "%s" "$str"
+    }
 
     # Bordure supérieure
     draw_border w
