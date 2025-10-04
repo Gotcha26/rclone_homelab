@@ -285,9 +285,9 @@ encode_subject_for_email() {
 assemble_mail_file() {
     local log_file="$1"        # Fichier log utilisé pour calcul du résumé global (copied/updated/deleted)
     local html_block="$2"      # Bloc HTML global déjà préparé (tous les jobs), facultatif
-    local -n mail_ref="$3"     # référence à la variable passée par l'appelant
+    local -n MAIL_REF="$3"     # référence à la variable passée par l'appelant
     
-    mail_ref="${DIR_TMP}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
+    MAIL_REF="${DIR_TMP}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
 
     # Détecter le fichier msmtp.conf réellement utilisé
     local conf_file
@@ -409,7 +409,7 @@ HTML
 
     # Retourner le chemin du mail pour l’envoi
     display_msg "verbose|hard" --theme info "Fichier email préparé à :"
-    display_msg "verbose|hard" --align right --fg blue "$mail_ref"
+    display_msg "verbose|hard" --align right --fg blue "$MAIL_REF"
 }
 
 send_email() {
