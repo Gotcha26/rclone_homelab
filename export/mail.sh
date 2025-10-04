@@ -287,12 +287,21 @@ assemble_mail_file() {
     local html_block="$2"      # Bloc HTML global déjà préparé (tous les jobs), facultatif
     local MAIL="${DIR_TMP}/rclone_mail_$$.tmp"  # <- fichier temporaire unique
 
-    # Récupération de l'adresse expéditeur depuis msmtp
-    FROM_ADDRESS="$(grep '^from' /etc/msmtprc | awk '{print $2}')"
+    # Détecter le fichier msmtp.conf réellement utilisé
+    local conf_file
+    conf_file="$(check_msmtp_configured 2>/dev/null || true)"
 
+    # Essayer d'extraire le champ "from" depuis le bon fichier
+    local FROM_ADDRESS
+    if [[ -n "$conf_file" ]]; then
+        FROM_ADDRESS="$(grep -i '^from' "$conf_file" | awk '{print $2; exit}')"
+    fi
+    # fallback si vide
+    FROM_ADDRESS="${FROM_ADDRESS:-noreply@$(hostname -f)}"
+
+    # --- En-têtes principaux ---
     {
-        # --- En-têtes ---
-        echo "From: \"$MAIL_DISPLAY_NAME\" <$FROM_ADDRESS>"
+        echo "From: \"${MAIL_DISPLAY_NAME:-Rclone}\" <$FROM_ADDRESS>"
         echo "To: $MAIL_TO"
         echo "Date: $(date -R)"
         echo "Subject: $SUBJECT"
@@ -300,22 +309,21 @@ assemble_mail_file() {
         echo "Content-Type: multipart/mixed; boundary=\"MIXED_BOUNDARY\""
         echo
         echo "This is a multi-part message in MIME format."
-        echo
+    } > "$MAIL"
 
-        # --- Partie alternative (texte + HTML) ---
+    # --- Partie alternative (texte + HTML) ---
+    {
         echo "--MIXED_BOUNDARY"
         echo "Content-Type: multipart/alternative; boundary=\"ALT_BOUNDARY\""
         echo
-
-        # Version texte brut (fallback)
+        # Texte brut
         echo "--ALT_BOUNDARY"
         echo "Content-Type: text/plain; charset=UTF-8"
         echo
         echo "Rapport de synchronisation Rclone - $NOW"
         echo "Voir la version HTML pour plus de détails."
         echo
-
-        # Version HTML
+        # HTML
         echo "--ALT_BOUNDARY"
         echo "Content-Type: text/html; charset=UTF-8"
         echo
@@ -323,8 +331,9 @@ assemble_mail_file() {
         echo "<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
         echo "<p><b>📝 Dernières lignes du log :</b></p>"
         echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
-    } > "$MAIL"
+    } >> "$MAIL"
 
+    # Contenu HTML : bloc passé ou génération depuis log
     if [[ -n "$html_block" ]]; then
         echo "$html_block" >> "$MAIL"
     else
@@ -333,10 +342,8 @@ assemble_mail_file() {
 
     {
         echo "</div>"
-
-        # --- Résumé global ---
+        # Résumé global
         echo "<hr><h3>📊 Résumé global</h3>"
-
         local copied=$(grep -i "INFO" "$log_file" | grep -i "Copied" | grep -vi "There was nothing to transfer" | wc -l)
         local updated=$(grep -i "INFO" "$log_file" | grep -i "Updated" | grep -vi "There was nothing to transfer" | wc -l)
         local deleted=$(grep -i "INFO" "$log_file" | grep -i "Deleted" | grep -vi "There was nothing to transfer" | wc -l)
@@ -353,11 +360,10 @@ assemble_mail_file() {
 <p>– Fin du message automatique –</p>
 </body></html>
 HTML
-
-        echo "--ALT_BOUNDARY--"   # Fin alternative
+        echo "--ALT_BOUNDARY--"
     } >> "$MAIL"
 
-    # Récupérer tous les logs PLAIN (jobs)
+    # --- Attachments (logs jobs) ---
     for file in "$TMP_JOBS_DIR"/JOB*_plain.log; do
         [[ -f "$file" ]] || continue
         {
@@ -372,6 +378,9 @@ HTML
 
     # --- Fermeture finale ---
     echo "--MIXED_BOUNDARY--" >> "$MAIL"
+
+    # Retourner le chemin du mail pour l’envoi
+    echo "$MAIL"
 }
 
 send_email() {
