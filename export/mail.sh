@@ -75,10 +75,13 @@ check_and_prepare_email() {
 
     else
         # Aucun fichier valide
-        display_msg "soft" --theme error "Aucun fichier msmtp valide trouvé."
-        display_msg "verbose|hard" --theme error "L'outil msmtp semble absent ou mal configuré."
+        display_msg "soft|verbose" --theme error "Aucun fichier msmtp valide trouvé."
+        display_msg "soft|verbose" --fg red "L'envoi d'un email nécessite que msmtp soit configuré."
+        display_msg "soft|verbose" --fg red "Vous pouvez le configurer via le menu interactif ou alors :"
+        display_msg "soft|verbose" --fg red "Supprimer l'adresse mail pour ne plus avoir besoin d'en envoyer un..."
+        display_msg "hard" --theme error "L'outil msmtp semble absent ou mal configuré."
         if [[ $ACTION_MODE == auto ]]; then
-            die 14 "msmtp non ou mal configuré."
+            die 14 "L'envoi d'un email nécessite que msmtp soit configuré."
         else
             display_msg "soft|verbose|hard" --theme warning "Proposition de configuration"
             echo
