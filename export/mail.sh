@@ -363,12 +363,18 @@ HTML
 
         # --- Bloc update info ---
         local update_msg_html
-        if check_update; then
+        local update_info
+        update_info=$(check_update 2>&1)          # capture stdout/stderr
+        update_info=$(strip_ansi "$update_info")  # suppression des codes ANSI
+
+        if [[ $? -eq 0 ]]; then
             # Script à jour
-            update_msg_html="<p style='color:green;'><b>✅ Le script est à jour.</b></p>"
+            update_msg_html="<p style='color:green;'><b>✅ Le script est à jour.</b></p>
+<p>$update_info</p>"
         else
             # Mise à jour disponible
             update_msg_html="<p style='color:orange;'><b>⚠ Une mise à jour est disponible !</b></p>
+<p>$update_info</p>
 <p>Vous pouvez mettre à jour via :</p>
 <ul>
 <li>Option forcée : exécuter <code>rclone_homelab --force-update</code></li>
