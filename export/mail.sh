@@ -448,7 +448,7 @@ assemble_mail_file() {
     local -n MAIL_REF="$3"     # Référence à la variable pour le mail
 
     # --- Chemin unique du mail ---
-    MAIL_REF="${DIR_TMP_MAIL}/rclone_mail_$$.tmp"
+    MAIL_REF="${DIR_TMP_MAIL}"
 
     # --- Détecter fichier msmtp.conf et adresse "from" ---
     local conf_file FROM_ADDRESS
