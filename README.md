@@ -58,16 +58,17 @@ Ils sont optionnels au lancement de `rclone_homelab` *(`main.sh`)*
 |`--auto`        | Ideal pour CronTab, affichage minime, interractions réduite au seuls cas bloquants, ne prend en considération que les élements inscrits dans les fichiers locaux (si présents). |
 |`--dry-run`     | Simule la synchronisation sans transférer ni supprimer de fichiers (services cloud uniquement). |
 |`--mailto=`     | <adresse@mail.com> Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp. |
+|`--discord-url=`| Adresse weebhook pour affichage dans un salon Discord |
 |`--force-update`| Oblige le script à se mettre à jour. Optionnel : branche spécifique via `<branch>` |
 |`--discord-url=`| `<url>` Saisir le webhook de Discord pour y recevoir les notifications. |
-|`--rclone_opts` | `<opts>` cumulez les options pour rclone ! |
+|`--rclone_opts` | `<opts>` cumulez les options native de rclone ! |
 
 
 
 ## Envoi d'emails
 
 En association avec l'utilitaire SMTP [msmtp](https://github.com/marlam/msmtp)[^1], l'envoi d'email est possible.  
-Pour éditer le fichier de configuration, utilisez le menu interactif de rclone_homelab.
+msmtp est livré par défaut sans aucune configuration. Pour éditer le fichier de configuration, utilisez le menu interactif de rclone_homelab.
 
 
 
@@ -84,18 +85,18 @@ rclone_homelab --auto --mailto=toto@mail.com --dry-run
 
 ## Jobs
 
-Les jobs ne sont pas moins que les directives spécifiques aux dossiers / remotes, dédiées **pour rclone**. C'est la liste des travauxà réaliser pour rclone.  
+Les jobs ne sont pas moins que les directives spécifiques aux dossiers / remotes, dédiées **pour rclone**. C'est la liste des travaux à réaliser pour rclone.  
 Utilisez le menu interactif de **rclone_homelab** pour générer votre propre fichier. Il contiendra déjà les directives  
 pour remplir correctement le dit fichier.
 
 ###### Explications :
 Chaque job est constitué d'un ensemble de 2 arguments séparés par un symbole "pipe" <`|`> ainsi que d'un sous-argument introduit par le symbole <`:`>
-- Le premier argument constitue le dossier d'origine.
-Celui qui sera copié et pris pour référence. Vous pouvez l'indiquer "en dur" avec son chemin absolu ou via un symlink (Proxmox).
-- Le second argument consiste à indiquer quel *remote* (précédemment paramétré dans via `rclone config`) est à utiliser.
+- Le premier argument constitue le dossier d'origine [source].
+Il sera copié et pris pour référence. Vous pouvez l'indiquer "en dur" avec son chemin absolu ou via un symlink (Proxmox).
+- Le second argument consiste à indiquer quel *remote* [remote] (précédemment paramétré dans via `rclone config`) est à utiliser.
 rclone permettant d'en configurer une multitude, il faut bien préciser lequel est à utiliser pour ce job.
-- Le présence du symbole <`:`> passe un sous-argument qui indique le chemin du dossier à atteindre dans **le cloud** (distant).  
-Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arborescence plus compliquée.
+- Le présence du symbole <`:`> passe un sous-argument qui indique le chemin du dossier à atteindre dans **le cloud** (distant) [destination].  
+Dans mon exemple il se trouve à la racine mais vous pourriez avoir une arborescence plus compliquée sur votre stockage.
 
 ###### A retenir :
 - 1 ligne = 1 job
@@ -108,7 +109,7 @@ Dans mon exemple il se trouve à la racine mais vous pourriez décider d'une arb
 Le script rclone_homelab dispose de son propre outil de mise à jour intégré.  
 Vous serez averti qu'une mise à jour est disponible et vous serez invité/guidé dans le processus.
 
-*Un outil déporté est accessible via `rclone_homelab-updater`*
+*Un outil déporté pour Git est accessible via `rclone_homelab-updater`*
 
 
 
@@ -116,13 +117,13 @@ Vous serez averti qu'une mise à jour est disponible et vous serez invité/guid�
 L'outil rclone est indispensable[^1].  
 Pour le [télécharger](https://rclone.org/downloads/) sur Debian (LXC) : `apt install rclone -y`  
 Il s'installe normalement dans `/usr/bin/rclone`.  
-Lors de l'installation du rclone_homelab et même durant sans utilisation, si rclone n'est pas présent,  son installation vous sera proposée car c'est **indispensable !**
+Lors de l'installation de rclone_homelab et même durant sans utilisation, si rclone n'est pas présent,  son installation vous sera proposée car c'est **indispensable !**
 
 ### Personnaliser rclone
-Le script rclone dispose d'énormément d'options. 📖 Lisez sa [documentation](https://rclone.org/commands/rclone/) !
+rclone dispose d'énormément d'options. 📖 Lisez sa [documentation](https://rclone.org/commands/rclone/) !
 
 Pour adapter selon vos besoins, il est possible de :
-* **[Ponctuel]** Simplement ajouter l'argument rclone dans vos [arguments](#arguments) de lancement.
+* **[Ponctuel]** Simplement ajouter l'argument rclone dans vos [arguments](#arguments) lors du lancement.
 * **[Durable]** Utilisez le menu interactif pour installer/éditer un fichier pré-rempli pour votre configuration local personalisée.  
 Vous y trouverez la section `# === Options rclone ===` => Là vous pourrez mettre/enlever vos propores options.
 
@@ -163,11 +164,7 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 - [] Contrôle des dépendances colordiff git curl unzip perl jq
 - [] Mise à jour des dépendances (~~rclone~~, ~~msmtp~~, gotcha_lib)
 - [] Lors d'une MAJ en ligne de commande, faire cette dernière à la fin du processus normal pour ne rien bloquer.
-- [] En cas de MAJ détectée, prévenir via le rapport d'exécution qu'un MAJ est disponnible (mail/discord)
-- [x] Metre en varaibles les fichiers locaux conf + dir
-- [x] Procédé de mise à niveau des fichiers locaux.
 - [] Ne plus parler de "configuration locale" mais ed paramètres personnalisés
-- [x] Intégrer micro (choix avec nano lors de l'installation)
 - [] Réafecter correctement les codes DIE
 - [] Externaliser le débugage au démarrage.
 
