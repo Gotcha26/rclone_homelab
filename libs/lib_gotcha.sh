@@ -498,28 +498,33 @@ menu_validation_local_variables() {
 
 
 ###############################################################################
-# Fonction : Affiche un contenu (avec ANSI) correctement aligné dans une colonne
+# Fonction : Affiche un contenu avec padding, ANSI compris
 # Arguments :
 #   $1 = contenu (ANSI autorisé)
 #   $2 = largeur visible de la colonne
 ###############################################################################
 print_cell() {
     local content="$1" col_width="$2"
-    local vis_len padding clean
+    local clean vis_len padding
 
-    # Calcul largeur visible
+    # Nettoyer ANSI pour calculer largeur visible
     clean=$(echo -e "$content" | sed 's/\x1b\[[0-9;]*m//g')
     vis_len=$(strwidth "$clean")
-    padding=$((col_width - vis_len))
+
+    # Tronquer si trop long
+    if (( vis_len > col_width )); then
+        clean="${clean:0:col_width-3}..."
+        # Recréer le contenu avec ANSI si nécessaire
+        # Ici on simplifie en affichant sans ANSI tronqué
+        content="$clean"
+        vis_len=$(strwidth "$clean")
+    fi
+
+    # Padding
+    (( padding = col_width - vis_len ))
     (( padding<0 )) && padding=0
 
-    # Ajouter padding avant RESET final
-    if [[ "$content" =~ $'\033\[0m$' ]]; then
-        local body="${content%$'\033'[0m}" reset=$'\033[0m'
-        printf "%s%*s%s" "$body" "$padding" "" "$reset"
-    else
-        printf "%s%*s" "$content" "$padding" ""
-    fi
+    printf "%s%*s" "$content" "$padding" ""
 }
 
 
@@ -552,17 +557,21 @@ print_table() {
     local headers=("Variable" "Autorisé" "Défaut" "Valeur")
     local w1=0 w2=0 w3=0 w4=0
 
-    # Calcul des largeurs
-    for header in "${headers[@]}"; do
-        local len=$(strwidth "$header")
-        case "$header" in
-            Variable) (( len > w1 )) && w1=$len ;;
-            Autorisé) (( len > w2 )) && w2=$len ;;
-            Défaut)   (( len > w3 )) && w3=$len ;;
-            Valeur)   (( len > w4 )) && w4=$len ;;
+    # Largeur minimale des colonnes
+    local min_width=5
+
+    # Calcul des largeurs basées sur header
+    for i in {0..3}; do
+        local len=$(strwidth "${headers[i]}")
+        case $i in
+            0) (( len > w1 )) && w1=$len ;;
+            1) (( len > w2 )) && w2=$len ;;
+            2) (( len > w3 )) && w3=$len ;;
+            3) (( len > w4 )) && w4=$len ;;
         esac
     done
 
+    # Largeur max des données
     for row in "${lines[@]}"; do
         IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
         (( $(strwidth "$c1") > w1 )) && w1=$(strwidth "$c1")
@@ -571,44 +580,38 @@ print_table() {
         (( $(strwidth "$c4") > w4 )) && w4=$(strwidth "$c4")
     done
 
-    # Ajuster si dépasse max_length
+    # Ajuster si dépassement max_length
     local total_width=$(( w1 + w2 + w3 + w4 + 13 ))
     if (( total_width > max_length )); then
         local excess=$(( total_width - max_length ))
+        # Répartir l'excès sur les colonnes
         local cut=$(( (excess + 3) / 4 ))
-        w1=$(( w1 - cut > 5 ? w1 - cut : 5 ))
-        w2=$(( w2 - cut > 5 ? w2 - cut : 5 ))
-        w3=$(( w3 - cut > 5 ? w3 - cut : 5 ))
-        w4=$(( w4 - cut > 5 ? w4 - cut : 5 ))
+        w1=$(( w1 - cut > min_width ? w1 - cut : min_width ))
+        w2=$(( w2 - cut > min_width ? w2 - cut : min_width ))
+        w3=$(( w3 - cut > min_width ? w3 - cut : min_width ))
+        w4=$(( w4 - cut > min_width ? w4 - cut : min_width ))
     fi
 
-    # Bordure supérieure
+    # Dessin bordure et entête
     draw_border
-
-    # En-tête
     printf "│ "
-    print_cell "$(print_fancy --style bold --raw "${headers[0]}")" $w1
-    printf " │ "
-    print_cell "$(print_fancy --style bold --raw "${headers[1]}")" $w2
-    printf " │ "
-    print_cell "$(print_fancy --style bold --raw "${headers[2]}")" $w3
-    printf " │ "
-    print_cell "$(print_fancy --style bold --raw "${headers[3]}")" $w4
-    printf " │\n"
-
+    for i in {0..3}; do
+        print_cell "${headers[i]}" "${!w$i}"
+        printf " │ "
+    done
+    printf "\n"
     draw_separator
 
     # Corps
     for row in "${lines[@]}"; do
         IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+
         var_cell=$(print_fancy --style bold --raw "$c1")
         auth_cell=$(print_fancy --style italic --raw "$c2")
         def_cell="$c3"
-        if [[ "$valid_flag" == "false" ]]; then
-            val_cell=$(print_fancy --fg red --raw "$c4")
-        else
-            val_cell=$(print_fancy --fg green --raw "$c4")
-        fi
+        val_cell="$c4"
+        [[ "$valid_flag" == "false" ]] && val_cell=$(print_fancy --fg red --raw "$c4") || val_cell=$(print_fancy --fg green --raw "$c4")
+
         printf "│ "
         print_cell "$var_cell" $w1
         printf " │ "
