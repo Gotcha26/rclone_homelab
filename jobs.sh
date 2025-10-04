@@ -31,7 +31,7 @@ for idx in "${!JOBS_LIST[@]}"; do
     init_job_logs "$JOB_ID"              # <- logs prêts à l’emploi
 done
 
-validate_jobs
+check_src
 check_remotes
 
 

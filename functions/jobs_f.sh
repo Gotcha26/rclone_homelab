@@ -38,7 +38,7 @@ parse_jobs() {
 ###############################################################################
 declare -A JOB_ERR_REASON
 
-validate_jobs() {
+check_src() {
     local idx src dst remote
 
     for idx in "${!JOBS_LIST[@]}"; do
@@ -97,10 +97,9 @@ check_remotes() {
         local job="${JOBS_LIST[$idx]}"
         IFS='|' read -r src dst <<< "$job"
 
-        # Initialisation
-		# On part du principe que le job est OK
-        JOB_STATUS[$idx]="OK"
-		JOB_ERR_REASON[$idx]="ok"				  
+        # Initialisation seulement si pas déjà PROBLEM
+        [[ "${JOB_STATUS[$idx]}" != "PROBLEM" ]] && JOB_STATUS[$idx]="OK"
+        [[ "${JOB_ERR_REASON[$idx]}" != "src_abs" ]] && JOB_ERR_REASON[$idx]="ok"
         JOB_REMOTE[$idx]=""
 
         for endpoint in "$src" "$dst"; do
