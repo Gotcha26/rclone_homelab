@@ -94,6 +94,9 @@ check_remotes() {
     local timeout_duration="10s"
 
     for idx in "${!JOBS_LIST[@]}"; do
+        # --- Ignorer les jobs déjà problématiques ---
+        [[ "${JOB_STATUS[$idx]}" == "PROBLEM" ]] && continue
+
         local job="${JOBS_LIST[$idx]}"
         IFS='|' read -r src dst <<< "$job"
 
