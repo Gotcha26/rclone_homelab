@@ -463,25 +463,29 @@ draw_bottom() {
 #   $1 = contenu (ANSI autorisé)
 #   $2 = largeur visible de la colonne
 ###############################################################################
-truncate_ansi() {
-    local str="$1" maxlen="$2"
-    local clean vis_len result=""
-    clean=$(echo -e "$str" | sed 's/\x1b\[[0-9;]*m//g')
-    vis_len=$(strwidth "$clean")
-    if (( vis_len <= maxlen )); then
-        printf "%s" "$str"
-    else
-        # on tronque clean et on retourne le début de str original correspondant
-        result="${clean:0:maxlen-3}..."
-        printf "%s" "$result"
-    fi
-}
-
 print_cell() {
     local content="$1" col_width="$2"
-    printf "%-*s" "$col_width" "$(truncate_ansi "$content" "$col_width")"
-}
+    local clean vis_len padding
 
+    # Nettoyer ANSI pour calculer largeur visible
+    clean=$(echo -e "$content" | sed 's/\x1b\[[0-9;]*m//g')
+    vis_len=$(strwidth "$clean")
+
+    # Tronquer si trop long
+    if (( vis_len > col_width )); then
+        clean="${clean:0:col_width-3}..."
+        # Recréer le contenu avec ANSI si nécessaire
+        # Ici on simplifie en affichant sans ANSI tronqué
+        content="$clean"
+        vis_len=$(strwidth "$clean")
+    fi
+
+    # Padding
+    (( padding = col_width - vis_len ))
+    (( padding<0 )) && padding=0
+
+    printf "%s%*s" "$content" "$padding" ""
+}
 
 
 ###############################################################################
