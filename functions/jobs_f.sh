@@ -46,7 +46,7 @@ check_src() {
         IFS='|' read -r src dst <<< "${JOBS_LIST[$idx]}"
 
         # Si déjà marqué comme défaillant → ne pas re-checker
-        if [[ "${SRC_STATUS[$src]}" == "PROBLEM" ]]; then
+        if [[ "${SRC_STATUS[$src]-}" == "PROBLEM" ]]; then
             JOB_STATUS[$idx]="PROBLEM"
             JOB_ERR_REASON[$idx]="src_abs"
             JOB_REMOTE[$idx]=""  
