@@ -14,8 +14,6 @@ cd / 2>/dev/null || true   # si PWD invalide, se placer dans un répertoire sûr
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")" || exit 1
 
 source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration local incluse
-type print_table_vars
-type print_table_vars_invalid
 
 # ===
 

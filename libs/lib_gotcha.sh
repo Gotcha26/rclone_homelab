@@ -427,30 +427,30 @@ display_msg() {
 # Fonction : Bordures tableau
 ###############################################################################
 draw_border() {
-    local -n w=$1  # référence au tableau des largeurs
+    local -n cols=$1  # utiliser un nom différent de 'w'
     printf "┌"
-    for i in "${!w[@]}"; do
-        printf '%*s' $((w[i]+2)) '' | tr ' ' '─'
+    for i in "${!cols[@]}"; do
+        printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
         [[ $i -lt 3 ]] && printf "┬"
     done
     printf "┐\n"
 }
 
 draw_separator() {
-    local -n w=$1
+    local -n cols=$1
     printf "├"
-    for i in "${!w[@]}"; do
-        printf '%*s' $((w[i]+2)) '' | tr ' ' '─'
+    for i in "${!cols[@]}"; do
+        printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
         [[ $i -lt 3 ]] && printf "┼"
     done
     printf "┤\n"
 }
 
 draw_bottom() {
-    local -n w=$1
+    local -n cols=$1
     printf "└"
-    for i in "${!w[@]}"; do
-        printf '%*s' $((w[i]+2)) '' | tr ' ' '─'
+    for i in "${!cols[@]}"; do
+        printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
         [[ $i -lt 3 ]] && printf "┴"
     done
     printf "┘\n"
