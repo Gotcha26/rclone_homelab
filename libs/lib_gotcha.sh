@@ -517,6 +517,22 @@ print_cell() {
 }
 
 
+truncate_ansi() {
+    local str="$1"
+    local max="$2"
+    local clean visible
+    clean=$(echo -e "$str" | strip_ansi)
+    visible="${clean:0:max-1}"
+    # Ajout d’un … si tronqué
+    (( ${#clean} > max )) && visible="${visible}…"
+
+    # Réappliquer le style original
+    # On suppose que $str commence par la séquence ANSI et finit par RESET
+    local prefix=$(echo -e "$str" | grep -oP '^\x1B\[[0-9;]*m' || true)
+    printf "%b%s%b" "$prefix" "$visible" "\033[0m"
+}
+
+
 ###############################################################################
 # Fonction : Affichage d'un tableau formaté à partir d'une liste de lignes
 # Chaque ligne doit être un tableau de colonnes : c1¤c2¤c3¤c4¤valid_flag
@@ -554,13 +570,6 @@ print_table() {
         w[3]=$(( avail > min_width ? avail : min_width ))
     fi
 
-    # Petite fonction de troncature (dernière colonne)
-    truncate_cell() {
-        local str="$1" max="$2"
-        (( $(strwidth "$str") > max )) && str="${str:0:max-1}…"
-        printf "%s" "$str"
-    }
-
     # Bordure supérieure
     draw_border w
 
@@ -595,7 +604,7 @@ print_table() {
         print_cell "$def_cell" "${w[2]}"
         printf " │ "
         # Tronquer seulement la dernière colonne
-        print_cell "$(truncate_cell "$val_cell" "${w[3]}")" "${w[3]}"
+        print_cell "$(truncate_ansi "$val_cell" "${w[3]}")" "${w[3]}"
         printf " │\n"
     done
 
