@@ -427,30 +427,30 @@ display_msg() {
 # Fonction : Bordures tableau
 ###############################################################################
 draw_border() {
-    local -n ref_cols=$1
+    local -n cols=$1  # utiliser un nom différent de 'w'
     printf "┌"
-    for i in "${!ref_cols[@]}"; do
-        printf '%*s' $((ref_cols[i]+2)) '' | tr ' ' '─'
+    for i in "${!cols[@]}"; do
+        printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
         [[ $i -lt 3 ]] && printf "┬"
     done
     printf "┐\n"
 }
 
 draw_separator() {
-    local -n ref_cols=$1
+    local -n cols=$1
     printf "├"
-    for i in "${!ref_cols[@]}"; do
-        printf '%*s' $((ref_cols[i]+2)) '' | tr ' ' '─'
+    for i in "${!cols[@]}"; do
+        printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
         [[ $i -lt 3 ]] && printf "┼"
     done
     printf "┤\n"
 }
 
 draw_bottom() {
-    local -n ref_cols=$1
+    local -n cols=$1
     printf "└"
-    for i in "${!ref_cols[@]}"; do
-        printf '%*s' $((ref_cols[i]+2)) '' | tr ' ' '─'
+    for i in "${!cols[@]}"; do
+        printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
         [[ $i -lt 3 ]] && printf "┴"
     done
     printf "┘\n"
@@ -498,57 +498,70 @@ print_table() {
     local max_length="${2:-80}"
 
     local headers=("Variable" "Autorisé" "Défaut" "Valeur")
-    local cols=(0 0 0 0)
+    local w=(0 0 0 0)          # Largeurs des colonnes
     local min_width=5
 
     # Largeur minimale basée sur les headers
-    for i in "${!headers[@]}"; do
-        cols[$i]=$(strwidth "${headers[i]}")
+    for i in $(seq 0 3); do
+        (( $(strwidth "${headers[i]}") > w[i] )) && w[i]=$(strwidth "${headers[i]}")
     done
 
     # Largeur max des données
     for row in "${lines[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<< "$row"
-        (( $(strwidth "$c1") > cols[0] )) && cols[0]=$(strwidth "$c1")
-        (( $(strwidth "$c2") > cols[1] )) && cols[1]=$(strwidth "$c2")
-        (( $(strwidth "$c3") > cols[2] )) && cols[2]=$(strwidth "$c3")
-        (( $(strwidth "$c4") > cols[3] )) && cols[3]=$(strwidth "$c4")
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+        (( $(strwidth "$c1") > w[0] )) && w[0]=$(strwidth "$c1")
+        (( $(strwidth "$c2") > w[1] )) && w[1]=$(strwidth "$c2")
+        (( $(strwidth "$c3") > w[2] )) && w[2]=$(strwidth "$c3")
+        (( $(strwidth "$c4") > w[3] )) && w[3]=$(strwidth "$c4")
     done
 
     # Ajuster si dépasse max_length
-    local total_width=$(( cols[0]+cols[1]+cols[2]+cols[3]+3*3 + 2 )) # 3 séparateurs + 2 bordures
+    local total_width=$(( w[0]+w[1]+w[2]+w[3]+13 ))
     if (( total_width > max_length )); then
         local excess=$(( total_width - max_length ))
         local cut=$(( (excess + 3) / 4 ))
-        for i in 0 1 2 3; do
-            (( cols[i] > min_width )) && cols[i]=$(( cols[i] - cut > min_width ? cols[i]-cut : min_width ))
+        for i in $(seq 0 3); do
+            w[i]=$(( w[i] - cut > min_width ? w[i] - cut : min_width ))
         done
     fi
 
     # Dessin bordure supérieure
-    draw_border cols
+    draw_border w
 
     # Entête
-    printf "│"
-    for i in 0 1 2 3; do
-        printf " %-${cols[i]}s │" "${headers[i]}"
+    printf "│ "
+    for i in $(seq 0 3); do
+        print_cell "$(print_fancy --style bold --raw "${headers[i]}")" "${w[i]}"
+        printf " │ "
     done
     printf "\n"
-
-    draw_separator cols
+    draw_separator w
 
     # Corps
     for row in "${lines[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<< "$row"
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
 
-        # Colorisation
-        [[ "$valid_flag" == "false" ]] && c4="\033[31m$c4\033[0m" || c4="\033[32m$c4\033[0m"
+        var_cell=$(print_fancy --style bold --raw "$c1")
+        auth_cell=$(print_fancy --style italic --raw "$c2")
+        def_cell="$c3"
+        if [[ "$valid_flag" == "false" ]]; then
+            val_cell=$(print_fancy --fg red --raw "$c4")
+        else
+            val_cell=$(print_fancy --fg green --raw "$c4")
+        fi
 
-        printf "│ %-${cols[0]}s │ %-${cols[1]}s │ %-${cols[2]}s │ %-${cols[3]}s │\n" \
-       "$c1" "$c2" "$c3" "$(printf "%b" "$c4")"
+        printf "│ "
+        print_cell "$var_cell" "${w[0]}"
+        printf " │ "
+        print_cell "$auth_cell" "${w[1]}"
+        printf " │ "
+        print_cell "$def_cell" "${w[2]}"
+        printf " │ "
+        print_cell "$val_cell" "${w[3]}"
+        printf " │\n"
     done
 
-    draw_bottom cols
+    draw_bottom w
 }
 
 
