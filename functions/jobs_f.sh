@@ -37,22 +37,42 @@ parse_jobs() {
 # Fonction de validdation de la source d'un job
 ###############################################################################
 declare -A JOB_ERR_REASON
+declare -A SRC_STATUS  # src -> OK/PROBLEM
 
 check_src() {
-    local idx src dst remote
+    local idx src dst
 
     for idx in "${!JOBS_LIST[@]}"; do
         IFS='|' read -r src dst <<< "${JOBS_LIST[$idx]}"
-        remote="$dst"  # si tu veux suivre le remote associé
 
-        if [[ ! -d "$src" ]]; then
+        # Si déjà marqué comme défaillant → ne pas re-checker
+        if [[ "${SRC_STATUS[$src]}" == "PROBLEM" ]]; then
             JOB_STATUS[$idx]="PROBLEM"
             JOB_ERR_REASON[$idx]="src_abs"
-            JOB_REMOTE[$idx]=""         # pas de remote pour src_abs
-            JOB_ENDPOINT[$idx]=""       # ni de endpoint
-            ERROR_CODE=91
+            JOB_REMOTE[$idx]=""  
+            JOB_ENDPOINT[$idx]=""
+            continue
         fi
 
+        # Vérification réelle du dossier source
+        if [[ ! -d "$src" ]]; then
+            SRC_STATUS[$src]="PROBLEM"
+
+            # Marquer tous les jobs partageant cette source
+            for i in "${!JOBS_LIST[@]}"; do
+                IFS='|' read -r s d <<< "${JOBS_LIST[$i]}"
+                if [[ "$s" == "$src" ]]; then
+                    JOB_STATUS[$i]="PROBLEM"
+                    JOB_ERR_REASON[$i]="src_abs"
+                    JOB_REMOTE[$i]=""
+                    JOB_ENDPOINT[$i]=""
+                fi
+            done
+
+            ERROR_CODE=91
+        else
+            SRC_STATUS[$src]="OK"
+        fi
     done
 }
 
