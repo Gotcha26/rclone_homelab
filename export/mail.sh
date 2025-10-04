@@ -364,7 +364,7 @@ HTML
         # --- Bloc update info ---
         local update_output update_status
         update_output=$(check_update 2>&1)
-        update_output=$(printf '%s\n' "$update_output" | strip_ansi2)
+        update_output=$(printf '%s\n' "$update_output" | strip_ansi)
         update_status=$?
 
 
