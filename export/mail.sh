@@ -364,8 +364,9 @@ HTML
         # --- Bloc update info ---
         local update_output update_status
         update_output=$(analyze_update_status 2>&1)
+        update_status=$?   # <- code de retour réel de la fonction
         update_output=$(printf '%s\n' "$update_output" | strip_ansi)
-        update_status=$?
+
 
 
         if [[ $update_status -eq 0 ]]; then
