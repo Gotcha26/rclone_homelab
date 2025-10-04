@@ -55,7 +55,6 @@ check_src() {
 
     done
 }
-# warn_remote_problem "${JOB_REMOTE[$idx]}" "${ENDPOINT}" "${JOB_ERR_REASON[$idx]}" "$idx"
 
 
 ###############################################################################
