@@ -498,6 +498,23 @@ menu_validation_local_variables() {
 
 
 ###############################################################################
+# Fonction : Bordures tableau
+###############################################################################
+draw_border() {
+    printf "┌%s┐\n" \
+        "$(printf '─%.0s' $(seq 1 $((w1+2))))┬$(printf '─%.0s' $(seq 1 $((w2+2))))┬$(printf '─%.0s' $(seq 1 $((w3+2))))┬$(printf '─%.0s' $(seq 1 $((w4+2))))"
+}
+draw_separator() {
+    printf "├%s┤\n" \
+        "$(printf '─%.0s' $(seq 1 $((w1+2))))┼$(printf '─%.0s' $(seq 1 $((w2+2))))┼$(printf '─%.0s' $(seq 1 $((w3+2))))┼$(printf '─%.0s' $(seq 1 $((w4+2))))"
+}
+draw_bottom() {
+    printf "└%s┘\n" \
+        "$(printf '─%.0s' $(seq 1 $((w1+2))))┴$(printf '─%.0s' $(seq 1 $((w2+2))))┴$(printf '─%.0s' $(seq 1 $((w3+2))))┴$(printf '─%.0s' $(seq 1 $((w4+2))))"
+}
+
+
+###############################################################################
 # Fonction : Affiche un contenu avec padding, ANSI compris
 # Arguments :
 #   $1 = contenu (ANSI autorisé)
@@ -529,23 +546,6 @@ print_cell() {
 
 
 ###############################################################################
-# Fonction : Bordures tableau
-###############################################################################
-draw_border() {
-    printf "┌%s┐\n" \
-        "$(printf '─%.0s' $(seq 1 $((w1+2))))┬$(printf '─%.0s' $(seq 1 $((w2+2))))┬$(printf '─%.0s' $(seq 1 $((w3+2))))┬$(printf '─%.0s' $(seq 1 $((w4+2))))"
-}
-draw_separator() {
-    printf "├%s┤\n" \
-        "$(printf '─%.0s' $(seq 1 $((w1+2))))┼$(printf '─%.0s' $(seq 1 $((w2+2))))┼$(printf '─%.0s' $(seq 1 $((w3+2))))┼$(printf '─%.0s' $(seq 1 $((w4+2))))"
-}
-draw_bottom() {
-    printf "└%s┘\n" \
-        "$(printf '─%.0s' $(seq 1 $((w1+2))))┴$(printf '─%.0s' $(seq 1 $((w2+2))))┴$(printf '─%.0s' $(seq 1 $((w3+2))))┴$(printf '─%.0s' $(seq 1 $((w4+2))))"
-}
-
-
-###############################################################################
 # Fonction : Affichage d'un tableau formaté à partir d'une liste de lignes
 # Chaque ligne doit être un tableau de colonnes : c1¤c2¤c3¤c4¤valid_flag
 # valid_flag est optionnel et sert à colorer la valeur
@@ -555,52 +555,44 @@ print_table() {
     local max_length="${2:-80}"
 
     local headers=("Variable" "Autorisé" "Défaut" "Valeur")
-    local w1=0 w2=0 w3=0 w4=0
-
-    # Largeur minimale des colonnes
+    local w=(0 0 0 0)          # Largeurs des colonnes
     local min_width=5
 
-    # Calcul des largeurs basées sur header
+    # Largeur minimale basée sur les headers
     for i in {0..3}; do
-        local len=$(strwidth "${headers[i]}")
-        case $i in
-            0) (( len > w1 )) && w1=$len ;;
-            1) (( len > w2 )) && w2=$len ;;
-            2) (( len > w3 )) && w3=$len ;;
-            3) (( len > w4 )) && w4=$len ;;
-        esac
+        (( $(strwidth "${headers[i]}") > w[i] )) && w[i]=$(strwidth "${headers[i]}")
     done
 
     # Largeur max des données
     for row in "${lines[@]}"; do
         IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
-        (( $(strwidth "$c1") > w1 )) && w1=$(strwidth "$c1")
-        (( $(strwidth "$c2") > w2 )) && w2=$(strwidth "$c2")
-        (( $(strwidth "$c3") > w3 )) && w3=$(strwidth "$c3")
-        (( $(strwidth "$c4") > w4 )) && w4=$(strwidth "$c4")
+        (( $(strwidth "$c1") > w[0] )) && w[0]=$(strwidth "$c1")
+        (( $(strwidth "$c2") > w[1] )) && w[1]=$(strwidth "$c2")
+        (( $(strwidth "$c3") > w[2] )) && w[2]=$(strwidth "$c3")
+        (( $(strwidth "$c4") > w[3] )) && w[3]=$(strwidth "$c4")
     done
 
-    # Ajuster si dépassement max_length
-    local total_width=$(( w1 + w2 + w3 + w4 + 13 ))
+    # Ajuster si dépasse max_length
+    local total_width=$(( w[0]+w[1]+w[2]+w[3]+13 ))
     if (( total_width > max_length )); then
         local excess=$(( total_width - max_length ))
-        # Répartir l'excès sur les colonnes
         local cut=$(( (excess + 3) / 4 ))
-        w1=$(( w1 - cut > min_width ? w1 - cut : min_width ))
-        w2=$(( w2 - cut > min_width ? w2 - cut : min_width ))
-        w3=$(( w3 - cut > min_width ? w3 - cut : min_width ))
-        w4=$(( w4 - cut > min_width ? w4 - cut : min_width ))
+        for i in {0..3}; do
+            w[i]=$(( w[i] - cut > min_width ? w[i] - cut : min_width ))
+        done
     fi
 
-    # Dessin bordure et entête
-    draw_border
+    # Dessin bordure supérieure
+    draw_border()  # à adapter pour utiliser w[0..3]
+
+    # Entête
     printf "│ "
     for i in {0..3}; do
-        print_cell "${headers[i]}" "${!w$i}"
+        print_cell "$(print_fancy --style bold --raw "${headers[i]}")" "${w[i]}"
         printf " │ "
     done
     printf "\n"
-    draw_separator
+    draw_separator  # idem
 
     # Corps
     for row in "${lines[@]}"; do
@@ -609,21 +601,24 @@ print_table() {
         var_cell=$(print_fancy --style bold --raw "$c1")
         auth_cell=$(print_fancy --style italic --raw "$c2")
         def_cell="$c3"
-        val_cell="$c4"
-        [[ "$valid_flag" == "false" ]] && val_cell=$(print_fancy --fg red --raw "$c4") || val_cell=$(print_fancy --fg green --raw "$c4")
+        if [[ "$valid_flag" == "false" ]]; then
+            val_cell=$(print_fancy --fg red --raw "$c4")
+        else
+            val_cell=$(print_fancy --fg green --raw "$c4")
+        fi
 
         printf "│ "
-        print_cell "$var_cell" $w1
+        print_cell "$var_cell" "${w[0]}"
         printf " │ "
-        print_cell "$auth_cell" $w2
+        print_cell "$auth_cell" "${w[1]}"
         printf " │ "
-        print_cell "$def_cell" $w3
+        print_cell "$def_cell" "${w[2]}"
         printf " │ "
-        print_cell "$val_cell" $w4
+        print_cell "$val_cell" "${w[3]}"
         printf " │\n"
     done
 
-    draw_bottom
+    draw_bottom  # idem
 }
 
 
