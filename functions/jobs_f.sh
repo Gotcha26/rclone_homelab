@@ -48,6 +48,8 @@ check_src() {
         if [[ ! -d "$src" ]]; then
             JOB_STATUS[$idx]="PROBLEM"
             JOB_ERR_REASON[$idx]="src_abs"
+            JOB_REMOTE[$idx]=""         # pas de remote pour src_abs
+            JOB_ENDPOINT[$idx]=""       # ni de endpoint
             ERROR_CODE=91
         fi
 
