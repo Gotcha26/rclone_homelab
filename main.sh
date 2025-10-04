@@ -132,6 +132,7 @@ if [[ ${#ORIG_ARGS[@]} -eq 0 ]]; then
         [[ $DEBUG_INFOS == true ]] && print_fancy --theme "debug_info" "Poursuite post-menu"
         load_optional_configs   # Rappel des configurations locales (surcharge après le menu et/ou pour le mode full auto)
         self_validation_local_variables VARS_TO_VALIDATE   # Processus de correction automatique
+        ACTION_MODE="auto" # On oblige à passer en mode auto lorceque issue du menu interractif pour ne plus avoir d'interactions.
     fi
 else
     display_msg "verbose|hard" --theme info "Pas d'appel au menu interactif."

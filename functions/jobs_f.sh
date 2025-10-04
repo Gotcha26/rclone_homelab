@@ -249,7 +249,7 @@ Les jobs utilisant ce remote seront \e[31mignorés\e[0m jusqu'à résolution.
             ;;
         dry_run_incompatible)
             msg+="
-La destination choisie n'accèpte pas l'option dry-run :
+L'option dry-run n'est pas compatible avec la destination :
 
 \e[1;94m$endpoint\e[0m
 
