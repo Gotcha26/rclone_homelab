@@ -457,7 +457,7 @@ purge_old_files() {
     for dir in "${dirs[@]}"; do
         if [[ -d "$dir" ]]; then
             find "$dir" -type f -mtime +"$retention_days" -delete 2>/dev/null
-            display_msg "soft|verbose|hard" --theme ok "Purge effectuée dans $dir"
+            display_msg "verbose|hard" --theme ok "Purge effectuée dans $dir"
         else
             display_msg "soft|verbose|hard" --theme warning "Dossier inexistant : $dir"
         fi
