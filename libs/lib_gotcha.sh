@@ -494,7 +494,7 @@ draw_bottom() {
 ###############################################################################
 print_cell() {
     local content="$1" col_width="$2"
-    local clean vis_len padding RESET=$'\033[0m'
+    local clean vis_len padding
 
     # Nettoyer ANSI pour calculer largeur visible
     clean=$(echo -e "$content" | strip_ansi)
@@ -502,17 +502,18 @@ print_cell() {
 
     # Tronquer si trop long
     if (( vis_len > col_width )); then
-        clean="${clean:0:col_width-3}..."
-        content="$clean"
+        clean="${clean:0:col_width-1}…"   # un seul caractère '…'
+        # On reconstruit le contenu en gardant les ANSI initiaux
+        content="${content:0:${#clean}}…"
         vis_len=$(strwidth "$clean")
     fi
 
     # Padding
     (( padding = col_width - vis_len ))
-    (( padding < 0 )) && padding=0
+    (( padding<0 )) && padding=0
 
-    # Afficher + reset final systématique
-    printf "%s%*s%s" "$content" "$padding" "" "$RESET"
+    # Affichage : le contenu original + padding + reset final
+    printf "%s%*s\033[0m" "$content" "$padding" ""
 }
 
 
