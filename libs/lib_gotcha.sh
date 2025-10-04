@@ -427,16 +427,33 @@ display_msg() {
 # Fonction : Bordures tableau
 ###############################################################################
 draw_border() {
-    printf "┌%s┐\n" \
-        "$(printf '─%.0s' $(seq 1 $((w1+2))))┬$(printf '─%.0s' $(seq 1 $((w2+2))))┬$(printf '─%.0s' $(seq 1 $((w3+2))))┬$(printf '─%.0s' $(seq 1 $((w4+2))))"
+    local -n w=$1  # référence au tableau des largeurs
+    printf "┌"
+    for i in "${!w[@]}"; do
+        printf '%*s' $((w[i]+2)) '' | tr ' ' '─'
+        [[ $i -lt 3 ]] && printf "┬"
+    done
+    printf "┐\n"
 }
+
 draw_separator() {
-    printf "├%s┤\n" \
-        "$(printf '─%.0s' $(seq 1 $((w1+2))))┼$(printf '─%.0s' $(seq 1 $((w2+2))))┼$(printf '─%.0s' $(seq 1 $((w3+2))))┼$(printf '─%.0s' $(seq 1 $((w4+2))))"
+    local -n w=$1
+    printf "├"
+    for i in "${!w[@]}"; do
+        printf '%*s' $((w[i]+2)) '' | tr ' ' '─'
+        [[ $i -lt 3 ]] && printf "┼"
+    done
+    printf "┤\n"
 }
+
 draw_bottom() {
-    printf "└%s┘\n" \
-        "$(printf '─%.0s' $(seq 1 $((w1+2))))┴$(printf '─%.0s' $(seq 1 $((w2+2))))┴$(printf '─%.0s' $(seq 1 $((w3+2))))┴$(printf '─%.0s' $(seq 1 $((w4+2))))"
+    local -n w=$1
+    printf "└"
+    for i in "${!w[@]}"; do
+        printf '%*s' $((w[i]+2)) '' | tr ' ' '─'
+        [[ $i -lt 3 ]] && printf "┴"
+    done
+    printf "┘\n"
 }
 
 
@@ -509,7 +526,7 @@ print_table() {
     fi
 
     # Dessin bordure supérieure
-    draw_border()  # à adapter pour utiliser w[0..3]
+    draw_border w
 
     # Entête
     printf "│ "
@@ -518,7 +535,7 @@ print_table() {
         printf " │ "
     done
     printf "\n"
-    draw_separator  # idem
+    draw_separator w
 
     # Corps
     for row in "${lines[@]}"; do
@@ -544,7 +561,7 @@ print_table() {
         printf " │\n"
     done
 
-    draw_bottom  # idem
+    draw_bottom w
 }
 
 
