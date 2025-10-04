@@ -723,39 +723,6 @@ print_table_vars() {
     print_table rows
 }
 
-# L'ARGUMENT dans le code d'appel de la fonciton PRIME sur la variable global
-#
-# Exemple :
-#
-# fonction_fictive soft
-#
-#
-# fonction_fictive () {
-# local LAUNCH_MODE="$1:${LAUNCH_MODE:-hard}" # <== argument : variable:<defaut>
-#    if ! [condition_blablabla] then
-#        case "$LAUNCH_MODE" in
-#            soft)
-#                return 1
-#                ;;
-#            verbose)
-#                fonction_doublement_fictive
-#                ;;
-#            hard)
-#                die 999 "❌  J'arrête le script et je meurs avec fonction die"
-#                ;;
-#            *)
-#                echo "❌  Mode inconnu '$LAUNCH_MODE' dans fonction_fictive"
-#                return 2
-#                ;;
-#        esac
-#    fi
-#    return 0
-# }
-# Explications code de sortie :
-# return 0   -> Quand la condition "vrai"
-# Case       -> Quand la condition retourne "faux" selon les cas précisés...
-# Attention au signe "!" devant la condition qui inverse le sens "vrai/faux" 
-
 
 ###############################################################################
 # Fonction : display_msg
