@@ -497,7 +497,7 @@ print_cell() {
     local clean vis_len padding
 
     # Nettoyer ANSI pour calculer largeur visible
-    clean=$(echo -e "$content" | sed 's/\x1b\[[0-9;]*m//g')
+    clean=$(echo -e "$content" | strip_ansi)
     vis_len=$(strwidth "$clean")
 
     # Tronquer si trop long
