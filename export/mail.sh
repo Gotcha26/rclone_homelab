@@ -362,24 +362,24 @@ assemble_mail_file() {
 HTML
 
         # --- Bloc update info ---
-        local update_msg_html
-        local update_info
-        update_info=$(check_update 2>&1)          # capture stdout/stderr
-        update_info=$(strip_ansi "$update_info")  # suppression des codes ANSI
+        local update_output update_status
+        update_output=$(check_update 2>&1)      # capture stdout/stderr
+        update_status=$?                         # récupère le vrai code de retour
+        update_output=$(strip_ansi "$update_output")  # suppression des codes ANSI
 
-        if [[ $? -eq 0 ]]; then
+        if [[ $update_status -eq 0 ]]; then
             # Script à jour
             update_msg_html="<p style='color:green;'><b>✅ Le script est à jour.</b></p>
-<p>$update_info</p>"
+        <p>$update_output</p>"
         else
             # Mise à jour disponible
             update_msg_html="<p style='color:orange;'><b>⚠ Une mise à jour est disponible !</b></p>
-<p>$update_info</p>
-<p>Vous pouvez mettre à jour via :</p>
-<ul>
-<li>Option forcée : exécuter <code>rclone_homelab --force-update</code></li>
-<li>Menu interactif : sélectionner 'Mettre à jour le script (option 1)'</li>
-</ul>"
+        <p>$update_output</p>
+        <p>Vous pouvez mettre à jour via :</p>
+        <ul>
+        <li>Option forcée : exécuter <code>rclone_homelab --force-update</code></li>
+        <li>Menu interactif : sélectionner 'Mettre à jour le script (option 1)'</li>
+        </ul>"
         fi
         echo "$update_msg_html"
 
