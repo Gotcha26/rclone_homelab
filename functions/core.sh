@@ -306,7 +306,7 @@ print_summary_table() {
 
     print_aligned_table "Date / Heure début"  "$(safe_var "START_TIME")"
     print_aligned_table "Date / Heure fin"    "$END_TIME"
-    print_aligned_table "Mode de lancement"   "$(safe_var "ACTION_MODE")"
+    print_aligned_table "Mode de lancement"   "$(safe_var "INITIAL_LAUNCH")"
     print_aligned_table "Nb. de jobs traités" "$(safe_var "EXECUTED_JOBS") / $(safe_count JOBS_LIST)"
     print_aligned_table "Dernier code erreur" "$(safe_var "ERROR_CODE")"
     print_aligned_table "Dossier"             "$(safe_var "DIR_LOG")/"

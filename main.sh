@@ -96,6 +96,9 @@ done
 # 3. Actions dépendantes des arguments
 ###############################################################################
 
+# Récupération de l'état du lancement initial
+INITIAL_LAUNCH=$ACTION_MODE
+
 # Gestion des mises à jour selon les options passées
 if [[ "$FORCE_UPDATE" == true ]]; then
     if update_to_latest_branch; then
