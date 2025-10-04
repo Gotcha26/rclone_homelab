@@ -282,7 +282,7 @@ encode_subject_for_email() {
 ###############################################################################
 # Fonction Assemblage des différents élements pour constituer un email complet (entête, corps...)
 ###############################################################################
-assemble_mail_file() {
+assemble_mail_file_old() {
     local log_file="$1"        # Fichier log utilisé pour calcul du résumé global (copied/updated/deleted)
     local html_block="$2"      # Bloc HTML global déjà préparé (tous les jobs), facultatif
     local -n MAIL_REF="$3"     # référence à la variable passée par l'appelant
@@ -439,4 +439,132 @@ send_email() {
 
     # --- Nettoyage optionnel ---
     rm -f "$MAIL"
+}
+
+
+assemble_mail_file() {
+    local log_file="$1"        # Fichier log pour résumé global
+    local html_block="$2"      # Bloc HTML déjà préparé (facultatif)
+    local -n MAIL_REF="$3"     # Référence à la variable pour le mail
+
+    # --- Chemin unique du mail ---
+    MAIL_REF="${DIR_TMP_MAIL}/rclone_mail_$$.tmp"
+
+    # --- Détecter fichier msmtp.conf et adresse "from" ---
+    local conf_file FROM_ADDRESS
+    conf_file="$(check_msmtp_configured 2>/dev/null || true)"
+    if [[ -n "$conf_file" ]]; then
+        FROM_ADDRESS="$(grep -i '^from' "$conf_file" | awk '{print $2; exit}')"
+    fi
+    FROM_ADDRESS="${FROM_ADDRESS:-noreply@$(hostname -f)}"
+
+    # --- Sous-fonction : écriture des headers ---
+    write_mail_headers() {
+        local out="$1"
+        {
+            echo "From: \"${MAIL_DISPLAY_NAME:-Rclone}\" <$FROM_ADDRESS>"
+            echo "To: $MAIL_TO"
+            echo "Date: $(date -R)"
+            echo "Subject: $SUBJECT"
+            echo "MIME-Version: 1.0"
+            echo "Content-Type: multipart/mixed; boundary=\"MIXED_BOUNDARY\""
+            echo
+            echo "This is a multi-part message in MIME format."
+        } > "$out"
+    }
+
+    # --- Sous-fonction : corps HTML + texte ---
+    write_mail_body() {
+        local out="$1" log_file="$2" html_block="$3"
+        {
+            echo "--MIXED_BOUNDARY"
+            echo "Content-Type: multipart/alternative; boundary=\"ALT_BOUNDARY\""
+            echo
+            echo "--ALT_BOUNDARY"
+            echo "Content-Type: text/plain; charset=UTF-8"
+            echo
+            echo "Rapport de synchronisation Rclone - $NOW"
+            echo "Voir la version HTML pour plus de détails."
+            echo
+            echo "--ALT_BOUNDARY"
+            echo "Content-Type: text/html; charset=UTF-8"
+            echo
+            echo "<html><body style='font-family: monospace; background-color:#f9f9f9; padding:1em;'>"
+            echo "<h2>📤 Rapport de synchronisation Rclone – $NOW</h2>"
+            echo "<p><b>📝 Dernières lignes du log :</b></p>"
+            echo "<div style='background:#eee; padding:1em; border-radius:8px; font-family: monospace;'>"
+
+            # Contenu HTML : bloc passé ou génération depuis log
+            if [[ -n "$html_block" ]]; then
+                echo "$html_block"
+            else
+                prepare_mail_html "$log_file"
+            fi
+
+            echo "</div>"
+
+            # --- Résumé global ---
+            echo "<hr><h3>📊 Résumé global</h3>"
+            local copied updated deleted
+            copied=$(grep -i "INFO" "$log_file" | grep -i "Copied" | grep -vi "There was nothing to transfer" | wc -l)
+            updated=$(grep -i "INFO" "$log_file" | grep -i "Updated" | grep -vi "There was nothing to transfer" | wc -l)
+            deleted=$(grep -i "INFO" "$log_file" | grep -i "Deleted" | grep -vi "There was nothing to transfer" | wc -l)
+            cat <<HTML
+<table style="font-family: monospace; border-collapse: collapse;">
+<tr><td><b>Fichiers copiés&nbsp;</b></td><td style="text-align:right;">: $copied</td></tr>
+<tr><td><b>Fichiers mis à jour&nbsp;</b></td><td style="text-align:right;">: $updated</td></tr>
+<tr><td><b>Fichiers supprimés&nbsp;</b></td><td style="text-align:right;">: $deleted</td></tr>
+</table>
+HTML
+
+            # --- Bloc update info ---
+            local update_output update_status update_msg_html
+            update_output=$(analyze_update_status 2>&1)
+            update_status=$?
+            update_output=$(printf '%s\n' "$update_output" | strip_ansi)
+
+            if [[ $update_status -eq 0 ]]; then
+                update_msg_html="<p style='color:green;'><b>✅ Le script est à jour.</b></p>
+<p>$update_output</p>"
+            else
+                update_msg_html="<p style='color:orange;'><b>⚠ Une mise à jour est disponible !</b></p>
+<p>$update_output</p>
+<p>Vous pouvez mettre à jour via :</p>
+<ul>
+<li>Option forcée : exécuter <code>rclone_homelab --force-update</code></li>
+<li>Menu interactif : sélectionner 'Mettre à jour le script (option 1)'</li>
+</ul>"
+            fi
+            echo "$update_msg_html"
+
+            # Fin du message automatique
+            echo "<p>– Fin du message automatique –</p>"
+            echo "</body></html>"
+            echo "--ALT_BOUNDARY--"
+        } >> "$out"
+
+        # --- Attachments (logs jobs) ---
+        for file in "$TMP_JOBS_DIR"/JOB*_plain.log; do
+            [[ -f "$file" ]] || continue
+            {
+                echo "--MIXED_BOUNDARY"
+                echo "Content-Type: text/plain; name=\"$(basename "$file")\""
+                echo "Content-Disposition: attachment; filename=\"$(basename "$file")\""
+                echo "Content-Transfer-Encoding: base64"
+                echo
+                base64 "$file"
+            } >> "$out"
+        done
+
+        # --- Fermeture finale ---
+        echo "--MIXED_BOUNDARY--" >> "$out"
+    }
+
+    # --- Écriture du mail complet ---
+    write_mail_headers "$MAIL_REF"
+    write_mail_body "$MAIL_REF" "$log_file" "$html_block"
+
+    # --- Affichage info ---
+    display_msg "verbose|hard" --theme info "Fichier email prêt à :"
+    display_msg "verbose|hard" --align right --fg blue "$MAIL_REF"
 }
