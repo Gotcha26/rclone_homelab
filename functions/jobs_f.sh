@@ -37,7 +37,7 @@ parse_jobs() {
 # Fonction de validdation de la source d'un job
 ###############################################################################
 declare -A JOB_ERR_REASON
-declare -A SRC_STATUS  # src -> OK/PROBLEM
+declare -A SRC_STATUS=()  # src -> OK/PROBLEM, ne sert pas pour le moment
 
 check_src() {
     local idx src dst
