@@ -495,16 +495,17 @@ draw_bottom() {
 print_cell() {
     local content="$1" col_width="$2"
     local clean vis_len padding
-    local RESET="\033[0m"
 
     # Nettoyer ANSI pour calculer largeur visible
-    clean=$(echo -e "$content" | strip_ansi)
+    clean=$(echo -e "$content" | sed 's/\x1b\[[0-9;]*m//g')
     vis_len=$(strwidth "$clean")
 
     # Tronquer si trop long
     if (( vis_len > col_width )); then
         clean="${clean:0:col_width-3}..."
-        content="$clean"   # on tronque en supprimant l’ANSI
+        # Recréer le contenu avec ANSI si nécessaire
+        # Ici on simplifie en affichant sans ANSI tronqué
+        content="$clean"
         vis_len=$(strwidth "$clean")
     fi
 
@@ -512,24 +513,7 @@ print_cell() {
     (( padding = col_width - vis_len ))
     (( padding<0 )) && padding=0
 
-    # Toujours forcer RESET à la fin pour ne pas déborder sur la bordure
-    printf "%s%*s%s" "$content" "$padding" "" "$RESET"
-}
-
-###############################################################################
-# Petite fonction de troncature (dernière colonne uniquement)
-###############################################################################
-truncate_cell() {
-    local str="$1" max="$2"
-    local RESET="\033[0m"
-
-    # Retirer ANSI pour calcul
-    local clean=$(echo -e "$str" | strip_ansi)
-    if (( $(strwidth "$clean") > max )); then
-        clean="${clean:0:max-1}…"
-        str="$clean"
-    fi
-    printf "%s%s" "$str" "$RESET"
+    printf "%s%*s" "$content" "$padding" ""
 }
 
 
