@@ -427,30 +427,30 @@ display_msg() {
 # Fonction : Bordures tableau
 ###############################################################################
 draw_border() {
-    local -n cols=$1
+    local -n ref_cols=$1
     printf "┌"
-    for i in "${!cols[@]}"; do
-        printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
+    for i in "${!ref_cols[@]}"; do
+        printf '%*s' $((ref_cols[i]+2)) '' | tr ' ' '─'
         [[ $i -lt 3 ]] && printf "┬"
     done
     printf "┐\n"
 }
 
 draw_separator() {
-    local -n cols=$1
+    local -n ref_cols=$1
     printf "├"
-    for i in "${!cols[@]}"; do
-        printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
+    for i in "${!ref_cols[@]}"; do
+        printf '%*s' $((ref_cols[i]+2)) '' | tr ' ' '─'
         [[ $i -lt 3 ]] && printf "┼"
     done
     printf "┤\n"
 }
 
 draw_bottom() {
-    local -n cols=$1
+    local -n ref_cols=$1
     printf "└"
-    for i in "${!cols[@]}"; do
-        printf '%*s' $((cols[i]+2)) '' | tr ' ' '─'
+    for i in "${!ref_cols[@]}"; do
+        printf '%*s' $((ref_cols[i]+2)) '' | tr ' ' '─'
         [[ $i -lt 3 ]] && printf "┴"
     done
     printf "┘\n"
@@ -545,7 +545,7 @@ print_table() {
         [[ "$valid_flag" == "false" ]] && c4="\033[31m$c4\033[0m" || c4="\033[32m$c4\033[0m"
 
         printf "│ %-${cols[0]}s │ %-${cols[1]}s │ %-${cols[2]}s │ %-${cols[3]}s │\n" \
-            "$c1" "$c2" "$c3" "$c4"
+       "$c1" "$c2" "$c3" "$(printf "%b" "$c4")"
     done
 
     draw_bottom cols
