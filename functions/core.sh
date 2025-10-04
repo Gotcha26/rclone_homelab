@@ -314,7 +314,7 @@ print_summary_table() {
     print_aligned_table "Log rclone"           "$(safe_var "DIR_LOG_FILE_INFO")"
 
     if [[ -n "${MAIL_TO:-}" ]]; then
-        print_aligned_table "Copie du mail"        "$(safe_var "MAIL_REF")"
+        print_aligned_table "Copie du mail"        "$(safe_var "DIR_TMP_MAIL")"
         print_aligned_table "Email envoyé à"       "$(safe_var "MAIL_TO")"
         print_aligned_table "Sujet email"          "$(safe_var "SUBJECT_RAW")"
     fi

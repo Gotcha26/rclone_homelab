@@ -407,9 +407,12 @@ HTML
     # --- Fermeture finale ---
     echo "--MIXED_BOUNDARY--" >> "$MAIL"
 
+    # --- Sauvegarde d'une copie du mail prêt à être envoyé ---
+    cp -f "$MAIL_REF" "$DIR_TMP_MAIL"
+
     # Retourner le chemin du mail pour l’envoi
     display_msg "verbose|hard" --theme info "Fichier email préparé à :"
-    display_msg "verbose|hard" --align right --fg blue "$MAIL_REF"
+    display_msg "verbose|hard" --align right --fg blue "$DIR_TMP_MAIL"
 }
 
 send_email() {
