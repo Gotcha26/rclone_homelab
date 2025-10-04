@@ -359,11 +359,30 @@ assemble_mail_file() {
 <tr><td><b>Fichiers supprimés&nbsp;</b></td>
     <td style="text-align:right;">: $deleted</td></tr>
 </table>
-<p>– Fin du message automatique –</p>
-</body></html>
 HTML
+
+        # --- Bloc update info ---
+        local update_msg_html
+        if check_update; then
+            # Script à jour
+            update_msg_html="<p style='color:green;'><b>✅ Le script est à jour.</b></p>"
+        else
+            # Mise à jour disponible
+            update_msg_html="<p style='color:orange;'><b>⚠ Une mise à jour est disponible !</b></p>
+<p>Vous pouvez mettre à jour via :</p>
+<ul>
+<li>Option forcée : exécuter <code>rclone_homelab --force-update</code></li>
+<li>Menu interactif : sélectionner 'Mettre à jour le script (option 1)'</li>
+</ul>"
+        fi
+        echo "$update_msg_html"
+
+        # Fin du message automatique
+        echo "<p>– Fin du message automatique –</p>"
+        echo "</body></html>"
+
         echo "--ALT_BOUNDARY--"
-    } >> "$MAIL"
+} >> "$MAIL"
 
     # --- Attachments (logs jobs) ---
     for file in "$TMP_JOBS_DIR"/JOB*_plain.log; do
