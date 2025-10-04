@@ -38,7 +38,6 @@ parse_jobs() {
 ###############################################################################
 declare -A JOB_ERR_REASON
 
-
 validate_jobs() {
     local idx src dst remote
 
