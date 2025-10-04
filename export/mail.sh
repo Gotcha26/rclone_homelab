@@ -380,7 +380,8 @@ HTML
     echo "--MIXED_BOUNDARY--" >> "$MAIL"
 
     # Retourner le chemin du mail pour l’envoi
-    echo "$MAIL"
+    display_msg "verbose|hard" --theme info "Fichier email préparé à :"
+    display_msg "verbose|hard" --align right --fg blue "$MAIL"
 }
 
 send_email() {
@@ -388,9 +389,13 @@ send_email() {
 
     print_fancy --align "center" "📧  Préparation de l'email..."
     encode_subject_for_email "$DIR_LOG_FILE_INFO"
-    assemble_mail_file "$TMP_JOB_LOG_HTML" "$html_block"
+
+    # assemble_mail_file renvoie le chemin du mail temporaire
+    local MAIL
+    MAIL=$(assemble_mail_file "$TMP_JOB_LOG_HTML" "$html_block")
 
     # --- Envoi du mail ---
+    local conf
     conf=$(check_msmtp_configured) || exit 1
 
     if msmtp -C "$conf" --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL"; then
