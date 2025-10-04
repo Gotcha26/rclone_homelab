@@ -99,28 +99,6 @@ done
 # Récupération de l'état du lancement initial
 INITIAL_LAUNCH=$ACTION_MODE
 
-# Gestion des mises à jour selon les options passées
-if [[ "$FORCE_UPDATE" == true ]]; then
-    if update_to_latest_branch; then
-        # --- Une mise à jour a été effectuée → relance du script ---
-        # On reconstruit les arguments pour s'assurer que --mailto est conservé
-        NEW_ARGS=()
-
-        # Conserver spécifiquement l'option mail si elle est définie (sinon elle est perdue...)
-        [[ -n "$MAIL_TO" ]] && NEW_ARGS+=(--mailto="$MAIL_TO")
-
-        # Conserver toutes les autres options initiales
-        for arg in "$@"; do
-            # On évite de doubler --mailto si déjà présent
-            [[ "$arg" == --mailto=* ]] && continue
-            NEW_ARGS+=("$arg")
-        done
-
-        # Relance propre du script avec tous les arguments reconstruits
-        exec "$0" "${NEW_ARGS[@]}"
-    fi
-fi
-
 # Si aucun argument → menu interactif
 if [[ ${#ORIG_ARGS[@]} -eq 0 ]]; then
     source "$SCRIPT_DIR/menu.sh"
@@ -174,5 +152,10 @@ source "$SCRIPT_DIR/jobs.sh"
 purge_old_files "$LOG_RETENTION_DAYS" "$DIR_TMP" "$DIR_LOG"
 
 print_summary_table
+
+# Gestion des mises à jour selon les options passées
+if [[ "$FORCE_UPDATE" == true && "$INITIAL_LAUNCH" == "auto" ]]; then
+    update_to_latest_branch
+fi
 
 exit $ERROR_CODE
