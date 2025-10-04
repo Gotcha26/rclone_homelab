@@ -250,16 +250,25 @@ check_jobs_file() {
 ###############################################################################
 edit_msmtp_config() {
     local conf_file
-    conf_file="$(check_msmtp_configured)" || {
-        conf_file="${MSMTPRC:-$HOME/.msmtprc}"
+
+    if ! conf_file="$(check_msmtp_configured 2>/dev/null)"; then
+        # Aucun fichier valide → on choisit ~/.msmtprc par défaut
+        conf_file="${HOME}/.msmtprc"
         print_fancy --theme "warning" "Aucun fichier msmtp valide trouvé, création de : $conf_file"
-        touch "$conf_file" && chmod 600 "$conf_file"
-    }
+
+        # Création + permissions strictes
+        touch "$conf_file"
+        chmod 600 "$conf_file"
+    fi
+
+    # Vérification des permissions (msmtp râle si elles ne sont pas correctes)
+    if [[ -f "$conf_file" ]]; then
+        chmod 600 "$conf_file"
+    fi
 
     print_fancy --theme "info" "Édition du fichier msmtp : $conf_file"
-    $EDITOR "$conf_file"
+    "${EDITOR:-nano}" "$conf_file"
 }
-
 
 
 ###############################################################################

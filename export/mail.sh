@@ -382,7 +382,9 @@ send_email() {
     assemble_mail_file "$TMP_JOB_LOG_HTML" "$html_block"
 
     # --- Envoi du mail ---
-    if msmtp --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL"; then
+    conf=$(check_msmtp_configured) || exit 1
+
+    if msmtp -C "$conf" --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL"; then
         print_fancy --align "center" "... Email envoyé ✅ "
     else
         echo "⚠ Echec envoi email via msmtp" >> "$DIR_LOG_FILE_MAIL"

@@ -111,6 +111,8 @@ Si `--force-update main` (**BETA testeur**) le script vous demandera de confirme
 - Une fichier de mise à jour "/update/standalone_updater.sh" est là permettant d'effectuer une mise à jour de manière indépendante du script rclone_homelab pour qu'en cas de soucis sérieux, une remise à niveau puisse être possible en appelant tout simplement le fichier directement `/opt/rclone_homelab/update/standalone_updater.sh` ou via son symlink (installé via install.sh) qui est : `rclone_homelab-updater` qui dispose d'un argument `--force` pour repartir sur un écrasement/suppression complet du répertoire d'installation !  
 `rclone_homelab-updater` détectera dans la mesure du possible sur quelle branche vous êtes pour installer la même branche.
 
+- Lors des mises à jour via GitHub, les dossiers `logs/` et/ou `tmp/` sont effacés.
+
 
 
 ## Debogage (ERROR_CODE)
