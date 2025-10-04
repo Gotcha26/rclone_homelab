@@ -226,22 +226,30 @@ install_rclone() {
 # Retour : 0 si OK, 1 si KO
 ###############################################################################
 check_jobs_file() {
+    local ret=0
+
     # Vérifier présence
-    [[ -f "$DIR_JOBS_FILE" ]] || { [[ "$ACTION_MODE" == "auto" ]] && \
-        die 3 "Fichier jobs introuvable : $DIR_JOBS_FILE"; return 1; }
+    if [[ ! -f "$DIR_JOBS_FILE" ]]; then
+        [[ "$ACTION_MODE" == "auto" ]] && die 3 "Fichier jobs introuvable : $DIR_JOBS_FILE"
+        ret=1
+    fi
 
     # Vérifier lisibilité
-    [[ -r "$DIR_JOBS_FILE" ]] || { [[ "$ACTION_MODE" == "auto" ]] && \
-        die 4 "Fichier jobs non lisible : $DIR_JOBS_FILE"; return 1; }
+    if [[ ! -r "$DIR_JOBS_FILE" ]]; then
+        [[ "$ACTION_MODE" == "auto" ]] && die 4 "Fichier jobs non lisible : $DIR_JOBS_FILE"
+        ret=1
+    fi
 
     # Vérifier contenu (au moins une ligne non vide et non commentée)
-    grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE" || { [[ "$ACTION_MODE" == "auto" ]] && \
-        die 5 "Aucun job valide trouvé dans $DIR_JOBS_FILE"; return 1; }
+    if ! grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE"; then
+        [[ "$ACTION_MODE" == "auto" ]] && die 5 "Aucun job valide trouvé dans $DIR_JOBS_FILE"
+        ret=1
+    fi
 
-    # Tout est bon si on arrive jusqu'içi
-    [[ "$ACTION_MODE" == "auto" ]] && display_msg "verbose|hard" --theme ok "Consultation des jobs : passée"
+    # Message si auto et succès
+    [[ "$ACTION_MODE" == "auto" && $ret -eq 0 ]] && display_msg "verbose|hard" --theme ok "Consultation des jobs : passée"
 
-    return 0
+    return $ret
 }
 
 
