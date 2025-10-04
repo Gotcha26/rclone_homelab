@@ -1,9 +1,9 @@
 set -uo pipefail
 
 # Sourcing global
+source "$SCRIPT_DIR/libs/lib_gotcha.sh"
 source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/functions/core.sh"
-source "$SCRIPT_DIR/libs/lib_gotcha.sh"
 source "$SCRIPT_DIR/functions/debug.sh"
 source "$SCRIPT_DIR/update/updater.sh"
 

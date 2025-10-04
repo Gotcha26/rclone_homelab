@@ -354,6 +354,250 @@ print_fancy() {
 
 
 ###############################################################################
+# Fonction : display_msg
+#
+# Description :
+#   Centralise l'affichage des messages selon le DISPLAY_MODE courant.
+#   Compatible avec print_fancy (n'importe quel nombre d'arguments).
+#
+#   Le premier argument indique le(s) mode(s) d'affichage où le message
+#   doit apparaître. Plusieurs modes peuvent être combinés avec "|".
+#
+# Modes supportés :
+#   - "soft"    → affiché uniquement si DISPLAY_MODE=soft
+#   - "verbose" → affiché uniquement si DISPLAY_MODE=verbose
+#   - "hard"    → affiché uniquement si DISPLAY_MODE=hard
+#
+#   Si plusieurs modes sont passés (ex: "verbose|hard"), le message
+#   s'affiche si DISPLAY_MODE correspond à l'un d'eux.
+#
+# Comportement par défaut si aucun message fourni :
+#   - soft    → message vide (aucun affichage)
+#   - verbose → "[caller] (no message provided)"
+#   - hard    → "[caller] (no message provided)"
+#
+# Syntaxe :
+#   display_msg <modes> <...arguments de print_fancy>
+#
+# Exemples :
+#   display_msg "soft" "✔ Local config activée"
+#   display_msg "verbose" --theme "info" --align "center" "CONFIGURATION LOCALE"
+#   display_msg "verbose|hard" --theme "danger" "Erreur critique"
+###############################################################################
+display_msg() {
+    local modes="$1"
+    shift
+
+    if [[ -z "$modes" ]]; then
+        echo "[display_msg] ERREUR : au moins un mode obligatoire (soft|verbose|hard)"
+        return 1
+    fi
+
+    local caller="${FUNCNAME[1]:-main}"
+    local display_mode="${DISPLAY_MODE:-soft}"
+
+    # Aucun message fourni
+    if [[ "$#" -eq 0 ]]; then
+        case "$modes" in
+            *soft*) return 0 ;;  # soft = silencieux par défaut
+            *) set -- "[$caller] (no message provided)" ;;
+        esac
+    fi
+
+    # Vérifie si DISPLAY_MODE correspond à un des modes demandés
+    IFS="|" read -ra wanted <<< "$modes"
+    for mode in "${wanted[@]}"; do
+        case "$mode" in
+            soft|verbose|hard)
+                if [[ "$display_mode" == "$mode" ]]; then
+                    print_fancy "$@"
+                    return 0
+                fi
+                ;;
+            *)
+                echo "[display_msg] ERREUR : mode inconnu '$mode' (soft|verbose|hard)"
+                return 1
+                ;;
+        esac
+    done
+}
+
+
+###############################################################################
+# Fonction : Bordures tableau
+###############################################################################
+draw_border() {
+    printf "┌%s┐\n" \
+        "$(printf '─%.0s' $(seq 1 $((w1+2))))┬$(printf '─%.0s' $(seq 1 $((w2+2))))┬$(printf '─%.0s' $(seq 1 $((w3+2))))┬$(printf '─%.0s' $(seq 1 $((w4+2))))"
+}
+draw_separator() {
+    printf "├%s┤\n" \
+        "$(printf '─%.0s' $(seq 1 $((w1+2))))┼$(printf '─%.0s' $(seq 1 $((w2+2))))┼$(printf '─%.0s' $(seq 1 $((w3+2))))┼$(printf '─%.0s' $(seq 1 $((w4+2))))"
+}
+draw_bottom() {
+    printf "└%s┘\n" \
+        "$(printf '─%.0s' $(seq 1 $((w1+2))))┴$(printf '─%.0s' $(seq 1 $((w2+2))))┴$(printf '─%.0s' $(seq 1 $((w3+2))))┴$(printf '─%.0s' $(seq 1 $((w4+2))))"
+}
+
+
+###############################################################################
+# Fonction : Affiche un contenu avec padding, ANSI compris
+# Arguments :
+#   $1 = contenu (ANSI autorisé)
+#   $2 = largeur visible de la colonne
+###############################################################################
+print_cell() {
+    local content="$1" col_width="$2"
+    local clean vis_len padding
+
+    # Nettoyer ANSI pour calculer largeur visible
+    clean=$(echo -e "$content" | sed 's/\x1b\[[0-9;]*m//g')
+    vis_len=$(strwidth "$clean")
+
+    # Tronquer si trop long
+    if (( vis_len > col_width )); then
+        clean="${clean:0:col_width-3}..."
+        # Recréer le contenu avec ANSI si nécessaire
+        # Ici on simplifie en affichant sans ANSI tronqué
+        content="$clean"
+        vis_len=$(strwidth "$clean")
+    fi
+
+    # Padding
+    (( padding = col_width - vis_len ))
+    (( padding<0 )) && padding=0
+
+    printf "%s%*s" "$content" "$padding" ""
+}
+
+
+###############################################################################
+# Fonction : Affichage d'un tableau formaté à partir d'une liste de lignes
+# Chaque ligne doit être un tableau de colonnes : c1¤c2¤c3¤c4¤valid_flag
+# valid_flag est optionnel et sert à colorer la valeur
+###############################################################################
+print_table() {
+    local -n lines=$1
+    local max_length="${2:-80}"
+
+    local headers=("Variable" "Autorisé" "Défaut" "Valeur")
+    local w=(0 0 0 0)          # Largeurs des colonnes
+    local min_width=5
+
+    # Largeur minimale basée sur les headers
+    for i in $(seq 0 3); do
+        (( $(strwidth "${headers[i]}") > w[i] )) && w[i]=$(strwidth "${headers[i]}")
+    done
+
+    # Largeur max des données
+    for row in "${lines[@]}"; do
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+        (( $(strwidth "$c1") > w[0] )) && w[0]=$(strwidth "$c1")
+        (( $(strwidth "$c2") > w[1] )) && w[1]=$(strwidth "$c2")
+        (( $(strwidth "$c3") > w[2] )) && w[2]=$(strwidth "$c3")
+        (( $(strwidth "$c4") > w[3] )) && w[3]=$(strwidth "$c4")
+    done
+
+    # Ajuster si dépasse max_length
+    local total_width=$(( w[0]+w[1]+w[2]+w[3]+13 ))
+    if (( total_width > max_length )); then
+        local excess=$(( total_width - max_length ))
+        local cut=$(( (excess + 3) / 4 ))
+        for i in $(seq 0 3); do
+            w[i]=$(( w[i] - cut > min_width ? w[i] - cut : min_width ))
+        done
+    fi
+
+    # Dessin bordure supérieure
+    draw_border()  # à adapter pour utiliser w[0..3]
+
+    # Entête
+    printf "│ "
+    for i in $(seq 0 3); do
+        print_cell "$(print_fancy --style bold --raw "${headers[i]}")" "${w[i]}"
+        printf " │ "
+    done
+    printf "\n"
+    draw_separator  # idem
+
+    # Corps
+    for row in "${lines[@]}"; do
+        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
+
+        var_cell=$(print_fancy --style bold --raw "$c1")
+        auth_cell=$(print_fancy --style italic --raw "$c2")
+        def_cell="$c3"
+        if [[ "$valid_flag" == "false" ]]; then
+            val_cell=$(print_fancy --fg red --raw "$c4")
+        else
+            val_cell=$(print_fancy --fg green --raw "$c4")
+        fi
+
+        printf "│ "
+        print_cell "$var_cell" "${w[0]}"
+        printf " │ "
+        print_cell "$auth_cell" "${w[1]}"
+        printf " │ "
+        print_cell "$def_cell" "${w[2]}"
+        printf " │ "
+        print_cell "$val_cell" "${w[3]}"
+        printf " │\n"
+    done
+
+    draw_bottom  # idem
+}
+
+
+###############################################################################
+# Fonction : calculer la valeur affichée "Autorisé" et si la valeur est valide
+# Entrée  : var_name, allowed, default
+# Sortie  : display_allowed, value, valid
+# Sortie  : COMPUTE_DISPLAY_ALLOWED, COMPUTE_VALUE, COMPUTE_VALID
+###############################################################################
+compute_var_status() {
+    local var_name=$1
+    local allowed=$2
+    local default=$3
+
+    local value="${!var_name:-$default}"
+    local valid=true
+    local display_allowed=""
+
+    # ===== Booléen =====
+    if [[ "$allowed" == "bool" ]]; then
+        display_allowed="false|true"
+        [[ "$value" =~ ^(0|1|true|false|yes|no|on|off)$ ]] || valid=false
+
+    # ===== Intervalle numérique =====
+    elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
+        display_allowed="$allowed"
+        IFS="-" read -r min max <<< "$allowed"
+        (( value < min || value > max )) && valid=false
+
+    # ===== Joker '*' =====
+    elif [[ "$allowed" == "*" ]]; then
+        display_allowed="*"
+        valid=true
+
+    # ===== Liste de valeurs =====
+    else
+        IFS="|" read -ra allowed_arr <<<"$allowed"
+        valid=false
+        display_allowed=""
+        for v in "${allowed_arr[@]}"; do
+            [[ "$v" == "''" ]] && v=""
+            [[ -z "$display_allowed" ]] && display_allowed="$v" || display_allowed+="|$v"
+            [[ "$value" == "$v" ]] && valid=true
+        done
+    fi
+
+    COMPUTE_VALUE="$value"
+    COMPUTE_DISPLAY_ALLOWED="$display_allowed"
+    COMPUTE_VALID="$valid"
+}
+
+
+###############################################################################
 # Fonction : Valide et corrige des variables selon des valeurs autorisées
 # Entrée : nom du tableau associatif à traiter
 ###############################################################################
@@ -498,180 +742,6 @@ menu_validation_local_variables() {
 
 
 ###############################################################################
-# Fonction : Bordures tableau
-###############################################################################
-draw_border() {
-    printf "┌%s┐\n" \
-        "$(printf '─%.0s' $(seq 1 $((w1+2))))┬$(printf '─%.0s' $(seq 1 $((w2+2))))┬$(printf '─%.0s' $(seq 1 $((w3+2))))┬$(printf '─%.0s' $(seq 1 $((w4+2))))"
-}
-draw_separator() {
-    printf "├%s┤\n" \
-        "$(printf '─%.0s' $(seq 1 $((w1+2))))┼$(printf '─%.0s' $(seq 1 $((w2+2))))┼$(printf '─%.0s' $(seq 1 $((w3+2))))┼$(printf '─%.0s' $(seq 1 $((w4+2))))"
-}
-draw_bottom() {
-    printf "└%s┘\n" \
-        "$(printf '─%.0s' $(seq 1 $((w1+2))))┴$(printf '─%.0s' $(seq 1 $((w2+2))))┴$(printf '─%.0s' $(seq 1 $((w3+2))))┴$(printf '─%.0s' $(seq 1 $((w4+2))))"
-}
-
-
-###############################################################################
-# Fonction : Affiche un contenu avec padding, ANSI compris
-# Arguments :
-#   $1 = contenu (ANSI autorisé)
-#   $2 = largeur visible de la colonne
-###############################################################################
-print_cell() {
-    local content="$1" col_width="$2"
-    local clean vis_len padding
-
-    # Nettoyer ANSI pour calculer largeur visible
-    clean=$(echo -e "$content" | sed 's/\x1b\[[0-9;]*m//g')
-    vis_len=$(strwidth "$clean")
-
-    # Tronquer si trop long
-    if (( vis_len > col_width )); then
-        clean="${clean:0:col_width-3}..."
-        # Recréer le contenu avec ANSI si nécessaire
-        # Ici on simplifie en affichant sans ANSI tronqué
-        content="$clean"
-        vis_len=$(strwidth "$clean")
-    fi
-
-    # Padding
-    (( padding = col_width - vis_len ))
-    (( padding<0 )) && padding=0
-
-    printf "%s%*s" "$content" "$padding" ""
-}
-
-
-###############################################################################
-# Fonction : Affichage d'un tableau formaté à partir d'une liste de lignes
-# Chaque ligne doit être un tableau de colonnes : c1¤c2¤c3¤c4¤valid_flag
-# valid_flag est optionnel et sert à colorer la valeur
-###############################################################################
-print_table() {
-    local -n lines=$1
-    local max_length="${2:-80}"
-
-    local headers=("Variable" "Autorisé" "Défaut" "Valeur")
-    local w=(0 0 0 0)          # Largeurs des colonnes
-    local min_width=5
-
-    # Largeur minimale basée sur les headers
-    for i in {0..3}; do
-        (( $(strwidth "${headers[i]}") > w[i] )) && w[i]=$(strwidth "${headers[i]}")
-    done
-
-    # Largeur max des données
-    for row in "${lines[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
-        (( $(strwidth "$c1") > w[0] )) && w[0]=$(strwidth "$c1")
-        (( $(strwidth "$c2") > w[1] )) && w[1]=$(strwidth "$c2")
-        (( $(strwidth "$c3") > w[2] )) && w[2]=$(strwidth "$c3")
-        (( $(strwidth "$c4") > w[3] )) && w[3]=$(strwidth "$c4")
-    done
-
-    # Ajuster si dépasse max_length
-    local total_width=$(( w[0]+w[1]+w[2]+w[3]+13 ))
-    if (( total_width > max_length )); then
-        local excess=$(( total_width - max_length ))
-        local cut=$(( (excess + 3) / 4 ))
-        for i in {0..3}; do
-            w[i]=$(( w[i] - cut > min_width ? w[i] - cut : min_width ))
-        done
-    fi
-
-    # Dessin bordure supérieure
-    draw_border()  # à adapter pour utiliser w[0..3]
-
-    # Entête
-    printf "│ "
-    for i in {0..3}; do
-        print_cell "$(print_fancy --style bold --raw "${headers[i]}")" "${w[i]}"
-        printf " │ "
-    done
-    printf "\n"
-    draw_separator  # idem
-
-    # Corps
-    for row in "${lines[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
-
-        var_cell=$(print_fancy --style bold --raw "$c1")
-        auth_cell=$(print_fancy --style italic --raw "$c2")
-        def_cell="$c3"
-        if [[ "$valid_flag" == "false" ]]; then
-            val_cell=$(print_fancy --fg red --raw "$c4")
-        else
-            val_cell=$(print_fancy --fg green --raw "$c4")
-        fi
-
-        printf "│ "
-        print_cell "$var_cell" "${w[0]}"
-        printf " │ "
-        print_cell "$auth_cell" "${w[1]}"
-        printf " │ "
-        print_cell "$def_cell" "${w[2]}"
-        printf " │ "
-        print_cell "$val_cell" "${w[3]}"
-        printf " │\n"
-    done
-
-    draw_bottom  # idem
-}
-
-
-###############################################################################
-# Fonction : calculer la valeur affichée "Autorisé" et si la valeur est valide
-# Entrée  : var_name, allowed, default
-# Sortie  : display_allowed, value, valid
-# Sortie  : COMPUTE_DISPLAY_ALLOWED, COMPUTE_VALUE, COMPUTE_VALID
-###############################################################################
-compute_var_status() {
-    local var_name=$1
-    local allowed=$2
-    local default=$3
-
-    local value="${!var_name:-$default}"
-    local valid=true
-    local display_allowed=""
-
-    # ===== Booléen =====
-    if [[ "$allowed" == "bool" ]]; then
-        display_allowed="false|true"
-        [[ "$value" =~ ^(0|1|true|false|yes|no|on|off)$ ]] || valid=false
-
-    # ===== Intervalle numérique =====
-    elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
-        display_allowed="$allowed"
-        IFS="-" read -r min max <<< "$allowed"
-        (( value < min || value > max )) && valid=false
-
-    # ===== Joker '*' =====
-    elif [[ "$allowed" == "*" ]]; then
-        display_allowed="*"
-        valid=true
-
-    # ===== Liste de valeurs =====
-    else
-        IFS="|" read -ra allowed_arr <<<"$allowed"
-        valid=false
-        display_allowed=""
-        for v in "${allowed_arr[@]}"; do
-            [[ "$v" == "''" ]] && v=""
-            [[ -z "$display_allowed" ]] && display_allowed="$v" || display_allowed+="|$v"
-            [[ "$value" == "$v" ]] && valid=true
-        done
-    fi
-
-    COMPUTE_VALUE="$value"
-    COMPUTE_DISPLAY_ALLOWED="$display_allowed"
-    COMPUTE_VALID="$valid"
-}
-
-
-###############################################################################
 # Fonction : Affiche un tableau des variables invalides seulement
 # Entrée : nom du tableau associatif
 ###############################################################################
@@ -721,74 +791,4 @@ print_table_vars() {
     done
 
     print_table rows
-}
-
-
-###############################################################################
-# Fonction : display_msg
-#
-# Description :
-#   Centralise l'affichage des messages selon le DISPLAY_MODE courant.
-#   Compatible avec print_fancy (n'importe quel nombre d'arguments).
-#
-#   Le premier argument indique le(s) mode(s) d'affichage où le message
-#   doit apparaître. Plusieurs modes peuvent être combinés avec "|".
-#
-# Modes supportés :
-#   - "soft"    → affiché uniquement si DISPLAY_MODE=soft
-#   - "verbose" → affiché uniquement si DISPLAY_MODE=verbose
-#   - "hard"    → affiché uniquement si DISPLAY_MODE=hard
-#
-#   Si plusieurs modes sont passés (ex: "verbose|hard"), le message
-#   s'affiche si DISPLAY_MODE correspond à l'un d'eux.
-#
-# Comportement par défaut si aucun message fourni :
-#   - soft    → message vide (aucun affichage)
-#   - verbose → "[caller] (no message provided)"
-#   - hard    → "[caller] (no message provided)"
-#
-# Syntaxe :
-#   display_msg <modes> <...arguments de print_fancy>
-#
-# Exemples :
-#   display_msg "soft" "✔ Local config activée"
-#   display_msg "verbose" --theme "info" --align "center" "CONFIGURATION LOCALE"
-#   display_msg "verbose|hard" --theme "danger" "Erreur critique"
-###############################################################################
-display_msg() {
-    local modes="$1"
-    shift
-
-    if [[ -z "$modes" ]]; then
-        echo "[display_msg] ERREUR : au moins un mode obligatoire (soft|verbose|hard)"
-        return 1
-    fi
-
-    local caller="${FUNCNAME[1]:-main}"
-    local display_mode="${DISPLAY_MODE:-soft}"
-
-    # Aucun message fourni
-    if [[ "$#" -eq 0 ]]; then
-        case "$modes" in
-            *soft*) return 0 ;;  # soft = silencieux par défaut
-            *) set -- "[$caller] (no message provided)" ;;
-        esac
-    fi
-
-    # Vérifie si DISPLAY_MODE correspond à un des modes demandés
-    IFS="|" read -ra wanted <<< "$modes"
-    for mode in "${wanted[@]}"; do
-        case "$mode" in
-            soft|verbose|hard)
-                if [[ "$display_mode" == "$mode" ]]; then
-                    print_fancy "$@"
-                    return 0
-                fi
-                ;;
-            *)
-                echo "[display_msg] ERREUR : mode inconnu '$mode' (soft|verbose|hard)"
-                return 1
-                ;;
-        esac
-    done
 }
