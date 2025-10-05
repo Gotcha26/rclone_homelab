@@ -202,7 +202,8 @@ while true; do
                 ;;
             menu_edit_jobs)
                 scroll_down
-                echo -e "▶️  Edition du fichier ${BLUE}${DIR_JOBS_FILE}${RESET}"
+                print_fancy "▶️  Edition du fichier :"
+                print_fancy --align right --fg blue "${DIR_JOBS_FILE}"
                 $EDITOR "$DIR_JOBS_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
