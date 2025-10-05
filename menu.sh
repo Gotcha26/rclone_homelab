@@ -167,7 +167,7 @@ while true; do
     if [[ "$choice" == "q" ]]; then
         scroll_down
         echo "Vous partez déjà..."
-        MENU_RESULT=99
+        return 99
         break
     elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice < num )); then
         idx="${CHOICE_TO_INDEX[$choice]}"
