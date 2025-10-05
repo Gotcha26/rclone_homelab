@@ -160,9 +160,8 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 
 ## A faire / Ajouter
 - [] Internationnalisation : *wait and see...*
-- [] Ne plus parler de "configuration locale" mais ed paramètres personnalisés
-- [] Réafecter correctement les codes DIE
 - [] Externaliser le débugage au démarrage.
+- [] msmtp, utiliser un fichier spécifique + accompte `msmtp --file=/etc/msmtp/accounts.conf --account=backup user@example.com`
 
 
 ### Petites infos

@@ -25,9 +25,9 @@
 #   - Avec --force, tous les fichiers sont remplacés pour garantir une installation "propre"
 #
 #   - Script rendu exécutable via l'installation. Sinon la commande est :
-#   chmod +x /opt/rclone_homelab/update/standalone_updater.sh
+#   chmod +x /opt/rclone_homelab/maintenance/standalone_updater.sh
 #   - Un symlink est aussi créé automatiquement via install.sh Sinon  la commande est :
-#   ln -sf /opt/rclone_homelab/update/standalone_updater.sh /usr/local/bin/rclone_homelab-updater
+#   ln -sf /opt/rclone_homelab/maintenance/standalone_updater.sh /usr/local/bin/rclone_homelab-updater
 #
 # ============================================================================ #
 
@@ -199,7 +199,7 @@ fi
 # --------------------------------------------------------------------------- #
 echo -e "🔧  Vérification et mise en place des scripts...${RESET}"
 
-for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
+for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/maintenance/standalone_updater.sh"; do
     if [[ -f "$file" ]]; then
         # Rendre exécutable
         if [[ -w "$file" ]]; then
@@ -214,7 +214,7 @@ for file in "$SCRIPT_DIR/main.sh" "$SCRIPT_DIR/update/standalone_updater.sh"; do
             "$SCRIPT_DIR/main.sh")
                 symlink="/usr/local/bin/rclone_homelab"
                 ;;
-            "$SCRIPT_DIR/update/standalone_updater.sh")
+            "$SCRIPT_DIR/maintenance/standalone_updater.sh")
                 symlink="/usr/local/bin/rclone_homelab-updater"
                 ;;
             *) symlink=""

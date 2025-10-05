@@ -19,7 +19,7 @@ git clone https://github.com/Gotcha26/rclone_homelab.git .
 4. Rendre le script exécutable (+1 fichier pour mise à jour en standalone)
 ```
 chmod +x /opt/rclone_homelab/main.sh
-chmod +x /opt/rclone_homelab/update/standalone_updater.sh
+chmod +x /opt/rclone_homelab/maintenance/standalone_updater.sh
 ```
 5. Ajouter un symlink (raccourcis) pour un accès global afin de pour pouvoir lancer la commande simplement avec `rclone_homelab` :
 ```
@@ -108,7 +108,7 @@ Dans le cadre d'une installation standard, va installer la dernière **release**
 Si `--force-update` n’est pas présent, le script continue à vérifier le dernier tag comme avant.  
 Si `--force-update main` (**BETA testeur**) le script vous demandera de confirmer la mise à niveau vers le dernier commit (HEAD) de la branch stable "main" => risque d'instabilité !
 
-- Une fichier de mise à jour "/update/standalone_updater.sh" est là permettant d'effectuer une mise à jour de manière indépendante du script rclone_homelab pour qu'en cas de soucis sérieux, une remise à niveau puisse être possible en appelant tout simplement le fichier directement `/opt/rclone_homelab/update/standalone_updater.sh` ou via son symlink (installé via install.sh) qui est : `rclone_homelab-updater` qui dispose d'un argument `--force` pour repartir sur un écrasement/suppression complet du répertoire d'installation !  
+- Une fichier de mise à jour "/maintenance/standalone_updater.sh" est là permettant d'effectuer une mise à jour de manière indépendante du script rclone_homelab pour qu'en cas de soucis sérieux, une remise à niveau puisse être possible en appelant tout simplement le fichier directement `/opt/rclone_homelab/maintenance/standalone_updater.sh` ou via son symlink (installé via install.sh) qui est : `rclone_homelab-updater` qui dispose d'un argument `--force` pour repartir sur un écrasement/suppression complet du répertoire d'installation !  
 `rclone_homelab-updater` détectera dans la mesure du possible sur quelle branche vous êtes pour installer la même branche.
 
 - Lors des mises à jour via GitHub, les dossiers `logs/` et/ou `tmps/` sont effacés.

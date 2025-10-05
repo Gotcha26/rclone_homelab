@@ -5,7 +5,7 @@ source "$SCRIPT_DIR/libs/lib_gotcha.sh"
 source "$SCRIPT_DIR/config/global.conf"
 source "$SCRIPT_DIR/functions/core.sh"
 source "$SCRIPT_DIR/functions/debug.sh"
-source "$SCRIPT_DIR/update/updater.sh"
+source "$SCRIPT_DIR/functions/updater.sh"
 
 source "$SCRIPT_DIR/export/mail.sh"
 source "$SCRIPT_DIR/export/discord.sh"
@@ -78,7 +78,7 @@ make_scripts_executable() {
 
     local scripts=(
         "$SCRIPT_DIR/main.sh"
-        "$SCRIPT_DIR/update/standalone_updater.sh"
+        "$SCRIPT_DIR/maintenance/standalone_updater.sh"
     )
 
     for s in "${scripts[@]}"; do

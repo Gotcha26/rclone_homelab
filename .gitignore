@@ -1,6 +1,7 @@
 # Ignorer le fichier de config perso
 local/*
 maintenance/*
+!maintenance/standalone_updater.sh
 Notes.txt
 UPDATES.md
 README_old.md

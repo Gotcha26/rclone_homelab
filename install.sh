@@ -886,7 +886,7 @@ create_symlinks() {
     # Tableau des couples [cible] [symlink]
     local links=(
         "$INSTALL_DIR/main.sh:/usr/local/bin/rclone_homelab"
-        "$INSTALL_DIR/update/standalone_updater.sh:/usr/local/bin/rclone_homelab-updater"
+        "$INSTALL_DIR/maintenance/standalone_updater.sh:/usr/local/bin/rclone_homelab-updater"
     )
 
     for entry in "${links[@]}"; do
@@ -914,7 +914,7 @@ create_executables() {
     local files=()
     files+=("$INSTALL_DIR/main.sh")
 
-    local UPDATER_SCRIPT="$INSTALL_DIR/update/standalone_updater.sh"
+    local UPDATER_SCRIPT="$INSTALL_DIR/maintenance/standalone_updater.sh"
     [[ -f "$UPDATER_SCRIPT" ]] && files+=("$UPDATER_SCRIPT")
 
     safe_exec "✅  ${BOLD}${files[*]}${RESET} → rendu(s) exécutable(s)." \
@@ -980,7 +980,7 @@ exit 0
 # Installation toujours basée sur le dernier tag (release).
 # Prise en compte du root.
 
-# Fichier /update/standalone_updater.sh est rendu exécutable avec son symlink
+# Fichier /maintenance/standalone_updater.sh est rendu exécutable avec son symlink
 # rclone_homelab-updater <--force>
 
 # Ce fichier permet de mettre à jours le script (basé sur la branche main + release)
