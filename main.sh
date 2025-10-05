@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --mailto)
             print_fancy --theme error "Option --mailto requiert une adresse email (syntaxe: --mailto=adresse@domaine)."
-            die 12 "Mauvaise formation de l'argument --mailto="
+            die 13 "Mauvaise formation de l'argument --mailto="
             ;;
         --dry-run)
             DRY_RUN=true

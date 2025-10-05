@@ -69,7 +69,7 @@ check_src() {
                 fi
             done
 
-            ERROR_CODE=91
+            ERROR_CODE=90
         else
             SRC_STATUS[$src]="OK"
         fi

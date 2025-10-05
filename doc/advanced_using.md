@@ -115,31 +115,31 @@ Si `--force-update main` (**BETA testeur**) le script vous demandera de confirme
 
 
 
-## Debogage (ERROR_CODE)
-| E | Fonction                                     | Cause                                         | Ctrl | Bloquant |
-| - | -------------------------------------------- | --------------------------------------------- |-----|--|
-|  1|Création de `$DIR_TMP` échouée               | Impossible de créer le dossier temporaire     |☑||
-|  2|Création de `$DIR_LOG` échouée               | Impossible de créer le dossier de logs        |☑||
-|  3| `$JOBS_FILE` introuvable                     | Fichier jobs absent (*)                       |||
-|  4| `$JOBS_FILE` non lisible                     | Fichier jobs présent mais illisible (*)       |||
-|  5|`job.sh` |Une erreur durant l'exécution du batch rclone|☑|N|
-|  6| Remote rclone invalide/mal configuré         | Remote mal écrit ou introuvalble              |||
-|  7|parse_jobs() |Dossier source (jobs) non trouvé |☑||
-|  8| Problème avec le processus PID rclone        | Sérieuse                                      |||
-|  9|                                              |                                               |||
-| 10| `msmtp` Vérification présence msmtp          | Installation de msmtp impossible              |||
-| 11| `rclone` Vérification présence rclone        | rclone non présent ou injoignable             |||
-| 12| `RCLONE_CONFIG_FILE` Configuration rclone    | rclone non ou mal configuré                   |||
-| 13| Vérification `$MAIL_TO`                      | Mauvaise saisie de l'adresse email            |||
-| 14| Pb. de token pour Onedrive / Google Drive    | Token invalide, refaire la configuration      |||
-| 20| `init_config_local` Copie imp. > $local_conf | Droits, blocage...                            |||
-| 21| `init_config_local` Renommage imp.           | Droits, blocage...                            |||
-| 22| `check_msmtp_config` Configuration           | Configuration absente (*)                     |||
-| 23| `check_msmtp_config` Configuration           | Configuration absente (*)                     |||
-| 91|check_remotes() `remote`| Manquant/inconnu/injoignable |☑|N|
-| 92|check_remotes() `token` | OneDrive/Google en lecture seule |☑|N|
-| 93|check_remotes() `--dry-run` | Option incompatible avec le remote CIFS/SMB/local |☑|N|
-| 99|menu_validation_local_variables() |Bloqué par l'utilisateur, variable à corriger |☑|O|
+## Debogage (DIE / ERROR_CODE)
+| E | Fonction | Cause | Bloquant |
+| - | - | -|-|
+|  5|create_temp_dirs() |Création du dossier `/tmps` impossible. |☑|
+|  6|create_temp_dirs() |Création du dossier `/logs` impossible. |☑|
+|  7|check_jobs_file() |Fichier introuvable. |☑|
+|  8|check_jobs_file() |Fichier non lisible. |☑|
+|  9|check_jobs_file() |Fichier vide ou aucun jobs trouvé. |☑|
+| 10|install_rclone() |Erreur lors de l'installation |☑|
+| 11|install_rclone() |Installation rejettée par l'utilisateur |☑|
+| 12|parseur principal |--mailto fourni mais vide ! |☑|
+| 13|parseur principal |--mailto mal formé. |☑|
+| 14|install_msmtp() |Problème lors de l'installation. |☑|
+| 20|check_and_prepare_email() |`check_mail_format()` --mailto non accépté. |☑|
+| 21|check_and_prepare_email() `msmtp`|Absent, non installé. |☑|
+| 22|check_and_prepare_email() `msmtp`|Requis, rejetté par l'utilisateur. |☑|
+| 23|check_and_prepare_email() `msmtp`|Configuration absente/vide. |☑|
+| 24|check_and_prepare_email() `msmtp`|Configuration rejetté par l'utilisateur. |☑|
+| 25|check_and_prepare_email() `msmtp`|Configuration absente/vide. |☑|
+| 26|check_and_prepare_email() `msmtp`|Configuration rejetté par l'utilisateur. |☑|
+| 89|menu_validation_local_variables() |Bloqué par l'utilisateur, variable à corriger |☑|
+| 90|check_src() |Dossier source (jobs) non trouvé |-|
+| 91|check_remotes() `remote`| Manquant/inconnu/injoignable |-|
+| 92|check_remotes() `token` | OneDrive/Google en lecture seule |-|
+| 93|check_remotes() `--dry-run` | Option incompatible avec le remote CIFS/SMB/local |-|
 
 
   

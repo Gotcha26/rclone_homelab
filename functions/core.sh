@@ -213,7 +213,7 @@ install_rclone() {
             display_msg "soft|verbose|hard" --theme ok "rclone a été installé avec succès."
             return 0
         else
-            die 11 "Une erreur est survenue lors de l'installation de rclone."
+            die 10 "Une erreur est survenue lors de l'installation de rclone."
         fi
     else
         die 11 "Installation de rclone refusée par l'utilisateur."
@@ -230,19 +230,19 @@ check_jobs_file() {
 
     # Vérifier présence
     if [[ ! -f "$DIR_JOBS_FILE" ]]; then
-        [[ "$ACTION_MODE" == "auto" ]] && die 3 "Fichier jobs introuvable : $DIR_JOBS_FILE"
+        [[ "$ACTION_MODE" == "auto" ]] && die 7 "Fichier jobs introuvable : $DIR_JOBS_FILE"
         ret=1
     fi
 
     # Vérifier lisibilité
     if [[ ! -r "$DIR_JOBS_FILE" ]]; then
-        [[ "$ACTION_MODE" == "auto" ]] && die 4 "Fichier jobs non lisible : $DIR_JOBS_FILE"
+        [[ "$ACTION_MODE" == "auto" ]] && die 8 "Fichier jobs non lisible : $DIR_JOBS_FILE"
         ret=1
     fi
 
     # Vérifier contenu (au moins une ligne non vide et non commentée)
     if ! grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE"; then
-        [[ "$ACTION_MODE" == "auto" ]] && die 5 "Aucun job valide trouvé dans $DIR_JOBS_FILE"
+        [[ "$ACTION_MODE" == "auto" ]] && die 9 "Aucun job valide trouvé dans $DIR_JOBS_FILE"
         ret=1
     fi
 
@@ -381,12 +381,12 @@ safe_count() {
 create_temp_dirs() {
     # DIR_TMP
     if [[ ! -d "$DIR_TMP" ]]; then
-        mkdir -p "$DIR_TMP" 2>/dev/null || die 1 "Impossible de créer le dossier temporaire : $DIR_TMP"
+        mkdir -p "$DIR_TMP" 2>/dev/null || die 5 "Impossible de créer le dossier temporaire : $DIR_TMP"
     fi
 
     # DIR_LOG
     if [[ ! -d "$DIR_LOG" ]]; then
-        mkdir -p "$DIR_LOG" 2>/dev/null || die 2 "Impossible de créer le dossier de logs : $DIR_LOG"
+        mkdir -p "$DIR_LOG" 2>/dev/null || die 6 "Impossible de créer le dossier de logs : $DIR_LOG"
     fi
 }
 

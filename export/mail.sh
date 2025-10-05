@@ -16,7 +16,7 @@ check_and_prepare_email() {
     if ! check_mail_format "$mail_to"; then
         display_msg "soft" --theme error "Adresse email non validée."
         display_msg "verbose|hard" --theme error "L'adresse email saisie ne satisfait pas aux exigences et est rejetée."
-        die 12 "Adresse email saisie invalide : $mail_to"
+        die 20 "Adresse email saisie invalide : $mail_to"
     else
         display_msg "verbose|hard" --theme ok "Email validé."
     fi
@@ -27,7 +27,7 @@ check_and_prepare_email() {
         if [[ $ACTION_MODE == auto ]]; then
             display_msg "soft" --theme error "msmtp absent."
             display_msg "verbose|hard" --theme error "L'outil msmtp obligatoire mais n'est pas détecté."
-            die 13 "msmtp absent..."
+            die 21 "msmtp absent..."
         else
             display_msg "soft|verbose|hard" --theme warning "msmtp absent, proposition d'installation"
             echo
@@ -36,7 +36,7 @@ check_and_prepare_email() {
             if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
                 install_msmtp
             else
-                die 15 "Annulé par l'utilisateur. msmtp est requis : non installé."
+                die 22 "Annulé par l'utilisateur. msmtp est requis : non installé."
             fi
         fi
     else
@@ -59,7 +59,7 @@ check_and_prepare_email() {
         display_msg "soft" --theme error "Fichier msmtp trouvé mais vide : $msmtp_conf"
         display_msg "verbose|hard" --theme error "Configuration msmtp incorrecte"
         if [[ $ACTION_MODE == auto ]]; then
-            die 14 "msmtp non ou mal configuré (fichier vide)."
+            die 23 "msmtp non ou mal configuré (fichier vide)."
         else
             display_msg "soft|verbose|hard" --theme warning "Proposition de configuration"
             echo
@@ -68,7 +68,7 @@ check_and_prepare_email() {
             if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
                 edit_msmtp_config
             else
-                die 16 "Annulé par l'utilisateur. msmtp n'est pas configuré."
+                die 24 "Annulé par l'utilisateur. msmtp n'est pas configuré."
             fi
             
         fi
@@ -81,7 +81,7 @@ check_and_prepare_email() {
         display_msg "soft|verbose" --fg red "Supprimer l'adresse mail pour ne plus avoir besoin d'en envoyer un..."
         display_msg "hard" --theme error "L'outil msmtp semble absent ou mal configuré."
         if [[ $ACTION_MODE == auto ]]; then
-            die 14 "L'envoi d'un email nécessite que msmtp soit configuré correctement."
+            die 25 "L'envoi d'un email nécessite que msmtp soit configuré correctement."
         else
             display_msg "soft|verbose|hard" --theme warning "Proposition de configuration"
             echo
@@ -90,7 +90,7 @@ check_and_prepare_email() {
             if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
                 edit_msmtp_config
             else
-                die 16 "Annulé par l'utilisateur. msmtp n'est pas configuré."
+                die 26 "Annulé par l'utilisateur. msmtp n'est pas configuré."
             fi
         fi
     fi
