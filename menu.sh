@@ -222,8 +222,8 @@ while true; do
                 conf_file="$(check_rclone_configured 2>/dev/null)"
                 rc=$?
                 if (( rc == 0 )); then
-                    echo -e "▶️  Affichage du fichier de configuration rclone : ${BLUE}${conf_file}${RESET}"
-                    # ouvrir avec EDITOR sans polluer les logs
+                    print_fancy "▶️  Affichage du fichier de configuration rclone :"
+                    print_fancy --align right --fg blue "${conf_file}"
                     $EDITOR "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
                 else
@@ -249,8 +249,8 @@ while true; do
                 scroll_down
                 # Détecte le fichier configuré
                 if conf_file=$(check_msmtp_configured 2>/dev/null); then
-                    echo -e "▶️  Affichage du fichier de configuration msmtp : ${BLUE}${conf_file}${RESET}"
-                    # Utilisation de nano pour visualiser/éditer sans polluer le log
+                    print_fancy "▶️  Affichage du fichier de configuration msmtp :"
+                    print_fancy --align right --fg blue "${conf_file}"
                     $EDITOR "$conf_file"
                     echo "✅  ... Édition terminée > retour au menu."
                 else
@@ -272,7 +272,8 @@ while true; do
                 ;;
             menu_edit_config_local)
                 scroll_down
-                echo -e "▶️  Édition du fichiers ${BLUE}${CONF_LOCAL_FILE}${RESET}"
+                print_fancy "▶️  Édition du fichier :"
+                print_fancy --align right --fg blue "${CONF_LOCAL_FILE}"
                 $EDITOR "$DIR_CONF_LOCAL_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
@@ -285,20 +286,23 @@ while true; do
                 ;;
             menu_edit_config_dev)
                 scroll_down
-                echo -e "▶️  Édition du fichiers ${BLUE}${CONF_DEV_FILE}${RESET}"
+                print_fancy "▶️  Édition du fichier :"
+                print_fancy --align right --fg blue "${CONF_DEV_FILE}"
                 $EDITOR "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_init_secret_file)
                 scroll_down
-                echo -e "▶️  Installation d'un fichier (optionnel) : ${BLUE}${SECRET_FILE}${RESET}"
+                print_fancy "▶️  Installation d'un fichier (optionnel) :"
+                print_fancy --align right --fg blue "${SECRET_FILE}"
                 echo "Le fichier sera préservé lors des mises à jours automatiques."
                 init_file "conf_secret"
                 echo "✅  ... Installation terminée > retour au menu."
                 ;;
             menu_edit_config_secrets)
                 scroll_down
-                echo -e "▶️  Édition du fichiers ${BLUE}${SECRET_FILE}${RESET}"
+                print_fancy "▶️  Édition du fichier :"
+                print_fancy --align right --fg blue "${SECRET_FILE}"
                 $EDITOR "$SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
