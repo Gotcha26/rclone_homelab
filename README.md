@@ -83,6 +83,13 @@ rclone_homelab --auto --mailto=toto@mail.com --dry-run
 
 
 
+## Menu interactif
+Ce *menu* (dit interactif) est là pour faciliter les interactions que vous pouvez avoir avec le script rclone_homelab.  
+Pour y accèder, rien de plus simple : appelez **tout simplement** le script principal **sans le moindre argument de lancement !**.  
+Donc juste avec : `rclone_homelab` vous arriverez automatiquement sur le menu qui vous proposera différentes options
+
+
+
 ## Jobs
 
 Les jobs ne sont pas moins que les directives spécifiques aux dossiers / remotes, dédiées **pour rclone**. C'est la liste des travaux à réaliser pour rclone.  
@@ -145,11 +152,11 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 ```
 0 4 * * * /opt/rclone_homelab/main.sh --auto --mailto=<votre_adresse@mail.com> --dry-run >> /var/log/rclone_cron.log 2>&1
 ```
-|..........................Bloc..........................|......Explications......|
+| Bloc | Explications |
 | --- | --- |
 |`/opt/rclone_homelab/main.sh`                        | Il est préférable de saisir le chemin en entier et non le symlink vers le script. |
-|`--auto --mailto=<votre_adresse@mail.com> --dry-run` | [arguments](#arguments) du script |
-|`>> /var/log/rclone_cron.log 2>&1`                   | **[OPTIONNEL]** redirection vers un fichier journal, au cas ou... contiendra l'équivalent de c equi est affiché dans la fenêtre de terminal Shell. |
+|`--auto` `--mailto=<votre_adresse@mail.com>` `--dry-run` | [arguments](#arguments) du script (exemples)|
+|`>> /var/log/rclone_cron.log 2>&1`                   | **[OPTIONNEL]** redirection vers un fichier journal, au cas ou... contiendra l'équivalent de ce qui est affiché dans la fenêtre de terminal Shell. |
 
 ## Recommandations (générales)
 - Ne pas utilser d'outils ou de script à la base d'un noeud Proxmox. Vous risquez de bloquer toute votre installation !
