@@ -1,0 +1,5 @@
+# Ignorer le fichier de config perso
+local/*
+Notes.txt
+UPDATES.md
+README_old.md
