@@ -18,10 +18,28 @@
 ###############################################################################
 # Fonction principale : check_update
 # → Vérifie si une mise à jour est disponible et affiche le statut
+# → Initialise automatiquement le fichier .version si absent
 ###############################################################################
 check_update() {
+    # --- 1. Déterminer la branche réelle si Git présent ---
+    if [[ -d "$SCRIPT_DIR/.git" ]]; then
+        branch_real=$(git -C "$SCRIPT_DIR" symbolic-ref --short HEAD 2>/dev/null || echo "unknown")
+    else
+        branch_real="(local-standalone-version)"
+    fi
+
+    # --- 2. Assurer la présence du fichier .version ---
+    if [[ ! -s "$DIR_VERSION_FILE" ]]; then
+        display_msg "hard" "⚙️  Initialisation du fichier de version pour la branche '$branch_real'..."
+        write_version_file "$branch_real" || display_msg "verbose|hard" --theme warning "Impossible d'écrire la version initiale"
+    fi
+
+    # --- 3. Récupérer les infos Git / remote / tags ---
     fetch_git_info || return 1
+
+    # --- 4. Analyser l’état des mises à jour et afficher le statut ---
     analyze_update_status
+
     return 0
 }
 
@@ -58,7 +76,7 @@ write_version_file() {
         owner="${BASH_REMATCH[1]}"
         repo="${BASH_REMATCH[2]}"
     else
-        echo "❌ Impossible de parser GITHUB_API_URL" >&2
+        echo "❌  Impossible de parser GITHUB_API_URL" >&2
         echo "unknown" > "$DIR_VERSION_FILE"
         return 1
     fi
@@ -68,7 +86,7 @@ write_version_file() {
         json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
         latest_tag=$(echo "$json" | jq -r '.tag_name // empty')
         if [[ -z "$latest_tag" ]]; then
-            echo "❌ Impossible de récupérer le dernier tag depuis GitHub" >&2
+            echo "❌  Impossible de récupérer le dernier tag depuis GitHub" >&2
             echo "unknown" > "$DIR_VERSION_FILE"
             return 1
         fi
@@ -80,7 +98,7 @@ write_version_file() {
     api_commits_url="https://api.github.com/repos/$owner/$repo/commits/$branch"
     json=$(curl -s "$api_commits_url" 2>/dev/null)
     if [[ -z "$json" ]]; then
-        echo "❌ Impossible de récupérer les infos de commit depuis GitHub pour la branche $branch" >&2
+        echo "❌  Impossible de récupérer les infos de commit depuis GitHub pour la branche $branch" >&2
         echo "$branch - unknown - unknown" > "$DIR_VERSION_FILE"
         return 1
     fi
