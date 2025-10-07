@@ -223,7 +223,11 @@ install_rclone() {
 
 ###############################################################################
 # Fonction : Vérifier l'existence, la lisibilité et le contenu du fichier jobs
-# Retour : 0 si OK, 1 si KO
+# Retour :
+#   0 = OK
+#   1 = Fichier introuvable
+#   2 = Fichier non lisible
+#   3 = Aucun job valide
 ###############################################################################
 check_jobs_file() {
     local ret=0
@@ -231,25 +235,25 @@ check_jobs_file() {
     # Vérifier présence
     if [[ ! -f "$DIR_JOBS_FILE" ]]; then
         [[ "$ACTION_MODE" == "auto" ]] && die 7 "Fichier jobs introuvable : $DIR_JOBS_FILE"
-        ret=1
+        return 1
     fi
 
     # Vérifier lisibilité
     if [[ ! -r "$DIR_JOBS_FILE" ]]; then
         [[ "$ACTION_MODE" == "auto" ]] && die 8 "Fichier jobs non lisible : $DIR_JOBS_FILE"
-        ret=1
+        return 2
     fi
 
     # Vérifier contenu (au moins une ligne non vide et non commentée)
-    if ! grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE"; then
+    if ! grep -qEv '^[[:space:]]*($|#)' "$DIR_JOBS_FILE" 2>/dev/null; then
         [[ "$ACTION_MODE" == "auto" ]] && die 9 "Aucun job valide trouvé dans $DIR_JOBS_FILE"
-        ret=1
+        return 3
     fi
 
     # Message si auto et succès
-    [[ "$ACTION_MODE" == "auto" && $ret -eq 0 ]] && display_msg "verbose|hard" --theme ok "Consultation des jobs : passée"
+    [[ "$ACTION_MODE" == "auto" && $ret -eq 0 ]] && \
+        display_msg "verbose|hard" --theme ok "Consultation des jobs : passée"
 
-    return $ret
 }
 
 

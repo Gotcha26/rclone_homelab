@@ -74,11 +74,17 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    if ! check_jobs_file; then
-        add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_init_jobs"
-    else
-        add_option "✏️  Éditer la liste des jobs (rclone)     → compléter le fichier" "menu_edit_jobs"
-    fi
+    case "$(check_jobs_file; echo $?)" in
+        1)
+            add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_init_jobs"
+            ;;
+        2)
+            add_option "⚠️  Vérifier le fichier des jobs          → lecture impossible" "menu_edit_jobs"
+            ;;
+        3)
+            add_option "✏️  Éditer la liste des jobs (rclone)     → compléter le fichier" "menu_edit_jobs"
+            ;;
+    esac
     # rclone
     if ! check_rclone_installed soft >/dev/null 2>&1; then
         # Cas 1 : rclone absent
