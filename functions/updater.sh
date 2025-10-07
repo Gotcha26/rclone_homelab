@@ -64,6 +64,9 @@ write_version_file() {
     local branch="${1:-main}"  # main par défaut
     local json latest_tag latest_date commit date_commit owner repo api_commits_url
 
+    # --- Assurance que le dossier existe ---
+    mkdir -p "$(dirname "$DIR_VERSION_FILE")" || die 4 "Création impossible du dossier ./local"
+
     if [[ -z "$GITHUB_API_URL" ]]; then
         echo "⚠️  GITHUB_API_URL non défini !" >&2
         echo "unknown" > "$DIR_VERSION_FILE"

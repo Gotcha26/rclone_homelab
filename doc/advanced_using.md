@@ -118,6 +118,7 @@ Si `--force-update main` (**BETA testeur**) le script vous demandera de confirme
 ## Debogage (DIE / ERROR_CODE)
 | E | Fonction | Cause | Bloquant |
 | - | - | -|-|
+|  4|write_version_file() |Création impossible du dossier `./local` |☑|
 |  5|create_temp_dirs() |Création du dossier `/tmps` impossible. |☑|
 |  6|create_temp_dirs() |Création du dossier `/logs` impossible. |☑|
 |  7|check_jobs_file() |Fichier introuvable. |☑|
