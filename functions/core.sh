@@ -8,7 +8,7 @@ Usage: $(basename "$0") [OPTIONS]
 
 Options :
   --auto             Lance le script en mode automatique (A DEFINIR).
-  --mailto=ADRESSE   Envoie un rapport par e-mail à l'adresse fournie.
+  --mailto=abc@y.com Envoie un rapport par e-mail à l'adresse fournie.
   --dry-run          Simule la synchronisation sans transférer ni supprimer de fichiers.
   -h, --help         Affiche cette aide et quitte.
   --force-update     Mettre à jour automatiquement sur la branche en cours. Accèpte l'argument "branche"
