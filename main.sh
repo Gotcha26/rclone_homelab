@@ -21,7 +21,11 @@ TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé �
 
 # === Initialisation du dispositif d'affichage ===
 
-print_banner  # Affichage du logo/bannière suivi de la version installée
+print_banner                            # Affichage du logo/bannière suivi de la version installée
+if [[ ! -s "$DIR_VERSION_FILE" ]]; then # Assurer la présence du fichier version dès le premier lancement
+    display_msg "hard" "⚙️  Initialisation du fichier de version..."
+    write_version_file "${branch_real:-main}" || display_msg "verbose|hard" --theme warning "Impossible d'écrire la version initiale"
+fi
 check_update || display_msg "soft|verbose|hard" --theme warning "Impossible de récupérer l'état Git";
 
 
