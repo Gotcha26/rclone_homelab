@@ -24,7 +24,7 @@
 # ⚠️  Ne pas l’automatiser dans un cron : les opérations interactives sont voulues.
 #
 # Auteur : Julien Moreau
-# Version : 2.1
+# Version : 1.2
 #
 # ---------------------------------------------------------------
 
