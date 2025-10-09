@@ -57,8 +57,8 @@ Ils sont optionnels au lancement de `rclone_homelab` *(`main.sh`)*
 |`-h`, `--help`  | Affiche cette humble aide. |
 |`--auto`        | Ideal pour CronTab, affichage minime, interractions réduite au seuls cas bloquants, ne prend en considération que les élements inscrits dans les fichiers locaux (si présents). |
 |`--dry-run`     | Simule la synchronisation sans transférer ni supprimer de fichiers (services cloud uniquement). |
-|`--mailto=`     | <adresse@mail.com> Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp. |
-|`--discord-url=`| Adresse weebhook pour affichage dans un salon Discord |
+|`--mailto=`     | <adresse@mail.com>[^1] Permet d'envoyer un rapport par mail à l'adresse indiquée via msmtp. |
+|`--discord-url=`| Adresse weebhook[^1] pour affichage dans un salon Discord |
 |`--force-update`| Oblige le script à se mettre à jour. Optionnel : branche spécifique via `<branch>` |
 |`--discord-url=`| `<url>` Saisir le webhook de Discord pour y recevoir les notifications. |
 |`--rclone_opts` | `<opts>` cumulez les options native de rclone ! |
@@ -67,7 +67,7 @@ Ils sont optionnels au lancement de `rclone_homelab` *(`main.sh`)*
 
 ## Envoi d'emails
 
-En association avec l'utilitaire SMTP [msmtp](https://github.com/marlam/msmtp)[^1], l'envoi d'email est possible.  
+En association avec l'utilitaire SMTP [msmtp](https://github.com/marlam/msmtp)[^2], l'envoi d'email est possible.  
 msmtp est livré par défaut sans aucune configuration. Pour éditer le fichier de configuration, utilisez le menu interactif de rclone_homelab.
 
 
@@ -121,7 +121,7 @@ Vous serez averti qu'une mise à jour est disponible et vous serez invité/guid�
 
 
 ## rclone
-L'outil rclone est indispensable[^1].  
+L'outil rclone est indispensable[^2].  
 Pour le [télécharger](https://rclone.org/downloads/) sur Debian (LXC) : `apt install rclone -y`  
 Il s'installe normalement dans `/usr/bin/rclone`.  
 Lors de l'installation de rclone_homelab et même durant sans utilisation, si rclone n'est pas présent,  son installation vous sera proposée car c'est **indispensable !**
@@ -135,17 +135,18 @@ Pour adapter selon vos besoins, il est possible de :
 Vous y trouverez la section `# === Options rclone ===` => Là vous pourrez mettre/enlever vos propores options.
 
 
-### Notifications Discord
-Dispositif *(facultatif)* permettant via un *webhook* (url dans un salon) de faire afficher les rapport <u>rclone</u> concernant l'exécution d'un job. Aussi, un batch de plusieurs jobs = plusieurs messages indépendants sur Discord.
+## Notifications Discord
+Dispositif *(facultatif)* permettant via un *webhook* (url dans un salon) de faire afficher les rapports de rclone concernant l'exécution d'un job.  
+Aussi, un batch de plusieurs jobs = plusieurs messages indépendants envoyés sur Discord.
 1. En argument de lancement (ligne de commandes)
-`--discord-webhook <<URL_DISCORD_WEBHOOK>` <== Remplacer *<URL_DISCORD_WEBHOOK>* par votre code. 
+`--discord-webhook=<URL_DISCORD_WEBHOOK>` <== Remplacer *<URL_DISCORD_WEBHOOK>* par votre code. 
 2. Dans la configuration local
 Passez par le menu interactif pour éditer votre fichier de configuration locale afin d'adapter :
-`DISCORD_WEBHOOK_URL="<URL_DISCORD_WEBHOOK>"` <== Remplacer *<URL_DISCORD_WEBHOOK>* par votre code. 
+`DISCORD_WEBHOOK_URL=<URL_DISCORD_WEBHOOK>` <== Remplacer *<URL_DISCORD_WEBHOOK>* par votre code. 
 
 
 
-### Tâche Cron
+## Tâche Cron
 Pour exécuter une tache de manière programmée, rien de tel que l'utilitaire simpliste : CronTab  
 Pour ajouter une tâche, la commmande est : `crontab -e`  
 Exemple de commande pour une exécution tous les jours à 04h00 :
@@ -154,22 +155,24 @@ Exemple de commande pour une exécution tous les jours à 04h00 :
 ```
 | Bloc | Explications |
 | --- | --- |
-|`/opt/rclone_homelab/main.sh`                        | Il est préférable de saisir le chemin en entier et non le symlink vers le script. |
+|`/opt/rclone_homelab/main.sh` | Il est préférable de saisir le chemin direct (et non le symlink) vers le script. |
 |`--auto` `--mailto=<votre_adresse@mail.com>` `--dry-run` | [arguments](#arguments) du script (exemples)|
-|`>> /var/log/rclone_cron.log 2>&1`                   | **[OPTIONNEL]** redirection vers un fichier journal, au cas ou... contiendra l'équivalent de ce qui est affiché dans la fenêtre de terminal Shell. |
+|`>> /var/log/rclone_cron.log 2>&1` | **[OPTIONNEL]** redirection vers un fichier journal, au cas ou... contiendra l'équivalent de ce qui est affiché dans la fenêtre de terminal Shell. |
 
-## Recommandations (générales)
+
+
+## Vrac / autre
+
+### Recommandations (générales)
 - Ne pas utilser d'outils ou de script à la base d'un noeud Proxmox. Vous risquez de bloquer toute votre installation !
 - Privilégiez toujours un conteneur LXC ou une VM. Plus facile à maintenir et à isoler.
 - Utilisez les sauvegardes pour votre installation Proxmox avant toute modification. C'est facile faire et à restaurer !
 
 
-
-## A faire / Ajouter
+### A faire / Ajouter
 - [] Internationnalisation : *wait and see...*
 - [] Externaliser le débugage au démarrage.
 - [] msmtp, utiliser un fichier spécifique + accompte `msmtp --file=/etc/msmtp/accounts.conf --account=backup user@example.com`
-
 
 ### Petites infos
 *Bon oui ok*, si j'ai pensé, travaillé, imaginé, sué et perdu quelques heures d'espérance de vie, le travail a été rendu possible grâce aux Chats IA (GPT + Mistral).  
@@ -179,4 +182,5 @@ https://stackedit.io (pour l'aide sur le markedown) Je pourrais me passer de del
 https://emojikeyboard.org/ (Pour les émojis)  
 https://www.desmoulins.fr (Pour ma bannière ASCII), aussi https://patorjk.com/software/taag/ ou encore http://www.network-science.de/ascii/
 
-[^1]: Proposé lors de l'installation.
+[^1]: Sans guillemets.
+[^2]: Proposé lors de l'installation.
