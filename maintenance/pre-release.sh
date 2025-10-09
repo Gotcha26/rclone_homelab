@@ -183,7 +183,7 @@ EOF
 echo -e "\n============================================================"
 echo "📂  Dépôt : $PWD"
 echo
-echo "=== État initial ==="
+echo "=== Constat état initial ==="
 git status --short
 git branch -vv
 git tag -l
@@ -193,7 +193,7 @@ explain_git_storage
 before_total=$(get_size_kb)
 echo "Taille .git avant nettoyage : $(get_size_human)"
 echo
-echo "=== Fin de l'état ==="
+echo "=== Fin du constat ==="
 
 # --- Branche principale ---
 main_branch="main"
@@ -218,7 +218,7 @@ current_branch=$(git symbolic-ref --quiet --short HEAD || echo "detached")
 
 if [[ "$current_branch" != "$main_branch" ]]; then
     echo
-    echo "⚠️  Vous êtes sur la branche '$current_branch'."
+    echo "ℹ️  Vous êtes sur la branche '$current_branch'."
 
     # Vérifier si des modifications locales bloquent le checkout
     if ! git diff-index --quiet HEAD --; then
@@ -249,7 +249,7 @@ if [[ "$current_branch" != "$main_branch" ]]; then
         esac
     fi
 
-    if confirm "Souhaitez-vous synchroniser '$main_branch' avec l'état actuel de '$current_branch' (commit unique) ?"; then
+    if confirm "Souhaitez-vous synchroniser LOCALEMENT '$main_branch' avec l'état actuel de '$current_branch' (commit unique) ?"; then
         echo
         echo "🔀  Synchronisation : '$main_branch' va devenir une copie exacte de '$current_branch'..."
 
