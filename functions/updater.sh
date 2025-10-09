@@ -68,7 +68,7 @@ write_version_file() {
     mkdir -p "$(dirname "$DIR_VERSION_FILE")" || die 4 "Création impossible du dossier ./local"
 
     if [[ -z "$GITHUB_API_URL" ]]; then
-        echo "⚠️  GITHUB_API_URL non défini !" >&2
+        display_msg "verbose|hard" --theme warning "GITHUB_API_URL non défini !"
         echo "unknown" > "$DIR_VERSION_FILE"
         return 1
     fi
@@ -79,7 +79,7 @@ write_version_file() {
         owner="${BASH_REMATCH[1]}"
         repo="${BASH_REMATCH[2]}"
     else
-        echo "❌  Impossible de parser GITHUB_API_URL" >&2
+        display_msg "verbose|hard" --theme error "Impossible de parser GITHUB_API_URL"
         echo "unknown" > "$DIR_VERSION_FILE"
         return 1
     fi
@@ -89,7 +89,7 @@ write_version_file() {
         json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
         latest_tag=$(echo "$json" | jq -r '.tag_name // empty')
         if [[ -z "$latest_tag" ]]; then
-            echo "❌  Impossible de récupérer le dernier tag depuis GitHub" >&2
+            display_msg "verbose|hard" --theme error "Impossible de récupérer le dernier tag depuis GitHub"
             echo "unknown" > "$DIR_VERSION_FILE"
             return 1
         fi
@@ -101,7 +101,7 @@ write_version_file() {
     api_commits_url="https://api.github.com/repos/$owner/$repo/commits/$branch"
     json=$(curl -s "$api_commits_url" 2>/dev/null)
     if [[ -z "$json" ]]; then
-        echo "❌  Impossible de récupérer les infos de commit depuis GitHub pour la branche $branch" >&2
+        display_msg "verbose|hard" --theme error "Impossible de récupérer les infos de commit depuis GitHub pour la branche $branch"
         echo "$branch - unknown - unknown" > "$DIR_VERSION_FILE"
         return 1
     fi
