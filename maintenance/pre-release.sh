@@ -251,7 +251,7 @@ if [[ "$current_branch" != "$main_branch" ]]; then
 
     if confirm "Souhaitez-vous synchroniser LOCALEMENT '$main_branch' avec l'état actuel de '$current_branch' (commit unique) ?"; then
         echo
-        echo "🔀  Synchronisation : '$main_branch' va devenir une copie exacte de '$current_branch'..."
+        echo "🔀  Synchronisation : '$main_branch' va devenir (localement) une copie exacte de '$current_branch'..."
 
         # 1️⃣ Se placer sur main
         git checkout "$main_branch"
@@ -266,7 +266,7 @@ if [[ "$current_branch" != "$main_branch" ]]; then
         # 4️⃣ Commit unique
         git commit -m "Pré-release : main alignée avec $current_branch"
 
-        echo "✅  '$main_branch' est désormais une copie de '$current_branch'."
+        echo "✅  '$main_branch' (LOCALEMENT) est désormais une copie de '$current_branch'."
 
         # Récupérer les modifications stashed si option 2
         if git stash list | grep -q "pre-release temporaire"; then
@@ -283,7 +283,13 @@ fi
 
 # --- Supprimer les branches locales fusionnées dans main (sauf la branche courante) ---
 echo -e "\n🧹  Nettoyage des branches locales fusionnées dans '$main_branch'..."
-current_branch=$(git symbolic-ref --quiet --short HEAD || echo "detached")
+# Détecter la branche courante de façon sûre
+if current_branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null); then
+    :
+else
+    current_branch="detached"
+fi
+
 
 for branch in $(git branch --format='%(refname:short)'); do
     # Ne pas toucher à main ni à la branche courante
