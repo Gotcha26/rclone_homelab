@@ -1,0 +1,117 @@
+# =========================================================================== #
+#         Configuration locale pour script RCLONE_HOMELABE par GOTCHA         #
+# =========================================================================== #
+# Ce fichier vient surcharger les paramètres par défaut.                      #
+#                                                                             #
+# Fichier de référence : config.global.conf                                   #
+# =========================================================================== #
+
+
+# === Arguments de lancements ===
+
+DRY_RUN=false
+                            # <false|true>:false - ARGUMENT
+                            # Permet de lancer UNIQUEMENT rclone en mode
+                            # simulation seulement.
+
+MAIL_TO=
+                            # <texte>:"" - ARGUMENT (pas de "")
+                            # Adresse mail par défaut.
+
+DISCORD_WEBHOOK_URL=
+                            # <texte>:"" - ARGUMENT (pas de "")
+                            # URL du webhook salon Discord.
+
+FORCE_UPDATE=false
+                            # <false|true>:false - ARGUMENT
+                            # Force à faire les MAJ dès
+                            # le lancement. Sans argument = sécurité.
+                            #   Accèpte un switch sur une branche spécifique
+                            #   avec FORCE_BRANCH=<branche>
+
+ACTION_MODE=manu
+                            # <auto|manu>:manu - ARGUMENT
+                            # Propose des interractions - SI BESOIN !
+                            #   auto = aucune interractions (CRON...)
+                            #   manu = interactivités possibles (questions)
+
+DISPLAY_MODE=soft
+                            # <soft|verbose|hard>:soft
+                            # Affichage retour d'informations
+
+
+# === Variables globales techniques ===
+
+TERM_WIDTH_DEFAULT=80
+                            # <80-120>:80
+                            # Largeur par défaut pour les affichages fixes.
+
+LOG_RETENTION_DAYS=15
+                            # <1:15>:14
+                            # Durée de conservation des logs.
+
+LOG_LINE_MAX=1000
+                            # <100-10000>:1000
+                            # Nombre de lignes maximales (en partant du bas)
+                            # à afficher dans le rapport par email.
+
+EDITOR=nano
+                            # <nano|micro>:nano
+                            # Editor des fichiers. Micro est proposé lors
+                            # de l'installation
+
+DEBUG_INFOS=false
+                            # <false|true>:false
+                            # Quelques informations pour le debugage
+
+DEBUG_MODE=false
+                            # <false|true>:false
+                            # Action d'aides actives pour le débugage
+
+
+# === Options SPECIFIQUES à : rclone ===
+
+# 1 par ligne
+# Plus de commandes sur https://rclone.org/commands/rclone/
+
+RCLONE_OPTS=(
+    --temp-dir "$DIR_TMP"
+    --exclude '*<*'
+    --exclude '*>*'
+    --exclude '*:*'
+    --exclude '*"*'
+    --exclude '*\\*'
+    --exclude '*\|*'
+    --exclude '*\?*'
+    --exclude '.*'
+    --exclude 'Thumbs.db'
+    --log-level INFO
+    --stats-log-level NOTICE
+    --stats=0
+)
+
+
+# =========================================================================== #
+# Couleurs personnalisées pour print_fancy()                                  #
+#                                                                             #
+# Syntaxe simple : définir une couleur pour le texte et/ou le fond            #
+# =========================================================================== #
+#                                                                             #
+# EXEMPLES :                                                                  #
+# MY_ORANGE="256:208"        # Couleur texte 256 couleurs, indice 208         #
+# MY_BG_GRAY="256:236"       # Couleur fond 256 couleurs, indice 236          #
+# MY_RED="ansi:31"           # Couleur texte ANSI classique (rouge)           #
+# MY_BG_BLUE="rgb:255;200;0" # Couleur fond RGB 24-bit                        #
+#                                               (rouge=255, vert=200, bleu=0) #
+#                                                                             #
+# UTILISATION avec print_fancy :                                              #
+# print_fancy --fg "$MY_ORANGE" "Texte orange"                                #
+# print_fancy --bg "$MY_BG_GRAY" "Texte sur fond gris"                        #
+# print_fancy --fg "$MY_ORANGE" --bg "$MY_BG_GRAY" "Txt orange sur fond gris" #
+#                                                                             #
+# FORMAT ATTENDU :                                                            #
+# "ansi:<code>"      -> séquence ANSI classique (30-37,90-97 pour le texte ;  #
+#                                                 40-47,100-107 pour le fond) #
+# "256:<n>"          -> palette 256 couleurs (0-255)                          #
+# "rgb:<r>;<g>;<b>"  -> palette 24-bit RGB (0-255 chacun)                     #
+# =========================================================================== #
