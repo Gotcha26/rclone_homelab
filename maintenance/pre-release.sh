@@ -296,7 +296,8 @@ for branch in $(git branch --format='%(refname:short)'); do
     fi
 done
 after_branches=$(get_size_kb)
-echo "💡 Gain après nettoyage branches : $((before_total - after_branches)) KB ($(get_size_human))"
+echo
+echo "💡  Gain après nettoyage branches : $((before_total - after_branches)) KB ($(get_size_human))"
 
 # --- Supprimer certains tags (& branches) locaux obsolètes (optionnel) ---
 echo -e "\n🧹  Gestion des tags locaux obsolètes..."
@@ -357,21 +358,25 @@ echo
 # --- Proposition de push vers le remote ---
 if [[ "$skip_push" == "false" ]]; then
     echo
-    echo "🚨  Vous êtes sur le point de pousser 'main' vers GitHub."
-    echo "⚠️  Cela écrasera le contenu actuel de 'main' sur Github avec le commit unique local."
+    echo "🚨  Vous êtes sur le point de pousser la branche 'main' (LOCAL) vers GitHub."
+    echo "⚠️  Cela écrasera le contenu actuel de 'main' sur Github par le commit unique local."
     echo
 
     if confirm "Confirmez-vous le push de 'main' sur GitHub ?"; then
         echo
         echo "🔄  Push en cours..."
         git push origin main --force
+        echo
         echo "✅  Push terminé : 'main' sur GitHub est désormais aligné avec votre branche locale."
     else
+        echo
         echo "ℹ️  Push annulé. 'main' reste uniquement local."
     fi
 else
+    echo
     echo "ℹ️  Aucun remote détecté, push impossible."
 fi
 
+echo
 
 popd >/dev/null
