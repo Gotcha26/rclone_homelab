@@ -6,11 +6,16 @@ show_help() {
     cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
 
+Présentation :
+Script d'interface entre rclone™️ et vos propres paramètres. Permet de lancer des jobs par batch,
+par exécution unique ou même via tâche Cron.
+Un menu interactif est présent pour vous aider. Pour y accéder, appeler $(basename "$0") SANS options.
+
 Options :
   --auto             Lance le script en mode automatique (A DEFINIR).
   --mailto=abc@y.com Envoie un rapport par e-mail à l'adresse fournie.
   --dry-run          Simule la synchronisation sans transférer ni supprimer de fichiers.
-  -h, --help         Affiche cette aide et quitte.
+  -h, --help         Affiche cette modeste aide.
   --force-update     Mettre à jour automatiquement sur la branche en cours. Accèpte l'argument "branche"
   --update-tag       Mettre à jour automatiquement sur la release (version) disponnible.
 
@@ -19,10 +24,12 @@ Description :
       $DIR_JOBS_FILE
   Chaque ligne doit contenir :
       chemin_source|remote:chemin_destination
-  Les lignes vides ou commençant par '#' sont ignorées.
+  Les lignes vides ou commençant par '#' sont ignorées. 
 
   Exemple de ligne :
       /home/user/Documents|OneDrive:Backups/Documents
+
+Plus d'options disponnibles dans le fichier édités depuis le menu interactif.
 
 Fonctionnement :
   - Vérifie et teste les pré-requis au bon déroulement des opérations.

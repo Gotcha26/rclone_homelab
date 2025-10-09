@@ -13,7 +13,7 @@
 # ⚠️  À exécuter uniquement sur un dépôt dont on comprend les conséquences.
 #
 # Auteur : Julien Moreau
-# Version : 1.1
+# Version : 1.2
 # ---------------------------------------------------------------
 
 set -euo pipefail
@@ -113,7 +113,11 @@ else
 fi
 
 # Confirmation création sauvegarde
-read -rp "Souhaitez-vous créer une sauvegarde de l'ancien '$main_branch' avant réinitialisation ? (Y/n/q) : " yn
+echo
+echo "Souhaitez-vous créer une sauvegarde de l'ancien '$main_branch' avant réinitialisation ?"
+echo
+read -rp "Votre réponse : (Y/n/q) : " yn
+echo
 [[ -z "$yn" || "$yn" =~ ^[Yy]$ ]] && yn="Y"
 [[ "$yn" =~ ^[Qq]$ ]] && { echo "👋  Sortie."; exit 0; }
 
@@ -144,7 +148,10 @@ git branch -D old_main 2>/dev/null || true
 # Push forcé
 if [[ $skip_push == false ]]; then
     echo
-    read -rp "⚠️  Cette opération va écraser la branche '$main_branch' distante. Confirmer le push forcé ? (Y/n/q) : " confirm
+    echo "⚠️  Cette opération va écraser la branche '$main_branch' distante (GitHub)."
+    echo
+    read -rp "Confirmer le push forcé ? (Y/n/q) : " confirm
+    echo
     [[ -z "$confirm" || "$confirm" =~ ^[Yy]$ ]] && confirm="Y"
     [[ "$confirm" =~ ^[Qq]$ ]] && { echo "👋 Sortie."; exit 0; }
 
@@ -168,3 +175,4 @@ echo "============================================================"
 echo "✨ Branche '$main_branch' nettoyée et réinitialisée."
 git log --oneline -n 1
 echo "============================================================"
+echo
