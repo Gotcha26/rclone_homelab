@@ -355,4 +355,24 @@ echo "============================================================"
 echo "🎉  Dépôt préparé pour release et installation minimaliste."
 echo
 
+# --- Proposition de push vers le remote ---
+if [[ "$skip_push" == "false" ]]; then
+    echo
+    echo "🚨  Vous êtes sur le point de pousser 'main' vers GitHub."
+    echo "⚠️  Cela écrasera le contenu actuel de 'main' sur Github avec le commit unique local."
+    echo
+
+    if confirm "Confirmez-vous le push de 'main' sur GitHub ?"; then
+        echo
+        echo "🔄  Push en cours..."
+        git push origin main --force
+        echo "✅  Push terminé : 'main' sur GitHub est désormais aligné avec votre branche locale."
+    else
+        echo "ℹ️  Push annulé. 'main' reste uniquement local."
+    fi
+else
+    echo "ℹ️  Aucun remote détecté, push impossible."
+fi
+
+
 popd >/dev/null
