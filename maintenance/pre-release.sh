@@ -161,14 +161,14 @@ explain_git_storage() {
     size_garbage=$(git count-objects -vH | awk '/^size-garbage:/ {print $2, $3}')
 
     cat <<EOF
-- 🟢  count: $count                 → objets non empaquetés (encore individuels dans .git/objects).
-- 📦  size: $size                   → taille totale de ces objets bruts.
-- 📚  in-pack: $in_pack             → objets déjà compressés dans les fichiers pack.
-- 🧩  packs: $packs                 → nombre de fichiers pack utilisés.
-- 💾  size-pack: $size_pack         → taille totale des fichiers pack.
-- 🧹  prune-packable: $prune        → objets éligibles à la suppression (souvent 0).
-- 🚮  garbage: $garbage             → données inutiles ou corrompues.
-- ⚙️  size-garbage: $size_garbage   → taille de ces données perdues.
+- 🟢  Ojets non empaquetés (encore individuels dans .git/objects).  → count: $count
+- 📦  Taille totale de ces objets bruts.                            → size: $size
+- 📚  Objets déjà compressés dans les fichiers pack.                → in-pack: $in_pack
+- 🧩  Nombre de fichiers pack utilisés.                             → packs: $packs
+- 💾  Taille totale des fichiers pack.                              → size-pack: $size_pack
+- 🧹  Objets éligibles à la suppression (souvent 0).                → prune-packable: $prune
+- 🚮  Données inutiles ou corrompues.                               → garbage: $garbage
+- ⚙️  Taille de ces données perdues.                                → size-garbage: $size_garbage
 
 💡  En résumé : Git stocke la majorité de ses données sous forme d’objets
    compressés dans un ou plusieurs fichiers *.pack*, ce qui explique
