@@ -128,7 +128,9 @@ confirm() {
     local prompt="$1"
     local default="${2:-y}"
     local answer
+    echo
     read -rp "$prompt (Y/n/q) : " answer
+    echo
     answer="${answer,,}"  # minuscule
 
     # valeur par défaut
@@ -228,7 +230,9 @@ if [[ "$current_branch" != "$main_branch" ]]; then
         echo "   1️⃣  Ignorer les changements de permissions dans ce dépôt (core.fileMode=false)"
         echo "   2️⃣  Stasher temporairement les modifications et les récupérer après"
         echo "   3️⃣  Annuler le checkout (sortie du script)"
+        echo
         read -rp "Choisissez une option [1-3] : " opt
+        echo
         case "$opt" in
             1)
                 git config core.fileMode false
@@ -263,11 +267,6 @@ if [[ "$current_branch" != "$main_branch" ]]; then
         git commit -m "Pré-release : main alignée avec $current_branch"
 
         echo "✅  '$main_branch' est désormais une copie de '$current_branch'."
-
-        # 5️⃣ Revenir sur dev et merge main pour aligner les branches
-        git checkout "$current_branch"
-        git merge "$main_branch" --no-edit
-        echo "✅  Les branches '$current_branch' et '$main_branch' sont alignées."
 
         # Récupérer les modifications stashed si option 2
         if git stash list | grep -q "pre-release temporaire"; then
@@ -305,7 +304,9 @@ echo -e "\n🧹  Gestion des tags locaux obsolètes..."
 git tag -l
 echo
 if confirm "Voulez-vous supprimer certains tags locaux ?"; then
+    echo
     read -rp "Liste des tags à supprimer (séparés par espaces, ou Entrée pour annuler) : " tags_to_delete
+    echo
     [[ "$tags_to_delete" == "q" ]] && { echo; echo "🚪 Sortie demandée. Abandon du script."; echo; exit 0; }
     echo
     for tag in $tags_to_delete; do
