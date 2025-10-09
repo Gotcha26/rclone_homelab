@@ -283,12 +283,6 @@ fi
 
 # --- Supprimer les branches locales fusionnées dans main (sauf la branche courante) ---
 echo -e "\n🧹  Nettoyage des branches locales fusionnées dans '$main_branch'..."
-set +e
-current_branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null)
-set -e
-
-current_branch=${current_branch:-detached}
-
 
 for branch in $(git branch --format='%(refname:short)'); do
     # Ne pas toucher à main ni à la branche courante
