@@ -395,7 +395,7 @@ check_micro() {
         read -e -rp "Voulez-vous mettre à jour micro ? (O/n) : " -n 1 -r SUB_REPLY
         echo ""
         if [[ -z "$SUB_REPLY" || "$SUB_REPLY" =~ ^[OoYy]$ ]]; then
-            install_micro "$latest_version" ;;
+            install_micro "$latest_version"
         else
             echo "👌  Vous gardez la version existante."
         fi
