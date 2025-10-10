@@ -16,17 +16,6 @@
 
 set -uo pipefail
 
-clear
-echo "+------------------------------------------------------------------------------+"
-echo "|            Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            |"
-echo "+------------------------------------------------------------------------------+"
-echo
-
-
-# =========================================================================== #
-#           Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            #
-# =========================================================================== #
-
 REPO_URL="https://github.com/Gotcha26/rclone_homelab.git"
 INSTALL_DIR="/opt/rclone_homelab"
 DIR_LOCAL="$INSTALL_DIR/local"
@@ -51,6 +40,22 @@ LATEST_TAG="${LATEST_TAG:-}"
 # Couleurs / styles
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
 RESET='\033[0m'; BOLD="\033[1m"; ITALIC="\033[3m"; UNDERLINE="\033[4m"
+
+
+clear
+echo "+------------------------------------------------------------------------------+"
+echo -e "|                ${BOLD}Programme d'installation (git) pour le script :${RESET}               |"
+echo -e "|                          ${BOLD}${UNDERLINE}rclone_homelab${RESET} par ${ITALIC}GOTCHA !${RESET}                         |"
+echo "+------------------------------------------------------------------------------+"
+echo
+echo -e "${BLACK}${BG_WHITE} ▌║█║▌│║▌│║▌║▌█║ $REPO_URL ▌│║▌║▌│║║▌█║▌║█ ${RESET}"
+echo
+echo
+echo -e " ${BOLD}Précison${RESET} : ${ITALIC}S'occupe aussi de tous les autres composants nécessaires !${RESET}"
+echo
+echo
+sleep 0.5
+
 
 # --------------------------------------------------------------------------- #
 # safe_exec : exécute une commande avec sudo si nécessaire, avec messages et 
@@ -912,15 +917,28 @@ create_executables() {
     echo "🤖  Rendre les scripts exécutables..."
 
     local files=()
+
+    # Script principal
     files+=("$INSTALL_DIR/main.sh")
 
-    local UPDATER_SCRIPT="$INSTALL_DIR/maintenance/standalone_updater.sh"
-    [[ -f "$UPDATER_SCRIPT" ]] && files+=("$UPDATER_SCRIPT")
+    # Cet installateur (pour des maj)
+    files+=("$INSTALL_DIR/install.sh")
+
+    # Tous les scripts .sh dans maintenance (si le dossier existe)
+    if [[ -d "$INSTALL_DIR/maintenance" ]]; then
+        while IFS= read -r -d '' file; do
+            files+=("$file")
+        done < <(find "$INSTALL_DIR/maintenance" -type f -name "*.sh" -print0)
+    fi
+
+    if (( ${#files[@]} == 0 )); then
+        print_fancy --theme "warn" "Aucun fichier .sh trouvé à rendre exécutable."
+        return
+    fi
 
     safe_exec "✅  ${BOLD}${files[*]}${RESET} → rendu(s) exécutable(s)." \
-            "❌  ${BOLD}${files[*]}${RESET} : n'a pas pu être rendu exécutable." \
-            chmod +x "${files[@]}"
-
+              "❌  ${BOLD}${files[*]}${RESET} : n'a pas pu être rendu exécutable." \
+              chmod +x "${files[@]}"
 }
 
 # --------------------------------------------------------------------------- #
@@ -958,36 +976,14 @@ main() {
     echo -e "|  ${GREEN}🎉  ${BOLD}Installation terminée.${RESET} |"
     echo -e "+----------------------------+"
     echo ""
-    echo -e "🔀  Pour lancer : $INSTALL_DIR/main.sh ou via le symlink ${BLUE}rclone_homelab${RESET}"
+    echo "🔀  Pour démarrer :"
+    echo "→ $INSTALL_DIR/main.sh"
+    echo "... ou via le symlink :"
+    echo -e "→ ${BLUE}rclone_homelab${RESET}"
+    echo ""
+    echo "Bonne journée :)"
     echo ""
 }
 
 main "$@"
 exit 0
-
-
-
-
-
-
-
-
-# =========================================================================== #
-# Notes
-# =========================================================================== #
-
-# Les variables définies içi n'influent en rien le script une fois installé.
-# Installation toujours basée sur le dernier tag (release).
-# Prise en compte du root.
-
-# Fichier /maintenance/standalone_updater.sh est rendu exécutable avec son symlink
-# rclone_homelab-updater <--force>
-
-# Ce fichier permet de mettre à jours le script (basé sur la branche main + release)
-# mais aussi les script optionnels !
-
-# Lien à communiquer pour l'installation :
-bash <(curl -s https://raw.githubusercontent.com/Gotcha26/rclone_homelab/main/install.sh)
-
-# Pour les utilisateur aguerris (dev) :
-bash <(curl -s https://raw.githubusercontent.com/Gotcha26/rclone_homelab/main/install.sh) --force dev
