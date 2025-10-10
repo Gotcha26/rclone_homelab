@@ -24,6 +24,16 @@ DIR_VERSION_FILE="${INSTALL_DIR}/${VERSION_FILE}"
 GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest"
 SAFE_EXEC_EXIT_ON_FAIL=true
 
+# Couleurs texte
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
+BLACK='\033[0;30m'; WHITE='\033[1;37m'
+
+# Couleurs de fond
+BG_WHITE='\033[47m'; BG_BLACK='\033[40m'
+
+# Styles
+RESET='\033[0m'; BOLD="\033[1m"; ITALIC="\033[3m"; UNDERLINE="\033[4m"
+
 # --- Argument pour mode dev ---
 FORCED=""
 FORCED_BRANCH="main"
@@ -36,10 +46,6 @@ fi
 
 installed_tag="${installed_tag:-}"
 LATEST_TAG="${LATEST_TAG:-}"
-
-# Couleurs / styles
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
-RESET='\033[0m'; BOLD="\033[1m"; ITALIC="\033[3m"; UNDERLINE="\033[4m"
 
 
 clear
