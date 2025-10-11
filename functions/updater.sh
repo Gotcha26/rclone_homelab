@@ -196,14 +196,12 @@ analyze_update_status() {
 
     # --- Mode sans Git : on affiche la version locale et (éventuellement) annonce d'une release ---
     if [[ "$branch_real" == "(local-standalone-version)" ]]; then
-        print_fancy --theme "info" --fg "blue" --align "center" \
-            "Version locale installée : ${LOCAL_VERSION:-inconnue}"
 
         if [[ -n "$latest_tag" && "$LOCAL_VERSION" != "$latest_tag" ]]; then
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" \
                 "Nouvelle version disponible : $latest_tag"
         else
-            print_fancy --fg "blue" --align "right" "☑ $(get_current_version)"
+            print_fancy --fg "light_blue" --align "right" "$(get_current_version)"
         fi
         return 0
     fi
