@@ -261,6 +261,7 @@ check_jobs_file() {
     [[ "$ACTION_MODE" == "auto" && $ret -eq 0 ]] && \
         display_msg "verbose|hard" --theme ok "Consultation des jobs : passée"
 
+return 0
 }
 
 
