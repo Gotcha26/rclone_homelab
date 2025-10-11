@@ -16,17 +16,6 @@
 
 set -uo pipefail
 
-clear
-echo "+------------------------------------------------------------------------------+"
-echo "|            Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            |"
-echo "+------------------------------------------------------------------------------+"
-echo
-
-
-# =========================================================================== #
-#           Installateur GIT pour projet RCLONE_HOMELAB par Gotcha            #
-# =========================================================================== #
-
 REPO_URL="https://github.com/Gotcha26/rclone_homelab.git"
 INSTALL_DIR="/opt/rclone_homelab"
 DIR_LOCAL="$INSTALL_DIR/local"
@@ -34,6 +23,16 @@ VERSION_FILE="${DIR_LOCAL}/.version"
 DIR_VERSION_FILE="${INSTALL_DIR}/${VERSION_FILE}"
 GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest"
 SAFE_EXEC_EXIT_ON_FAIL=true
+
+# Couleurs texte
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
+BLACK='\033[0;30m'; WHITE='\033[1;37m'
+
+# Couleurs de fond
+BG_WHITE='\033[47m'; BG_BLACK='\033[40m'
+
+# Styles
+RESET='\033[0m'; BOLD="\033[1m"; ITALIC="\033[3m"; UNDERLINE="\033[4m"
 
 # --- Argument pour mode dev ---
 FORCED=""
@@ -48,9 +47,20 @@ fi
 installed_tag="${installed_tag:-}"
 LATEST_TAG="${LATEST_TAG:-}"
 
-# Couleurs / styles
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'
-RESET='\033[0m'; BOLD="\033[1m"; ITALIC="\033[3m"; UNDERLINE="\033[4m"
+
+clear
+echo "+------------------------------------------------------------------------------+"
+echo -e "|                ${BOLD}Programme d'installation (git) pour le script :${RESET}               |"
+echo -e "|                          ${BOLD}${UNDERLINE}rclone_homelab${RESET} par ${ITALIC}GOTCHA !${RESET}                         |"
+echo "+------------------------------------------------------------------------------+"
+echo
+echo -e "${BLACK}${BG_WHITE} ▌║█║▌│║▌│║▌║▌█║ $REPO_URL ▌│║▌║▌│║║▌█║▌║█ ${RESET}"
+echo
+echo
+echo -e " ${BOLD}Précison${RESET} : ${ITALIC}S'occupe aussi de tous les autres composants nécessaires !${RESET}"
+echo
+echo
+sleep 0.5
 
 # --------------------------------------------------------------------------- #
 # safe_exec : exécute une commande avec sudo si nécessaire, avec messages et 
@@ -116,7 +126,6 @@ safe_exec() {
     fi
 }
 
-
 # ---------------------------------------------------------------------------- #
 # Détection sudo
 # ---------------------------------------------------------------------------- #
@@ -142,6 +151,52 @@ write_version_file() {
 
 read_version_file() {
     [[ -f "$VERSION_FILE" ]] && cat "$VERSION_FILE" || echo ""
+}
+
+# --------------------------------------------------------------------------- #
+# Détection de la branche Git installée
+# --------------------------------------------------------------------------- #
+detect_current_branch() {
+    if [[ ! -d "$INSTALL_DIR/.git" ]]; then
+        echo ""
+        return 1
+    fi
+
+    cd "$INSTALL_DIR" || return 1
+    
+    # Récupérer la branche courante
+    local current_branch
+    current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    
+    if [[ -z "$current_branch" ]] || [[ "$current_branch" == "HEAD" ]]; then
+        # En mode detached HEAD, essayer de trouver la branche associée
+        current_branch=$(git branch --contains HEAD | grep -v "detached" | head -n1 | sed 's/^[* ]*//g')
+    fi
+    
+    echo "$current_branch"
+}
+
+# --------------------------------------------------------------------------- #
+# Vérifier si un dépôt Git distant a des mises à jour
+# --------------------------------------------------------------------------- #
+check_git_updates() {
+    local branch="$1"
+    
+    cd "$INSTALL_DIR" || return 1
+    
+    # Récupérer les dernières infos du dépôt distant
+    git fetch origin "$branch" --quiet 2>/dev/null || return 1
+    
+    # Comparer HEAD local avec HEAD distant
+    local local_commit remote_commit
+    local_commit=$(git rev-parse HEAD 2>/dev/null)
+    remote_commit=$(git rev-parse "origin/$branch" 2>/dev/null)
+    
+    if [[ "$local_commit" != "$remote_commit" ]]; then
+        return 0  # Des mises à jour sont disponibles
+    else
+        return 1  # Déjà à jour
+    fi
 }
 
 # --------------------------------------------------------------------------- #
@@ -239,6 +294,9 @@ check_rclone() {
     fi
 }
 
+# --------------------------------------------------------------------------- #
+# Installation de rclone
+# --------------------------------------------------------------------------- #
 install_rclone() {
     local arch arch_tag
     echo ""
@@ -402,6 +460,9 @@ check_micro() {
     fi
 }
 
+# --------------------------------------------------------------------------- #
+# Installation de l'éditeur micro (remplace nano)
+# --------------------------------------------------------------------------- #
 install_micro() {
     local version="${1:-latest}"
     echo ""
@@ -468,6 +529,9 @@ install_micro() {
     fi
 }
 
+# --------------------------------------------------------------------------- #
+# Mise à jour du choix de l'éditeur
+# --------------------------------------------------------------------------- #
 update_editor_choice() {
     local new_editor="$1"
     local files=(
@@ -524,96 +588,237 @@ get_latest_release() {
 ${UNDERLINE}Dernière release${RESET} : $LATEST_TAG ${ITALIC}($LATEST_DATE)${RESET}"
 }
 
-
 # --------------------------------------------------------------------------- #
 # Gestion d'un répertoire existant
 # --------------------------------------------------------------------------- #
 handle_existing_dir() {
     echo ""
-    echo -e "🔀  Cas 2-3 : Dossier d'installation déjà en place..."
+    echo -e "🔀  Dossier d'installation déjà en place, analyse..."
 
-    if [[ -d "$INSTALL_DIR/.git" ]]; then
-        # Dossier Git existant
-        echo "-- Cas hybride ---"
-        echo "Traces d'un dossier git : oui"
-        echo "Absence de fichier .version"
-        echo "En attente d'une decision..."
-        echo ""
-        echo -e "❓  ${YELLOW}Le répertoire ${BOLD}$INSTALL_DIR${RESET}${YELLOW} contient un dépôt Git.${RESET}"
-        get_installed_release
-        echo ""
-        echo -e "${UNDERLINE}${ITALIC}Que voulez-vous faire ?${RESET}"
-        echo -e "  [1] ${BOLD}Supprimer ${RED}TOUT${RESET} et continuer à l'installation proprement"
-        echo -e "  [2] ${BOLD}Installer / Mettre à jour${RESET} vers la dernière version"
-        echo -e "  [3] Ne rien faire et quitter"
-        echo ""
-        read -e -rp "Choix (1/2/3) : " choice
-        case "$choice" in
-            1)
-                safe_exec "✅  $INSTALL_DIR nettoyé avec succès." \
-                          "❌  Impossible de supprimer $INSTALL_DIR" \
-                          rm -rf "$INSTALL_DIR"
-                          echo "⏩  Bacule vers installation normale (minimale)..."
-                          install_minimal
-                ;;
-            2)
-                echo "⏩  Bacule vers un mise à niveau..."
-                # Mise à jour Cas 3 
-                update_minimal_if_needed
-                ;;
-            3|*)
-                echo "Abandon. Ciao 👋"
-                exit 0
-                ;;
-        esac
+    # CAS 1 : Installation autonome (sans .git)
+    if [[ ! -d "$INSTALL_DIR/.git" ]]; then
+        if [[ -f "$VERSION_FILE" ]]; then
+            # Installation minimale ZIP avec .version
+            echo ""
+            echo -e "📦  ${BOLD}Type détecté :${RESET} Installation autonome (ZIP)"
+            update_minimal_if_needed
+        else
+            # Dossier existant mais incomplet/corrompu
+            echo ""
+            echo -e "⚠️  ${YELLOW}Dossier existant mais incomplet (pas de .git ni .version)${RESET}"
+            handle_corrupted_dir
+        fi
+        return
+    fi
 
-    elif [[ -f "$VERSION_FILE" ]]; then
-        # Installation minimale avec .version mais sans .git : Cas 3 
-        update_minimal_if_needed
-
+    # CAS 2 : Installation Git complète
+    echo ""
+    echo -e "📦  ${BOLD}Type détecté :${RESET} Installation Git"
+    
+    local current_branch
+    current_branch=$(detect_current_branch)
+    
+    if [[ -z "$current_branch" ]]; then
+        echo -e "⚠️  ${YELLOW}Impossible de déterminer la branche courante${RESET}"
+        handle_corrupted_dir
+        return
+    fi
+    
+    echo -e "🌿  Branche actuelle : ${BOLD}${current_branch}${RESET}"
+    
+    # Déterminer le type de mise à jour selon la branche
+    if [[ "$current_branch" == "main" ]]; then
+        # Branche main → se concentrer sur les releases
+        update_git_main_installation
     else
-        # Cas singulier : dossier existant mais ni .git ni .version : Cas 2
-        # Se transforme en Cas 1 après avoir fait le choix.
-        echo "-- Cas hybride ---"
-        echo "Traces d'un dossier git : non"
-        echo "Absence de fichier .version"
-        echo "En attente d'une decision..."
-        echo ""
-        echo -e "📦  Cas 2/ Installation sur dossier existant détécté, incomplet/correct..."
-        echo ""
-        echo -e "❗  ${RED}Le répertoire $INSTALL_DIR existe mais semble incomplet ou corrompu.${RESET}"
-        echo ""
-        echo -e "${UNDERLINE}${ITALIC}Que voulez-vous faire ?${RESET}"
-        echo -e "  [1] ${BOLD}${RED}Supprimer${RESET} le contenu et continuer à l'installation proprement"
-        echo -e "  [2] Installer 'par-dessus' le contenu existant (risque de conflits)"
-        echo -e "  [3] Ne rien faire et quitter"
-        echo ""
-        read -e -rp "Choix (1/2/3) : " sub_choice
-        echo ""
-        case "$sub_choice" in
-            1)
-                safe_exec "✅  Ancien dossier "$INSTALL_DIR" supprimé avec succès." \
-                          "❌  Impossible de supprimer $INSTALL_DIR" \
-                          rm -rf "$INSTALL_DIR"
-
-                safe_exec "✅  Installation minimale terminée." \
-                          "❌  Échec installation minimale." \
-                          install_minimal "$LATEST_TAG"
-                ;;
-            2)
-                echo "ℹ️  Installation par-dessus existant..."
-                safe_exec "✅  Installation minimale terminée." \
-                          "❌  Échec installation minimale." \
-                          install_minimal "$LATEST_TAG"
-                ;;
-            3|*)
-                echo "Abandon. Ciao 👋"
-                exit 0
-                ;;
-        esac
+        # Autre branche → se concentrer sur HEAD
+        update_git_branch_installation "$current_branch"
     fi
 }
 
+# --------------------------------------------------------------------------- #
+# Gestion d'un dossier corrompu
+# --------------------------------------------------------------------------- #
+handle_corrupted_dir() {
+    echo ""
+    echo -e "❗  ${RED}Le répertoire $INSTALL_DIR existe mais semble incomplet ou corrompu.${RESET}"
+    echo ""
+    echo -e "${UNDERLINE}${ITALIC}Que voulez-vous faire ?${RESET}"
+    echo -e "  [1] ${BOLD}${RED}Supprimer${RESET} le contenu et réinstaller proprement."
+    echo -e "  [2] Installer 'par-dessus' le contenu existant ${YELLOW}→ risque de conflits !${RESET}"
+    echo -e "  [3] Ne rien faire et quitter."
+    echo ""
+    read -e -rp "Choix (1/2/3) : " sub_choice
+    echo ""
+    case "$sub_choice" in
+        1)
+            safe_exec "✅  Ancien dossier $INSTALL_DIR supprimé avec succès." \
+                      "❌  Impossible de supprimer $INSTALL_DIR" \
+                      rm -rf "$INSTALL_DIR"
+
+            install_minimal "$LATEST_TAG"
+            ;;
+        2)
+            echo "ℹ️  Installation par-dessus existant..."
+            install_minimal "$LATEST_TAG"
+            ;;
+        3|*)
+            echo "Abandon. Ciao 👋"
+            exit 0
+            ;;
+    esac
+}
+
+# --------------------------------------------------------------------------- #
+# Mise à jour d'une installation Git sur branche main
+# --------------------------------------------------------------------------- #
+update_git_main_installation() {
+    echo ""
+    echo -e "🔄  ${BOLD}Vérification des mises à jour pour la branche main (releases)...${RESET}"
+    
+    cd "$INSTALL_DIR" || return 1
+    
+    # Récupérer le tag actuellement installé
+    local installed_tag
+    installed_tag=$(git describe --tags --abbrev=0 2>/dev/null)
+    
+    if [[ -z "$installed_tag" ]]; then
+        echo -e "⚠️  ${YELLOW}Aucun tag détecté sur cette installation${RESET}"
+        installed_tag="unknown"
+    fi
+    
+    echo -e "📌  Version installée  : ${ITALIC}${installed_tag}${RESET}"
+    echo -e "📌  Version disponible : ${ITALIC}${LATEST_TAG}${RESET}"
+    
+    # Comparer les versions
+    if [[ "$installed_tag" == "$LATEST_TAG" ]]; then
+        echo ""
+        echo -e "✅  ${GREEN}Installation déjà à jour (dernière release)${RESET}"
+        return 0
+    fi
+    
+    # Proposer la mise à jour
+    echo ""
+    echo -e "ℹ️  ${BOLD}Nouvelle release disponible${RESET} : $installed_tag → $LATEST_TAG"
+    echo ""
+    read -e -rp "Voulez-vous mettre à jour vers $LATEST_TAG ? (O/n) : " -n 1 -r
+    echo ""
+    
+    if [[ ! -z "$REPLY" && ! "$REPLY" =~ ^[OoYy]$ ]]; then
+        echo "ℹ️  Mise à jour annulée"
+        return 0
+    fi
+    
+    # Effectuer la mise à jour
+    echo ""
+    echo "🔄  Mise à jour vers la release $LATEST_TAG..."
+    
+    # Fetch les dernières infos
+    safe_exec "✅  Récupération des dernières informations" \
+              "❌  Échec du fetch" \
+              git fetch --tags origin
+    
+    # Vérifier s'il y a des modifications locales
+    if ! git diff-index --quiet HEAD --; then
+        echo ""
+        echo -e "⚠️  ${YELLOW}Des modifications locales ont été détectées${RESET}"
+        echo ""
+        read -e -rp "Voulez-vous les sauvegarder avec 'git stash' ? (O/n) : " -n 1 -r
+        echo ""
+        if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
+            git stash save "Sauvegarde automatique avant MAJ vers $LATEST_TAG"
+            echo "✅  Modifications sauvegardées (git stash)"
+        fi
+    fi
+    
+    # Checkout sur le nouveau tag
+    safe_exec "✅  Mise à jour effectuée vers $LATEST_TAG" \
+              "❌  Échec du checkout sur $LATEST_TAG" \
+              git checkout "$LATEST_TAG"
+    
+    # Positionner la branche main sur ce tag
+    safe_exec "✅  Branche main positionnée sur $LATEST_TAG" \
+              "❌  Impossible de positionner main" \
+              git branch -f main "$LATEST_TAG"
+    
+    safe_exec "✅  Checkout de la branche main" \
+              "❌  Impossible de checkout main" \
+              git checkout main
+    
+    echo ""
+    echo -e "✅  ${GREEN}Mise à jour terminée avec succès !${RESET}"
+}
+
+# --------------------------------------------------------------------------- #
+# Mise à jour d'une installation Git sur autre branche
+# --------------------------------------------------------------------------- #
+update_git_branch_installation() {
+    local branch="$1"
+    
+    echo ""
+    echo -e "🔄  ${BOLD}Vérification des mises à jour pour la branche : ${branch}${RESET}"
+    
+    cd "$INSTALL_DIR" || return 1
+    
+    # Récupérer le commit actuel
+    local current_commit current_short
+    current_commit=$(git rev-parse HEAD 2>/dev/null)
+    current_short=$(git rev-parse --short HEAD 2>/dev/null)
+    
+    # Vérifier si des mises à jour sont disponibles
+    if check_git_updates "$branch"; then
+        local remote_commit remote_short
+        remote_commit=$(git rev-parse "origin/$branch" 2>/dev/null)
+        remote_short=$(git rev-parse --short "origin/$branch" 2>/dev/null)
+        
+        echo ""
+        echo -e "📌  Commit local  : ${ITALIC}${current_short}${RESET}"
+        echo -e "📌  Commit distant : ${ITALIC}${remote_short}${RESET}"
+        echo ""
+        echo -e "ℹ️  ${BOLD}Des mises à jour sont disponibles sur la branche ${branch}${RESET}"
+        echo ""
+        read -e -rp "Voulez-vous mettre à jour vers HEAD de $branch ? (O/n) : " -n 1 -r
+        echo ""
+        
+        if [[ ! -z "$REPLY" && ! "$REPLY" =~ ^[OoYy]$ ]]; then
+            echo "ℹ️  Mise à jour annulée"
+            return 0
+        fi
+        
+        # Effectuer la mise à jour
+        echo ""
+        echo "🔄  Mise à jour de la branche $branch..."
+        
+        # Vérifier s'il y a des modifications locales
+        if ! git diff-index --quiet HEAD --; then
+            echo ""
+            echo -e "⚠️  ${YELLOW}Des modifications locales ont été détectées${RESET}"
+            echo ""
+            read -e -rp "Voulez-vous les sauvegarder avec 'git stash' ? (O/n) : " -n 1 -r
+            echo ""
+            if [[ -z "$REPLY" || "$REPLY" =~ ^[OoYy]$ ]]; then
+                git stash save "Sauvegarde automatique avant MAJ de $branch"
+                echo "✅  Modifications sauvegardées (git stash)"
+            fi
+        fi
+        
+        # Pull de la branche
+        safe_exec "✅  Mise à jour effectuée" \
+                  "❌  Échec du pull" \
+                  git pull origin "$branch"
+        
+        echo ""
+        echo -e "✅  ${GREEN}Mise à jour terminée avec succès !${RESET}"
+    else
+        echo ""
+        echo -e "✅  ${GREEN}Installation déjà à jour (HEAD de $branch)${RESET}"
+        echo -e "📌  Commit actuel : ${ITALIC}${current_short}${RESET}"
+    fi
+}
+
+# --------------------------------------------------------------------------- #
+# Récupération du tag de la version installée
+# --------------------------------------------------------------------------- #
 get_installed_release() {
     if [ -d "$INSTALL_DIR/.git" ]; then
         cd "$INSTALL_DIR" || return 1
@@ -804,7 +1009,6 @@ install_dev_branch() {
     
 }
 
-
 # --------------------------------------------------------------------------- #
 # Installation principale (git clone) sur le dernier tag
 # --------------------------------------------------------------------------- #
@@ -912,15 +1116,28 @@ create_executables() {
     echo "🤖  Rendre les scripts exécutables..."
 
     local files=()
+
+    # Script principal
     files+=("$INSTALL_DIR/main.sh")
 
-    local UPDATER_SCRIPT="$INSTALL_DIR/maintenance/standalone_updater.sh"
-    [[ -f "$UPDATER_SCRIPT" ]] && files+=("$UPDATER_SCRIPT")
+    # Cet installateur (pour des maj)
+    files+=("$INSTALL_DIR/install.sh")
+
+    # Tous les scripts .sh dans maintenance (si le dossier existe)
+    if [[ -d "$INSTALL_DIR/maintenance" ]]; then
+        while IFS= read -r -d '' file; do
+            files+=("$file")
+        done < <(find "$INSTALL_DIR/maintenance" -type f -name "*.sh" -print0)
+    fi
+
+    if (( ${#files[@]} == 0 )); then
+        print_fancy --theme "warn" "Aucun fichier .sh trouvé à rendre exécutable."
+        return
+    fi
 
     safe_exec "✅  ${BOLD}${files[*]}${RESET} → rendu(s) exécutable(s)." \
-            "❌  ${BOLD}${files[*]}${RESET} : n'a pas pu être rendu exécutable." \
-            chmod +x "${files[@]}"
-
+              "❌  ${BOLD}${files[*]}${RESET} : n'a pas pu être rendu exécutable." \
+              chmod +x "${files[@]}"
 }
 
 # --------------------------------------------------------------------------- #
@@ -941,53 +1158,31 @@ main() {
 
     elif [[ -d "$INSTALL_DIR" ]]; then
         # Cas 2 ou 3 : Dossier existant → gestion selon contenu (.git / .version / corrompu)
-        handle_existing_dir "" echo -e "${GREEN}✅  Installation atypique terminée.${RESET}";
+        handle_existing_dir && echo -e "${GREEN}✅  Installation/MAJ terminée.${RESET}"
 
     else
         # Cas 1 : Dossier absent → installation minimale depuis le dernier tag
-        install_minimal "$LATEST_TAG" && echo -e "${GREEN}✅  Installation minimale terminée - tag $LATEST_TAG${RESET}";
+        install_minimal "$LATEST_TAG" && echo -e "${GREEN}✅  Installation minimale terminée - tag $LATEST_TAG${RESET}"
     fi
 
     # === Étapes communes à exécuter uniquement si l'installation a réussi ===
-    # (set -e fera sauter le script si une des fonctions échoue)
     create_symlinks
     create_executables
 
     echo ""
-    echo -e "+----------------------------+"
-    echo -e "|  ${GREEN}🎉  ${BOLD}Installation terminée.${RESET} |"
-    echo -e "+----------------------------+"
+    echo "+------------------------------------------------------------------------------+"
+    echo -e "|                          ${GREEN}🎉  ${BOLD}Installation terminée.${RESET}                          |"
+    echo "+------------------------------------------------------------------------------+"
+
     echo ""
-    echo -e "🔀  Pour lancer : $INSTALL_DIR/main.sh ou via le symlink ${BLUE}rclone_homelab${RESET}"
+    echo "🔀  Pour démarrer :"
+    echo "→ $INSTALL_DIR/main.sh"
+    echo "... ou via le symlink :"
+    echo -e "→ ${BLUE}rclone_homelab${RESET}"
+    echo ""
+    echo "Bonne journée :)"
     echo ""
 }
 
 main "$@"
 exit 0
-
-
-
-
-
-
-
-
-# =========================================================================== #
-# Notes
-# =========================================================================== #
-
-# Les variables définies içi n'influent en rien le script une fois installé.
-# Installation toujours basée sur le dernier tag (release).
-# Prise en compte du root.
-
-# Fichier /maintenance/standalone_updater.sh est rendu exécutable avec son symlink
-# rclone_homelab-updater <--force>
-
-# Ce fichier permet de mettre à jours le script (basé sur la branche main + release)
-# mais aussi les script optionnels !
-
-# Lien à communiquer pour l'installation :
-bash <(curl -s https://raw.githubusercontent.com/Gotcha26/rclone_homelab/main/install.sh)
-
-# Pour les utilisateur aguerris (dev) :
-bash <(curl -s https://raw.githubusercontent.com/Gotcha26/rclone_homelab/main/install.sh) --force dev
