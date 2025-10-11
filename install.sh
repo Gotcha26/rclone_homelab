@@ -10,9 +10,9 @@
 #   Cas 3 : dossier d'installation présent avec .version → mise à jour minimale si nouvelle release disponible
 #   Cas 4 : argument --dev <branch> → clone complet Git de la branche indiquée (historique limité à cette branche)
 #
-# ⚠️ Le fichier .version contient le tag installé pour permettre les mises à jour minimales
-# ⚠️ Les installations minimalistes ne conservent pas le .git, donc pas d'historique complet
-# ⚠️ Le mode --force <branche> permet de travailler avec Git complet mais limité à la branche demandée
+# ⚠️  Le fichier .version contient le tag installé pour permettre les mises à jour minimales
+# ⚠️  Les installations minimalistes ne conservent pas le .git, donc pas d'historique complet
+# ⚠️  Le mode --force <branche> permet de travailler avec Git complet mais limité à la branche demandée
 
 set -uo pipefail
 
@@ -858,7 +858,11 @@ install_minimal() {
 
         safe_exec "✅  Déplacement effectué avec succès : $DIR_LOCAL/* → $DIR_BACKUP" \
                   "❌  Impossible de déplacer : $DIR_LOCAL → $DIR_BACKUP" \
-                  mv "$DIR_LOCAL"/* "$DIR_BACKUP"/
+                  rsync -a --remove-source-files "$DIR_LOCAL"/ "$DIR_BACKUP"/
+
+        safe_exec "✅  Suppression de la source vide : $DIR_LOCAL/* \
+                  "❌  Impossible de supprimer : $DIR_LOCAL \
+                  find "$DIR_LOCAL" -type d -empty -delete
     fi
 
     # Téléchargement de la release ZIP
@@ -903,11 +907,11 @@ install_minimal() {
 
     safe_exec "✅  Déplacement OK" \
               "❌  Impossible de déplacer les fichiers extraits à la racine" \
-              bash -c "mv \"$extracted_dir\"/* \"$INSTALL_DIR\"/"
+              rsync -a --delete "$extracted_dir"/ "$INSTALL_DIR"/
 
     safe_exec "✅  Suppression OK" \
               "❌  Impossible de supprimer le dossier temporaire $extracted_dir" \
-              bash -c "rm -rf \"$extracted_dir\""
+              rm -rf "$extracted_dir"
 
     # Restaurer le répertoire courant si possible (silencieux si disparu)
     cd "$PREV_PWD" 2>/dev/null || true
@@ -1135,6 +1139,13 @@ create_executables() {
         return
     fi
 
+    # Affichage 1 fichier par ligne
+    echo "⚡ Fichiers à rendre exécutables :"
+    for f in "${files[@]}"; do
+        echo "   - $f"
+    done
+
+    # Rendre les fichiers exécutables
     safe_exec "✅  ${BOLD}${files[*]}${RESET} → rendu(s) exécutable(s)." \
               "❌  ${BOLD}${files[*]}${RESET} : n'a pas pu être rendu exécutable." \
               chmod +x "${files[@]}"

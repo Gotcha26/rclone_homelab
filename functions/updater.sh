@@ -30,9 +30,12 @@ check_update() {
 
     # --- 2. Assurer la présence du fichier .version ---
     if [[ ! -s "$DIR_VERSION_FILE" ]]; then
+        # Création minimaliste pour ne pas bloquer la détection
         display_msg "hard" "⚙️  Initialisation du fichier de version pour la branche '$branch_real'..."
-        write_version_file "$branch_real" || display_msg "verbose|hard" --theme warning "Impossible d'écrire la version initiale"
+        mkdir -p "$(dirname "$DIR_VERSION_FILE")"
+        echo "0.0.0" > "$DIR_VERSION_FILE"
     fi
+
 
     # --- 3. Récupérer les infos Git / remote / tags ---
     fetch_git_info || return 1
@@ -118,15 +121,30 @@ write_version_file() {
 
 
 ###############################################################################
-# Fonction : Récupère le dernier tag disponible sur le dépôt distant
-# → utilisable aussi bien en mode Git que standalone
+# Fonction : Récupère le dernier tag distant (API GitHub)
+# → Retourne juste le tag ou chaîne vide si erreur
 ###############################################################################
 get_remote_latest_tag() {
-    if [[ -z "${REMOTE_VERSION_URL:-}" ]]; then
+    local json tag
+
+    # Vérifier que l'URL est définie
+    if [[ -z "${GITHUB_API_URL:-}" ]]; then
         echo ""
         return
     fi
-    curl -s "$REMOTE_VERSION_URL" 2>/dev/null || echo ""
+
+    # Récupérer les infos depuis GitHub
+    json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
+    if [[ -z "$json" ]]; then
+        echo ""
+        return
+    fi
+
+    # Extraire le tag
+    tag=$(echo "$json" | jq -r '.tag_name // empty' | tr -d '[:space:]')
+
+    # Retourner le tag ou chaîne vide
+    echo "${tag:-}"
 }
 
 
@@ -197,9 +215,14 @@ analyze_update_status() {
     # --- Mode sans Git : on affiche la version locale et (éventuellement) annonce d'une release ---
     if [[ "$branch_real" == "(local-standalone-version)" ]]; then
 
+        LOCAL_VERSION=$(get_local_version | tr -d '[:space:]')
+        latest_tag=$(get_remote_latest_tag | tr -d '[:space:]')
+
         if [[ -n "$latest_tag" && "$LOCAL_VERSION" != "$latest_tag" ]]; then
             print_fancy --theme "flash" --bg "blue" --align "center" --style "bold" \
                 "Nouvelle version disponible : $latest_tag"
+            print_fancy --theme "info" --align "center" --bg "blue" --style "bold" \
+                "Utilisez le fichier install.sh pour effectuer manuellement la mise à jour."
         else
             print_fancy --fg "light_blue" --align "right" "$(get_current_version)"
         fi
