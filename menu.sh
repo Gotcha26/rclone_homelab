@@ -173,6 +173,7 @@ while true; do
 
     # --- Validation et exécution ---
     if [[ "$choice" == "q" ]]; then
+        echo
         echo "Vous partez déjà..."
         return 99
         break
