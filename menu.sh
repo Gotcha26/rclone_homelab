@@ -173,7 +173,6 @@ while true; do
 
     # --- Validation et exécution ---
     if [[ "$choice" == "q" ]]; then
-        scroll_down
         echo "Vous partez déjà..."
         return 99
         break
