@@ -847,8 +847,8 @@ install_minimal() {
               "❌  Impossible de créer $DIR_LOCAL" \
               create_local_dir
 
-    # --- Backup si des fichiers existent déjà ---
-    if [ -n "$(ls -A "$DIR_LOCAL" 2>/dev/null)" ]; then
+    # --- Backup si des fichiers existent déjà dans INSTALL_DIR ---
+    if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
         local DIR_BACKUP="${INSTALL_DIR}/backup_$(date +%Y%m%d_%H%M%S)"
         echo "⚠️  Des fichiers existent déjà dans $INSTALL_DIR. Création d'un backup : $DIR_BACKUP"
 
@@ -856,13 +856,18 @@ install_minimal() {
                   "❌  Impossible de créer : $DIR_BACKUP" \
                   mkdir -p "$DIR_BACKUP"
 
-        safe_exec "✅  Déplacement effectué avec succès : $DIR_LOCAL/* → $DIR_BACKUP" \
-                  "❌  Impossible de déplacer : $DIR_LOCAL → $DIR_BACKUP" \
-                  rsync -a --remove-source-files "$DIR_LOCAL"/ "$DIR_BACKUP"/
+        # Déplacer seulement si quelque chose à déplacer
+        if [ -n "$(ls -A "$DIR_LOCAL" 2>/dev/null)" ]; then
+            safe_exec "✅  Déplacement effectué avec succès : $DIR_LOCAL/* → $DIR_BACKUP" \
+                      "❌  Impossible de déplacer : $DIR_LOCAL → $DIR_BACKUP" \
+                      rsync -a --remove-source-files "$DIR_LOCAL"/ "$DIR_BACKUP"/
 
-        safe_exec "✅  Suppression de la source vide : $DIR_LOCAL/* \
-                  "❌  Impossible de supprimer : $DIR_LOCAL \
-                  find "$DIR_LOCAL" -type d -empty -delete
+            safe_exec "✅  Suppression de la source vide : $DIR_LOCAL" \
+                      "❌  Impossible de supprimer : $DIR_LOCAL" \
+                      find "$DIR_LOCAL" -type d -empty -delete
+        else
+            echo "ℹ️  Aucun fichier à sauvegarder depuis $DIR_LOCAL (dossier vide)."
+        fi
     fi
 
     # Téléchargement de la release ZIP
