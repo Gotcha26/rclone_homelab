@@ -146,7 +146,15 @@ create_local_dir() {
 
 write_version_file() {
     local tag="$1"
-    echo "$tag" > "$VERSION_FILE"
+    # s'assurer que le dossier parent existe
+    mkdir -p "$(dirname "$VERSION_FILE")"
+
+    # essayer d'écrire avec trace d'erreur
+    if ! echo "$tag" > "$VERSION_FILE"; then
+        echo -e "${RED}❌ Impossible d'écrire le fichier de version : $VERSION_FILE${RESET}"
+        echo "Vérifier les permissions et l'existence du dossier parent : $(dirname "$VERSION_FILE")"
+        return 1
+    fi
 }
 
 read_version_file() {
@@ -889,10 +897,14 @@ install_minimal() {
               "❌  Échec téléchargement release" \
               curl -fsSL -o "$zip_file" "$zip_url"
 
-    # --- Extraction ---
+    # --- Extraction dans un dossier temporaire séparé ---
+    local tmp_dir="/tmp/rclone_homelab_extracted"
+    rm -rf "$tmp_dir"
+    mkdir -p "$tmp_dir"
+
     safe_exec "✅  Extraction terminée." \
               "❌  Échec extraction release" \
-              unzip -o "$zip_file" -d "$INSTALL_DIR"
+              unzip -o "$zip_file" -d "$tmp_dir"
 
     safe_exec "✅  Suppression du fichier zip OK" \
               "❌  Impossible de supprimer le fichier ZIP" \
@@ -900,28 +912,21 @@ install_minimal() {
 
     # --- Détection du dossier extrait ---
     local extracted_dir
-    extracted_dir=$(find "$INSTALL_DIR" -maxdepth 1 -type d -name "rclone_homelab-*" | head -n1)
+    extracted_dir=$(find "$tmp_dir" -maxdepth 1 -type d -name "rclone_homelab-*" | head -n1)
 
     if [[ -z "$extracted_dir" ]]; then
-        echo -e "❌  Aucun dossier extrait trouvé dans $INSTALL_DIR"
+        echo -e "❌  Aucun dossier extrait trouvé dans $tmp_dir"
+        rm -rf "$tmp_dir"
         exit 1
     fi
 
-    # --- Copie des fichiers extraits ---
-    # Important : s'assurer de ne pas être DANS le dossier qu'on va supprimer/mv
-    local PREV_PWD="$PWD"
-    cd / || true  # éviter d’être dans INSTALL_DIR pendant le rsync
-
+    # --- Copie vers INSTALL_DIR ---
     safe_exec "✅  Déplacement OK" \
               "❌  Impossible de déplacer les fichiers extraits à la racine" \
               rsync -a --delete "$extracted_dir"/ "$INSTALL_DIR"/
 
-    safe_exec "✅  Suppression OK" \
-              "❌  Impossible de supprimer le dossier temporaire $extracted_dir" \
-              rm -rf "$extracted_dir"
-
-    # Restaurer le répertoire courant si possible (silencieux si disparu)
-    cd "$PREV_PWD" 2>/dev/null || true
+    # --- Nettoyage ---
+    rm -rf "$tmp_dir"
 
     # --- Écriture du fichier version ---
     safe_exec "✅  Écriture du tag dans le fichier ${VERSION_FILE}" \
