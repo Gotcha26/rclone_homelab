@@ -74,7 +74,9 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    case "$(check_jobs_file; echo $?)" in
+    check_jobs_file
+    ret=$?
+    case $ret in
         1)
             add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_init_jobs"
             ;;
@@ -124,7 +126,7 @@ while true; do
         add_option "💻  Installer une configuration locale    → vos réglages personnels" "menu_init_config_local"
     fi
     # Propose l'édition de configuration locale pour dev seulement si présente
-    if [[ "$branch_real" != "main" ]]; then
+    if [[ "$branch_real" != "main" && "$branch_real" != *"local-standalone-version"* ]]; then
         if [[ -f "$DIR_CONF_DEV_FILE" ]]; then
             add_option "✏️  Éditer la configuration pour dev      → orienté développeurs" "menu_edit_config_dev"
         else
@@ -141,7 +143,7 @@ while true; do
     add_separator_if_needed
 
     # 5) Options pour la branche dev
-    if [[ "$branch_real" != "main" ]]; then
+   if [[ "$branch_real" != "main" && "$branch_real" != *"local-standalone-version"* ]]; then
         add_option "🔓  Installer  un composant               → Qui ne serait pas déjà présent..." "menu_dev_install"
         add_option "🔓  Désinstaller un composant             → Irréversible !" "menu_dev_uninstall"
     fi
@@ -171,7 +173,7 @@ while true; do
 
     # --- Validation et exécution ---
     if [[ "$choice" == "q" ]]; then
-        scroll_down
+        echo
         echo "Vous partez déjà..."
         return 99
         break

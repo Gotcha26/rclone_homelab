@@ -10,9 +10,9 @@
 #   Cas 3 : dossier d'installation présent avec .version → mise à jour minimale si nouvelle release disponible
 #   Cas 4 : argument --dev <branch> → clone complet Git de la branche indiquée (historique limité à cette branche)
 #
-# ⚠️ Le fichier .version contient le tag installé pour permettre les mises à jour minimales
-# ⚠️ Les installations minimalistes ne conservent pas le .git, donc pas d'historique complet
-# ⚠️ Le mode --force <branche> permet de travailler avec Git complet mais limité à la branche demandée
+# ⚠️  Le fichier .version contient le tag installé pour permettre les mises à jour minimales
+# ⚠️  Les installations minimalistes ne conservent pas le .git, donc pas d'historique complet
+# ⚠️  Le mode --force <branche> permet de travailler avec Git complet mais limité à la branche demandée
 
 set -uo pipefail
 
@@ -146,7 +146,15 @@ create_local_dir() {
 
 write_version_file() {
     local tag="$1"
-    echo "$tag" > "$VERSION_FILE"
+    # s'assurer que le dossier parent existe
+    mkdir -p "$(dirname "$VERSION_FILE")"
+
+    # essayer d'écrire avec trace d'erreur
+    if ! echo "$tag" > "$VERSION_FILE"; then
+        echo -e "${RED}❌ Impossible d'écrire le fichier de version : $VERSION_FILE${RESET}"
+        echo "Vérifier les permissions et l'existence du dossier parent : $(dirname "$VERSION_FILE")"
+        return 1
+    fi
 }
 
 read_version_file() {
@@ -834,11 +842,13 @@ get_installed_release() {
 }
 
 # --------------------------------------------------------------------------- #
-# Installation minimale depuis une release (pas de dossier .git)
+# Fonction : Installation minimale d'une release RCLONE_HOMELAB
+# Usage : install_minimal <tag>
 # --------------------------------------------------------------------------- #
 install_minimal() {
     local tag="$1"
     cd /
+
     echo ""
     echo -e "📦  Cas 1/ Installation minimale de ${BOLD}RCLONE_HOMELAB : $tag${RESET}"
 
@@ -847,8 +857,8 @@ install_minimal() {
               "❌  Impossible de créer $DIR_LOCAL" \
               create_local_dir
 
-    # --- Backup si des fichiers existent déjà ---
-    if [ -n "$(ls -A "$DIR_LOCAL" 2>/dev/null)" ]; then
+    # --- Backup si des fichiers existent déjà dans INSTALL_DIR ---
+    if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
         local DIR_BACKUP="${INSTALL_DIR}/backup_$(date +%Y%m%d_%H%M%S)"
         echo "⚠️  Des fichiers existent déjà dans $INSTALL_DIR. Création d'un backup : $DIR_BACKUP"
 
@@ -856,12 +866,21 @@ install_minimal() {
                   "❌  Impossible de créer : $DIR_BACKUP" \
                   mkdir -p "$DIR_BACKUP"
 
-        safe_exec "✅  Déplacement effectué avec succès : $DIR_LOCAL/* → $DIR_BACKUP" \
-                  "❌  Impossible de déplacer : $DIR_LOCAL → $DIR_BACKUP" \
-                  mv "$DIR_LOCAL"/* "$DIR_BACKUP"/
+        # Déplacer seulement si quelque chose à déplacer
+        if [ -n "$(ls -A "$DIR_LOCAL" 2>/dev/null)" ]; then
+            safe_exec "✅  Déplacement effectué avec succès : $DIR_LOCAL/* → $DIR_BACKUP" \
+                      "❌  Impossible de déplacer : $DIR_LOCAL → $DIR_BACKUP" \
+                      rsync -a --remove-source-files "$DIR_LOCAL"/ "$DIR_BACKUP"/
+
+            safe_exec "✅  Suppression de la source vide : $DIR_LOCAL" \
+                      "❌  Impossible de supprimer : $DIR_LOCAL" \
+                      find "$DIR_LOCAL" -type d -empty -delete
+        else
+            echo "ℹ️  Aucun fichier à sauvegarder depuis $DIR_LOCAL (dossier vide)."
+        fi
     fi
 
-    # Téléchargement de la release ZIP
+    # --- Téléchargement de la release ---
     local zip_url="https://github.com/Gotcha26/rclone_homelab/archive/refs/tags/${tag}.zip"
     local zip_file="$INSTALL_DIR/release.zip"
 
@@ -878,45 +897,41 @@ install_minimal() {
               "❌  Échec téléchargement release" \
               curl -fsSL -o "$zip_file" "$zip_url"
 
-    # Extraction et nettoyage
+    # --- Extraction dans un dossier temporaire séparé ---
+    local tmp_dir="/tmp/rclone_homelab_extracted"
+    rm -rf "$tmp_dir"
+    mkdir -p "$tmp_dir"
+
     safe_exec "✅  Extraction terminée." \
               "❌  Échec extraction release" \
-              unzip -o "$zip_file" -d "$INSTALL_DIR"
+              unzip -o "$zip_file" -d "$tmp_dir"
 
     safe_exec "✅  Suppression du fichier zip OK" \
               "❌  Impossible de supprimer le fichier ZIP" \
               rm -f "$zip_file"
 
-    # Détection automatique du dossier extrait
+    # --- Détection du dossier extrait ---
     local extracted_dir
-    extracted_dir=$(find "$INSTALL_DIR" -maxdepth 1 -type d -name "rclone_homelab-*" | head -n1)
+    extracted_dir=$(find "$tmp_dir" -maxdepth 1 -type d -name "rclone_homelab-*" | head -n1)
 
     if [[ -z "$extracted_dir" ]]; then
-        echo -e "❌  Aucun dossier extrait trouvé dans $INSTALL_DIR"
+        echo -e "❌  Aucun dossier extrait trouvé dans $tmp_dir"
+        rm -rf "$tmp_dir"
         exit 1
     fi
 
-    # --- Important : s'assurer de ne pas être DANS le dossier qu'on va supprimer/mv ---
-    local PREV_PWD="$PWD"
-    # se placer dans INSTALL_DIR (parent commun) ou / si impossible
-    cd "$INSTALL_DIR" 2>/dev/null || cd / 2>/dev/null || true
-
+    # --- Copie vers INSTALL_DIR ---
     safe_exec "✅  Déplacement OK" \
               "❌  Impossible de déplacer les fichiers extraits à la racine" \
-              bash -c "mv \"$extracted_dir\"/* \"$INSTALL_DIR\"/"
+              rsync -a --delete "$extracted_dir"/ "$INSTALL_DIR"/
 
-    safe_exec "✅  Suppression OK" \
-              "❌  Impossible de supprimer le dossier temporaire $extracted_dir" \
-              bash -c "rm -rf \"$extracted_dir\""
+    # --- Nettoyage ---
+    rm -rf "$tmp_dir"
 
-    # Restaurer le répertoire courant si possible (silencieux si disparu)
-    cd "$PREV_PWD" 2>/dev/null || true
-
-    # Création fichier version
-    safe_exec "✅  Ecriture du tag dans le fichier ${VERSION_FILE}" \
+    # --- Écriture du fichier version ---
+    safe_exec "✅  Écriture du tag dans le fichier ${VERSION_FILE}" \
               "❌  Impossible d'écrire le fichier de version" \
               write_version_file "$tag"
-
 }
 
 # --------------------------------------------------------------------------- #
@@ -1135,6 +1150,13 @@ create_executables() {
         return
     fi
 
+    # Affichage 1 fichier par ligne
+    echo "⚡ Fichiers à rendre exécutables :"
+    for f in "${files[@]}"; do
+        echo "   - $f"
+    done
+
+    # Rendre les fichiers exécutables
     safe_exec "✅  ${BOLD}${files[*]}${RESET} → rendu(s) exécutable(s)." \
               "❌  ${BOLD}${files[*]}${RESET} : n'a pas pu être rendu exécutable." \
               chmod +x "${files[@]}"
@@ -1171,7 +1193,7 @@ main() {
 
     echo ""
     echo "+------------------------------------------------------------------------------+"
-    echo -e "|                          ${GREEN}🎉  ${BOLD}Installation terminée.${RESET}                          |"
+    echo -e "|                          ${GREEN}🎉  ${BOLD}Installation terminée.${RESET}                           |"
     echo "+------------------------------------------------------------------------------+"
 
     echo ""
