@@ -834,11 +834,13 @@ get_installed_release() {
 }
 
 # --------------------------------------------------------------------------- #
-# Installation minimale depuis une release (pas de dossier .git)
+# Fonction : Installation minimale d'une release RCLONE_HOMELAB
+# Usage : install_minimal <tag>
 # --------------------------------------------------------------------------- #
 install_minimal() {
     local tag="$1"
     cd /
+
     echo ""
     echo -e "📦  Cas 1/ Installation minimale de ${BOLD}RCLONE_HOMELAB : $tag${RESET}"
 
@@ -870,7 +872,7 @@ install_minimal() {
         fi
     fi
 
-    # Téléchargement de la release ZIP
+    # --- Téléchargement de la release ---
     local zip_url="https://github.com/Gotcha26/rclone_homelab/archive/refs/tags/${tag}.zip"
     local zip_file="$INSTALL_DIR/release.zip"
 
@@ -887,7 +889,7 @@ install_minimal() {
               "❌  Échec téléchargement release" \
               curl -fsSL -o "$zip_file" "$zip_url"
 
-    # Extraction et nettoyage
+    # --- Extraction ---
     safe_exec "✅  Extraction terminée." \
               "❌  Échec extraction release" \
               unzip -o "$zip_file" -d "$INSTALL_DIR"
@@ -896,7 +898,7 @@ install_minimal() {
               "❌  Impossible de supprimer le fichier ZIP" \
               rm -f "$zip_file"
 
-    # Détection automatique du dossier extrait
+    # --- Détection du dossier extrait ---
     local extracted_dir
     extracted_dir=$(find "$INSTALL_DIR" -maxdepth 1 -type d -name "rclone_homelab-*" | head -n1)
 
@@ -905,10 +907,10 @@ install_minimal() {
         exit 1
     fi
 
-    # --- Important : s'assurer de ne pas être DANS le dossier qu'on va supprimer/mv ---
+    # --- Copie des fichiers extraits ---
+    # Important : s'assurer de ne pas être DANS le dossier qu'on va supprimer/mv
     local PREV_PWD="$PWD"
-    # se placer dans INSTALL_DIR (parent commun) ou / si impossible
-    cd "$INSTALL_DIR" 2>/dev/null || cd / 2>/dev/null || true
+    cd / || true  # éviter d’être dans INSTALL_DIR pendant le rsync
 
     safe_exec "✅  Déplacement OK" \
               "❌  Impossible de déplacer les fichiers extraits à la racine" \
@@ -921,11 +923,10 @@ install_minimal() {
     # Restaurer le répertoire courant si possible (silencieux si disparu)
     cd "$PREV_PWD" 2>/dev/null || true
 
-    # Création fichier version
-    safe_exec "✅  Ecriture du tag dans le fichier ${VERSION_FILE}" \
+    # --- Écriture du fichier version ---
+    safe_exec "✅  Écriture du tag dans le fichier ${VERSION_FILE}" \
               "❌  Impossible d'écrire le fichier de version" \
               write_version_file "$tag"
-
 }
 
 # --------------------------------------------------------------------------- #
