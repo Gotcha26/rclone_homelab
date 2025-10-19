@@ -35,8 +35,8 @@ declare -A VARS_TO_VALIDATE=(
 # Tableau couple fichier exemple : fichier local
 # Format : ["nom_unique"]="référence;local"
 declare -A VARS_LOCAL_FILES=(
-    ["conf_local"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_DEV_FILE}"
-    ["conf_dev"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
+    ["conf_local"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_LOCAL_FILE}"
+    ["conf_dev"]="${DIR_EXEMPLE_CONF_LOCAL_FILE};${DIR_CONF_DEV_FILE}"
     ["jobs"]="${DIR_EXEMPLE_JOBS_FILE};${DIR_JOBS_FILE}"
     ["conf_secret"]="${DIR_EXEMPLE_SECRET_FILE};${DIR_SECRET_FILE}"
     # Ajoutez d'autres fichiers ici
