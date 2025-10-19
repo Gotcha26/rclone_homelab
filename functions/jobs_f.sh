@@ -123,7 +123,9 @@ check_remotes() {
 
         # Initialisation seulement si pas déjà PROBLEM
         [[ "${JOB_STATUS[$idx]}" != "PROBLEM" ]] && JOB_STATUS[$idx]="OK"
-        [[ "${JOB_ERR_REASON[$idx]}" != "src_abs" ]] && JOB_ERR_REASON[$idx]="ok"
+        if ! [[ -v JOB_ERR_REASON[$idx] ]] || [[ "${JOB_ERR_REASON[$idx]}" != "src_abs" ]]; then
+            JOB_ERR_REASON[$idx]="ok"
+        fi
         JOB_REMOTE[$idx]=""
 
         for endpoint in "$src" "$dst"; do
