@@ -345,7 +345,11 @@ print_summary_table() {
         print_aligned_table "Notifs Discord"      "⚠️  Aucun webhook Discord de défini."
     fi
 
-    print_aligned_table "Simulation (dry-run)" "✅  Oui : aucune modification de fichiers."
+    if [[ "${DRY_RUN:-false}" == true ]]; then
+        print_aligned_table "Simulation (dry-run)" "✅  Oui : aucune modification de fichiers."
+    else
+        print_aligned_table "Simulation (dry-run)" " - Non activée"
+    fi
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
     print_fancy --align "center" --bg "yellow" --fg "black" "--- Fin du rapport ---"
