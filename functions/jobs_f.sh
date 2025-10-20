@@ -150,7 +150,7 @@ check_remotes() {
 
                 # Test token pour remotes sensibles (OneDrive / Drive)
                 if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
-                    if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+                    if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 >/dev/null 2>&1; then
                         JOB_STATUS[$idx]="PROBLEM"
 						JOB_ERR_REASON[$idx]="$remote_type"							
                         JOB_REMOTE[$idx]="$remote"
@@ -207,11 +207,11 @@ check_remote_non_blocking() {
     remote_type=$(echo "$remote_type" | tr '[:upper:]' '[:lower:]')
 
     # Vérification disponibilité du remote
-    if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+    if ! timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 >/dev/null 2>&1; then
         # Tentative de reconnexion pour certains types
         if [[ "$remote_type" == "onedrive" || "$remote_type" == "drive" ]]; then
             rclone config reconnect "$remote:" -auto >/dev/null 2>&1
-            if timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 --limit 1 >/dev/null 2>&1; then
+            if timeout "$timeout_duration" rclone lsf "${remote}:" --max-depth 1 >/dev/null 2>&1; then
                 REMOTE_STATUS["$remote"]="OK"
                 return
             fi
