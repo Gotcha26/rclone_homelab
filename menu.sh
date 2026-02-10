@@ -77,6 +77,9 @@ while true; do
     # 3) Configurations
     # Jobs
     case $jobs_ret in
+        0)
+            add_option "✏️  Éditer la liste des jobs (rclone)     → modification manuelle" "menu_edit_jobs"
+            ;;
         1)
             add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_init_jobs"
             ;;
