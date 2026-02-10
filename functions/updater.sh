@@ -89,7 +89,7 @@ write_version_file() {
 
     if [[ "$branch" == "main" ]]; then
         # Récupérer le dernier tag (release) depuis l'API
-        json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
+        json=$(curl -s --connect-timeout 10 --max-time 30 "$GITHUB_API_URL" 2>/dev/null)
         latest_tag=$(echo "$json" | jq -r '.tag_name // empty')
         if [[ -z "$latest_tag" ]]; then
             display_msg "verbose|hard" --theme error "Impossible de récupérer le dernier tag depuis GitHub"
@@ -102,7 +102,7 @@ write_version_file() {
 
     # Pour dev ou autre branche → HEAD distant via GitHub API
     api_commits_url="https://api.github.com/repos/$owner/$repo/commits/$branch"
-    json=$(curl -s "$api_commits_url" 2>/dev/null)
+    json=$(curl -s --connect-timeout 10 --max-time 30 "$api_commits_url" 2>/dev/null)
     if [[ -z "$json" ]]; then
         display_msg "verbose|hard" --theme error "Impossible de récupérer les infos de commit depuis GitHub pour la branche $branch"
         echo "$branch - unknown - unknown" > "$DIR_VERSION_FILE"
@@ -134,7 +134,7 @@ get_remote_latest_tag() {
     fi
 
     # Récupérer les infos depuis GitHub
-    json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
+    json=$(curl -s --connect-timeout 10 --max-time 30 "$GITHUB_API_URL" 2>/dev/null)
     if [[ -z "$json" ]]; then
         echo ""
         return
@@ -154,6 +154,7 @@ get_remote_latest_tag() {
 # - Retourne 1 seulement si cd échoue (impossible d'accéder au répertoire).
 ###############################################################################
 fetch_git_info() {
+    local _original_dir="$PWD"
 
     cd "$SCRIPT_DIR" || { echo "Erreur : impossible d'accéder au répertoire du script"; return 1; }
 
@@ -200,6 +201,7 @@ fetch_git_info() {
         latest_tag=$(get_remote_latest_tag 2>/dev/null || echo "")
     fi
 
+    cd "$_original_dir" 2>/dev/null || cd / 2>/dev/null || true
     return 0    # Rien de bloquant
 }
 
@@ -389,7 +391,7 @@ update_to_latest_branch() {
         echo
         echo "💾  Prendre soin des fichiers personnalisables..."
         echo
-        tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
+        echo "$ignored_files" | tar czf /tmp/ignored_backup.tar.gz -T - 2>/dev/null || true
     fi
 
     # Récupération des dernières infos
@@ -529,7 +531,7 @@ update_to_latest_tag() {
         echo
         echo "💾  Prendre soin des fichiers personnalisables..."
         echo
-        tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
+        echo "$ignored_files" | tar czf /tmp/ignored_backup.tar.gz -T - 2>/dev/null || true
     fi
 
     # Checkout vers le tag

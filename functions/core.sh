@@ -75,8 +75,8 @@ load_optional_configs() {
     [[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
     [[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
 
-    # Application des flags issus de la config
-    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    # Application des flags issus de la config (évite le doublon si déjà passé en argument CLI)
+    if [[ "${DRY_RUN:-false}" == "true" ]] && [[ ! " ${RCLONE_OPTS[*]} " == *" --dry-run "* ]]; then
         RCLONE_OPTS+=("--dry-run")
     fi
 
@@ -135,7 +135,7 @@ check_rclone() {
             return 0
             ;;
         11|31|32)
-            IFS="¤" read -r --theme message <<< "${MSGS[$status]}"
+            IFS="¤" read -r theme message <<< "${MSGS[$status]}"
             if [[ "$ACTION_MODE" == "auto" ]]; then
                 die "$status" "$message"
             else
@@ -403,16 +403,6 @@ create_temp_dirs() {
     # DIR_LOG
     if [[ ! -d "$DIR_LOG" ]]; then
         mkdir -p "$DIR_LOG" 2>/dev/null || die 6 "Impossible de créer le dossier de logs : $DIR_LOG"
-    fi
-}
-
-
-###############################################################################
-# Fonction : Ajouter des options à rclone [OBSOLETE]
-###############################################################################
-add_rclone_opts() {
-    if [[ "${DRY_RUN:-false}" == true ]]; then
-        RCLONE_OPTS+=(--dry-run)
     fi
 }
 

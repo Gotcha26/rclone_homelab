@@ -25,12 +25,6 @@ parse_jobs "$DIR_JOBS_FILE"
 # 2. Vérifier les remotes et mettre à jour JOB_STATUS
 # ---------------------------------------------------------------------------
 
-# Attribution d'un ID à chaque ligne de job
-for idx in "${!JOBS_LIST[@]}"; do
-    JOB_ID=$(generate_job_id "$idx")     # <- ID unique pour ce job
-    init_job_logs "$JOB_ID"              # <- logs prêts à l’emploi
-done
-
 check_src
 check_remotes
 
@@ -50,7 +44,7 @@ START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 for idx in "${!JOBS_LIST[@]}"; do
     job="${JOBS_LIST[$idx]}"
     IFS='|' read -r src dst <<< "$job"
-    JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
+    JOB_ID=$(generate_job_id "$idx")
 
     # === Création des fichiers temporaires ===
     init_job_logs "$JOB_ID"

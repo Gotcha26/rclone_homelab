@@ -20,7 +20,7 @@ REPO_URL="https://github.com/Gotcha26/rclone_homelab.git"
 INSTALL_DIR="/opt/rclone_homelab"
 DIR_LOCAL="$INSTALL_DIR/local"
 VERSION_FILE="${DIR_LOCAL}/.version"
-DIR_VERSION_FILE="${INSTALL_DIR}/${VERSION_FILE}"
+DIR_VERSION_FILE="${VERSION_FILE}"
 GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest"
 SAFE_EXEC_EXIT_ON_FAIL=true
 

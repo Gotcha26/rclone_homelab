@@ -535,16 +535,21 @@ truncate_ansi() {
 
 
 ###############################################################################
-# Fonction : Affichage d'un tableau formaté à partir d'une liste de lignes
-# Chaque ligne doit être un tableau de colonnes : c1¤c2¤c3¤c4¤valid_flag
-# valid_flag est optionnel et sert à colorer la valeur
+# Fonction interne : Calcul des largeurs de colonnes et affichage du tableau
+# Arguments :
+#   $1 = nom du tableau de lignes (par référence)
+#   $2 = largeur max (défaut 80)
+#   $3 = mode de redimensionnement : "last_only" ou "all"
+#   $4 = troncature dernière colonne : "truncate" ou "full"
 ###############################################################################
-print_table() {
-    local -n lines=$1
+_print_table_core() {
+    local -n _lines=$1
     local max_length="${2:-80}"
+    local resize_mode="${3:-last_only}"
+    local truncate_last="${4:-full}"
 
     local headers=("Variable" "Autorisé" "Défaut" "Valeur")
-    local w=(0 0 0 0)          # Largeurs des colonnes
+    local w=(0 0 0 0)
     local min_width=5
 
     # Largeur minimale basée sur les headers
@@ -553,7 +558,7 @@ print_table() {
     done
 
     # Largeur max des données
-    for row in "${lines[@]}"; do
+    for row in "${_lines[@]}"; do
         IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
         (( $(strwidth "$c1") > w[0] )) && w[0]=$(strwidth "$c1")
         (( $(strwidth "$c2") > w[1] )) && w[1]=$(strwidth "$c2")
@@ -561,14 +566,20 @@ print_table() {
         (( $(strwidth "$c4") > w[3] )) && w[3]=$(strwidth "$c4")
     done
 
-    # Largeur totale calculée
+    # Redimensionnement
     local total_width=$(( w[0]+w[1]+w[2]+w[3]+13 ))
-
-    # Si dépassement → on ne réduit que la dernière colonne
     if (( total_width > max_length )); then
-        local fixed=$(( w[0]+w[1]+w[2]+10 ))  # 10 = bordures/espaces
-        local avail=$(( max_length - fixed ))
-        w[3]=$(( avail > min_width ? avail : min_width ))
+        if [[ "$resize_mode" == "all" ]]; then
+            local excess=$(( total_width - max_length ))
+            local cut=$(( (excess + 3) / 4 ))
+            for i in $(seq 0 3); do
+                w[i]=$(( w[i] - cut > min_width ? w[i] - cut : min_width ))
+            done
+        else
+            local fixed=$(( w[0]+w[1]+w[2]+10 ))
+            local avail=$(( max_length - fixed ))
+            w[3]=$(( avail > min_width ? avail : min_width ))
+        fi
     fi
 
     # Bordure supérieure
@@ -584,7 +595,7 @@ print_table() {
     draw_separator w
 
     # Corps
-    for row in "${lines[@]}"; do
+    for row in "${_lines[@]}"; do
         IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
 
         var_cell=$(print_fancy --style bold --raw "$c1")
@@ -604,8 +615,11 @@ print_table() {
         printf " │ "
         print_cell "$def_cell" "${w[2]}"
         printf " │ "
-        # Tronquer seulement la dernière colonne
-        print_cell "$(truncate_ansi "$val_cell" "${w[3]}")" "${w[3]}"
+        if [[ "$truncate_last" == "truncate" ]]; then
+            print_cell "$(truncate_ansi "$val_cell" "${w[3]}")" "${w[3]}"
+        else
+            print_cell "$val_cell" "${w[3]}"
+        fi
         printf " │\n"
     done
 
@@ -613,75 +627,19 @@ print_table() {
 }
 
 
-print_table_auto() { # Toutes les colones s'ajustent
-    local -n lines=$1
-    local max_length="${2:-80}"
+###############################################################################
+# Fonction : Affichage d'un tableau formaté (redimensionne la dernière colonne)
+###############################################################################
+print_table() {
+    _print_table_core "$1" "${2:-80}" "last_only" "truncate"
+}
 
-    local headers=("Variable" "Autorisé" "Défaut" "Valeur")
-    local w=(0 0 0 0)          # Largeurs des colonnes
-    local min_width=5
 
-    # Largeur minimale basée sur les headers
-    for i in $(seq 0 3); do
-        (( $(strwidth "${headers[i]}") > w[i] )) && w[i]=$(strwidth "${headers[i]}")
-    done
-
-    # Largeur max des données
-    for row in "${lines[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
-        (( $(strwidth "$c1") > w[0] )) && w[0]=$(strwidth "$c1")
-        (( $(strwidth "$c2") > w[1] )) && w[1]=$(strwidth "$c2")
-        (( $(strwidth "$c3") > w[2] )) && w[2]=$(strwidth "$c3")
-        (( $(strwidth "$c4") > w[3] )) && w[3]=$(strwidth "$c4")
-    done
-
-    # Ajuster si dépasse max_length
-    local total_width=$(( w[0]+w[1]+w[2]+w[3]+13 ))
-    if (( total_width > max_length )); then
-        local excess=$(( total_width - max_length ))
-        local cut=$(( (excess + 3) / 4 ))
-        for i in $(seq 0 3); do
-            w[i]=$(( w[i] - cut > min_width ? w[i] - cut : min_width ))
-        done
-    fi
-
-    # Dessin bordure supérieure
-    draw_border w
-
-    # Entête
-    printf "│ "
-    for i in $(seq 0 3); do
-        print_cell "$(print_fancy --style bold --raw "${headers[i]}")" "${w[i]}"
-        printf " │ "
-    done
-    printf "\n"
-    draw_separator w
-
-    # Corps
-    for row in "${lines[@]}"; do
-        IFS="¤" read -r c1 c2 c3 c4 valid_flag <<<"$row"
-
-        var_cell=$(print_fancy --style bold --raw "$c1")
-        auth_cell=$(print_fancy --style italic --raw "$c2")
-        def_cell="$c3"
-        if [[ "$valid_flag" == "false" ]]; then
-            val_cell=$(print_fancy --fg red --raw "$c4")
-        else
-            val_cell=$(print_fancy --fg green --raw "$c4")
-        fi
-
-        printf "│ "
-        print_cell "$var_cell" "${w[0]}"
-        printf " │ "
-        print_cell "$auth_cell" "${w[1]}"
-        printf " │ "
-        print_cell "$def_cell" "${w[2]}"
-        printf " │ "
-        print_cell "$val_cell" "${w[3]}"
-        printf " │\n"
-    done
-
-    draw_bottom w
+###############################################################################
+# Fonction : Affichage d'un tableau formaté (toutes les colonnes s'ajustent)
+###############################################################################
+print_table_auto() {
+    _print_table_core "$1" "${2:-80}" "all" "full"
 }
 
 

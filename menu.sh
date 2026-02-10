@@ -66,7 +66,9 @@ while true; do
     add_separator_if_needed
 
     # 2) Jobs (lancement)
-    if check_jobs_file; then
+    check_jobs_file
+    jobs_ret=$?
+    if (( jobs_ret == 0 )); then
         add_option "🔂  Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
 
@@ -74,9 +76,7 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    check_jobs_file
-    ret=$?
-    case $ret in
+    case $jobs_ret in
         1)
             add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_init_jobs"
             ;;
@@ -176,7 +176,6 @@ while true; do
         echo
         echo "Vous partez déjà..."
         return 99
-        break
     elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice < num )); then
         idx="${CHOICE_TO_INDEX[$choice]}"
         action="${MENU_ACTIONS[$idx]}"

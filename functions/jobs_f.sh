@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# Fonction pour déclarer le tableau global afin de stocker les jobs
+# Fonction pour parser et stocker les jobs
+# Note : JOBS_LIST et JOB_STATUS sont déclarés dans jobs.sh
 ###############################################################################
-
-declare -a JOBS_LIST    # Liste des jobs src|dst
-declare -A JOB_STATUS   # idx -> OK/PROBLEM
 
 parse_jobs() {
     local file="$1"

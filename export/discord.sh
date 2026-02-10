@@ -15,9 +15,11 @@ send_discord_notification() {
 
     local message="🗞️  **$subject_raw** – $NOW"
 
-    # Envoi du message + du log en pièce jointe
+    # Envoi du message + du log en pièce jointe (JSON construit via jq pour éviter l'injection)
+    local json_payload
+    json_payload=$(jq -n --arg content "$message" '{content: $content}')
     curl -s -X POST "$DISCORD_WEBHOOK_URL" \
-        -F "payload_json={\"content\": \"$message\"}" \
+        -F "payload_json=$json_payload" \
         -F "file=@$log_file" \
         > /dev/null
 

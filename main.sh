@@ -21,6 +21,7 @@ source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration loca
 # ===
 
 TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé à la fermeture.
+trap 'rm -rf "$TMP_JOBS_DIR"' EXIT
 
 # === Initialisation du dispositif d'affichage ===
 

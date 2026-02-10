@@ -103,67 +103,89 @@ init_file() {
 
 
 ###############################################################################
-# Fonction : Désinstallation générique d'un binaire/paquet avec menu et état
-# Usage    : dev_uninstall [binaire]
+# Fonction : Sélection interactive d'un composant (menu commun)
+# Usage    : _dev_select_component <label_action> <composant1> <composant2> ...
+# Retour   : le nom du composant choisi sur stdout, code 0=ok, 1=abandon/invalide
 ###############################################################################
-dev_uninstall() {
-    local binary_name="${1:-}"
-    local debian_pkgs=""
+_dev_select_component() {
+    local action_label="$1"
+    shift
+    local supported=("$@")
 
-    # Liste supportée
-    local supported=("rclone" "msmtp" "colordiff" "git" "curl" "unzip" "perl" "jq")
+    echo
+    echo "📦  Sélectionne le composant à $action_label :"
+    echo
 
-    # Si pas d’argument → afficher menu
-    if [[ -z "${binary_name:-}" ]]; then
-        echo
-        echo "📦  Sélectionne le composant à désinstaller :"
-        echo
+    # Calcul largeur max des noms pour aligner le statut
+    local max_len=0
+    for item in "${supported[@]}"; do
+        (( ${#item} > max_len )) && max_len=${#item}
+    done
 
-        # Calcul largeur max des noms pour aligner le statut
-        local max_len=0
-        for item in "${supported[@]}"; do
-            (( ${#item} > max_len )) && max_len=${#item}
-        done
+    # Affichage menu
+    local i=1
+    for item in "${supported[@]}"; do
+        local status="absent"
+        [[ -x "$(command -v "$item" 2>/dev/null)" ]] && status="installé"
+        printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
+        ((i++))
+    done
+    printf "  q) Retour\n"
+    echo
 
-        # Affichage menu
-        local i=1
-        for item in "${supported[@]}"; do
-            local status="absent"
-            [[ -x "$(command -v "$item" 2>/dev/null)" ]] && status="installé"
-            printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
-            ((i++))
-        done
-        printf "  q) Retour\n"
-        echo
-
-        read -e -rp "👉  Ton choix : " choice
-        echo
-        if [[ "$choice" == "q" ]]; then
-            echo "❌  Abandon."
-            return 0
-        elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#supported[@]} )); then
-            binary_name="${supported[$((choice-1))]}"
-        else
-            echo "❌  Choix invalide."
-            return 1
-        fi
+    read -e -rp "👉  Ton choix : " choice
+    echo
+    if [[ "$choice" == "q" ]]; then
+        echo "❌  Abandon." >&2
+        return 1
+    elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#supported[@]} )); then
+        echo "${supported[$((choice-1))]}"
+        return 0
+    else
+        echo "❌  Choix invalide." >&2
+        return 1
     fi
+}
 
-    # Table de correspondance binaire → paquet(s) Debian
+
+###############################################################################
+# Fonction : Résolution binaire → paquet(s) Debian
+# Usage    : _resolve_debian_pkg <binary_name>
+# Retour   : le(s) nom(s) de paquet(s) sur stdout, code 1 si non géré
+###############################################################################
+_resolve_debian_pkg() {
+    local binary_name="$1"
     case "$binary_name" in
-        rclone)    debian_pkgs="rclone" ;;
-        msmtp)     debian_pkgs="msmtp msmtp-mta" ;;
-        colordiff) debian_pkgs="colordiff" ;;
-        git)       debian_pkgs="git" ;;
-        curl)      debian_pkgs="curl" ;;
-        unzip)     debian_pkgs="unzip" ;;
-        perl)      debian_pkgs="perl" ;;
-        jq)        debian_pkgs="jq" ;;
+        rclone)    echo "rclone" ;;
+        msmtp)     echo "msmtp msmtp-mta" ;;
+        colordiff) echo "colordiff" ;;
+        git)       echo "git" ;;
+        curl)      echo "curl" ;;
+        unzip)     echo "unzip" ;;
+        perl)      echo "perl" ;;
+        jq)        echo "jq" ;;
         *)
             print_fancy --theme error "'$binary_name' n'est pas géré par ce script."
             return 1
             ;;
     esac
+}
+
+
+###############################################################################
+# Fonction : Désinstallation générique d'un binaire/paquet avec menu et état
+# Usage    : dev_uninstall [binaire]
+###############################################################################
+dev_uninstall() {
+    local binary_name="${1:-}"
+
+    # Si pas d'argument → afficher menu
+    if [[ -z "${binary_name:-}" ]]; then
+        binary_name=$(_dev_select_component "désinstaller" "rclone" "msmtp" "colordiff" "git" "curl" "unzip" "perl" "jq") || return $?
+    fi
+
+    local debian_pkgs
+    debian_pkgs=$(_resolve_debian_pkg "$binary_name") || return 1
 
     if ! command -v "$binary_name" >/dev/null 2>&1; then
         print_fancy --theme error "$binary_name n'est pas installé ou pas dans le PATH."
@@ -211,60 +233,14 @@ dev_uninstall() {
 ###############################################################################
 dev_install() {
     local binary_name="${1:-}"
-    local debian_pkgs=""
 
-    # Liste supportée
-    local supported=("colordiff" "git" "curl" "unzip" "perl" "jq")
-
-    # Si pas d’argument → afficher menu
+    # Si pas d'argument → afficher menu
     if [[ -z "${binary_name:-}" ]]; then
-        echo
-        echo "📦  Sélectionne le composant à installer :"
-        echo
-
-        # Calcul largeur max des noms pour aligner le statut
-        local max_len=0
-        for item in "${supported[@]}"; do
-            (( ${#item} > max_len )) && max_len=${#item}
-        done
-
-        # Affichage menu
-        local i=1
-        for item in "${supported[@]}"; do
-            local status="absent"
-            [[ -x "$(command -v "$item" 2>/dev/null)" ]] && status="installé"
-            printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
-            ((i++))
-        done
-        printf "  q) Retour\n"
-        echo
-
-        read -e -rp "👉  Ton choix : " choice
-        echo
-        if [[ "$choice" == "q" ]]; then
-            echo "❌  Abandon."
-            return 0
-        elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#supported[@]} )); then
-            binary_name="${supported[$((choice-1))]}"
-        else
-            echo "❌  Choix invalide."
-            return 1
-        fi
+        binary_name=$(_dev_select_component "installer" "colordiff" "git" "curl" "unzip" "perl" "jq") || return $?
     fi
 
-    # Table de correspondance binaire → paquet(s) Debian
-    case "$binary_name" in
-        colordiff) debian_pkgs="colordiff" ;;
-        git)       debian_pkgs="git" ;;
-        curl)      debian_pkgs="curl" ;;
-        unzip)     debian_pkgs="unzip" ;;
-        perl)      debian_pkgs="perl" ;;
-        jq)        debian_pkgs="jq" ;;
-        *)
-            print_fancy --theme error "'$binary_name' n'est pas géré par ce script."
-            return 1
-            ;;
-    esac
+    local debian_pkgs
+    debian_pkgs=$(_resolve_debian_pkg "$binary_name") || return 1
 
     if command -v "$binary_name" >/dev/null 2>&1; then
         print_fancy --theme ok "$binary_name est déjà installé."

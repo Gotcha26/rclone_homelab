@@ -128,7 +128,7 @@ check_msmtp() {
 install_msmtp() {
     echo "📦  Installation de msmtp en cours..."
     if $SUDO apt update && $SUDO apt install -y msmtp msmtp-mta; then
-        print_fancy -- theme ok "msmtp a été installé avec succès !"
+        print_fancy --theme ok "msmtp a été installé avec succès !"
     else
         die 14 "Une erreur est survenue lors de l'installation de msmtp."
     fi
