@@ -112,9 +112,9 @@ _dev_select_component() {
     shift
     local supported=("$@")
 
-    echo
-    echo "📦  Sélectionne le composant à $action_label :"
-    echo
+    echo >/dev/tty
+    echo "📦  Sélectionne le composant à $action_label :" >/dev/tty
+    echo >/dev/tty
 
     # Calcul largeur max des noms pour aligner le statut
     local max_len=0
@@ -127,14 +127,14 @@ _dev_select_component() {
     for item in "${supported[@]}"; do
         local status="absent"
         [[ -x "$(command -v "$item" 2>/dev/null)" ]] && status="installé"
-        printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status"
+        printf "  %d) %-*s [%s]\n" "$i" "$max_len" "$item" "$status" >/dev/tty
         ((i++))
     done
-    printf "  q) Retour\n"
-    echo
+    printf "  q) Retour\n" >/dev/tty
+    echo >/dev/tty
 
-    read -e -rp "👉  Ton choix : " choice
-    echo
+    read -e -rp "👉  Ton choix : " choice </dev/tty
+    echo >/dev/tty
     if [[ "$choice" == "q" ]]; then
         echo "❌  Abandon." >&2
         return 1
