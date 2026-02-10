@@ -9,6 +9,7 @@ source "$SCRIPT_DIR/bootstrap.sh"
 
 # sourcing spécifique pour le menu
 source "$SCRIPT_DIR/functions/menu_f.sh"
+source "$SCRIPT_DIR/functions/cron_f.sh"
 
 ###############################################################################
 # Si aucun argument fourni → affichage d’un menu interactif
@@ -117,6 +118,13 @@ while true; do
             # Aucun fichier valide → configurer
             add_option "⚙️  Configurer msmtp                      → fichier à compléter" "menu_config_msmtp"
         fi
+    fi
+
+    add_separator_if_needed
+
+    # Cron
+    if command -v crontab >/dev/null 2>&1; then
+        add_option "📅  Planifier une tâche Cron               → exécution automatique" "menu_cron_management"
     fi
 
     add_separator_if_needed
@@ -327,6 +335,11 @@ while true; do
                 echo "▶️  Menu de désinstallation..."
                 dev_uninstall
                 echo "✅  ... Désinstallation terminée > retour au menu."
+                ;;
+            menu_cron_management)
+                scroll_down
+                cron_submenu
+                echo "✅  ... Retour au menu principal."
                 ;;
             menu_show_help)
                 scroll_down
