@@ -124,7 +124,7 @@ while true; do
 
     # Cron
     if command -v crontab >/dev/null 2>&1; then
-        add_option "📅  Planifier une tâche Cron               → exécution automatique" "menu_cron_management"
+        add_option "📅  Gérer le Crontab                        → tâches automatiques" "menu_cron_management"
     fi
 
     add_separator_if_needed

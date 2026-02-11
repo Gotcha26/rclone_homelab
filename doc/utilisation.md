@@ -31,7 +31,7 @@ Le menu propose les actions suivantes (affichées dynamiquement selon l'état de
 | **Jobs** | Créer / éditer le fichier des jobs rclone |
 | **Rclone** | Installer / configurer / éditer la configuration rclone |
 | **msmtp** | Installer / configurer / éditer msmtp (envoi d'emails) |
-| **Cron** | Ajouter / lister / supprimer une tâche planifiée |
+| **Cron** | Ajouter / modifier / lister / supprimer une tâche planifiée |
 | **Configuration** | Éditer la config locale, la config dev, le fichier secrets |
 | **Composants** | Installer / désinstaller des composants (branche dev) |
 | **Aide** | Afficher l'aide intégrée |
@@ -132,7 +132,14 @@ Avant chaque exécution, le script vérifie pour chaque job :
 
 ### Via le menu interactif (recommandé)
 
-Le menu principal propose l'option **Planifier une tâche Cron**. Un assistant en 7 étapes vous guide :
+Le menu principal propose l'option **Gérer le Crontab**. Le sous-menu offre quatre actions :
+
+- **Ajouter** — un assistant en 7 étapes crée une nouvelle tâche
+- **Modifier** — sélectionnez une tâche existante et reparcourez le même wizard avec les valeurs actuelles pré-remplies (Entrée = conserver)
+- **Lister** — affiche toutes les tâches rclone_homelab présentes dans le crontab
+- **Supprimer** — supprime une tâche spécifique
+
+Les 7 étapes du wizard (création et modification) :
 
 1. **Jour** : tous les jours ou un jour précis de la semaine
 2. **Heure** (0-23)
@@ -142,11 +149,7 @@ Le menu principal propose l'option **Planifier une tâche Cron**. Un assistant e
 6. **--discord-url** : webhook Discord (pré-rempli depuis votre config)
 7. **Options rclone supplémentaires** : texte libre
 
-L'assistant affiche un résumé complet et la ligne cron résultante avant de l'installer.
-
-Le sous-menu Cron permet aussi de :
-- **Lister** les tâches cron existantes de rclone_homelab
-- **Supprimer** une tâche spécifique
+L'assistant affiche un résumé complet et la ligne cron résultante avant d'appliquer les changements.
 
 ### Manuellement
 
