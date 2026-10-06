@@ -197,11 +197,20 @@ LOG_ERROR_PATTERN='(ERROR|CRITICAL|Failed to|[Uu]nexpected|IO errors?|not deleti
 
 calculate_subject_raw_for_job() {
     local job_log_file="$1"
+    local rc="${2:-}"   # code retour rclone (optionnel) : fait foi s'il est fourni
 
+    # Le code retour de rclone fait foi : des lignes ERROR suivies d'une nouvelle
+    # tentative réussie (rc=0) ne sont pas un échec.
+    if [[ -n "$rc" && "$rc" != "0" ]]; then
+        echo "❌  Des erreurs lors des sauvegardes vers le cloud"
+    elif grep -qE "$LOG_ERROR_PATTERN" "$job_log_file"; then
+        if [[ "$rc" == "0" ]]; then
+            echo "⚠️  Sauvegardes réussies après nouvelle(s) tentative(s)"
+        else
+            echo "❌  Des erreurs lors des sauvegardes vers le cloud"
+        fi
     # "Rien de transféré" seulement si AUCUN job n'a copié/mis à jour/supprimé :
     # sur le log cumulé, le "nothing to transfer" d'un seul job ne suffit pas.
-    if grep -qE "$LOG_ERROR_PATTERN" "$job_log_file"; then
-        echo "❌  Des erreurs lors des sauvegardes vers le cloud"
     elif ! grep -qE ": (Multi-thread )?(Copied|Updated|Deleted)" "$job_log_file"; then
         echo "⚠️  Synchronisation réussie mais aucun fichier transféré"
     else
@@ -287,7 +296,8 @@ prepare_mail_html() {
 ###############################################################################
 encode_subject_for_email() {
     local log_file="$1"
-    SUBJECT_RAW="$(calculate_subject_raw_for_job "$log_file")"
+    local rc="${2:-}"
+    SUBJECT_RAW="$(calculate_subject_raw_for_job "$log_file" "$rc")"
     SUBJECT="=?UTF-8?B?$(printf "%s" "$SUBJECT_RAW" | base64 -w0)?="
 }
 
@@ -400,7 +410,8 @@ send_email() {
     local html_block="$1"
 
     print_fancy --align "center" "📧  Préparation de l'email..."
-    encode_subject_for_email "$DIR_LOG_FILE_INFO"
+    # Statut global : 0 si tous les jobs ont réussi (cf. JOBS_GLOBAL_RC dans jobs.sh)
+    encode_subject_for_email "$DIR_LOG_FILE_INFO" "${JOBS_GLOBAL_RC:-}"
 
     # assemble_mail_file renvoie le chemin du mail temporaire
     # Résumé global calculé sur le log cumulé de TOUS les jobs
