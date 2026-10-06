@@ -49,6 +49,24 @@ if ! git rev-parse --verify "$main_branch" >/dev/null 2>&1; then
     exit 1
 fi
 
+# La nouvelle base est construite à partir de la branche COURANTE et de son arbre
+# de travail : il faut donc être sur main, avec un arbre propre.
+current_branch=$(git symbolic-ref --quiet --short HEAD || echo "detached")
+if [[ "$current_branch" != "$main_branch" ]]; then
+    echo "❌  Vous êtes sur '$current_branch' : placez-vous d'abord sur '$main_branch' (git checkout $main_branch)."
+    exit 1
+fi
+if [[ -n "$(git status --porcelain)" ]]; then
+    echo "❌  L'arbre de travail contient des modifications non commitées :"
+    git status --short
+    echo "   Commitez-les ou stashez-les avant de réinitialiser l'historique."
+    exit 1
+fi
+
+echo "ℹ️  Après réinitialisation, les tags existants ne seront plus dans l'historique de '$main_branch' :"
+echo "   pensez à créer un nouveau tag de release, sinon les installations sur main"
+echo "   ne détecteront plus de mise à jour."
+
 # Vérifier configuration remote et accès SSH
 remote_url="$(git remote get-url origin 2>/dev/null || true)"
 skip_push=false

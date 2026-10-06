@@ -75,8 +75,8 @@ load_optional_configs() {
     [[ "$DEBUG_INFOS" == true || "$DEBUG_MODE" == true ]] && DISPLAY_MODE="hard"
     [[ "$DEBUG_MODE" == true ]] && ACTION_MODE="manu"
 
-    # Application des flags issus de la config
-    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    # Application des flags issus de la config (évite le doublon si déjà passé en argument CLI)
+    if [[ "${DRY_RUN:-false}" == "true" ]] && [[ ! " ${RCLONE_OPTS[*]} " == *" --dry-run "* ]]; then
         RCLONE_OPTS+=("--dry-run")
     fi
 
@@ -135,7 +135,7 @@ check_rclone() {
             return 0
             ;;
         11|31|32)
-            IFS="¤" read -r --theme message <<< "${MSGS[$status]}"
+            IFS="¤" read -r theme message <<< "${MSGS[$status]}"
             if [[ "$ACTION_MODE" == "auto" ]]; then
                 die "$status" "$message"
             else
@@ -272,8 +272,8 @@ edit_msmtp_config() {
     local conf_file
 
     if ! conf_file="$(check_msmtp_configured 2>/dev/null)"; then
-        # Aucun fichier valide → on choisit ~/.msmtprc par défaut
-        conf_file="${HOME}/.msmtprc"
+        # Fichier vide trouvé → on l'édite ; aucun fichier → ~/.msmtprc par défaut
+        [[ -z "$conf_file" ]] && conf_file="${HOME}/.msmtprc"
         print_fancy --theme "warning" "Aucun fichier msmtp valide trouvé, création de : $conf_file"
 
         # Création + permissions strictes
@@ -345,7 +345,11 @@ print_summary_table() {
         print_aligned_table "Notifs Discord"      "⚠️  Aucun webhook Discord de défini."
     fi
 
-    print_aligned_table "Simulation (dry-run)" "✅  Oui : aucune modification de fichiers."
+    if [[ "${DRY_RUN:-false}" == true ]]; then
+        print_aligned_table "Simulation (dry-run)" "✅  Oui : aucune modification de fichiers."
+    else
+        print_aligned_table "Simulation (dry-run)" " - Non activée"
+    fi
 
     printf '%*s\n' "$TERM_WIDTH_DEFAULT" '' | tr ' ' '='
     print_fancy --align "center" --bg "yellow" --fg "black" "--- Fin du rapport ---"
@@ -404,16 +408,6 @@ create_temp_dirs() {
 
 
 ###############################################################################
-# Fonction : Ajouter des options à rclone [OBSOLETE]
-###############################################################################
-add_rclone_opts() {
-    if [[ "${DRY_RUN:-false}" == true ]]; then
-        RCLONE_OPTS+=(--dry-run)
-    fi
-}
-
-
-###############################################################################
 # Fonction : Intérroger le numéro de version/tag/release (local ou git)
 ###############################################################################
 get_current_version() {
@@ -450,7 +444,10 @@ menu_validation_local_variables() {
         echo -e "[3] Quitter."
         echo
 
-        read -e -rp "Votre choix [1-3] : " choice
+        # Sans terminal (cron, pipe), pas de saisie possible : arrêt plutôt qu'une boucle sans fin
+        if ! read -e -rp "Votre choix [1-3] : " choice </dev/tty; then
+            die 99 "Configuration locale invalide et aucun terminal disponible pour la corriger."
+        fi
         echo
 
         case "$choice" in
@@ -517,10 +514,11 @@ mini_edit_local_config() {
     echo "[$i] Retour"
     echo
 
-    read -e -rp "Choisir un fichier à éditer [1-$i] : " subchoice
+    read -e -rp "Choisir un fichier à éditer [1-$i] : " subchoice </dev/tty || return 1
     echo
 
-    if [[ "$subchoice" -ge 1 && "$subchoice" -lt "$i" ]]; then
+    if [[ "$subchoice" =~ ^[0-9]+$ ]] && (( 10#$subchoice >= 1 && 10#$subchoice < i )); then
+        subchoice=$(( 10#$subchoice ))
         local target="${existing[$((subchoice-1))]}"
         ${EDITOR:-nano} "$target"
     fi

@@ -20,7 +20,7 @@ REPO_URL="https://github.com/Gotcha26/rclone_homelab.git"
 INSTALL_DIR="/opt/rclone_homelab"
 DIR_LOCAL="$INSTALL_DIR/local"
 VERSION_FILE="${DIR_LOCAL}/.version"
-DIR_VERSION_FILE="${INSTALL_DIR}/${VERSION_FILE}"
+DIR_VERSION_FILE="${VERSION_FILE}"
 GITHUB_API_URL="https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest"
 SAFE_EXEC_EXIT_ON_FAIL=true
 
@@ -100,7 +100,8 @@ safe_exec() {
     [ -z "$msg_fail" ] && msg_fail="Échec de la commande : $*"
 
     # Exécution de la commande avec tous les arguments tels quels
-    if [ -n "$SUDO" ]; then
+    # (sudo ne sait pas exécuter une fonction shell : appel direct dans ce cas)
+    if [ -n "$SUDO" ] && ! declare -F "$1" >/dev/null; then
         "$SUDO" "$@"
     else
         "$@"
@@ -213,8 +214,8 @@ check_git_updates() {
 check_dependencies() {
     echo ""
     echo "📦  Contrôle des dépendances nécéssaires à l'installation..."
-    echo -e "👉  ${ITALIC}git curl unzip perl jq.${RESET}"
-    local deps=(git curl unzip perl jq)
+    echo -e "👉  ${ITALIC}git curl unzip perl jq rsync.${RESET}"
+    local deps=(git curl unzip perl jq rsync)
     local missing=()
 
     # Vérifie toutes les dépendances
@@ -271,7 +272,7 @@ check_rclone() {
     # Version distante via GitHub API
     safe_exec "✅  Récupération des infos GitHub" \
               "❌  Impossible de récupérer les informations de release rclone." \
-              curl -s https://api.github.com/repos/rclone/rclone/releases/latest -o /tmp/rclone_release.json
+              --no-exit curl -s https://api.github.com/repos/rclone/rclone/releases/latest -o /tmp/rclone_release.json
 
     latest_version=$(jq -r '.tag_name // empty' /tmp/rclone_release.json 2>/dev/null)
     safe_exec "✅  Nettoyage du fichier temporaire" \
@@ -483,7 +484,7 @@ install_micro() {
 
         safe_exec "" \
                   "❗  Impossible de récupérer la dernière version de micro" "--no-exit" \
-                  test -n "$version"
+                  test -n "$version" || return 1
     fi
 
     # Détection architecture
@@ -502,11 +503,11 @@ install_micro() {
 
     safe_exec "✅  Téléchargement OK" \
               "❌  Échec du téléchargement de $archive" \
-              curl -fsSL -o "$archive" "$url"
+              --no-exit curl -fsSL -o "$archive" "$url" || return 1
 
     safe_exec "✅  Extraction OK" \
               "❌  Échec de l'extraction de $archive" \
-              tar -xzf "$archive"
+              --no-exit tar -xzf "$archive" || return 1
 
     # Installation binaire
     safe_exec "✅  Copie OK" \
@@ -866,15 +867,11 @@ install_minimal() {
                   "❌  Impossible de créer : $DIR_BACKUP" \
                   mkdir -p "$DIR_BACKUP"
 
-        # Déplacer seulement si quelque chose à déplacer
+        # Copier seulement si quelque chose à sauvegarder (local/ reste en place)
         if [ -n "$(ls -A "$DIR_LOCAL" 2>/dev/null)" ]; then
-            safe_exec "✅  Déplacement effectué avec succès : $DIR_LOCAL/* → $DIR_BACKUP" \
-                      "❌  Impossible de déplacer : $DIR_LOCAL → $DIR_BACKUP" \
-                      rsync -a --remove-source-files "$DIR_LOCAL"/ "$DIR_BACKUP"/
-
-            safe_exec "✅  Suppression de la source vide : $DIR_LOCAL" \
-                      "❌  Impossible de supprimer : $DIR_LOCAL" \
-                      find "$DIR_LOCAL" -type d -empty -delete
+            safe_exec "✅  Sauvegarde effectuée avec succès : $DIR_LOCAL/* → $DIR_BACKUP" \
+                      "❌  Impossible de sauvegarder : $DIR_LOCAL → $DIR_BACKUP" \
+                      rsync -a "$DIR_LOCAL"/ "$DIR_BACKUP"/
         else
             echo "ℹ️  Aucun fichier à sauvegarder depuis $DIR_LOCAL (dossier vide)."
         fi
@@ -921,9 +918,13 @@ install_minimal() {
     fi
 
     # --- Copie vers INSTALL_DIR ---
+    # Les fichiers utilisateur (local/, logs/, tmps/) et les backups ne sont pas
+    # dans l'archive : ils doivent être exclus du --delete.
     safe_exec "✅  Déplacement OK" \
               "❌  Impossible de déplacer les fichiers extraits à la racine" \
-              rsync -a --delete "$extracted_dir"/ "$INSTALL_DIR"/
+              rsync -a --delete \
+                    --exclude '/local/' --exclude '/logs/' --exclude '/tmps/' --exclude '/backup_*' \
+                    "$extracted_dir"/ "$INSTALL_DIR"/
 
     # --- Nettoyage ---
     rm -rf "$tmp_dir"
@@ -979,6 +980,15 @@ install_dev_branch() {
     echo ""
     echo -e "📦  ${UNDERLINE}Mode développement${RESET} - Installation via clone Git complet de la branche ${BOLD}$branch${RESET}"
 
+    # --- Sauvegarde des fichiers utilisateur (local/) hors de INSTALL_DIR ---
+    local local_backup=""
+    if [ -n "$(ls -A "$DIR_LOCAL" 2>/dev/null)" ]; then
+        local_backup=$(mktemp -d /tmp/rclone_homelab_local.XXXXXX)
+        safe_exec "✅  Fichiers utilisateur sauvegardés : $DIR_LOCAL → $local_backup" \
+                  "❌  Impossible de sauvegarder $DIR_LOCAL, abandon." \
+                  --critical rsync -a "$DIR_LOCAL"/ "$local_backup"/
+    fi
+
     # --- Nettoyage de l’ancien dossier ---
     safe_exec "✅  Nettoyage de $INSTALL_DIR effectué." \
               "❌  Impossible de supprimer $INSTALL_DIR" \
@@ -1020,8 +1030,16 @@ install_dev_branch() {
               "❌  Échec fetch tags" \
               git -C "$INSTALL_DIR" fetch --tags
 
+    # --- Restauration des fichiers utilisateur ---
+    if [ -n "$local_backup" ]; then
+        safe_exec "✅  Fichiers utilisateur restaurés dans $DIR_LOCAL" \
+                  "❌  Restauration impossible : vos fichiers restent dans $local_backup" \
+                  --no-exit rsync -a "$local_backup"/ "$DIR_LOCAL"/ \
+            && rm -rf "$local_backup"
+    fi
+
     # Création fichier version NON car git est installé avec historique et tout le tralala
-    
+
 }
 
 # --------------------------------------------------------------------------- #

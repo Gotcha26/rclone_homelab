@@ -253,6 +253,15 @@ if [[ "$current_branch" != "$main_branch" ]]; then
         echo
         echo "🔀  Synchronisation : '$main_branch' va devenir (localement) une copie exacte de '$current_branch'..."
 
+        # 0️⃣ Rattraper origin/main d'abord (avance rapide) : le commit de synchronisation
+        #    se pose ainsi au-dessus du distant et le push n'a pas besoin d'être forcé.
+        if [[ "$skip_push" == "false" ]] && git fetch origin "$main_branch" --quiet; then
+            if git merge-base --is-ancestor "$main_branch" "origin/$main_branch"; then
+                git branch -f "$main_branch" "origin/$main_branch"
+                echo "✅  '$main_branch' local rattrapé sur 'origin/$main_branch'."
+            fi
+        fi
+
         # 1️⃣ Se placer sur main
         git checkout "$main_branch"
 
@@ -328,7 +337,15 @@ echo "✅  Synchronisation terminée."
 
 # --- Expiration du reflog ---
 echo -e "\n🧹  Expiration du reflog..."
-git reflog expire --expire=now --all
+if git rev-parse --verify --quiet refs/stash >/dev/null; then
+    # Les stashes vivent dans le reflog de refs/stash : on le préserve
+    echo "ℹ️  Des stashes existent : leur historique (refs/stash) est préservé."
+    git reflog expire --expire=now HEAD
+    git for-each-ref --format='%(refname)' | { grep -vx 'refs/stash' || true; } \
+        | xargs -r git reflog expire --expire=now
+else
+    git reflog expire --expire=now --all
+fi
 
 # --- Nettoyage et compactage agressif ---
 echo -e "\n🧹  Nettoyage et compactage agressif du dépôt..."
@@ -364,10 +381,23 @@ if [[ "$skip_push" == "false" ]]; then
 
     if confirm "Confirmez-vous le push de 'main' sur GitHub ?"; then
         echo
-        echo "🔄  Push en cours..."
-        git push origin main --force
-        echo
-        echo "✅  Push terminé : 'main' sur GitHub est désormais aligné avec votre branche locale."
+        git fetch origin main --quiet || true
+        if git merge-base --is-ancestor origin/main main 2>/dev/null; then
+            # Cas normal : avance rapide, aucun commit distant perdu
+            echo "🔄  Push en cours..."
+            git push origin main
+            echo
+            echo "✅  Push terminé : 'main' sur GitHub est désormais aligné avec votre branche locale."
+        else
+            echo "⚠️  'origin/main' contient des commits absents de 'main' local :"
+            git log --oneline main..origin/main
+            if confirm "Les ÉCRASER sur GitHub (push forcé) ?" "n"; then
+                git push --force-with-lease=main:origin/main origin main
+                echo "✅  Push forcé terminé."
+            else
+                echo "ℹ️  Push annulé. Intégrez d'abord ces commits dans votre branche."
+            fi
+        fi
     else
         echo
         echo "ℹ️  Push annulé. 'main' reste uniquement local."

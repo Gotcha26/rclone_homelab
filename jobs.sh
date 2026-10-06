@@ -25,12 +25,6 @@ parse_jobs "$DIR_JOBS_FILE"
 # 2. Vérifier les remotes et mettre à jour JOB_STATUS
 # ---------------------------------------------------------------------------
 
-# Attribution d'un ID à chaque ligne de job
-for idx in "${!JOBS_LIST[@]}"; do
-    JOB_ID=$(generate_job_id "$idx")     # <- ID unique pour ce job
-    init_job_logs "$JOB_ID"              # <- logs prêts à l’emploi
-done
-
 check_src
 check_remotes
 
@@ -40,6 +34,7 @@ check_remotes
 # ---------------------------------------------------------------------------
 GLOBAL_HTML_BLOCK=""          # Initialisation du HTML global
 JOB_COUNTER=1                 # Compteur de jobs pour le label [JOBxx]
+JOBS_GLOBAL_RC=0              # 0 si tous les jobs ont réussi (sujet du mail)
 
 START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 
@@ -50,7 +45,7 @@ START_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
 for idx in "${!JOBS_LIST[@]}"; do
     job="${JOBS_LIST[$idx]}"
     IFS='|' read -r src dst <<< "$job"
-    JOB_ID=$(printf "JOB%02d" "$JOB_COUNTER")
+    JOB_ID=$(generate_job_id "$idx")
 
     # === Création des fichiers temporaires ===
     init_job_logs "$JOB_ID"
@@ -124,9 +119,10 @@ for idx in "${!JOBS_LIST[@]}"; do
 
     # === Notification Discord ===
     echo
-    send_discord_notification "$TMP_JOB_LOG_PLAIN"
+    send_discord_notification "$TMP_JOB_LOG_PLAIN" "$job_rc"
 
     # === Incrément compteur ===
+    (( job_rc != 0 )) && JOBS_GLOBAL_RC=1
     (( job_rc == 0 )) && ((EXECUTED_JOBS++))   # Compte uniquement si succès
     (( job_rc != 0 )) && MAIL_SUBJECT_OK=false
     ((JOB_COUNTER++))

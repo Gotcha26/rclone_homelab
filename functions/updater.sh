@@ -89,7 +89,7 @@ write_version_file() {
 
     if [[ "$branch" == "main" ]]; then
         # Récupérer le dernier tag (release) depuis l'API
-        json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
+        json=$(curl -s --connect-timeout 10 --max-time 30 "$GITHUB_API_URL" 2>/dev/null)
         latest_tag=$(echo "$json" | jq -r '.tag_name // empty')
         if [[ -z "$latest_tag" ]]; then
             display_msg "verbose|hard" --theme error "Impossible de récupérer le dernier tag depuis GitHub"
@@ -102,7 +102,7 @@ write_version_file() {
 
     # Pour dev ou autre branche → HEAD distant via GitHub API
     api_commits_url="https://api.github.com/repos/$owner/$repo/commits/$branch"
-    json=$(curl -s "$api_commits_url" 2>/dev/null)
+    json=$(curl -s --connect-timeout 10 --max-time 30 "$api_commits_url" 2>/dev/null)
     if [[ -z "$json" ]]; then
         display_msg "verbose|hard" --theme error "Impossible de récupérer les infos de commit depuis GitHub pour la branche $branch"
         echo "$branch - unknown - unknown" > "$DIR_VERSION_FILE"
@@ -134,7 +134,7 @@ get_remote_latest_tag() {
     fi
 
     # Récupérer les infos depuis GitHub
-    json=$(curl -s "$GITHUB_API_URL" 2>/dev/null)
+    json=$(curl -s --connect-timeout 10 --max-time 30 "$GITHUB_API_URL" 2>/dev/null)
     if [[ -z "$json" ]]; then
         echo ""
         return
@@ -154,6 +154,7 @@ get_remote_latest_tag() {
 # - Retourne 1 seulement si cd échoue (impossible d'accéder au répertoire).
 ###############################################################################
 fetch_git_info() {
+    local _original_dir="$PWD"
 
     cd "$SCRIPT_DIR" || { echo "Erreur : impossible d'accéder au répertoire du script"; return 1; }
 
@@ -200,6 +201,7 @@ fetch_git_info() {
         latest_tag=$(get_remote_latest_tag 2>/dev/null || echo "")
     fi
 
+    cd "$_original_dir" 2>/dev/null || cd / 2>/dev/null || true
     return 0    # Rien de bloquant
 }
 
@@ -380,20 +382,31 @@ update_to_latest_branch() {
     print_fancy --align "center" --bg "green" --style "italic" --highlight \
         "⚡  Mécanisme automatique de mise à jour forcée sur la branche : $branch. ⚡ "
 
+    # Récupération des dernières infos (avant toute modification locale)
+    if ! git fetch --all --tags; then
+        print_fancy --theme "error" \
+            "Impossible de récupérer les informations distantes (réseau ?). Mise à jour annulée." >&2
+        return 1
+    fi
+
+    if ! git rev-parse --verify --quiet "origin/$branch" >/dev/null; then
+        print_fancy --theme "error" \
+            "La branche distante origin/$branch n'existe pas. Mise à jour annulée." >&2
+        return 1
+    fi
+
     # Liste des fichiers ignorés (d'après .gitignore)
     local ignored_files
     ignored_files=$(git ls-files --ignored --other --exclude-standard)
 
     # Sauvegarde temporaire si fichiers ignorés présents
+    rm -f /tmp/ignored_backup.tar.gz
     if [[ -n "$ignored_files" ]]; then
         echo
         echo "💾  Prendre soin des fichiers personnalisables..."
         echo
-        tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
+        echo "$ignored_files" | tar czf /tmp/ignored_backup.tar.gz -T - 2>/dev/null || true
     fi
-
-    # Récupération des dernières infos
-    git fetch --all --tags
 
     # Passage forcé sur la branche cible
     git checkout -f "$branch" || {
@@ -401,7 +414,11 @@ update_to_latest_branch() {
             "Erreur lors du checkout de $branch" >&2
         exit 1
         }
-    git reset --hard "origin/$branch"
+    if ! git reset --hard "origin/$branch"; then
+        print_fancy --theme "error" \
+            "Erreur lors du reset sur origin/$branch" >&2
+        return 1
+    fi
     git clean -fd
 
     # Restauration éventuelle des fichiers ignorés
@@ -525,15 +542,17 @@ update_to_latest_tag() {
     # --- Sauvegarde des fichiers ignorés ---
     local ignored_files
     ignored_files=$(git ls-files --ignored --other --exclude-standard)
+    rm -f /tmp/ignored_backup.tar.gz
     if [[ -n "$ignored_files" ]]; then
         echo
         echo "💾  Prendre soin des fichiers personnalisables..."
         echo
-        tar czf /tmp/ignored_backup.tar.gz $ignored_files 2>/dev/null || true
+        echo "$ignored_files" | tar czf /tmp/ignored_backup.tar.gz -T - 2>/dev/null || true
     fi
 
-    # Checkout vers le tag
-    if git -c advice.detachedHead=false checkout "$latest_tag"; then
+    # Checkout vers le tag, en restant sur la branche (pas de HEAD détaché,
+    # sinon les mises à jour suivantes ne sont plus détectées)
+    if git checkout -B "$branch" "$latest_tag"; then
         # Restauration des fichiers ignorés
         if [[ -f /tmp/ignored_backup.tar.gz ]]; then
             echo
