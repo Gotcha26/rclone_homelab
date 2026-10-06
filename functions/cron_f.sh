@@ -15,6 +15,56 @@ _cron_escape_percent() {
 
 
 ###############################################################################
+# Fonction : Indique si une ligne crontab est une tâche gérée par rclone_homelab
+# (tag en fin de ligne, ligne non commentée)
+# Usage    : _cron_is_managed_line "ligne"
+###############################################################################
+_cron_is_managed_line() {
+    local line="$1"
+    [[ "$line" =~ ^[[:space:]]*# ]] && return 1
+    [[ "$line" == *" $CRON_TAG" ]]
+}
+
+
+###############################################################################
+# Fonction : Remplace (ou supprime) UNE ligne du crontab, par égalité exacte
+# Usage    : _cron_replace_line "ancienne ligne" ["nouvelle ligne"]
+# Retour   : 0 si succès, 1 si ligne introuvable ou échec crontab
+###############################################################################
+_cron_replace_line() {
+    local old="$1" new="${2:-}"
+    local line replaced=false
+    local -a out=()
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$replaced" == false && "$line" == "$old" ]]; then
+            replaced=true
+            [[ -n "$new" ]] && out+=("$new")
+            continue
+        fi
+        out+=("$line")
+    done < <(crontab -l 2>/dev/null)
+
+    [[ "$replaced" == true ]] || return 1
+    printf '%s\n' "${out[@]}" | crontab - 2>/dev/null
+}
+
+
+###############################################################################
+# Fonction : Valide un entier dans un intervalle (base 10 : "08" accepté)
+# Usage    : _cron_valid_int "valeur" min max
+# Retour   : valeur normalisée sur stdout, code 1 si invalide
+###############################################################################
+_cron_valid_int() {
+    local value="$1" min="$2" max="$3"
+    [[ "$value" =~ ^[0-9]{1,3}$ ]] || return 1
+    value=$(( 10#$value ))
+    (( value >= min && value <= max )) || return 1
+    echo "$value"
+}
+
+
+###############################################################################
 # Fonction : Demande le jour de la semaine
 # Retour   : valeur cron (0-7 ou *) sur stdout, code 1 si abandon
 ###############################################################################
@@ -30,7 +80,7 @@ _cron_ask_day_of_week() {
     echo "  8) Dimanche" >/dev/tty
     echo >/dev/tty
 
-    read -e -rp "  Choix [1-8, défaut: 1] : " choice </dev/tty
+    read -e -rp "  Choix [1-8, défaut: 1] : " choice </dev/tty || return 1
     choice="${choice:-1}"
 
     case "$choice" in
@@ -62,11 +112,10 @@ _cron_ask_hour() {
     print_fancy --theme info "Étape 2/7 — Heure d'exécution" >/dev/tty
     echo >/dev/tty
 
-    read -e -rp "  Heure (0-23) [défaut: 3] : " hour </dev/tty
+    read -e -rp "  Heure (0-23) [défaut: 3] : " hour </dev/tty || return 1
     hour="${hour:-3}"
 
-    if [[ "$hour" =~ ^[0-9]+$ ]] && (( hour >= 0 && hour <= 23 )); then
-        echo "$hour"
+    if _cron_valid_int "$hour" 0 23; then
         return 0
     else
         print_fancy --theme error "Heure invalide (attendu : 0-23)." >/dev/tty
@@ -86,11 +135,10 @@ _cron_ask_minute() {
     print_fancy --theme info "Étape 3/7 — Minute d'exécution" >/dev/tty
     echo >/dev/tty
 
-    read -e -rp "  Minute (0-59) [défaut: 0] : " minute </dev/tty
+    read -e -rp "  Minute (0-59) [défaut: 0] : " minute </dev/tty || return 1
     minute="${minute:-0}"
 
-    if [[ "$minute" =~ ^[0-9]+$ ]] && (( minute >= 0 && minute <= 59 )); then
-        echo "$minute"
+    if _cron_valid_int "$minute" 0 59; then
         return 0
     else
         print_fancy --theme error "Minute invalide (attendu : 0-59)." >/dev/tty
@@ -251,7 +299,11 @@ _cron_show_summary() {
     print_fancy --align center "═══════════════════════════════════════" >/dev/tty
     echo >/dev/tty
 
-    printf "  %-16s : %s (%s)\n" "Planification" "$dow_label" "$(printf '%02d:%02d' "$hour" "$minute")" >/dev/tty
+    # Heure lisible si numérique, sinon champs cron bruts (ex. */2)
+    local when="${hour}:${minute}"
+    [[ "$hour" =~ ^[0-9]+$ && "$minute" =~ ^[0-9]+$ ]] && when=$(printf '%02d:%02d' "$((10#$hour))" "$((10#$minute))")
+
+    printf "  %-16s : %s (%s)\n" "Planification" "$dow_label" "$when" >/dev/tty
     printf "  %-16s : %s\n" "--dry-run" "${dry_run:-Non}" >/dev/tty
     printf "  %-16s : %s\n" "--mailto" "${mailto:-(aucun)}" >/dev/tty
     printf "  %-16s : %s\n" "--discord-url" "${discord:-(aucun)}" >/dev/tty
@@ -344,7 +396,8 @@ cron_add_wizard() {
 
     # Confirmation
     echo
-    read -e -rp "  Installer cette tâche Cron ? (O/n) : " confirm </dev/tty
+    local confirm
+    read -e -rp "  Installer cette tâche Cron ? (O/n) : " confirm </dev/tty || confirm="n"
     if [[ -z "$confirm" || "$confirm" =~ ^[OoYy]$ ]]; then
         _cron_install "$cron_line"
     else
@@ -371,8 +424,9 @@ cron_list() {
 
     local found=false
     local idx=1
+    local line
     while IFS= read -r line; do
-        if [[ "$line" == *"$CRON_TAG"* ]]; then
+        if _cron_is_managed_line "$line"; then
             printf "  [%d] %s\n" "$idx" "$line"
             found=true
             ((idx++))
@@ -401,8 +455,9 @@ cron_remove() {
 
     # Collecter les lignes correspondantes
     local -a cron_lines=()
+    local line
     while IFS= read -r line; do
-        [[ "$line" == *"$CRON_TAG"* ]] && cron_lines+=("$line")
+        _cron_is_managed_line "$line" && cron_lines+=("$line")
     done <<< "$existing"
 
     if [[ ${#cron_lines[@]} -eq 0 ]]; then
@@ -420,20 +475,17 @@ cron_remove() {
     echo
 
     local choice
-    read -e -rp "  Numéro de la tâche à supprimer [1-${#cron_lines[@]}] ou q : " choice </dev/tty
+    read -e -rp "  Numéro de la tâche à supprimer [1-${#cron_lines[@]}] ou q : " choice </dev/tty || return 0
 
     if [[ "$choice" == "q" ]]; then
         return 0
     fi
 
-    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#cron_lines[@]} )); then
+    if choice=$(_cron_valid_int "$choice" 1 "${#cron_lines[@]}"); then
         local to_remove="${cron_lines[$((choice-1))]}"
 
-        # Supprimer la ligne exacte du crontab
-        local new_crontab
-        new_crontab=$(crontab -l 2>/dev/null | grep -vF "$to_remove")
-
-        if printf '%s\n' "$new_crontab" | crontab - 2>/dev/null; then
+        # Supprimer uniquement cette ligne (égalité exacte, pas de sous-chaîne)
+        if _cron_replace_line "$to_remove"; then
             print_fancy --theme success "Tâche Cron supprimée avec succès."
         else
             print_fancy --theme error "Échec de la suppression."
@@ -447,48 +499,43 @@ cron_remove() {
 ###############################################################################
 # Fonction : Parse une ligne cron rclone_homelab et extrait ses composants
 # Usage    : _cron_parse_line "ligne cron"
-# Exporte  : CRON_PARSE_MINUTE, CRON_PARSE_HOUR, CRON_PARSE_DOW,
+# Exporte  : CRON_PARSE_MINUTE, CRON_PARSE_HOUR, CRON_PARSE_DOM,
+#            CRON_PARSE_MONTH, CRON_PARSE_DOW,
 #            CRON_PARSE_DRY_RUN, CRON_PARSE_MAILTO, CRON_PARSE_DISCORD,
 #            CRON_PARSE_EXTRA
 ###############################################################################
 _cron_parse_line() {
     local line="$1"
 
+    # Découpage en mots (sans le tag final) — read -a ne fait pas de glob
+    local -a fields=()
+    read -r -a fields <<< "${line% "$CRON_TAG"}"
+
     # Champs cron : minute heure jour_mois mois jour_semaine ...
-    CRON_PARSE_MINUTE=$(echo "$line" | awk '{print $1}')
-    CRON_PARSE_HOUR=$(echo "$line"   | awk '{print $2}')
-    CRON_PARSE_DOW=$(echo "$line"    | awk '{print $5}')
+    CRON_PARSE_MINUTE="${fields[0]:-0}"
+    CRON_PARSE_HOUR="${fields[1]:-0}"
+    CRON_PARSE_DOM="${fields[2]:-*}"
+    CRON_PARSE_MONTH="${fields[3]:-*}"
+    CRON_PARSE_DOW="${fields[4]:-*}"
 
-    # Flags dans la commande
-    if echo "$line" | grep -q -- '--dry-run'; then
-        CRON_PARSE_DRY_RUN="Oui"
-    else
-        CRON_PARSE_DRY_RUN="Non"
-    fi
-
+    CRON_PARSE_DRY_RUN="Non"
     CRON_PARSE_MAILTO=""
-    if echo "$line" | grep -qE -- '--mailto='; then
-        CRON_PARSE_MAILTO=$(echo "$line" | grep -oE -- '--mailto=[^ ]+' | sed 's/--mailto=//' | sed 's/\\%/%/g')
-    fi
-
     CRON_PARSE_DISCORD=""
-    if echo "$line" | grep -qE -- '--discord-url='; then
-        CRON_PARSE_DISCORD=$(echo "$line" | grep -oE -- '--discord-url=[^ ]+' | sed 's/--discord-url=//' | sed 's/\\%/%/g')
-    fi
 
-    # Options extra : tout ce qui est après --auto et les flags connus, avant le tag
-    local cmd_part
-    cmd_part=$(echo "$line" | sed "s/ *${CRON_TAG}//" | awk '{for(i=6;i<=NF;i++) printf $i " "; print ""}')
-    # Retirer les flags connus pour isoler les options extra
-    CRON_PARSE_EXTRA=$(echo "$cmd_part" \
-        | sed 's|PATH=[^ ]* ||g' \
-        | sed 's|[^ ]*/main\.sh||g' \
-        | sed 's/--auto//g' \
-        | sed 's/--dry-run//g' \
-        | sed 's/--mailto=[^ ]*//g' \
-        | sed 's/--discord-url=[^ ]*//g' \
-        | sed 's/^ *//; s/ *$//' \
-        | tr -s ' ')
+    # Commande : flags connus extraits par mot exact, le reste = options extra
+    local -a extra=()
+    local i tok
+    for (( i=5; i<${#fields[@]}; i++ )); do
+        tok="${fields[$i]}"
+        case "$tok" in
+            PATH=*|*/main.sh|--auto) ;;
+            --dry-run)       CRON_PARSE_DRY_RUN="Oui" ;;
+            --mailto=*)      CRON_PARSE_MAILTO="${tok#--mailto=}"; CRON_PARSE_MAILTO="${CRON_PARSE_MAILTO//\\%/%}" ;;
+            --discord-url=*) CRON_PARSE_DISCORD="${tok#--discord-url=}"; CRON_PARSE_DISCORD="${CRON_PARSE_DISCORD//\\%/%}" ;;
+            *)               extra+=("${tok//\\%/%}") ;;   # \% rétabli : il sera ré-échappé à l'écriture
+        esac
+    done
+    CRON_PARSE_EXTRA="${extra[*]}"
 }
 
 
@@ -508,8 +555,9 @@ cron_edit() {
 
     # Collecter les lignes rclone_homelab
     local -a cron_lines=()
+    local line
     while IFS= read -r line; do
-        [[ "$line" == *"$CRON_TAG"* ]] && cron_lines+=("$line")
+        _cron_is_managed_line "$line" && cron_lines+=("$line")
     done <<< "$existing"
 
     if [[ ${#cron_lines[@]} -eq 0 ]]; then
@@ -527,13 +575,13 @@ cron_edit() {
     echo
 
     local choice
-    read -e -rp "  Numéro de la tâche à modifier [1-${#cron_lines[@]}] ou q : " choice </dev/tty
+    read -e -rp "  Numéro de la tâche à modifier [1-${#cron_lines[@]}] ou q : " choice </dev/tty || return 0
 
     if [[ "$choice" == "q" ]]; then
         return 0
     fi
 
-    if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#cron_lines[@]} )); then
+    if ! choice=$(_cron_valid_int "$choice" 1 "${#cron_lines[@]}"); then
         print_fancy --theme error "Choix invalide."
         return 1
     fi
@@ -545,7 +593,7 @@ cron_edit() {
 
     echo
     print_fancy --theme follow "Modification de la tâche sélectionnée."
-    print_fancy --theme follow "Appuyez sur Entrée pour conserver la valeur actuelle."
+    print_fancy --theme follow "Appuyez sur Entrée pour conserver la valeur actuelle, '-' pour supprimer une option."
 
     # Étape 1 : Jour de la semaine (avec défaut issu du parsing)
     local dow
@@ -558,24 +606,11 @@ cron_edit() {
     echo "  8) Dimanche" >/dev/tty
     echo >/dev/tty
 
-    # Calculer le défaut à partir du DOW actuel
-    local default_dow_choice
-    case "$CRON_PARSE_DOW" in
-        '*') default_dow_choice=1 ;;
-        1)   default_dow_choice=2 ;;
-        2)   default_dow_choice=3 ;;
-        3)   default_dow_choice=4 ;;
-        4)   default_dow_choice=5 ;;
-        5)   default_dow_choice=6 ;;
-        6)   default_dow_choice=7 ;;
-        0)   default_dow_choice=8 ;;
-        *)   default_dow_choice=1 ;;
-    esac
-
+    # Entrée vide = valeur actuelle conservée telle quelle, même non standard (ex. 1-5)
     local dow_choice
-    read -e -rp "  Choix [1-8, défaut: $default_dow_choice] : " dow_choice </dev/tty
-    dow_choice="${dow_choice:-$default_dow_choice}"
+    read -e -rp "  Choix [1-8, Entrée = conserver] : " dow_choice </dev/tty || return 1
     case "$dow_choice" in
+        '') dow="$CRON_PARSE_DOW" ;;
         1) dow="*" ;; 2) dow="1" ;; 3) dow="2" ;; 4) dow="3" ;;
         5) dow="4" ;; 6) dow="5" ;; 7) dow="6" ;; 8) dow="0" ;;
         *)
@@ -584,14 +619,15 @@ cron_edit() {
             ;;
     esac
 
-    # Étape 2 : Heure
+    # Étape 2 : Heure (Entrée = champ actuel conservé tel quel, ex. */2)
     local hour
     echo >/dev/tty
     print_fancy --theme info "Étape 2/7 — Heure d'exécution (actuelle : $CRON_PARSE_HOUR)" >/dev/tty
     echo >/dev/tty
-    read -e -rp "  Heure (0-23) [défaut: $CRON_PARSE_HOUR] : " hour </dev/tty
-    hour="${hour:-$CRON_PARSE_HOUR}"
-    if ! [[ "$hour" =~ ^[0-9]+$ ]] || (( hour < 0 || hour > 23 )); then
+    read -e -rp "  Heure (0-23) [défaut: $CRON_PARSE_HOUR] : " hour </dev/tty || return 1
+    if [[ -z "$hour" ]]; then
+        hour="$CRON_PARSE_HOUR"
+    elif ! hour=$(_cron_valid_int "$hour" 0 23); then
         print_fancy --theme error "Heure invalide." >/dev/tty
         return 1
     fi
@@ -601,9 +637,10 @@ cron_edit() {
     echo >/dev/tty
     print_fancy --theme info "Étape 3/7 — Minute d'exécution (actuelle : $CRON_PARSE_MINUTE)" >/dev/tty
     echo >/dev/tty
-    read -e -rp "  Minute (0-59) [défaut: $CRON_PARSE_MINUTE] : " minute </dev/tty
-    minute="${minute:-$CRON_PARSE_MINUTE}"
-    if ! [[ "$minute" =~ ^[0-9]+$ ]] || (( minute < 0 || minute > 59 )); then
+    read -e -rp "  Minute (0-59) [défaut: $CRON_PARSE_MINUTE] : " minute </dev/tty || return 1
+    if [[ -z "$minute" ]]; then
+        minute="$CRON_PARSE_MINUTE"
+    elif ! minute=$(_cron_valid_int "$minute" 0 59); then
         print_fancy --theme error "Minute invalide." >/dev/tty
         return 1
     fi
@@ -616,7 +653,7 @@ cron_edit() {
     print_fancy --theme info "Étape 4/7 — Mode simulation (actuel : $CRON_PARSE_DRY_RUN)" >/dev/tty
     echo >/dev/tty
     local reply_dr
-    read -e -rp "  Activer --dry-run ? (O/n) [défaut: $default_dr] : " reply_dr </dev/tty
+    read -e -rp "  Activer --dry-run ? (O/n) [défaut: $default_dr] : " reply_dr </dev/tty || return 1
     reply_dr="${reply_dr:-$default_dr}"
     if [[ "$reply_dr" =~ ^[OoYy]$ ]]; then
         dry_run_flag="--dry-run"
@@ -625,12 +662,17 @@ cron_edit() {
 
     # Étape 5 : Email
     local mailto_flag="" mailto_addr
-    local default_mail="${CRON_PARSE_MAILTO:-${MAIL_TO:-}}"
+    # Défaut = valeur de la tâche uniquement (pas MAIL_TO global : il s'ajouterait sans qu'on le demande)
+    local default_mail="$CRON_PARSE_MAILTO"
     echo >/dev/tty
     print_fancy --theme info "Étape 5/7 — Rapport par email (actuel : ${default_mail:-(aucun)})" >/dev/tty
     echo >/dev/tty
-    read -e -rp "  Adresse email [défaut: ${default_mail:-(aucun)}, vide = supprimer] : " mailto_addr </dev/tty
-    [[ -z "$mailto_addr" && -n "$default_mail" ]] && mailto_addr="$default_mail"
+    read -e -rp "  Adresse email [Entrée = conserver, - = supprimer] : " mailto_addr </dev/tty || return 1
+    if [[ "$mailto_addr" == "-" ]]; then
+        mailto_addr=""
+    elif [[ -z "$mailto_addr" ]]; then
+        mailto_addr="$default_mail"
+    fi
     if [[ -n "$mailto_addr" ]]; then
         if [[ "$mailto_addr" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
             mailto_flag="--mailto=$(_cron_escape_percent "$mailto_addr")"
@@ -642,12 +684,16 @@ cron_edit() {
 
     # Étape 6 : Discord
     local discord_flag="" discord_url
-    local default_discord="${CRON_PARSE_DISCORD:-${DISCORD_WEBHOOK_URL:-}}"
+    local default_discord="$CRON_PARSE_DISCORD"
     echo >/dev/tty
     print_fancy --theme info "Étape 6/7 — Notification Discord (actuelle : ${default_discord:-(aucune)})" >/dev/tty
     echo >/dev/tty
-    read -e -rp "  URL Discord webhook [défaut: ${default_discord:-(aucune)}, vide = supprimer] : " discord_url </dev/tty
-    [[ -z "$discord_url" && -n "$default_discord" ]] && discord_url="$default_discord"
+    read -e -rp "  URL Discord webhook [Entrée = conserver, - = supprimer] : " discord_url </dev/tty || return 1
+    if [[ "$discord_url" == "-" ]]; then
+        discord_url=""
+    elif [[ -z "$discord_url" ]]; then
+        discord_url="$default_discord"
+    fi
     if [[ -n "$discord_url" ]]; then
         if [[ "$discord_url" =~ ^https://(discord\.com|discordapp\.com)/api/webhooks/ ]]; then
             discord_flag="--discord-url=$(_cron_escape_percent "$discord_url")"
@@ -662,8 +708,12 @@ cron_edit() {
     echo >/dev/tty
     print_fancy --theme info "Étape 7/7 — Options rclone supplémentaires (actuelles : ${CRON_PARSE_EXTRA:-(aucune)})" >/dev/tty
     echo >/dev/tty
-    read -e -rp "  Options rclone [défaut: ${CRON_PARSE_EXTRA:-(aucune)}, vide = supprimer] : " extra_opts </dev/tty
-    [[ -z "$extra_opts" && -n "$CRON_PARSE_EXTRA" ]] && extra_opts="$CRON_PARSE_EXTRA"
+    read -e -rp "  Options rclone [Entrée = conserver, - = supprimer] : " extra_opts </dev/tty || return 1
+    if [[ "$extra_opts" == "-" ]]; then
+        extra_opts=""
+    elif [[ -z "$extra_opts" ]]; then
+        extra_opts="$CRON_PARSE_EXTRA"
+    fi
 
     # Construction de la nouvelle ligne
     local cron_cmd="$SCRIPT_PATH --auto"
@@ -673,7 +723,8 @@ cron_edit() {
     [[ -n "$extra_opts" ]]    && cron_cmd+=" $(_cron_escape_percent "$extra_opts")"
 
     local cron_path="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-    local new_line="${minute} ${hour} * * ${dow} ${cron_path} ${cron_cmd} ${CRON_TAG}"
+    # Jour du mois et mois : conservés tels quels (non gérés par l'assistant)
+    local new_line="${minute} ${hour} ${CRON_PARSE_DOM} ${CRON_PARSE_MONTH} ${dow} ${cron_path} ${cron_cmd} ${CRON_TAG}"
 
     # Résumé
     _cron_show_summary "$new_line" "$dow" "$hour" "$minute" \
@@ -681,12 +732,11 @@ cron_edit() {
 
     # Confirmation
     echo
-    read -e -rp "  Appliquer les modifications ? (O/n) : " confirm </dev/tty
+    local confirm
+    read -e -rp "  Appliquer les modifications ? (O/n) : " confirm </dev/tty || confirm="n"
     if [[ -z "$confirm" || "$confirm" =~ ^[OoYy]$ ]]; then
-        # Supprimer l'ancienne ligne et installer la nouvelle
-        local new_crontab
-        new_crontab=$(crontab -l 2>/dev/null | grep -vF "$old_line")
-        if printf '%s\n%s\n' "$new_crontab" "$new_line" | crontab - 2>/dev/null; then
+        # Remplacer l'ancienne ligne à sa place (égalité exacte, pas de sous-chaîne)
+        if _cron_replace_line "$old_line" "$new_line"; then
             print_fancy --theme success "Tâche Cron mise à jour avec succès !"
         else
             print_fancy --theme error "Échec de la mise à jour."
@@ -717,7 +767,8 @@ cron_submenu() {
         echo "  q) Retour au menu principal"
         echo
 
-        read -e -rp "  Votre choix [1-4 ou q] : " choice </dev/tty
+        # Pas de terminal → retour au lieu de boucler sans fin
+        read -e -rp "  Votre choix [1-4 ou q] : " choice </dev/tty || return 0
 
         case "$choice" in
             1) cron_add_wizard ;;

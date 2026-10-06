@@ -194,14 +194,42 @@ strwidth() {
     # Supprimer toutes les séquences ANSI standards (CSI + SGR)
     str=$(printf '%s' "$str" | sed -r "s/$(printf '\033')\\[[0-9;?]*[ -\\/]*[@-~]//g")
 
-    local width=0 char
+    # Locale non UTF-8 (ex. cron sans LANG) : bash compte les octets → on ne
+    # compte que les octets de tête (les octets de continuation 0x80-0xBF valent 0)
+    local probe="é" width=0 char cp prev_w=0 i
+    if (( ${#probe} != 1 )); then
+        for ((i=0; i<${#str}; i++)); do
+            printf -v cp '%d' "'${str:i:1}"
+            (( cp < 0 )) && cp=$(( cp + 256 ))
+            (( cp >= 0x80 && cp <= 0xBF )) || ((width+=1))
+        done
+        echo "$width"
+        return
+    fi
+
     for ((i=0; i<${#str}; i++)); do
         char="${str:i:1}"
-        if [[ "$char" =~ [^[:ascii:]] ]]; then
-            ((width+=2))
+        printf -v cp '%d' "'$char"
+        if (( cp == 0xFE0F )); then
+            # Sélecteur de présentation emoji : le caractère précédent occupe 2 colonnes
+            (( prev_w == 1 )) && ((width+=1))
+            prev_w=2
+            continue
+        elif (( cp == 0x200D || (cp >= 0xFE00 && cp <= 0xFE0E) || (cp >= 0x0300 && cp <= 0x036F) )); then
+            prev_w=0                 # joncteur, sélecteurs, diacritiques combinants
+            continue
+        elif (( (cp >= 0x1F300 && cp <= 0x1FAFF) || (cp >= 0x1F000 && cp <= 0x1F02F) \
+             || (cp >= 0x1100 && cp <= 0x115F) || (cp >= 0x2E80 && cp <= 0xA4CF) \
+             || (cp >= 0xAC00 && cp <= 0xD7A3) || (cp >= 0xF900 && cp <= 0xFAFF) \
+             || (cp >= 0xFF00 && cp <= 0xFF60) || cp == 0x2705 || cp == 0x274C || cp == 0x274E \
+             || (cp >= 0x231A && cp <= 0x231B) || (cp >= 0x23E9 && cp <= 0x23EC) || cp == 0x23F0 || cp == 0x23F3 \
+             || (cp >= 0x2753 && cp <= 0x2755) || cp == 0x2757 || (cp >= 0x2795 && cp <= 0x2797) \
+             || cp == 0x26A1 || cp == 0x2728 || cp == 0x2B50 || cp == 0x2B55 )); then
+            prev_w=2                 # emojis et caractères larges (Est-asiatiques)
         else
-            ((width+=1))
+            prev_w=1                 # ASCII, lettres accentuées, symboles étroits
         fi
+        ((width+=prev_w))
     done
     echo "$width"
 }
