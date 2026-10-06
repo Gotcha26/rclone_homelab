@@ -181,10 +181,13 @@ Affichage conditionnel selon `$DISPLAY_MODE`. Modes : `soft`, `verbose`, `hard` 
 | Code | Origine | Signification |
 |------|---------|---------------|
 | 0 | Normal | Succès |
+| 4 | main.sh | Une autre instance est déjà en cours (verrou flock) |
 | 5-6 | main.sh | Impossible créer tmp/log dir |
 | 7-9 | check_jobs_file | Jobs file absent/illisible/vide |
 | 10-13 | core.sh | rclone/msmtp install/config errors |
 | 20-26 | mail.sh | Email format/msmtp errors |
+| 27 | mail.sh | Échec d'envoi msmtp (non bloquant, en fin de run) |
+| 28 | discord.sh | Échec de notification Discord (non bloquant) |
 | 31-32 | core.sh | rclone config errors |
 | 90-92 | jobs_f.sh | Source dir/remote missing/expired |
 | 99 | menu.sh | Quit menu |

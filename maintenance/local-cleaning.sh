@@ -39,7 +39,16 @@ read -rp $'\nVoulez-vous ajouter un ou plusieurs dossiers Git supplémentaires ?
 if [[ -n "${extra_repos// }" ]]; then
     IFS="|" read -ra extra_array <<< "$extra_repos"
     for r in "${extra_array[@]}"; do
-        repo_list+=("$(realpath "${r// }")")
+        # Trim début/fin uniquement (les espaces internes du chemin sont conservés)
+        r="${r#"${r%%[![:space:]]*}"}"
+        r="${r%"${r##*[![:space:]]}"}"
+        [[ -z "$r" ]] && continue
+        [[ "$r" == "~" || "$r" == "~/"* ]] && r="${HOME}${r#\~}"
+        if ! r_abs=$(realpath "$r" 2>/dev/null); then
+            echo "⚠️  Chemin introuvable, ignoré : $r"
+            continue
+        fi
+        repo_list+=("$r_abs")
     done
 fi
 
@@ -71,7 +80,8 @@ if [[ "$batch_mode" == true ]]; then
     fi
 fi
 
-# --- Suivi global des tailles ---
+# --- Suivi global des tailles (recalculé dans la boucle : pas de double comptage) ---
+total_before=0
 total_after=0
 
 # 4. Boucle sur chaque dépôt
