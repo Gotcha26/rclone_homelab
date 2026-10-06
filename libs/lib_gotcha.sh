@@ -667,7 +667,10 @@ compute_var_status() {
     elif [[ "$allowed" =~ ^[0-9]+-[0-9]+$ ]]; then
         display_allowed="$allowed"
         IFS="-" read -r min max <<< "$allowed"
-        (( value < min || value > max )) && valid=false
+        # Valeur non numérique : invalide (et surtout pas évaluée en arithmétique)
+        if [[ ! "$value" =~ ^[0-9]+$ ]] || (( 10#$value < min || 10#$value > max )); then
+            valid=false
+        fi
 
     # ===== Joker '*' =====
     elif [[ "$allowed" == "*" ]]; then
@@ -707,19 +710,19 @@ self_validation_local_variables() {
         # Valeur actuelle (ou défaut)
         value="${!key:-$default}"
 
-        # Gestion spéciale booléen
+        # Gestion spéciale booléen : normalisé en true/false (tout le code teste "== true")
         if [[ "$allowed" == "bool" ]]; then
             case "${value,,}" in
-                1|true|yes|on) value=1 ;;
-                0|false|no|off) value=0 ;;
-                '') value="${default:-0}" ;;  # si vide
+                1|true|yes|on) value=true ;;
+                0|false|no|off) value=false ;;
+                '') value="${default:-false}" ;;  # si vide
                 *)
                     print_fancy --fg red --style bold \
                         "Donnée invalide pour $key : '$value'.\n" \
                         "- Valeurs attendues : true/false, 1/0, yes/no, on/off.\n" \
                         "-> Valeur par défaut appliquée : '$default'" \
                         "\n"
-                    value="${default:-0}"
+                    value="${default:-false}"
                     ;;
             esac
             export "$key"="$value"
@@ -741,7 +744,7 @@ self_validation_local_variables() {
                 # Cas intervalle numérique : 1-5
                 min=${BASH_REMATCH[1]}
                 max=${BASH_REMATCH[2]}
-                if [[ "$value" =~ ^[0-9]+$ ]] && (( value >= min && value <= max )); then
+                if [[ "$value" =~ ^[0-9]+$ ]] && (( 10#$value >= min && 10#$value <= max )); then
                     valid=true
                     break
                 fi

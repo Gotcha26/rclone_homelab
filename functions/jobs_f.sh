@@ -7,12 +7,20 @@
 
 parse_jobs() {
     local file="$1"
+    local line src dst
     while IFS= read -r line || [[ -n "$line" ]]; do
-        [[ -z "$line" || "$line" =~ ^# ]] && continue
+        # Fin de ligne Windows (\r) + trim global
+        line="${line%$'\r'}"
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
 
-        # Nettoyage : trim + remplacer espaces par |
-        line=$(echo "$line" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/[[:space:]]+/\|/g')
-        IFS='|' read -r src dst <<< "$line"
+        # Lignes vides et commentaires (même indentés) ignorés, comme check_jobs_file
+        [[ -z "$line" || "$line" == \#* ]] && continue
+
+        # Découpage sur le premier '|' uniquement : les espaces des chemins sont conservés
+        src="${line%%|*}"
+        dst="${line#*|}"
+        [[ "$line" != *"|"* ]] && dst=""
 
         # Trim
         src="${src#"${src%%[![:space:]]*}"}"
@@ -49,6 +57,12 @@ check_src() {
             JOB_ERR_REASON[$idx]="src_abs"
             JOB_REMOTE[$idx]=""  
             JOB_ENDPOINT[$idx]="$src"
+            continue
+        fi
+
+        # Source distante (remote:chemin) : vérifiée par check_remotes, pas ici
+        if [[ "$src" == *:* ]]; then
+            SRC_STATUS[$src]="OK"
             continue
         fi
 
@@ -165,7 +179,7 @@ check_remotes() {
                 if ! check_dry_run_compat "$dst"; then
                     JOB_STATUS[$idx]="PROBLEM"
 					JOB_ERR_REASON[$idx]="dry_run_incompatible"
-                    JOB_REMOTE[$idx]="$remote"
+                    JOB_REMOTE[$idx]="${dst%%:*}"
                     REMOTE_STATUS["$dst"]="PROBLEM"
                     JOB_ENDPOINT[$idx]="$dst"
                     ERROR_CODE=93

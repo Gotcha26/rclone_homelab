@@ -132,7 +132,14 @@ update_local_configs() {
 update_user_file() {
     local ref_file="$1"
     local user_file="$2"
-    local last_ref_backup="$BACKUP_DIR/last_$(basename "$ref_file")"
+    # Référence propre à chaque fichier local (conf_local et conf_dev partagent le même exemple)
+    local last_ref_backup="$BACKUP_DIR/last_$(basename "$user_file")__$(basename "$ref_file")"
+    local legacy_ref_backup="$BACKUP_DIR/last_$(basename "$ref_file")"
+
+    # Migration : reprendre l'ancienne référence partagée si elle existe
+    if [[ ! -f "$last_ref_backup" && -f "$legacy_ref_backup" ]]; then
+        cp "$legacy_ref_backup" "$last_ref_backup" 2>/dev/null
+    fi
 
     # 1. Vérification de l'existence des fichiers
     # ref_file (bloquand si absent)
@@ -198,8 +205,17 @@ update_user_file() {
     print_fancy --fg green --style italic --align center "(Une sauvegarde préalable sera faite avant toute intervention..."
     print_fancy --fg green --style italic --align center "... de sorte que votre fichier personnel sera sanctuarisé.)"
     echo
+    # Mode auto (cron) : jamais de modification sans confirmation explicite
+    if [[ "$ACTION_MODE" == "auto" ]]; then
+        print_fancy --theme warning "Mode automatique : mise à jour non appliquée pour :"
+        print_fancy --align right --fg red --style bold "$user_file"
+        print_fancy "Relancez le menu interactif pour l'appliquer."
+        return 0
+    fi
+
     print_fancy "❓  Voulez-vous procéder à ce remplacement ?"
-    read -e -p "Réponse ? (O/n) " -n 1 -r
+    # Pas de terminal → considéré comme un refus
+    read -e -p "Réponse ? (O/n) " -n 1 -r </dev/tty || REPLY="n"
     echo
     if [[ -n "$REPLY" && ! "$REPLY" =~ ^[OoYy]$ ]]; then
         print_fancy --theme error "Mise à jour annulée par l'utilisateur pour :"
@@ -218,49 +234,91 @@ update_user_file() {
     print_fancy "   Vers →        :"
     print_fancy "$backup_file"
 
-    # 5.2. Extraction des valeurs existantes pour les clés connues
-    declare -A user_values
-    while IFS='=' read -r key value || [[ -n "$key" ]]; do
-        # Nettoyage espaces en début/fin
-        key="${key#"${key%%[![:space:]]*}"}"
-        key="${key%"${key##*[![:space:]]}"}"
-        value="${value#"${value%%[![:space:]]*}"}"
-        value="${value%"${value##*[![:space:]]}"}"
-        [[ -n "$key" && -n "${VARS_TO_VALIDATE[$key]+_}" ]] && user_values[$key]="$value"
-    done < "$user_file"
+    local line key val multi
 
-    # 5.3. Extraction de toutes les clés étrangères pour les conserver
-    declare -A foreign_values
-    while IFS='=' read -r key value || [[ -n "$key" ]]; do
-        # Nettoyage espaces en début/fin
-        key="${key#"${key%%[![:space:]]*}"}"
-        key="${key%"${key##*[![:space:]]}"}"
-        value="${value#"${value%%[![:space:]]*}"}"
-        value="${value%"${value##*[![:space:]]}"}"
-        [[ -n "$key" && -z "${VARS_TO_VALIDATE[$key]+_}" ]] && foreign_values[$key]="$value"
+    # 5.2. Lecture du fichier utilisateur :
+    #      - affectations KEY=valeur, y compris tableaux multi-lignes KEY=( ... )
+    #      - lignes libres non commentées (ex. lignes de jobs) à conserver
+    local -A user_blocks=()
+    local -a user_order=() user_free=()
+    local block="" in_array=false
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$in_array" == true ]]; then
+            block+=$'\n'"$line"
+            if [[ "$line" =~ ^[[:space:]]*\) ]]; then
+                user_blocks[$key]="$block"
+                in_array=false
+            fi
+            continue
+        fi
+        if [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            val="${BASH_REMATCH[2]}"
+            user_order+=("$key")
+            if [[ "$val" == \(* && "$val" != *\)* ]]; then
+                block="$line"
+                in_array=true
+            else
+                user_blocks[$key]="$line"
+            fi
+        elif [[ -n "${line//[[:space:]]/}" && ! "$line" =~ ^[[:space:]]*# ]]; then
+            user_free+=("$line")
+        fi
     done < "$user_file"
+    [[ "$in_array" == true ]] && user_blocks[$key]="$block"   # tableau non refermé
 
-    # 5.4. Génération du nouveau fichier basé sur la référence
+    # 5.3. Génération du nouveau fichier basé sur la référence
+    #      Clé présente chez l'utilisateur → son bloc ; sinon → valeur de référence
     local tmp_file
     tmp_file="$(mktemp)"
-    while IFS= read -r line; do
-        if [[ "$line" =~ ^([A-Za-z0-9_]+)=(.*) ]]; then
+    local -A written=() ref_free=()
+    local ref_in_array=false ref_copy_array=false
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$ref_in_array" == true ]]; then
+            [[ "$ref_copy_array" == true ]] && printf '%s\n' "$line" >> "$tmp_file"
+            [[ "$line" =~ ^[[:space:]]*\) ]] && ref_in_array=false
+            continue
+        fi
+        if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
             key="${BASH_REMATCH[1]}"
-            if [[ -n "${user_values[$key]+_}" ]]; then
-                # Clé connue → conserver valeur utilisateur
-                echo "$key=${user_values[$key]}" >> "$tmp_file"
-            elif [[ -n "${foreign_values[$key]+_}" ]]; then
-                # Clé étrangère → conserver valeur originale
-                echo "$key=${foreign_values[$key]}" >> "$tmp_file"
+            val="${BASH_REMATCH[2]}"
+            multi=false
+            [[ "$val" == \(* && "$val" != *\)* ]] && multi=true
+
+            if [[ -n "${user_blocks[$key]+_}" ]]; then
+                printf '%s\n' "${user_blocks[$key]}" >> "$tmp_file"
+                written[$key]=1
+                ref_copy_array=false
             else
-                # Nouvelle clé → prendre la valeur de référence
-                echo "$line" >> "$tmp_file"
+                printf '%s\n' "$line" >> "$tmp_file"
+                ref_copy_array=true
             fi
+            [[ "$multi" == true ]] && ref_in_array=true
         else
-            # Lignes non key=value → copier
-            echo "$line" >> "$tmp_file"
+            # Commentaires et lignes libres de la référence → copiés
+            printf '%s\n' "$line" >> "$tmp_file"
+            [[ -n "${line//[[:space:]]/}" && ! "$line" =~ ^[[:space:]]*# ]] && ref_free[$line]=1
         fi
     done < "$ref_file"
+
+    # 5.4. Ajout de ce qui n'existe que chez l'utilisateur (clés personnelles, jobs...)
+    local -a extras=()
+    for key in "${user_order[@]}"; do
+        [[ -n "${written[$key]+_}" ]] && continue
+        written[$key]=1
+        extras+=("${user_blocks[$key]}")
+    done
+    for line in "${user_free[@]}"; do
+        [[ -n "${ref_free[$line]+_}" ]] && continue
+        extras+=("$line")
+    done
+    if (( ${#extras[@]} > 0 )); then
+        {
+            echo
+            echo "# --- Conservé depuis votre fichier précédent ---"
+            printf '%s\n' "${extras[@]}"
+        } >> "$tmp_file"
+    fi
 
     # 5.5. Remplacement du fichier utilisateur
     mv "$tmp_file" "$user_file"

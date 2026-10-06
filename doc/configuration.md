@@ -127,7 +127,7 @@ Les options rclone sont définies dans le tableau `RCLONE_OPTS` de votre configu
 
 ```bash
 RCLONE_OPTS=(
-    --temp-dir "${DIR_TMP:-}"
+    --temp-dir "${SCRIPT_DIR}/tmps"
     --exclude '*.tmp'
     --exclude '*.lock'
     --exclude 'node_modules/'

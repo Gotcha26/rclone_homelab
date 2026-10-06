@@ -154,18 +154,24 @@ check_msmtp_configured() {
     # 3. Fichiers système possibles
     candidates+=("/etc/msmtprc" "/etc/msmtp/msmtprc")
 
-    # Parcours des candidats
+    # Parcours des candidats : un fichier vide ne masque pas un candidat suivant valide
+    local empty_file=""
     for conf_file in "${candidates[@]}"; do
         if [[ -f "$conf_file" && -r "$conf_file" ]]; then
             if [[ -s "$conf_file" ]]; then
                 echo "$conf_file"
                 return 0
             else
-                echo "⚠️  Fichier msmtp trouvé mais vide : $conf_file" >&2
-                return 1
+                [[ -z "$empty_file" ]] && empty_file="$conf_file"
             fi
         fi
     done
+
+    if [[ -n "$empty_file" ]]; then
+        echo "⚠️  Fichier msmtp trouvé mais vide : $empty_file" >&2
+        echo "$empty_file"
+        return 2
+    fi
 
     echo "❌  Aucun fichier msmtp valide trouvé." >&2
     return 1
@@ -184,10 +190,15 @@ check_msmtp_configured() {
 # Fonction Détermine le sujet individuel issue du traitement d'un job.
 # Est utilisée aussi par Discord
 ###############################################################################
+# Motif de détection d'erreur : sensible à la casse pour cibler les niveaux de log
+# rclone (ERROR/CRITICAL) et non un nom de fichier contenant "error".
+# "unexpected" correspond aux messages de warn_remote_problem().
+LOG_ERROR_PATTERN='(ERROR|CRITICAL|Failed to|[Uu]nexpected|IO errors?|not deleting)'
+
 calculate_subject_raw_for_job() {
     local job_log_file="$1"
 
-    if grep -iqE "(error|failed|unexpected|io error|io errors|not deleting)" "$job_log_file"; then
+    if grep -qE "$LOG_ERROR_PATTERN" "$job_log_file"; then
         echo "❌  Des erreurs lors des sauvegardes vers le cloud"
     elif grep -q "There was nothing to transfer" "$job_log_file"; then
         echo "⚠️  Synchronisation réussie mais aucun fichier transféré"
@@ -209,7 +220,7 @@ prepare_mail_html() {
 
     # Déterminer le bloc final selon le type de job
     local final_count=4  # par défaut, job réussi
-    if grep -iqE "(error|failed|unexpected|io error|io errors|not deleting)" "$file"; then
+    if grep -qE "$LOG_ERROR_PATTERN" "$file"; then
         final_count=9   # erreurs
     elif grep -q "There was nothing to transfer" "$file"; then
         final_count=1   # rien à transférer
@@ -390,18 +401,27 @@ send_email() {
     encode_subject_for_email "$DIR_LOG_FILE_INFO"
 
     # assemble_mail_file renvoie le chemin du mail temporaire
+    # Résumé global calculé sur le log cumulé de TOUS les jobs
     local MAIL
-    assemble_mail_file "$TMP_JOB_LOG_HTML" "$html_block" MAIL
+    assemble_mail_file "$DIR_LOG_FILE_INFO" "$html_block" MAIL
 
     # --- Envoi du mail ---
+    # En cas d'échec : pas d'exit (la purge et le résumé final doivent avoir lieu),
+    # mais ERROR_CODE est positionné pour que le cron le signale.
     local conf
-    conf=$(check_msmtp_configured) || exit 1
+    if ! conf=$(check_msmtp_configured); then
+        print_fancy --theme error --align "center" "Echec envoi email : msmtp non configuré"
+        ERROR_CODE=25
+        rm -f "$MAIL"
+        return 1
+    fi
 
     if msmtp -C "$conf" --logfile "$DIR_LOG_FILE_MAIL" -t < "$MAIL"; then
         print_fancy --align "center" "... Email envoyé ✅ "
     else
         echo "⚠ Echec envoi email via msmtp" >> "$DIR_LOG_FILE_MAIL"
         print_fancy --theme error --align "center" "Echec envoi email via msmtp"
+        ERROR_CODE=27
     fi
 
     # --- Nettoyage optionnel ---

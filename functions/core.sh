@@ -272,8 +272,8 @@ edit_msmtp_config() {
     local conf_file
 
     if ! conf_file="$(check_msmtp_configured 2>/dev/null)"; then
-        # Aucun fichier valide → on choisit ~/.msmtprc par défaut
-        conf_file="${HOME}/.msmtprc"
+        # Fichier vide trouvé → on l'édite ; aucun fichier → ~/.msmtprc par défaut
+        [[ -z "$conf_file" ]] && conf_file="${HOME}/.msmtprc"
         print_fancy --theme "warning" "Aucun fichier msmtp valide trouvé, création de : $conf_file"
 
         # Création + permissions strictes
@@ -444,7 +444,10 @@ menu_validation_local_variables() {
         echo -e "[3] Quitter."
         echo
 
-        read -e -rp "Votre choix [1-3] : " choice
+        # Sans terminal (cron, pipe), pas de saisie possible : arrêt plutôt qu'une boucle sans fin
+        if ! read -e -rp "Votre choix [1-3] : " choice </dev/tty; then
+            die 99 "Configuration locale invalide et aucun terminal disponible pour la corriger."
+        fi
         echo
 
         case "$choice" in
@@ -511,10 +514,11 @@ mini_edit_local_config() {
     echo "[$i] Retour"
     echo
 
-    read -e -rp "Choisir un fichier à éditer [1-$i] : " subchoice
+    read -e -rp "Choisir un fichier à éditer [1-$i] : " subchoice </dev/tty || return 1
     echo
 
-    if [[ "$subchoice" -ge 1 && "$subchoice" -lt "$i" ]]; then
+    if [[ "$subchoice" =~ ^[0-9]+$ ]] && (( 10#$subchoice >= 1 && 10#$subchoice < i )); then
+        subchoice=$(( 10#$subchoice ))
         local target="${existing[$((subchoice-1))]}"
         ${EDITOR:-nano} "$target"
     fi
