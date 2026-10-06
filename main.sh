@@ -140,7 +140,7 @@ create_temp_dirs
 # Verrou : empêche deux exécutions simultanées (cron qui se chevauche, cron + manuel)
 exec 9>"$DIR_TMP/.rclone_homelab.lock"
 if ! flock -n 9; then
-    die 4 "Une autre instance de rclone_homelab est déjà en cours d'exécution."
+    die 15 "Une autre instance de rclone_homelab est déjà en cours d'exécution."
 fi
 
 check_and_prepare_email "$MAIL_TO"

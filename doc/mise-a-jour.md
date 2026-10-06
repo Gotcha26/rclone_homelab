@@ -69,7 +69,7 @@ Avec l'option `--force`, il effectue une **réinstallation complète** (suppress
 rclone_homelab-updater --force
 ```
 
-> `--force` supprime tout le répertoire d'installation **sauf** le dossier `local/`.
+> `--force` remplace tout le répertoire d'installation **sauf** les dossiers `local/`, `logs/` et `tmps/`.
 
 L'outil détecte automatiquement votre branche courante pour réinstaller la même.
 
@@ -102,6 +102,7 @@ L'outil détecte automatiquement votre branche courante pour réinstaller la mê
 | 12 | Parseur CLI | `--mailto` fourni mais vide |
 | 13 | Parseur CLI | `--mailto` mal formé (syntaxe `=` manquante) |
 | 14 | `install_msmtp()` | Erreur lors de l'installation de msmtp |
+| 15 | `main.sh` | Une autre instance est déjà en cours d'exécution (verrou) |
 
 ### Erreurs email (bloquantes)
 
@@ -111,6 +112,13 @@ L'outil détecte automatiquement votre branche courante pour réinstaller la mê
 | 21 | `check_and_prepare_email()` | msmtp absent et non installé |
 | 22 | `check_and_prepare_email()` | Installation de msmtp refusée |
 | 23-26 | `check_and_prepare_email()` | Configuration msmtp absente/vide/refusée |
+
+### Erreurs de notification (non bloquantes, signalées en fin d'exécution)
+
+| Code | Fonction | Cause |
+|:----:|----------|-------|
+| 27 | `send_email()` | Échec de l'envoi du mail par msmtp |
+| 28 | `send_discord_notification()` | Échec de la notification Discord (webhook, réseau ou jq absent) |
 
 ### Erreurs de validation
 

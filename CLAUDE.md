@@ -181,7 +181,8 @@ Affichage conditionnel selon `$DISPLAY_MODE`. Modes : `soft`, `verbose`, `hard` 
 | Code | Origine | Signification |
 |------|---------|---------------|
 | 0 | Normal | Succès |
-| 4 | main.sh | Une autre instance est déjà en cours (verrou flock) |
+| 4 | updater.sh | Impossible de créer le dossier local/ |
+| 15 | main.sh | Une autre instance est déjà en cours (verrou flock) |
 | 5-6 | main.sh | Impossible créer tmp/log dir |
 | 7-9 | check_jobs_file | Jobs file absent/illisible/vide |
 | 10-13 | core.sh | rclone/msmtp install/config errors |
