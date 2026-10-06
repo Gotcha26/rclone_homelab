@@ -6,8 +6,29 @@
 
 ## Table des matières
 
+- [Statut annoncé](#statut-annoncé)
 - [Email via msmtp](#email-via-msmtp)
 - [Discord via webhook](#discord-via-webhook)
+
+---
+
+## Statut annoncé
+
+Le sujet du mail et chaque message Discord annoncent l'un de ces statuts :
+
+| Statut | Signification |
+| :---: | --- |
+| ✅ Sauvegardes vers le cloud réussies | rclone a terminé sans erreur et des fichiers ont été copiés, mis à jour ou supprimés |
+| ⚠️ Synchronisation réussie mais aucun fichier transféré | Tout était déjà à jour (aucun job n'a rien eu à faire) |
+| ⚠️ Sauvegardes réussies après nouvelle(s) tentative(s) | rclone a rencontré des erreurs passagères mais a fini par réussir en retentant |
+| ❌ Des erreurs lors des sauvegardes vers le cloud | Au moins un job a échoué, ou n'a pas pu être lancé (remote absent, source introuvable...) |
+
+Le statut repose sur le **code de retour de rclone**, et non sur la simple présence du mot `ERROR` dans le log : rclone retente seul les opérations ratées (3 tentatives par défaut), et une erreur passagère suivie d'une réussite n'est pas un échec.
+
+- **Mail** : un seul statut global pour l'ensemble des jobs.
+- **Discord** : un statut par job.
+
+> Un ⚠️ « après nouvelle(s) tentative(s) » isolé est sans gravité (souvent un aléa côté fournisseur cloud). S'il revient chaque nuit, consultez le log rclone joint et pensez à [mettre à jour rclone](mise-a-jour.md#mettre-à-jour-rclone).
 
 ---
 
@@ -48,7 +69,7 @@ host           smtp.gmail.com
 port           587
 from           votre.adresse@gmail.com
 user           votre.adresse@gmail.com
-password       egknnbapmkvftwnt
+password       abcdefghijklmnop
 
 account default : gmail_1
 ```

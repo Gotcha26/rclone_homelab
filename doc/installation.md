@@ -78,7 +78,11 @@ Installation manuelle :
 apt install rclone -y
 ```
 
-Il s'installe dans `/usr/bin/rclone`. Pour configurer vos remotes :
+Il s'installe dans `/usr/bin/rclone`.
+
+**⚠️ La version des dépôts Debian est ancienne** (v1.60 sur Debian 12) et peut provoquer des erreurs avec OneDrive ou Google Drive, dont l'API évolue. Installez plutôt la version officielle, ou mettez-la à jour juste après : voir [Mettre à jour rclone](mise-a-jour.md#mettre-à-jour-rclone).
+
+Pour configurer vos remotes :
 ```bash
 rclone config
 ```

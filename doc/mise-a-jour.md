@@ -8,6 +8,7 @@
 
 - [Système de mise à jour](#système-de-mise-à-jour)
 - [Outil de mise à jour standalone](#outil-de-mise-à-jour-standalone)
+- [Mettre à jour rclone](#mettre-à-jour-rclone)
 - [Codes d'erreur](#codes-derreur)
 - [Logs](#logs)
 - [Recommandations](#recommandations)
@@ -72,6 +73,72 @@ rclone_homelab-updater --force
 > `--force` remplace tout le répertoire d'installation **sauf** les dossiers `local/`, `logs/` et `tmps/`.
 
 L'outil détecte automatiquement votre branche courante pour réinstaller la même.
+
+---
+
+## Mettre à jour rclone
+
+***rclone_homelab*** ne met pas à jour ***rclone*** lui-même : c'est à faire de temps en temps, à la main.
+
+### Pourquoi c'est important
+
+Les fournisseurs cloud (OneDrive en tête) font évoluer leur API. Une version ancienne de rclone finit par produire des erreurs incompréhensibles côté distant, par exemple :
+
+```text
+invalidRequest: The provided drive id appears to be malformed, or does not represent a valid drive.
+```
+
+Or le paquet de la distribution (`apt install rclone`) est souvent **très en retard** : Debian 12 fournit la v1.60, qui date de 2022.
+
+> Repère : si des erreurs OneDrive/Google Drive apparaissent sans que rien n'ait changé chez vous, vérifiez d'abord la version de rclone (`rclone version`).
+
+### Procédure recommandée (paquet officiel vérifié)
+
+À lancer en root dans le conteneur où tourne ***rclone_homelab*** :
+
+```bash
+# 1. Sauvegarder la configuration rclone (remotes, tokens)
+cp -a "$(rclone config file | tail -1)" /root/rclone.conf.backup_$(date +%F)
+
+# 2. Télécharger la dernière version officielle et sa liste d'empreintes
+VER=$(curl -fsS https://downloads.rclone.org/version.txt | awk '{print $2}')
+cd /tmp
+curl -fsSLO "https://downloads.rclone.org/${VER}/rclone-${VER}-linux-amd64.deb"
+curl -fsSLO "https://downloads.rclone.org/${VER}/SHA256SUMS"
+
+# 3. Vérifier l'empreinte (doit afficher : OK)
+grep " rclone-${VER}-linux-amd64.deb$" SHA256SUMS | sha256sum -c -
+
+# 4. Installer par-dessus la version existante
+dpkg -i "rclone-${VER}-linux-amd64.deb"
+rm -f "rclone-${VER}-linux-amd64.deb" SHA256SUMS
+
+# 5. Contrôler
+rclone version
+rclone lsd mon_remote:
+```
+
+- Remplacez `amd64` par `arm64` ou `arm` sur un Raspberry Pi ou un autre système ARM (`uname -m` pour vérifier).
+- La configuration (`~/.config/rclone/rclone.conf`) n'est pas modifiée par la mise à jour.
+- Un `apt upgrade` ne reviendra pas à l'ancienne version : celle de la distribution est plus ancienne.
+
+### Si un remote refuse la connexion après la mise à jour
+
+Les remotes OAuth (OneDrive, Google Drive) peuvent demander une nouvelle autorisation :
+
+```bash
+rclone config reconnect mon_remote:
+```
+
+L'autorisation passe par un navigateur. Sur un conteneur sans interface graphique, rclone indique la commande `rclone authorize` à lancer sur un poste qui en a un.
+
+### Alternative : la mise à jour intégrée
+
+Une fois la version officielle installée, rclone sait se mettre à jour seul :
+
+```bash
+rclone selfupdate
+```
 
 ---
 
