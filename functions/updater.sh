@@ -382,11 +382,25 @@ update_to_latest_branch() {
     print_fancy --align "center" --bg "green" --style "italic" --highlight \
         "⚡  Mécanisme automatique de mise à jour forcée sur la branche : $branch. ⚡ "
 
+    # Récupération des dernières infos (avant toute modification locale)
+    if ! git fetch --all --tags; then
+        print_fancy --theme "error" \
+            "Impossible de récupérer les informations distantes (réseau ?). Mise à jour annulée." >&2
+        return 1
+    fi
+
+    if ! git rev-parse --verify --quiet "origin/$branch" >/dev/null; then
+        print_fancy --theme "error" \
+            "La branche distante origin/$branch n'existe pas. Mise à jour annulée." >&2
+        return 1
+    fi
+
     # Liste des fichiers ignorés (d'après .gitignore)
     local ignored_files
     ignored_files=$(git ls-files --ignored --other --exclude-standard)
 
     # Sauvegarde temporaire si fichiers ignorés présents
+    rm -f /tmp/ignored_backup.tar.gz
     if [[ -n "$ignored_files" ]]; then
         echo
         echo "💾  Prendre soin des fichiers personnalisables..."
@@ -394,16 +408,17 @@ update_to_latest_branch() {
         echo "$ignored_files" | tar czf /tmp/ignored_backup.tar.gz -T - 2>/dev/null || true
     fi
 
-    # Récupération des dernières infos
-    git fetch --all --tags
-
     # Passage forcé sur la branche cible
     git checkout -f "$branch" || {
         print_fancy --theme "error" \
             "Erreur lors du checkout de $branch" >&2
         exit 1
         }
-    git reset --hard "origin/$branch"
+    if ! git reset --hard "origin/$branch"; then
+        print_fancy --theme "error" \
+            "Erreur lors du reset sur origin/$branch" >&2
+        return 1
+    fi
     git clean -fd
 
     # Restauration éventuelle des fichiers ignorés
@@ -527,6 +542,7 @@ update_to_latest_tag() {
     # --- Sauvegarde des fichiers ignorés ---
     local ignored_files
     ignored_files=$(git ls-files --ignored --other --exclude-standard)
+    rm -f /tmp/ignored_backup.tar.gz
     if [[ -n "$ignored_files" ]]; then
         echo
         echo "💾  Prendre soin des fichiers personnalisables..."
@@ -534,8 +550,9 @@ update_to_latest_tag() {
         echo "$ignored_files" | tar czf /tmp/ignored_backup.tar.gz -T - 2>/dev/null || true
     fi
 
-    # Checkout vers le tag
-    if git -c advice.detachedHead=false checkout "$latest_tag"; then
+    # Checkout vers le tag, en restant sur la branche (pas de HEAD détaché,
+    # sinon les mises à jour suivantes ne sont plus détectées)
+    if git checkout -B "$branch" "$latest_tag"; then
         # Restauration des fichiers ignorés
         if [[ -f /tmp/ignored_backup.tar.gz ]]; then
             echo
