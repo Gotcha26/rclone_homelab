@@ -9,6 +9,7 @@ source "$SCRIPT_DIR/bootstrap.sh"
 
 # sourcing spécifique pour le menu
 source "$SCRIPT_DIR/functions/menu_f.sh"
+source "$SCRIPT_DIR/functions/cron_f.sh"
 
 ###############################################################################
 # Si aucun argument fourni → affichage d’un menu interactif
@@ -66,7 +67,9 @@ while true; do
     add_separator_if_needed
 
     # 2) Jobs (lancement)
-    if check_jobs_file; then
+    check_jobs_file
+    jobs_ret=$?
+    if (( jobs_ret == 0 )); then
         add_option "🔂  Lancer tous les jobs (sans plus attendre ni options)" "menu_run_all_jobs"
     fi
 
@@ -74,9 +77,10 @@ while true; do
 
     # 3) Configurations
     # Jobs
-    check_jobs_file
-    ret=$?
-    case $ret in
+    case $jobs_ret in
+        0)
+            add_option "✏️  Éditer la liste des jobs (rclone)     → modification manuelle" "menu_edit_jobs"
+            ;;
         1)
             add_option "⌨️  Configurer la liste des jobs (rclone) → fichier absent" "menu_init_jobs"
             ;;
@@ -114,6 +118,13 @@ while true; do
             # Aucun fichier valide → configurer
             add_option "⚙️  Configurer msmtp                      → fichier à compléter" "menu_config_msmtp"
         fi
+    fi
+
+    add_separator_if_needed
+
+    # Cron
+    if command -v crontab >/dev/null 2>&1; then
+        add_option "📅  Gérer le Crontab                        → tâches automatiques" "menu_cron_management"
     fi
 
     add_separator_if_needed
@@ -169,15 +180,20 @@ while true; do
     print_menu MENU_OPTIONS MENU_ACTIONS CHOICE_TO_INDEX num
 
     echo
-    read -e -rp "Votre choix [1-$((num-1)) ou q pour quitter] : " choice </dev/tty
+    # Pas de terminal (ssh sans -t, cron sans --auto) → on quitte au lieu de boucler sans fin
+    if ! read -e -rp "Votre choix [1-$((num-1)) ou q pour quitter] : " choice </dev/tty; then
+        echo
+        echo "Aucun terminal disponible pour le menu interactif (utilisez --auto)."
+        return 99
+    fi
 
     # --- Validation et exécution ---
     if [[ "$choice" == "q" ]]; then
         echo
         echo "Vous partez déjà..."
         return 99
-        break
-    elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice < num )); then
+    elif [[ "$choice" =~ ^[0-9]{1,3}$ ]] && (( 10#$choice >= 1 && 10#$choice < num )); then
+        choice=$(( 10#$choice ))   # "01" → 1 (clé de CHOICE_TO_INDEX)
         idx="${CHOICE_TO_INDEX[$choice]}"
         action="${MENU_ACTIONS[$idx]}"
         case "$action" in
@@ -247,7 +263,7 @@ while true; do
             menu_install_msmtp)
                 scroll_down
                 echo "▶️  Installation de msmtp..."
-                if install_msntp soft; then
+                if install_msmtp soft; then
                     echo "✅  ... msmtp a été installé avec succès !"
                 else
                     echo "⚠️  ... Échec de l'installation de msmtp (mode soft)."
@@ -281,7 +297,7 @@ while true; do
             menu_edit_config_local)
                 scroll_down
                 print_fancy "▶️  Édition du fichier :"
-                print_fancy --align right --fg blue "${CONF_LOCAL_FILE}"
+                print_fancy --align right --fg blue "${DIR_CONF_LOCAL_FILE}"
                 $EDITOR "$DIR_CONF_LOCAL_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
@@ -295,14 +311,14 @@ while true; do
             menu_edit_config_dev)
                 scroll_down
                 print_fancy "▶️  Édition du fichier :"
-                print_fancy --align right --fg blue "${CONF_DEV_FILE}"
+                print_fancy --align right --fg blue "${DIR_CONF_DEV_FILE}"
                 $EDITOR "$DIR_CONF_DEV_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_init_secret_file)
                 scroll_down
                 print_fancy "▶️  Installation d'un fichier (optionnel) :"
-                print_fancy --align right --fg blue "${SECRET_FILE}"
+                print_fancy --align right --fg blue "${DIR_SECRET_FILE}"
                 echo "Le fichier sera préservé lors des mises à jours automatiques."
                 init_file "conf_secret"
                 echo "✅  ... Installation terminée > retour au menu."
@@ -310,8 +326,8 @@ while true; do
             menu_edit_config_secrets)
                 scroll_down
                 print_fancy "▶️  Édition du fichier :"
-                print_fancy --align right --fg blue "${SECRET_FILE}"
-                $EDITOR "$SECRET_FILE"
+                print_fancy --align right --fg blue "${DIR_SECRET_FILE}"
+                $EDITOR "$DIR_SECRET_FILE"
                 echo "✅  ... Édition terminée > retour au menu."
                 ;;
             menu_dev_install)
@@ -325,6 +341,11 @@ while true; do
                 echo "▶️  Menu de désinstallation..."
                 dev_uninstall
                 echo "✅  ... Désinstallation terminée > retour au menu."
+                ;;
+            menu_cron_management)
+                scroll_down
+                cron_submenu
+                echo "✅  ... Retour au menu principal."
                 ;;
             menu_show_help)
                 scroll_down

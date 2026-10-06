@@ -55,8 +55,13 @@ debug_header_1() {
 }
 
 debug_header_2() {
-    # Dossier temporaire unique
+    # Dossier temporaire unique, conservé après exécution pour inspection.
+    # Le dossier mktemp initial est supprimé, et le trap EXIT neutralisé
+    # (il supprimerait sinon ce dossier de debug).
+    [[ -n "${TMP_JOBS_DIR:-}" && -d "$TMP_JOBS_DIR" ]] && rm -rf "$TMP_JOBS_DIR"
+    trap - EXIT
     TMP_JOBS_DIR="$SCRIPT_DIR/tmp_jobs_debug"
+    rm -f "$TMP_JOBS_DIR"/JOB* 2>/dev/null   # pas de mélange avec un run précédent
 
     echo
     if mkdir -p "$TMP_JOBS_DIR"; then

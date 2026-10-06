@@ -21,6 +21,7 @@ source "$SCRIPT_DIR/bootstrap.sh" # Source tout le reste avec configuration loca
 # ===
 
 TMP_JOBS_DIR=$(mktemp -d)    # Dossier temporaire effémère. Il est supprimé à la fermeture.
+trap 'rm -rf "$TMP_JOBS_DIR"' EXIT
 
 # === Initialisation du dispositif d'affichage ===
 
@@ -32,6 +33,13 @@ check_update || display_msg "soft|verbose|hard" --theme warning "Impossible de r
 if [[ "$DEBUG_INFOS" == "true" || "$DEBUG_MODE" == "true" ]]; then
     show_debug_header
 fi
+
+# --auto doit être connu AVANT la validation : en cron (pas de tty), le menu de
+# correction interactif ne doit jamais être proposé.
+for _arg in "$@"; do
+    [[ "$_arg" == "--auto" ]] && ACTION_MODE="auto"
+done
+unset _arg
 
 # Validation des variables locale
 if [[ $ACTION_MODE == "auto" ]]; then
@@ -128,9 +136,20 @@ fi
 ###############################################################################
 
 create_temp_dirs
+
+# Verrou : empêche deux exécutions simultanées (cron qui se chevauche, cron + manuel)
+exec 9>"$DIR_TMP/.rclone_homelab.lock"
+if ! flock -n 9; then
+    die 15 "Une autre instance de rclone_homelab est déjà en cours d'exécution."
+fi
+
 check_and_prepare_email "$MAIL_TO"
-check_rclone
+check_rclone || exit $?
 check_jobs_file
+jobs_file_rc=$?
+if (( jobs_file_rc != 0 )); then
+    die $(( jobs_file_rc + 6 )) "Fichier jobs absent, illisible ou sans job valide : $DIR_JOBS_FILE"
+fi
 
 
 ###############################################################################

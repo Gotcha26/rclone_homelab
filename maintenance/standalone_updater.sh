@@ -8,8 +8,9 @@
 #
 # Options :
 #   --force    : Réinstalle complètement le projet depuis GitHub
-#                → Écrase tous les fichiers locaux, y compris ceux ignorés
-#                → Conserve uniquement la branche locale active
+#                → Écrase tous les fichiers du projet
+#                → Préserve les fichiers utilisateur (local/, logs/, tmps/)
+#                → Conserve uniquement la branche locale active (main si indéterminable)
 #
 # Exemple :
 #   rclone_homelab-updater          # Vérifie et applique les mises à jour normalement
@@ -117,15 +118,23 @@ fi
 # --------------------------------------------------------------------------- #
 # 6. Détection mode Git ou standalone
 # --------------------------------------------------------------------------- #
-LOCAL_VERSION_FILE="$SCRIPT_DIR/.version"
+LOCAL_VERSION_FILE="$SCRIPT_DIR/local/.version"
+
+# Fichiers utilisateur à ne jamais supprimer lors d'un rsync --delete
+RSYNC_EXCLUDES=(--exclude '/local/' --exclude '/logs/' --exclude '/tmps/')
 
 if [ -d "$SCRIPT_DIR/.git" ]; then
     MODE="git"
     CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "HEAD")
     if [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
-        echo -e "${RED}❌  HEAD détaché détecté, impossible de déterminer la branche active.${RESET}"
-        echo -e "   → Exécutez le script en mode --force pour réinitialiser le dépôt.${RESET}"
-        exit 8
+        if [[ "$FORCE_MODE" == true ]]; then
+            echo -e "${YELLOW}⚠️  HEAD détaché détecté : réinitialisation sur la branche main.${RESET}"
+            CURRENT_BRANCH="main"
+        else
+            echo -e "${RED}❌  HEAD détaché détecté, impossible de déterminer la branche active.${RESET}"
+            echo -e "   → Exécutez le script en mode --force pour réinitialiser le dépôt.${RESET}"
+            exit 8
+        fi
     fi
     echo -e "🔎  Branche détectée : ${GREEN}$CURRENT_BRANCH${RESET}"
 
@@ -134,6 +143,11 @@ elif [[ -f "$LOCAL_VERSION_FILE" ]]; then
     CURRENT_BRANCH="main"   # par convention, on suit la branche main
     LOCAL_VERSION=$(cat "$LOCAL_VERSION_FILE")
     echo -e "🔎  Mode ${YELLOW}standalone${RESET}, version locale : ${GREEN}$LOCAL_VERSION${RESET}"
+
+elif [[ "$FORCE_MODE" == true ]]; then
+    MODE="unknown"
+    CURRENT_BRANCH="main"
+    echo -e "${YELLOW}⚠️  Mode d'installation indéterminé : réinstallation depuis la branche main.${RESET}"
 
 else
     echo -e "${RED}❌  Impossible de déterminer le mode de mise à jour (ni .git ni .version trouvés).${RESET}"
@@ -152,9 +166,10 @@ if [[ "$FORCE_MODE" == true ]]; then
         rm -rf "$TMP_DIR"
         exit 5
     }
-    rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
+    rsync -a --delete "${RSYNC_EXCLUDES[@]}" "$TMP_DIR"/ "$SCRIPT_DIR"/
     rm -rf "$TMP_DIR"
     echo "✅  Réinstallation complète effectuée."
+    mkdir -p "$(dirname "$LOCAL_VERSION_FILE")"
     echo "$(git -C "$SCRIPT_DIR" describe --tags --abbrev=0 2>/dev/null || echo "unknown")" > "$LOCAL_VERSION_FILE"
 
 else
@@ -174,7 +189,7 @@ else
     elif [[ "$MODE" == "standalone" ]]; then
         echo "🔄  Vérification des nouvelles releases GitHub..."
         REMOTE_VERSION=$(curl -s "https://api.github.com/repos/Gotcha26/rclone_homelab/releases/latest" \
-                         | grep -oP '"tag_name": "\K(.*)(?=")')
+                         | grep -oP '"tag_name": "\K(.*)(?=")' || true)
         if [[ -z "$REMOTE_VERSION" ]]; then
             echo -e "${YELLOW}⚠️  Impossible de récupérer la version distante.${RESET}"
             exit 6
@@ -183,8 +198,9 @@ else
         if [[ "$REMOTE_VERSION" != "$LOCAL_VERSION" ]]; then
             echo -e "📥  Nouvelle release disponible : ${GREEN}$REMOTE_VERSION${RESET} (actuelle : ${RED}$LOCAL_VERSION${RESET})"
             TMP_DIR=$(mktemp -d)
-            git clone --branch "$CURRENT_BRANCH" "$REPO_URL" "$TMP_DIR"
-            rsync -a --delete "$TMP_DIR"/ "$SCRIPT_DIR"/
+            # Clone du tag de la release (et non du HEAD de main), sans historique git
+            git -c advice.detachedHead=false clone --depth 1 --branch "$REMOTE_VERSION" "$REPO_URL" "$TMP_DIR"
+            rsync -a --delete --exclude '/.git' "${RSYNC_EXCLUDES[@]}" "$TMP_DIR"/ "$SCRIPT_DIR"/
             rm -rf "$TMP_DIR"
             echo "$REMOTE_VERSION" > "$LOCAL_VERSION_FILE"
             echo "✅  Mise à jour standalone terminée."
