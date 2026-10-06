@@ -198,9 +198,11 @@ LOG_ERROR_PATTERN='(ERROR|CRITICAL|Failed to|[Uu]nexpected|IO errors?|not deleti
 calculate_subject_raw_for_job() {
     local job_log_file="$1"
 
+    # "Rien de transféré" seulement si AUCUN job n'a copié/mis à jour/supprimé :
+    # sur le log cumulé, le "nothing to transfer" d'un seul job ne suffit pas.
     if grep -qE "$LOG_ERROR_PATTERN" "$job_log_file"; then
         echo "❌  Des erreurs lors des sauvegardes vers le cloud"
-    elif grep -q "There was nothing to transfer" "$job_log_file"; then
+    elif ! grep -qE ": (Multi-thread )?(Copied|Updated|Deleted)" "$job_log_file"; then
         echo "⚠️  Synchronisation réussie mais aucun fichier transféré"
     else
         echo "✅  Sauvegardes vers le cloud réussies"
